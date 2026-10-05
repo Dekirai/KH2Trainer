@@ -32,7 +32,9 @@ internal static class AssetFingerprintUiChecks
         Check(!vm.CaptureFingerprintCommand.CanExecute(null),"empty view must not allow capture");
         Await(vm.OpenFileAsync(fixture));vm.SourceLabel="Original fixture";
         Check(vm.CaptureContainerFingerprintCommand.CanExecute(null)&&!vm.CaptureFingerprintCommand.CanExecute(null),"root container capture is separate from selected entry");
-        var outerFirst=vm.Rows[0];vm.SelectedRow=outerFirst;Await(vm.InspectSelectedAsync());
+        var outerFirst=vm.Rows[0];vm.SelectedRow=outerFirst;
+        vm.SelectedRow=null;Check(vm.SelectedRow==outerFirst,"a view being swapped out must not clear a listed selection");
+        Await(vm.InspectSelectedAsync());
         vm.SelectedRow=vm.Rows[0];Await(vm.CaptureSelectedFingerprintAsync());
         Check(vm.FingerprintRows.Count==1&&vm.FingerprintRows[0].Fingerprint.Path.Count==3,"capture preserves complete nested path");
         var first=vm.FingerprintRows[0].Fingerprint;

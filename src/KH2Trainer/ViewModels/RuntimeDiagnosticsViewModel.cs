@@ -79,6 +79,8 @@ public sealed class RuntimeDiagnosticsViewModel : Observable
         set
         {
             if (value is not null && !entries.Contains(value)) return;
+            // A view being swapped out pushes null; keep a selection that is still listed.
+            if (value is null && selectedEntry is not null && entries.Contains(selectedEntry)) return;
             if (Set(ref selectedEntry, value)) RefreshDetails();
         }
     }

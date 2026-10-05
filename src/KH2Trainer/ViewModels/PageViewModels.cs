@@ -39,7 +39,12 @@ public sealed class ProfilesVm : PageVm
     public override bool UsesGame => false;
 
     public ObservableCollection<string> SavedProfiles { get; } = [];
-    public string? SelectedProfileFile { get => selectedProfileFile; set { if (Set(ref selectedProfileFile, value)) LoadSelectedCommand.Refresh(); } }
+    public string? SelectedProfileFile
+    {
+        get => selectedProfileFile;
+        // A page being swapped out pushes null from its list; keep a selection that is still listed.
+        set { if (value is null && selectedProfileFile is not null && SavedProfiles.Contains(selectedProfileFile)) return; if (Set(ref selectedProfileFile, value)) LoadSelectedCommand.Refresh(); }
+    }
     public bool HasSavedProfiles => SavedProfiles.Count > 0;
     public string ProfileName { get => profileName; set => Set(ref profileName, value); }
     public string ProfileSummary { get => profileSummary; private set => Set(ref profileSummary, value); }
@@ -109,7 +114,7 @@ public sealed class ProfilesVm : PageVm
         string path = Path.IsPathRooted(nameOrPath) ? nameOrPath : Path.Combine(profiles.Folder, nameOrPath + ".json");
         loadedProfile = profiles.Read(path, shell.Catalog); ProfileName = loadedProfile.Name;
         foreach (var pair in loadedProfile.Values) shell.Feature(pair.Key)?.SetInput(pair.Value);
-        ProfileSummary = $"Loaded {loadedProfile.Values.Count} settings from “{loadedProfile.Name}”. The inputs show them for review; choose Apply profile to send them to the game.";
+        ProfileSummary = $"Loaded {loadedProfile.Values.Count} settings from “{loadedProfile.Name}”. Numeric and list inputs show them for review (switches keep showing the game's state); choose Apply profile to send them to the game.";
         RefreshCommands();
     }
 
@@ -131,6 +136,7 @@ public sealed class ProfilesVm : PageVm
             {
                 var feature = shell.Catalog.Single(f => f.Id == pair.Key);
                 await shell.Execute(feature.CommandId, [pair.Value], feature.Name); applied++;
+                shell.Feature(pair.Key)?.MarkApplied();
             }
             ProfileSummary = $"Applied all {applied} settings from “{loadedProfile.Name}”.";
         }

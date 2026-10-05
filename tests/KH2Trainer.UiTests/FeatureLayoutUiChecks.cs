@@ -133,6 +133,16 @@ internal static class FeatureLayoutUiChecks
         number.Update(numberSnapshot);
         Check(number.ValueText == "12345" && number.LiveValue.StartsWith('7'), "A typed value must survive live updates until applied.");
 
+        // Profile review: numbers keep the loaded value; switches keep mirroring the game; applying resumes mirroring.
+        int callsBeforeReview = host.Calls.Count;
+        toggle.Update(toggleSnapshot); bool liveSwitch = toggle.ToggleValue;
+        toggle.SetInput(liveSwitch ? 0 : 1);
+        Check(toggle.ToggleValue == liveSwitch && host.Calls.Count == callsBeforeReview, "Reviewing a profile must neither flip nor send a switch.");
+        number.SetInput(42); number.Update(numberSnapshot);
+        Check(number.ValueText == "42", "A reviewed profile value must survive live updates until applied.");
+        number.MarkApplied(); number.Update(numberSnapshot);
+        Check(number.ValueText == "7", "An applied profile value must resume mirroring the game.");
+
         // Search spans every section.
         var locations = sections.SelectMany(s => s.Tabs.SelectMany(t => t.Groups.Select(g => (g.Title, Location: s.Title + " › " + t.Title))))
             .ToDictionary(x => x.Title, x => x.Location);
@@ -216,6 +226,8 @@ internal static class FeatureLayoutUiChecks
         settings.Save(settingsPath);
         var loaded = UserSettings.Load(settingsPath);
         Check(loaded.ShowDescriptions && loaded.SaveFolder == "C:\\Saves" && loaded.Favorites.SequenceEqual(["a", "b"]), "Preferences must round-trip without duplicates.");
+        File.WriteAllText(settingsPath, "{\"Version\":1,\"Favorites\":null}");
+        Check(UserSettings.Load(settingsPath).Favorites.Count == 0, "A null favorites list must load as empty instead of crashing.");
         File.WriteAllText(settingsPath, "{ not json");
         Check(UserSettings.Load(settingsPath).Favorites.SequenceEqual(UserSettings.DefaultFavorites), "A damaged preferences file must fall back to defaults.");
 

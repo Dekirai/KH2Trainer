@@ -20,7 +20,7 @@ public sealed class UserSettings
         {
             if (File.Exists(path) && JsonSerializer.Deserialize<UserSettings>(File.ReadAllText(path), Options) is { Version: 1 } settings)
             {
-                settings.Favorites = settings.Favorites.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.Ordinal).ToList();
+                settings.Favorites = (settings.Favorites ?? []).Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.Ordinal).ToList();
                 settings.SaveFolder ??= "";
                 return settings;
             }

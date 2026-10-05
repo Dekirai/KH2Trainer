@@ -101,9 +101,14 @@ public sealed class MainViewModel : Observable, IFeatureHost, IDisposable
     internal string SaveFolderSetting { get => settings.SaveFolder; set { settings.SaveFolder = value; settings.Save(settingsPath); } }
 
     // Connection
-    public bool Busy { get => busy; private set { if (Set(ref busy, value)) RefreshCommands(); } }
+    public bool Busy { get => busy; private set { if (!Set(ref busy, value)) return; RefreshCommands(); foreach (var feature in features) feature.RefreshCanToggle(); } }
     public ObservableCollection<ProcessChoice> Processes { get; } = [];
-    public ProcessChoice? SelectedProcess { get => selectedProcess; set { if (Set(ref selectedProcess, value)) RefreshConnection(); } }
+    public ProcessChoice? SelectedProcess
+    {
+        get => selectedProcess;
+        // A page being swapped out pushes null from its ComboBox; only an empty list clears the choice.
+        set { if (value is null && Processes.Count > 0) return; if (Set(ref selectedProcess, value)) RefreshConnection(); }
+    }
     public bool HasMultipleProcesses => Processes.Count > 1;
     public bool IsConnected => session.Connected;
     public ConnectionState State =>

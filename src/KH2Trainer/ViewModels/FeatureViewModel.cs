@@ -130,12 +130,25 @@ public sealed class FeatureVm : Observable
         return value;
     }
 
-    /// <summary>Shows a value for review (for example from a profile) without applying it.</summary>
+    /// <summary>
+    /// Shows a value for review (for example from a profile) without applying it.
+    /// Switches keep mirroring the game, because flipping one applies it at once.
+    /// </summary>
     public void SetInput(double value)
     {
-        valueText = value.ToString(CultureInfo.InvariantCulture); toggleValue = value != 0;
+        if (IsToggle) return;
+        valueText = value.ToString(CultureInfo.InvariantCulture);
         choice = Choices.FirstOrDefault(c => c.Value == value); dirty = true;
-        Changed(nameof(ValueText), nameof(ToggleValue), nameof(SelectedChoice));
+        Changed(nameof(ValueText), nameof(SelectedChoice));
+    }
+
+    /// <summary>The value was sent by other means (a profile); follow the game again.</summary>
+    public void MarkApplied() => dirty = false;
+
+    public void RefreshCanToggle()
+    {
+        bool canToggle = CanToggle;
+        if (canToggle != lastCanToggle) { lastCanToggle = canToggle; Changed(nameof(CanToggle)); }
     }
 
     public void RefreshPresentation() { lastCanToggle = CanToggle; Changed(nameof(IsFavorite), nameof(ShowDescription), nameof(CanToggle)); }
@@ -160,8 +173,7 @@ public sealed class FeatureVm : Observable
             : Definition.RequiresScene && !snapshot.SceneReady ? "Load a playable scene first."
             : Definition.ChangesProgression ? "Changes the loaded game state. Saving in the game can make it permanent."
             : Definition.RestoreBehavior;
-        bool canToggle = CanToggle;
-        if (canToggle != lastCanToggle) { lastCanToggle = canToggle; Changed(nameof(CanToggle)); }
+        RefreshCanToggle();
         ApplyCommand.Refresh();
     }
 

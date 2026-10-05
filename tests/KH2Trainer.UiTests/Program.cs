@@ -90,6 +90,8 @@ internal static class Program
                 vm.SourceAnchors.Contains(original.RecordAddress,StringComparison.Ordinal),"Diagnostics lost selected source addresses.");
         }
         vm.SelectedLanguage=vm.Languages.Single(x=>x.Id==1);
+        var kept=vm.SelectedEntry;vm.SelectedEntry=null;
+        Require(vm.SelectedEntry==kept && vm.HasSelection,"A view being swapped out must not clear a listed selection.");
         vm.Filter="Speicherdaten";
         Require(vm.Entries.Count>0 && vm.Entries.Count<11 && vm.HasSelection,"Cross-language search must find German content while English is selected.");
         vm.Filter="___no_diagnostic_match___";

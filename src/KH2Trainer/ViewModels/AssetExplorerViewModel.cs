@@ -60,13 +60,18 @@ public sealed class AssetExplorerViewModel : Observable, IDisposable
     public IReadOnlyList<AssetFingerprintRow> FingerprintRows => fingerprintRows;
     public IReadOnlyList<AssetFingerprintRow> FingerprintMatches => fingerprintMatches;
     public string FingerprintCountText => $"{fingerprintIndex.Entries.Count:N0} fingerprints in memory";
-    public AssetFingerprintRow? SelectedFingerprint { get => selectedFingerprint; set { if(Set(ref selectedFingerprint,value)&&value!=null)FingerprintDetails=value.Details; } }
+    public AssetFingerprintRow? SelectedFingerprint { get => selectedFingerprint; set {
+        // A view being swapped out pushes null; keep a selection that is still listed.
+        if(value==null&&selectedFingerprint!=null&&fingerprintRows.Contains(selectedFingerprint))return;
+        if(Set(ref selectedFingerprint,value)&&value!=null)FingerprintDetails=value.Details; } }
     public string Filter { get => filter; set { if(Set(ref filter,value)) RefreshRows(); } }
     public string CountText => $"{rows.Count:N0} of {allRows.Count:N0} entries";
     public string NamesFileLabel => string.IsNullOrEmpty(namesFile) ? "Optional name list: none" : "Name list: " + namesFile;
     public bool Busy { get => busy; private set { if(Set(ref busy,value)) { Changed(nameof(Idle)); RefreshCommands(); } } }
     public bool Idle => !Busy;
-    public AssetRow? SelectedRow { get => selection; set { if(Set(ref selection,value)) { Preview=""; Changed(nameof(SelectionDetails)); RefreshCommands(); } } }
+    public AssetRow? SelectedRow { get => selection; set {
+        if(value==null&&selection!=null&&rows.Contains(selection))return; // see SelectedFingerprint
+        if(Set(ref selection,value)) { Preview=""; Changed(nameof(SelectionDetails)); RefreshCommands(); } } }
     public string SelectionDetails => selection is null ? "Choose an entry to inspect or export." :
         $"{selection.Name}\n{selection.Kind} · {selection.SizeText}\n{selection.Detail}";
     public AsyncCommand OpenLooseCommand { get; }
