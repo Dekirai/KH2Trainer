@@ -2,7 +2,7 @@
 .SYNOPSIS
   Builds, tests and packages the trainer.
 .DESCRIPTION
-  Compiles the native bridge, runs the native, core and offscreen UI tests,
+  Compiles the native bridge, runs the native, core, Twitch and offscreen UI tests,
   publishes a single-file x64 executable and writes a validated package to
   artifacts\packages\<timestamp> (or -OutputDirectory).
 .PARAMETER FrameworkDependent
@@ -58,6 +58,7 @@ try {
     $coreArgs = @('run', '--project', (Join-Path $root 'tests\KH2Trainer.Core.Tests\KH2Trainer.Core.Tests.csproj'), '-c', 'Release', '--', $features)
     if ($AssetGameDirectory) { $coreArgs += $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($AssetGameDirectory) }
     Invoke-Checked 'dotnet' $coreArgs 'core-tests.txt'
+    Invoke-Checked 'dotnet' @('run', '--project', (Join-Path $root 'tests\KH2Trainer.Twitch.Tests\KH2Trainer.Twitch.Tests.csproj'), '-c', 'Release', '--', $features) 'twitch-tests.txt'
     Invoke-Checked 'dotnet' @('run', '--project', (Join-Path $root 'tests\KH2Trainer.UiTests\KH2Trainer.UiTests.csproj'), '-c', 'Release', '--', '--fixture', (Join-Path $logs 'OffscreenUi')) 'offscreen-ui.txt'
     if ((Get-NativeSourceFingerprint) -ne $nativeFingerprint) { throw 'Native sources changed during compilation/tests. Run the build again from a stable source state.' }
 
@@ -79,7 +80,7 @@ try {
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $sourceZip = [IO.Compression.ZipFile]::Open((Join-Path $package 'Source.zip'), [IO.Compression.ZipArchiveMode]::Create)
     try {
-        $extensions = @('.sln', '.md', '.ps1', '.props', '.cs', '.csproj', '.xaml', '.manifest', '.cpp', '.h', '.inl', '.json', '.py', '.cmd')
+        $extensions = @('.sln', '.md', '.ps1', '.props', '.cs', '.csproj', '.xaml', '.manifest', '.cpp', '.h', '.inl', '.json', '.py', '.cmd', '.html')
         $sources = @(Get-ChildItem -LiteralPath $root -File | Where-Object { $_.Extension -in $extensions -or $_.Name -eq '.gitignore' })
         foreach ($folder in 'src', 'tests', 'scripts') {
             $sources += @(Get-ChildItem -LiteralPath (Join-Path $root $folder) -File -Recurse | Where-Object {
@@ -94,7 +95,7 @@ try {
     $checks = [ordered]@{
         builtAt = (Get-Date).ToUniversalTime().ToString('o'); architecture = 'win-x64'; selfContained = -not $FrameworkDependent
         nativeTestSuites = @($nativeResults.Name); syntheticTests = 'passed'; liveGameplay = 'not yet tested'
-        visualReview = 'Feature pages, Asset Explorer, asset fingerprints and Game Messages offscreen renders and binding checks; live UI/gameplay pending'
+        visualReview = 'Feature pages, Twitch page, Asset Explorer, asset fingerprints and Game Messages offscreen renders and binding checks; live UI/gameplay and live Twitch pending'
         scope = 'Synthetic tests and build validation do not prove live gameplay behavior.'
         nativeSourceFingerprint = $nativeFingerprint
     }

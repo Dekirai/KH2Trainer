@@ -15,7 +15,7 @@ public sealed record ProcessChoice(GameProcess Process) { public string Label =>
 public enum ConnectionState { NoGame, GameFound, Connecting, WaitingForScene, Ready, Warning }
 
 /// <summary>The application shell: navigation, game connection, search, favorites and activity.</summary>
-public sealed class MainViewModel : Observable, IFeatureHost, IDisposable
+public sealed class MainViewModel : Observable, IFeatureHost, ITwitchHost, IDisposable
 {
     private static readonly string[] QuickActionIds = ["player.restore", "player.position.bookmark", "player.position.return", "trainer.reset", "developer.show", "developer.hide"];
     private const int MaxSearchResults = 150;
@@ -31,7 +31,8 @@ public sealed class MainViewModel : Observable, IFeatureHost, IDisposable
     private TrainerSnapshot snapshot = TrainerSnapshot.Disconnected;
     private int pollCount;
     private double? lastShortcutSequence;
-    private bool busy, connecting, isActivityOpen, notificationIsError;
+    private bool busy, connecting, isActivityOpen, notificationIsError, wasConnected;
+    private readonly int resetCommand;
     private string search = "", statusMessage = "Start the game, then connect to begin.", notification = "";
     private PageVm selectedPage;
     private SearchResultsVm? searchResults;
@@ -42,6 +43,7 @@ public sealed class MainViewModel : Observable, IFeatureHost, IDisposable
     public IReadOnlyList<FeatureVm> Features => features;
     internal GameSession Session => session;
     internal TrainerSnapshot Snapshot => snapshot;
+    public TrainerSnapshot ReadGameSnapshot() => session.ReadSnapshot();
     public string VersionLabel { get; } = "Version " + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(2) ?? "dev");
 
     // Navigation
@@ -51,6 +53,7 @@ public sealed class MainViewModel : Observable, IFeatureHost, IDisposable
     public AboutVm About { get; }
     public AssetExplorerViewModel Assets { get; }
     public RuntimeDiagnosticsViewModel Diagnostics { get; }
+    public TwitchVm Twitch { get; }
     public PageVm SelectedPage
     {
         get => selectedPage;
@@ -187,6 +190,7 @@ public sealed class MainViewModel : Observable, IFeatureHost, IDisposable
         features.AddRange(Catalog.Select(f => new FeatureVm(f, this, lookups)));
         byId = features.ToDictionary(f => f.Id, StringComparer.Ordinal);
         QuickActions = QuickActionIds.Select(id => byId.GetValueOrDefault(id)).OfType<FeatureVm>().ToArray();
+        resetCommand = byId.GetValueOrDefault("trainer.reset")?.Definition.CommandId ?? -1;
 
         ConnectCommand = new AsyncCommand(Connect, () => !Busy && (session.Connected || SelectedProcess != null));
         StartGameCommand = new AsyncCommand(StartGame, () => !Busy);
@@ -200,6 +204,7 @@ public sealed class MainViewModel : Observable, IFeatureHost, IDisposable
         About = new AboutVm(this);
         Assets = new AssetExplorerViewModel(Log);
         Diagnostics = new RuntimeDiagnosticsViewModel();
+        Twitch = new TwitchVm(this);
         Pages.Add(Home);
         foreach (var section in CategoryLayout.Build(features))
         {
@@ -208,6 +213,7 @@ public sealed class MainViewModel : Observable, IFeatureHost, IDisposable
                 foreach (var group in tab.Groups)
                     categoryLocations[group.Title] = section.Title + " › " + tab.Title + (tab.Groups.Count > 1 ? " · " + group.Title : "");
         }
+        Pages.Add(Twitch);
         Pages.Add(new ToolPageVm("Asset Explorer", "", "Browse game archives and extract selected assets. Works without a game connection.", Assets));
         Pages.Add(new ToolPageVm("Game Messages", "", "Look up the game's original messages and what their buttons do.", Diagnostics));
         Pages.Add(Profiles);
@@ -279,6 +285,9 @@ public sealed class MainViewModel : Observable, IFeatureHost, IDisposable
             if (++pollCount % 10 == 0) RefreshProcesses();
             if (!session.Connected && snapshot.Connected) { session.Dispose(); Log("Game process exited. Session disconnected."); }
             snapshot = session.ReadSnapshot();
+            // Twitch effects cannot outlive the game connection; waiting redemptions are refunded.
+            if (wasConnected && !session.Connected) _ = Twitch.StopAllAsync("The game was disconnected");
+            wasConnected = session.Connected;
             if (snapshot.HasValue(121))
             {
                 double currentSequence = snapshot.Values[121];
@@ -292,6 +301,7 @@ public sealed class MainViewModel : Observable, IFeatureHost, IDisposable
             else lastShortcutSequence = null;
             if (!Busy) StatusMessage = snapshot.Message;
             foreach (var feature in features) feature.Update(snapshot);
+            Twitch.Tick();
             Changed(nameof(HealthText), nameof(MagicText), nameof(DriveText), nameof(HealthFraction), nameof(MagicFraction), nameof(DriveFraction),
                 nameof(LevelText), nameof(MunnyText), nameof(SessionSummary));
             RefreshConnection();
@@ -322,7 +332,12 @@ public sealed class MainViewModel : Observable, IFeatureHost, IDisposable
         Busy = true; connecting = !session.Connected; RefreshConnection();
         try
         {
-            if (session.Connected) { await session.DisconnectAsync(); Log("Disconnected; persistent effects disabled."); return; }
+            if (session.Connected)
+            {
+                // End Twitch effects first so their values can still be restored.
+                await Twitch.StopAllAsync("The trainer disconnected from the game");
+                await session.DisconnectAsync(); Log("Disconnected; persistent effects disabled."); return;
+            }
             int pid = SelectedProcess?.Process.Pid ?? throw new InvalidOperationException("Start KH2 first.");
             using var resource = Assembly.GetExecutingAssembly().GetManifestResourceStream("KH2Trainer.Bridge") ?? throw new InvalidOperationException("This development build does not contain a native bridge yet.");
             using var bytes = new MemoryStream(); resource.CopyTo(bytes);
@@ -343,6 +358,8 @@ public sealed class MainViewModel : Observable, IFeatureHost, IDisposable
 
     public async Task Execute(int command, IReadOnlyList<double> arguments, string label)
     {
+        // A full reset also ends Twitch effects, so they do not re-apply their values afterwards.
+        if (command == resetCommand && Twitch.HasEffects) await Twitch.StopAllAsync("All trainer changes were reset");
         try { var result = await session.ExecuteAsync(command, arguments); Log($"{label}: {result.Message}"); if (!result.Success) throw new InvalidOperationException(result.Message); }
         catch (Exception e) { Log($"{label} failed: {e.Message}"); throw; }
     }
@@ -370,7 +387,14 @@ public sealed class MainViewModel : Observable, IFeatureHost, IDisposable
 
     internal static void OpenPath(string path) => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
 
-    public void Dispose() { timer.Stop(); notificationTimer.Stop(); Assets.Dispose(); session.Dispose(); }
+    /// <summary>Runs before the window closes: ends Twitch effects while the game is still connected.</summary>
+    public async Task ShutdownAsync()
+    {
+        timer.Stop();
+        await Twitch.ShutdownAsync();
+    }
+
+    public void Dispose() { timer.Stop(); notificationTimer.Stop(); Assets.Dispose(); _ = Twitch.DisposeAsync(); session.Dispose(); }
 }
 
 /// <summary>Search across every feature, grouped by category.</summary>

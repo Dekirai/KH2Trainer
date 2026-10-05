@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
@@ -8,6 +9,7 @@ namespace KH2Trainer;
 public partial class MainWindow : Window
 {
     private readonly MainViewModel model;
+    private bool shutDown;
 
     public MainWindow()
     {
@@ -43,6 +45,20 @@ public partial class MainWindow : Window
 
     [DllImport("dwmapi.dll", PreserveSig = true)]
     private static extern int DwmSetWindowAttribute(IntPtr window, int attribute, ref int value, int size);
+
+    // Twitch needs a moment to end effects and pause rewards; the window closes once that is done.
+    protected override async void OnClosing(CancelEventArgs e)
+    {
+        base.OnClosing(e);
+        if (shutDown || e.Cancel) return;
+        e.Cancel = true;
+        IsEnabled = false;
+        Title = "KH2 Trainer · closing…";
+        try { await model.ShutdownAsync(); }
+        catch (Exception) { /* Closing must never fail. */ }
+        shutDown = true;
+        Close();
+    }
 
     protected override void OnClosed(EventArgs e)
     {
