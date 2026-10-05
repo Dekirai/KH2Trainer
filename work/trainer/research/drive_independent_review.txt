@@ -1,0 +1,107 @@
+INDEPENDENT REVIEW: NATIVE DRIVE ENTRYPOINTS
+2026-10-04 | Read-only review; no game, UI, IDB or trainer-source mutation.
+Reviewed draft: trainer/Native/DriveFeatures.inl supplied by native_debug.
+Evidence: drive_independent_evidence.json (20), drive_independent_additional.json (19),
+drive_independent_bounds.json (6). All45 have complete fresh pseudocode and ASM.
+
+CONCLUSION
+The chosen entrypoints are correct: 3A9EA0(actor,command) followed, on acceptance,
+by 405440(actor,command). RCX=Actor*, RDX=engine-owned Command48*, validator returns
+AL bool. The dispatch return register is unused by the trainer; declaring it void
+is suitable. The requested form cannot safely be implemented as a direct form-ID
+write. Native dispatch includes party/action/map/cost checks, random Anti/Final
+selection, usage counters and asynchronous player replacement.
+
+DESCRIPTOR / FIBER LIFETIME
+405440 reads command+2 (type) and, for type4, signed command+4 (form) synchronously.
+Type4 passes only actor and resolved form onward. Type5 passes actor and zero.
+Neither retains the command pointer. An exact copied48-byte canonical descriptor
+would therefore be stack-safe for these paths, but the reviewed implementation
+uses the existing engine-owned descriptor and needs no stack copy.
+40CE60 allocates56bytes; 40CAA0 stores Actor* at+0, form int+8, objectID int+12,
+flags+16, effect pointer+24, status pointer+32, task pointer+40, cleanup byte+48.
+40CF10 forwards task+24 to40D000; 40CF20 owns cleanup and context deallocation.
+No caller-owned descriptor is retained. The trainer must not touch the old actor
+after dispatch or retain it across frames. 40D000 requires a live engine fiber as
+its second argument and is unsuitable as a direct trainer call.
+All scheduled callbacks and context cleanup point into the game module, not the
+trainer DLL. Host disconnect/disable therefore leaves the one-shot native work to
+finish without retaining a DLL callback or requiring trainer restoration writes.
+
+NORMAL GAMEPLAY SEMANTICS
+3A9EA0 composes3B6A10 (character/command compatibility),3BA070 (action/combo/motion),
+and401D60 (command state, party, map, gauge and root-command exclusions).
+401D60 bypasses its normal Drive checks when3B6D50 sees sourcebyte+6 other than
+255 or4. Canonical descriptor/source validation is therefore material.
+3B6CB0 follows command-kind aliases until record.id==record.kind; the reviewed
+root record test prevents the one-hop type4/type5 alias path from missing/cycling.
+4005E0 applies the party/costume restriction. Limit(form3) has its own exemption;
+the native map validator adds its Limit restriction separately.
+421D60 may change the requested form to Anti6 or Final5, advances RNG783CA0,
+updates Anti/Final counters, and may grant Final item29 through3C3FE0.
+405440 then retrieves the canonical command for the RESOLVED form and spends
+its Drive bars through3C2780. Anti may have a higher cost; native spending clamps
+at zero. Do not impose a second nonnative final-form choice or charge twice.
+3E69A0 increments native per-form usage (capped999), with the existing Anti-related
+achievement branch. Successful dispatch is queued work, not completed transition.
+
+RESOURCE / ACTOR REPLACEMENT
+40D000 starts effect/fade, enters the resource-loading fiber section, calls
+3E0630(form)->3E0660(object,5000,4,7), and waits before constructing a new3608-byte
+Sora actor. It transfers transforms and references, clears old lock-on, and removes
+the old actor. Native cleanup controls the temporary status and party return.
+405190 uses static room model table142A252F0; base Sora resolves the current
+world costume. 3E2EB0 initializes exactly18 model entries at142A25300..142A25322.
+Indices0..17 are physical model selectors.18 is a sentinel handled explicitly by
+3E3680/3E3830, not a nineteenth model. World costume has four packed selector bytes.
+3DFEB0 also supports virtual object aliases; raw object-table membership alone
+does not validate alias resolution. 3E0F10 chooses the first matching table row.
+
+CONCRETE DRAFT GUARD FINDINGS SENT TO AUTHOR
+1. Area Range16 is too short:3A3990 reads float at area+1704. Require1708 readable
+   bytes and finite value before native party checks.
+2. Validate all four current-world costume indices; each is18 sentinel or0..17
+   with a resolvable physical object. Base-Sora costume must be0..17.
+   Revert400330 uses saved party IDs142AE9788 directly as indices into18 entries;
+   bounds-check the party IDs and object availability, not only partyCount.
+3. 40CAA0 immediately creates a status snapshot via3C04C0/3C0620/3C1D90.
+   Before native call, require exact status+592 Sora-save pointer, +620 Drive-save,
+   and +596 expected current form record (or0); writable valid save header.
+   Rebuild accesses level rows, equipment,80base and24form abilities and parameter
+   tables. Reuse the existing progression validation principles. Check selected
+   and possible Final/Anti form records as well as the current record.
+4. Final unlock421D60->3C3FE0(29,1) writes item29's inventory locator and may scan
+   Type2 weapons to choose/decrement an owned weapon. Validate item29 type21 and
+   every reached locator. Actual stock has320bytes; unique inventory has256bits.
+   Whole-save bounds are insufficient because an in-bounds bad index corrupts
+   unrelated progression. Form ownership should use the same exact bounds.
+5. Native3BA720/3BFB70 and3C3950/3BF4F0 traverse the actor list without a bound.
+   Validate a complete acyclic bounded list and player/ally membership first.
+6. ObjectAvailable must honor first-table precedence even when the first matching
+   row has an invalid/empty name. A later valid duplicate must not mask it.
+   Unsupported virtual object aliases should be rejected or independently resolved.
+
+TESTS TO ADD / RETAIN
+- Correct RCX/RDX and exactly one dispatch only after validator success.
+- Canonical type4 and type5 roots, missing/duplicate roots and invalid sourcebyte.
+- Stale/zero heartbeat, wrong thread, scene loss, active fiber and pause rejection.
+- Truncated area at1704, NaN party multiplier and cyclic/truncated actor chain.
+- Costume17 accepted if modeled;18 rejected for base Sora but accepted as party
+  sentinel;19..31 rejected; negative/out-of-range saved party IDs rejected.
+- Status save-pointer mismatch, missing level row/equipment/ability, form6 revert.
+- Final item malformed type/locator, Type2 weapon locator319/320 and unique255/256.
+- First object-table bad record plus later valid duplicate rejected.
+- Native validator rejection produces no cost, RNG or form writes by the trainer.
+- Successful request reports queued; no retry, rollback or old-actor access.
+
+LIMITS
+The chosen native path has original allocation assumptions:40CE60 reverting writes
+context+48 even if56-byte allocation fails;40D000 writes the new actor after a
+failed3608-byte allocation. Preflight cannot prove future allocation or asset I/O.
+The native resource loader recursively loads companions/weapons and follows game
+resource state. Runtime mod hooks, future changes and asynchronous scene changes
+cannot be proven safe by synthetic tests. No live transformation test was performed
+in this review. Malformed unrelated engine state is outside exhaustive proof.
+Review findings above refer to the supplied draft; final fix verification follows
+in a separate dated addendum, so this document does not falsely claim fixes landed.
+The completed, source-hash-bound addendum is drive_independent_final_review.txt.

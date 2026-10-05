@@ -1,0 +1,33 @@
+MOTION PLAYBACK CONTINUATION — interrupted by explicit forced-Drive priority
+2026-10-04. Research only; no MotionFeatures.inl or game/UI changes.
+
+Nine additional full dedicated ASM+pseudocode captures saved to
+motion_playback_evidence.json; all cursors complete.
+Fresh listings:3C61B0 78 instructions,3C6740 192,3C8A40 151,
+42FCE0 11,3C7300 50,3C65E0 89,3C88C0 110,3C86A0 36,3BFD30 186.
+
+Confirmed lifetime issue:3C8A40 changes motion/resource/triggers and clears
+flags but DOES NOT reset controller+336 (Actor+680) speed.3C86A0 also does
+not reset it. A per-motion trainer lease must restore the actor-owned speed
+on motion identity change; merely abandoning the old Motion resource leaks
+the override into the next animation.
+
+Only actual Actor+680 writer found in complete game-range listings is42FCE0,
+apart from controller constructor3C61B0 which initializes speed1. The
+1A1610+680 writer belongs to a separate792-byte graphics object, not Actor.
+Dedicated IDA search150h in3C6100..3C9000 found constructor3C6297 and reader
+3C67AC; search2A8h in3A0000..440000 found42FCFD and unrelated UI-object LEAs.
+
+Script42FCE0 ABI: void __fastcall(uint32_t* RCX arguments). It loads float
+bits arguments+8, Decode(arguments[0])->scriptContext, Decode(context+4)
+->Actor, then writesActor+680. Dispatcher slot755A20 is a QWORDcallback
+followed by DWORDargumentCount2, in a16-byte table record. Proposed narrow
+atomic callback wrapper would observe script writes and release ownership
+even if script writes the identical float. Full VM bank dispatch identity
+and compatibility checks still need completion before using this hook.
+
+Proposed control0.1..3 (policybound), scoped to current motion and player,
+with compare-restore, fresh scene/actor/status/model guards. Zero is excluded
+initially because active interval gameplay triggers continue even when frame
+does not advance. Frame seek/raw MotionID remain unimplemented because of
+root-motion and trigger semantics. Root reserved Motion slots160..183.

@@ -1,0 +1,74 @@
+ONE-TIME AUDIO MIXER CONTRACT
+Date: 2026-10-04
+
+Frozen source: trainer/Native/AudioFeatures.inl
+SHA256: a2e56de2e4e672f3402c20053ba30340e90c0c70e2312b11c7853cca1296fa26
+Test source: work/trainer/tests/AudioGuardTests.cpp
+Test SHA256: 53c893746ec7cbaeb352c53fbeac808c0af0d4ed1855e2f72465fc328b6a6a53
+Target EXE SHA256: 9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed
+
+STATUS
+Root reports 618 isolated guard checks, 0 failures. This reviewer inspected the final test source and verified its hash; no test binary or game was executed by this reviewer. Live audio/listening behavior remains untested.
+Seven embedded native code signatures were independently checked against the original executable.
+
+PUBLIC CONTROLS
+144 / command 1144: Master, 0..100%, native bus ID 0.
+145 / command 1145: Music, 0..100%, native bus ID 1.
+146 / command 1146: Effects, 0..100%, selected bus 2/3 and buses 4..8.
+147 / command 1147: Voice, 0..100%, complementary bus 2/3 with the native voice factor.
+148 / command 1148: Apply all four currently loaded game audio settings, including the actual Master level.
+149: Ordinary bus count. 150..158: Current raw gain stage of IDs 0..8. 159: Audio graph availability.
+These functions do not require Sora sceneReady; they require the supported live audio graph and game-thread call site.
+
+NATIVE CALL CONTRACT
+Construct RVA 079C90: Controller* __fastcall(Controller* out, unsigned busId). RCX=output, EDX=ID, RAX=output.
+Controller is 24 bytes: vtable +0, signed ID +8, padding +12, nonowning backend +16.
+Set RVA 07FAD0: void __fastcall(Controller*, float gain, unsigned milliseconds). RCX=controller, XMM1=gain, R8D=1.
+Destroy RVA 07F7E0: void __fastcall(Controller*), RCX=temporary controller.
+The requested gain is finite 0..1. Duration 1 ms selects native envelope paths instead of immediate voice-list paths. Actual completion occurs on a later native audio update; this is not a guaranteed one-millisecond wall-clock response.
+Gain zero requests silence without calling stop or pause.
+
+ROUTING AND LOADED SETTINGS
+swapped = DWORD at RVA 8BBD14; softened = DWORD at RVA 8BBD18. Only 0/1 flags are accepted.
+Master: ID 0. Music: ID 1. Effects: (swapped ? 3 : 2), then 4, 5, 6, 7, 8.
+Voice: swapped ? 2 : 3. Multiply its target by 0.9 only when !swapped && softened; the original factor is stored at RVA 5AAA40.
+GetFields returns RVA 715364. Ushort offsets +20/+22/+24/+26 select Master/Music/Effects/Voice levels respectively.
+Each loaded level must be 1..10. Gain comes from float table RVA 5AB960 indexed by level (0.1..1.0 in this build).
+Header RVA 715350 must contain SET-, version 8 and size 508.
+Reapply validates all four levels and writes all IDs 0..8 once through the native setter. It does not force Master to 100%, change config memory or save a file.
+Music, Effects and Voice are friendly names inferred from routing and subsystem behavior. Direct English menu localization labels were not recovered. Raw bus diagnostics therefore retain their numeric bus names.
+
+LIFETIME, LOCKING AND FAILURE
+The normal application loop at 121D90 sequences Init, Update and Shutdown on one thread. Only the validated post-Update hook after original result 0 is eligible.
+Require the recorded game thread, matching App/module identity, enabled bridge and nonzero host heartbeat at most 5000 ms old.
+TryEnterCriticalSection(base + 2B81278) before graph access. Busy audio yields retry/unavailable. Hold the lock through validation, all native calls, cleanup and snapshot copying; release in __finally.
+Native timer-worker interpolation also holds this global lock. Shutdown joins the workers before freeing the buses. Pointer checks alone would not protect arbitrary-thread access during teardown.
+Validate driver BYTE +52, exact vtables/factory and code signatures, master child-list +336 and DWORD count +344 against global roots, every bus ID and first DynamicValue stage.
+Preflight every target bus. Construct and validate every temporary controller before the first gain setter. Recheck graph roots before mutation.
+A missing final target, invalid final controller or graph replacement during construction causes zero gain writes.
+After each setter, check the target gain. A later unexpected failure reports possible partial application and stops further setters. Earlier successful changes remain; no rollback is claimed.
+
+READOUTS
+Logical controls show target gain from bus +36. Voice target is divided by the current factor for the logical percentage. Effects is shown only when all six targets agree.
+Diagnostics show the current first-stage envelope at bus +32, multiplied by 100. It may differ from the target during interpolation.
+These are raw linear multipliers expressed as percentages, not decibels, measured loudness or final composed output. Other stages, per-track ducking and pause state remain relevant.
+All values are copied under Sound CS. Invalid individual buses remain unpublished. Busy/unavailable audio has availability 0. The game may change values after the snapshot.
+
+ONE-TIME OWNERSHIP AND PROFILES
+Each command applies once. The game may later replace the values through its settings or fades.
+Disconnect, heartbeat expiry and Disable all effects do not restore earlier audio values.
+Apply game audio settings is an explicit reapplication of the four currently loaded game settings, not a captured pre-trainer state.
+There is no permanent override, observer hook, automatic restore, pause/resume/stop action or Jukebox feature in this module.
+Profiles may save audio.master/music/effects/voice numeric inputs. The reset action and diagnostics cannot be stored in profiles.
+Loading a profile changes trainer inputs only. Applying it sends each saved command once, in sequence, with the same runtime guards. A failure stops later commands and leaves earlier successful changes applied.
+
+EVIDENCE
+audio_mix_evidence.json: native settings, master setter, routing, signatures and composed-gain observations.
+audio_lifecycle.json and its complete evidence files: application ordering, worker joining, global lock coverage and cold reset reachability.
+audio_bus_setter_asm.json: complete ordinary/XA2/generic setter branches.
+audio_lifecycle_code_review.json: independent review of the frozen source and original-byte checks.
+audio_mix_contract.json contains address-specific claims and evidence hashes. Claims describe only the proven behavior, not complete subsystem semantics.
+
+LIMITS
+Live audio behavior remains untested. Private teardown/reset invoked concurrently by an unsupported external mod is outside the established native-lifecycle contract.
+Isolated tests verify guards and call plans with synthetic memory. They do not replace a live playback test.

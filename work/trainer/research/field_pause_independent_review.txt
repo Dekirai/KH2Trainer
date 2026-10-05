@@ -1,0 +1,35 @@
+Independent review of WorldFeatures.inl field pause/step (managed_tools)
+
+Checked fresh native153430/116450/1175D0 capture path,1567A0 capture draw,
+150310 field fiber state,1515E0 native pause,1548E0 render finalization,
+157130/157110 timer ownership and the new module state machine/tests.
+
+Confirmed: capture before original1548E0 is after field rendering and before
+frame finalization, matching native menu pause. Setting716884=2 skips the
+inner scheduler while the outer1567A0 draws the native capture. Step enables
+one field dispatch before recapture; mission timer ownership resumes after
+the corresponding timing call. Scene identity uses outer/inner schedulers,
+heap and all10 room bytes. Native menu takeover preserves state/capture and
+other timer bits. No saved baseline actor state is restored across a new scene.
+
+One concrete contract mismatch found: CallbackWritesAllowed lacked the required
+nonzero heartbeat condition. native_debug added it and a synthetic test, plus
+wrong-thread restoration guards; their harness reports79 checks,0 failures.
+No other blocking implementation issue found in this static review.
+
+Integration: Combat guard policy now remains enabled across same-scene field
+state2, while its callback only suppresses damage in gameplay1. A resumed step
+therefore retains protection. Native menu takeover still disables the guard.
+This has independent synthetic coverage in CombatGuardTests (97 checks total).
+
+Additional capture ownership review:156720,154EE0 and394690 acquire native
+capture1 without directly changing field state. They are scheduled as inner
+field tasks at priority300000. A practice Step can run these tasks and thereby
+give capture ownership to a native transition. Therefore the existing cleanup
+must NOT be widened to clear capture1 whenever field state is1; doing so can
+erase that new native capture. The conservative state2/same-scene/non-takeover
+condition is preferable. If an independent mod merely changes state2 to1 while
+leaving capture1, that same-bit ownership cannot be fully distinguished.
+
+Native texture allocation/device-copy behavior and actual rendered stepping are
+not simulated by these tests; live validation remains outstanding as documented.

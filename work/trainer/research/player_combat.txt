@@ -1,0 +1,66 @@
+Player / Combat / Forms research and implementation contract
+Build SHA256: 9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed
+All addresses below are module RVAs. Full per-feature contracts are in player_combat.json.
+Source: trainer/Native/PlayerFeatures.inl. UI catalog: player_features.json (47 features).
+
+CONFIRMED POINTER AND ABI BOUNDARIES
+Player = QWORD[module+2A105D0]. Status = QWORD[Player+5C0].
+Status+268 is a packed32 actor backlink and must decode to the current player.
+Status+250 and+254 are packed32 save-record pointers, not native pointers.
+Constructor3A7A40 writes the global and backlinks; destructor3A7120 clears it.
+Getter3C04E0 is an allocating/refcounting operation, not a harmless status read.
+
+PLAYER FUNCTIONS
+HP is signed int32 at status+0/current and+4/max. Minimum floor is+8.
+Heal/set HP: 3D2EB0(Player,delta,barIndex0,effects0), verified RCX/EDX/R8D/R9B.
+MP is signed int32 at+180/+184. Recharge remaining/total are floats+1BC/+1C0.
+Restore MP:3C2040(Status,effects0), verified ASM. This clears recharge correctly.
+
+NORMAL DRIVE VS FORM/SUMMON
+Gauge mode byte+1AF:1Drive,2Form,3Summon.
+Drive fraction/bars/max are bytes+1B0/+1B1/+1B2. Normal maximum is9.
+Timer current/max floats+1B4/+1B8.
+3C2020 (fullDrive) also zeros both timers: unsafe as generic FillDrive.
+3C0B50 flips positive amount negative for formID6 and awards summonEXP on mode3
+bar crossings. The bridge's timer holds use current=max, with mode/finite/range checks.
+
+STATS AND PROGRESSION
+Strength/Magic/Defense/AP effective values are uint16+188/+18A/+18C/+18E.
+Base values lie eight bytes later. Equipment and level refresh can recompute them.
+AddBoost enginecalls:3C09D0 strength,3C0E30 magic,3C0A50 defense,3C0950 AP.
+ABI is Status inRCX, positive amount inEDX. Saved boost bytes9/10/11/8 cap at100.
+Form EXP:3E8380(Player,positiveEXP), record56bytes, levelbyte+2,XPdword+4.
+Summon EXP:40D530(positiveEXP), levelbyte9ACDD6,XPdword9ACF94.
+These routes preserve the game's level caps and reward routines. Direct level
+assignment was excluded because it skips abilities and other native side effects.
+
+MOVEMENT
+3B6100(Player,float[4] xyz1) sets localXYZ+670 and rebuilds transforms via3CCB90.
+Player+6A0 contains packed parent attachment. World-coordinate writes reject it.
+The world-position getter3B5B40 selects+70 whenattached and+670 otherwise.
+Bookmarks bind actor,status,scheduler,and10-byte target717008 and expire on transition.
+Actor float+130 is only a fallback movement speed; ability lookup can override it.
+
+DAMAGE AND LIMITATIONS
+3C12F0 uses sourceStrength/Magic, targetDefense, limits, difficulty, resistances and
+ability modifiers. 3C0FF0 is a separate damage path. No unverified combat hook shipped.
+HPfloor+8 is copied into global2A23960 by3C2120, then copied back by3C1D90.
+A naive floor toggle can survive actor changes, so this implementation uses AutoHeal.
+AutoHeal refills only a living player afterUpdate and cannot prevent lethal damage
+that occurs inside an update. It is deliberately labeled AutoHeal.
+
+RESTORATION AND VALIDATION
+Continuous refill effects stop on disable or host heartbeat loss. Already restored
+HP/MP/timer values are not rolled back. One-time progression changes remain and can
+be saved by normal game saving. No automatic position restoration on disconnect.
+All enginecalls run on the checked game thread after successful original Update.
+Research was read-only; no game process writes or live feature execution were done.
+Isolated native tests use allocated fake game/status/actor memory.
+
+MOVEMENT COLLISION BYPASS (slot46)
+3CBFC0/3CC3B0 set/clear Actor+124 bit40 and+8C8 bit1000, with overridepointer+908.
+3B89A0 bit40 bypasses3B9090 collision resolution; VM53E840 usesnull override.
+Bridge only enables ifbothbitsclear,pointernull,playerunattached. It restoresownedbits
+on disable/heartbeatloss when fresh actor/status/scheduler/room identity matches.
+Foreign field changes and replaced actors are preserved. This does not grant flight
+or invulnerability.59 isolated Player/Bridge checks pass, including10 collision cases.

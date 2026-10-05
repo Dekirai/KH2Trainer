@@ -1,0 +1,241 @@
+{
+  "schema": 1,
+  "analysisDate": "2026-10-04",
+  "targetSHA256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "status": "Static music-channel and load-path review; runtime features not implemented",
+  "claims": [
+    {
+      "addr": "0x1401df110",
+      "Finding": "The music-path resolver remaps tracks 117→517 and 121→521 in world 13. It adds 400 to tracks 106–109 and 113 when module mode is neither 0 nor 7, or the guarded option bit returned by 2E5410 is set; formats into one shared buffer at AD93E0.",
+      "Limitations": "The shared buffer is overwritten by the next call. These are conditional asset IDs, not a complete music catalogue.",
+      "Evidence": [
+        "../../native_decompile/0x1401df110.c",
+        "audio_deep_evidence.json",
+        "audio_deep_batch2.json"
+      ]
+    },
+    {
+      "addr": "0x1401501d0",
+      "Finding": "Returns the current module-mode DWORD at RVA 716750.",
+      "Limitations": "Names of every mode are not established by this getter.",
+      "Evidence": [
+        "../../native_decompile/0x1401501d0.c",
+        "audio_deep_evidence.json",
+        "audio_deep_batch2.json"
+      ]
+    },
+    {
+      "addr": "0x1402e5410",
+      "Finding": "Returns bit 0 of BEDF10 only while module mode is 0 or 7, otherwise returns false.",
+      "Limitations": "The user-facing option name is not established here.",
+      "Evidence": [
+        "../../native_decompile/0x1402e5410.c",
+        "audio_deep_evidence.json",
+        "audio_deep_batch2.json"
+      ]
+    },
+    {
+      "addr": "0x1401dc290",
+      "Finding": "Forwards channel and gain to 1DF310 after multiplying the supplied duration by eight.",
+      "Limitations": "Gain units and time conversion come from the callee, not from the wrapper alone.",
+      "Evidence": [
+        "../../native_decompile/0x1401dc290.c"
+      ]
+    },
+    {
+      "addr": "0x1401dc2a0",
+      "Finding": "Forwards a selected channel, zero gain and the supplied duration to 1DF310.",
+      "Limitations": "Zero gain follows a stop/fade-out path; this is not reversible muting.",
+      "Evidence": [
+        "../../native_decompile/0x1401dc2a0.c",
+        "audio_deep_evidence.json",
+        "audio_deep_batch2.json"
+      ]
+    },
+    {
+      "addr": "0x1401df310",
+      "Finding": "Converts an integer gain to float gain/16383 and duration from 240 units/second to integer milliseconds, then calls 1388F0.",
+      "Limitations": "The wrapper does not range-check channel, negative gain or duration.",
+      "Evidence": [
+        "../../native_decompile/0x1401df310.c",
+        "audio_deep_evidence.json",
+        "audio_deep_batch2.json",
+        "audio_deep_full_asm.json"
+      ]
+    },
+    {
+      "addr": "0x1401df370",
+      "Finding": "Normalizes both EDX and R8D integer gains by 16383, puts them in XMM1/XMM2 and converts R9D duration to milliseconds before tail-calling 138AB0.",
+      "Limitations": "Hex-Rays omits the XMM1 float in its current inferred prototype. Calling it with that inferred integer ABI is incorrect.",
+      "Evidence": [
+        "../../native_decompile/0x1401df370.c",
+        "audio_deep_evidence.json",
+        "audio_deep_batch2.json",
+        "audio_deep_full_asm.json"
+      ]
+    },
+    {
+      "addr": "0x140138ab0",
+      "Finding": "Looks for a channel-tagged active entry (ID+48/type+62). It resumes an existing paused handle or keeps an already active one; otherwise creates a 72-byte entry from a matching loaded bank and links it into the active list. ABI: channel ECX, initial gain XMM1, target gain XMM2, milliseconds R9D; target gain is retained at entry+64.",
+      "Limitations": "It requires an already loaded bank. There is no arbitrary-track asset load here; native list/heap ownership must be respected.",
+      "Evidence": [
+        "../../native_decompile/0x140138ab0.c",
+        "audio_deep_evidence.json",
+        "audio_deep_batch2.json",
+        "audio_deep_full_asm.json"
+      ]
+    },
+    {
+      "addr": "0x140138880",
+      "Finding": "Returns activity of the first matching channel/type-1 entry by querying its sound handle through 081EB0; returns false when driver or entry is absent.",
+      "Limitations": "This is a boolean activity test, not playback position or completion progress.",
+      "Evidence": [
+        "../../native_decompile/0x140138880.c",
+        "audio_deep_evidence.json",
+        "audio_deep_batch2.json",
+        "audio_deep_full_asm.json"
+      ]
+    },
+    {
+      "addr": "0x1401388f0",
+      "Finding": "Finds the first matching channel/type-1 active entry. Positive gain calls handle volume interpolation 082140; nonpositive gain calls stop/fade-out 0818B0.",
+      "Limitations": "Using gain zero for a trainer mute would stop playback and could not be undone by merely restoring volume.",
+      "Evidence": [
+        "../../native_decompile/0x1401388f0.c",
+        "audio_deep_evidence.json",
+        "audio_deep_batch2.json",
+        "audio_deep_full_asm.json"
+      ]
+    },
+    {
+      "addr": "0x140138d20",
+      "Finding": "Stops the matching music handle, removes its entry from the singly linked active list, updates tail/count, clears its next pointer, and invokes its deleting destructor.",
+      "Limitations": "The operation destroys an owned entry; retaining it across a stop/track change is unsafe.",
+      "Evidence": [
+        "../../native_decompile/0x140138d20.c",
+        "audio_deep_full_asm.json"
+      ]
+    },
+    {
+      "addr": "0x1401df430",
+      "Finding": "Tail wrapper for the channel stop/remove routine 138D20.",
+      "Limitations": "No independent ownership or null-safety beyond the callee.",
+      "Evidence": [
+        "../../native_decompile/0x1401df430.c",
+        "audio_deep_evidence.json",
+        "audio_deep_batch2.json"
+      ]
+    },
+    {
+      "addr": "0x1401dc390",
+      "Finding": "Converts duration from 240 units/second to milliseconds and reaches the channel pause dispatch at 1389C0, which matches ID/type and calls 081B70.",
+      "Limitations": "The reported function disassembly contains only the entry wrapper; the tail body is separately addressed. This is not complete low-level audio pause semantics.",
+      "Evidence": [
+        "../../native_decompile/0x1401dc390.c",
+        "audio_deep_evidence.json",
+        "audio_deep_batch2.json",
+        "audio_deep_full_asm.json"
+      ]
+    },
+    {
+      "addr": "0x1401dc340",
+      "Finding": "Returns the low-byte result of sound-load-queue activity helper 1E0130.",
+      "Limitations": "Only the pending-load query is established; it does not identify a playable sound.",
+      "Evidence": [
+        "../../native_decompile/0x1401dc340.c",
+        "audio_deep_evidence.json",
+        "audio_deep_batch2.json"
+      ]
+    },
+    {
+      "addr": "0x1401e03e0",
+      "Finding": "Dequeues a free 48-byte load-request record from the pool indexed by 728E40, stores callback/context/channel/type/data/size and appends it with packed next pointers.",
+      "Limitations": "The allocator decrements the free count without an entry guard in this body. A trainer must not blindly enqueue through it.",
+      "Evidence": [
+        "../../native_decompile/0x1401e03e0.c",
+        "audio_deep_evidence.json",
+        "audio_deep_batch2.json",
+        "audio_deep_full_asm.json"
+      ]
+    },
+    {
+      "addr": "0x1401df1d0",
+      "Finding": "Stops the target channel, allocates an aligned buffer for a named asset, starts loading, yields its task while loading is active, submits the sound-data request, yields again until the queue completes, then frees the buffer.",
+      "Limitations": "It requires a valid yielding task context. Calling it directly from the trainer's outer update callback would not establish that requirement.",
+      "Evidence": [
+        "../../native_decompile/0x1401df1d0.c",
+        "audio_deep_full_asm.json"
+      ]
+    },
+    {
+      "addr": "0x140155980",
+      "Finding": "Processes pending per-channel flags to load channel 0/1 music through a task context and selects fade/start behavior based on current activity and event state.",
+      "Limitations": "This claim covers dispatch and ownership only; every event/crossfade condition is not yet mapped to a user-facing meaning.",
+      "Evidence": [
+        "../../native_decompile/0x140155980.c",
+        "audio_deep_evidence.json",
+        "audio_deep_batch2.json"
+      ]
+    },
+    {
+      "addr": "0x140155f60",
+      "Finding": "Writes the requested track ID into ABAD44 + channel*16.",
+      "Limitations": "No channel bound check exists in this setter.",
+      "Evidence": [
+        "../../native_decompile/0x140155f60.c"
+      ]
+    },
+    {
+      "addr": "0x140155f80",
+      "Finding": "Writes the current-track bookkeeping field into ABAD40 + channel*16.",
+      "Limitations": "Changing this field alone does not load or start music.",
+      "Evidence": [
+        "../../native_decompile/0x140155f80.c"
+      ]
+    },
+    {
+      "addr": "0x140155fa0",
+      "Finding": "Writes the channel scalar/bookkeeping field at ABAD48 + channel*16.",
+      "Limitations": "A direct field edit does not establish audio gain application.",
+      "Evidence": [
+        "../../native_decompile/0x140155fa0.c"
+      ]
+    },
+    {
+      "addr": "0x140212300",
+      "Finding": "Builds a channel-0 load request for music ID 142 in the supplied task context and calls the yielding loader 1DF1D0.",
+      "Limitations": "The specific scene purpose of this hard-coded music choice is not established.",
+      "Evidence": [
+        "../../native_decompile/0x140212300.c",
+        "audio_deep_evidence.json",
+        "audio_deep_batch2.json"
+      ]
+    },
+    {
+      "addr": "0x1402cf220",
+      "Finding": "Builds a type-6 event resource load using a signed track ID from the command; special mode 0x400000 uses an aligned staging allocation and asynchronous completion callback.",
+      "Limitations": "Event resource ownership and task-yielding requirements preclude direct use as a simple trainer button.",
+      "Evidence": [
+        "../../native_decompile/0x1402cf220.c",
+        "audio_deep_evidence.json",
+        "audio_deep_batch2.json"
+      ]
+    },
+    {
+      "addr": "0x1402cf3b0",
+      "Finding": "Resolves a type-6 loaded event resource, changes channel track bookkeeping, and queues its memory through 1E03E0. A command channel value of 2 updates both channel bookkeeping records.",
+      "Limitations": "Native event object structure and lifecycle are required; not a safe arbitrary-channel UI API.",
+      "Evidence": [
+        "../../native_decompile/0x1402cf3b0.c",
+        "audio_deep_evidence.json",
+        "audio_deep_batch2.json"
+      ]
+    }
+  ],
+  "conclusions": [
+    "A safe music selector needs the native task/load lifecycle, validated asset catalogue and bounded request pool.",
+    "A reversible mute should use a separate gain stage; the existing zero-gain fade route stops playback.",
+    "Sound handles and banks have distinct lifetimes. Revalidate entries on every use and keep the native critical-section APIs."
+  ],
+  "evidenceLimit": "analyze_batch disasm can contain only a preview even when its truncated flag is false. Use audio_deep_full_asm.json and its instruction/cursor fields; detached tail targets still require explicit review."
+}

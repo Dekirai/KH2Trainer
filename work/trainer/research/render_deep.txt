@@ -1,0 +1,368 @@
+RENDERER / GX / SHADER DEEP REVIEW
+================================
+
+The port uses Direct3D12 command lists with embedded Shader Model4.0DXBC. The
+resource-state cache, command replay, constant arena and PSO cache are part of
+normal rendering. Calling arbitrary GX functions after a game update can disrupt
+the active command buffer and renderer workers.
+
+The connected path is now explicit:
+GS packed primitives -> per-draw state -> shader record -> constant upload ->
+PSO lookup/create -> D3D12 Draw/DrawIndexed -> final fullscreen program47 ->
+swapchain PRESENT transition -> submission/fence retirement. Renderer replay
+can issue interpolated frames by replaying command closures separately from a
+simulation frame.
+
+Useful findings
+---------------
+* Four constant buffers have exact CPU offsets, HLSL register bindings and
+  shader field layouts in render_deep.json. They are uploaded in256byte-aligned
+  slots; cbShaderParam contains48 LocalProjection matrices, lighting and fog.
+* Shader families include snapped/unsnapped2D sprites, indexed/weighted model
+  transforms, alpha-test variants, exact unusual grayscale coefficients,
+  four-tap region-aware interpolation, a12sample blur, two-texture blending,
+  planar filmYUVconversion, and final gamma/color-vision correction.
+* Final program47 pairs the SV_VertexID fullscreenVS with gamma/accessibilityPS.
+  Program45converts filmYUV;46is a plain copy. Shader-program IDs are distinct
+  from the47embedded blob count and from HLSL register numbers.
+* Debug text reaches program3through real28bytevertex quads. The retained128x128
+  font atlas is embedded; its text parser handles uppercase ASCII, glyph escapes,
+  @color codes and newline. It is not a safe general Unicode overlayAPI.
+* Resource getter/state getter pairs in the GX vtables now match CopyResource
+  barrier behavior. Framebuffer resource/descriptor IDs are managed allocations,
+  and deleting wrappers release ownership. None is a trainer integer knob.
+
+Trainer recommendation
+----------------------
+Propose read-only GX diagnostics in slots184..194: render serial, selected
+program/target, state/clear counter, constant/vertex arena retries, replay flag,
+current per-draw fog flag, gamma exponent and accessibility constants. Exact
+gates/types/ranges are in render_feature_contract.json. Root review is required
+before implementation. These are sampled render values, not coherent completed
+frame statistics. No gameplay-save writes are involved.
+
+NoFog/Fullbright: no safe persistent global switch proven. Fog setter126600is
+overwritten by GS packet material flags; lighting belongs to shader parameters.
+Wireframe:117710hardcodes D3D12_FILL_MODE_SOLID3; changing cull mode is not wireframe.
+HUD hide:2Dshader paths include debug text and other UI; no HUD-only global proven.
+GPU timing lists:129180maps readback resources and appends records under a native
+critical section. Do not traverse these lists unsynchronized from the host.
+
+Evidence and limits
+-------------------
+Fresh complete addressed pseudocode and ASM are in render_deep_evidence_full.json
+and render_deep_evidence_additional.json. Complete large-function pages are in
+render_deep_evidence_pagination.json (1121D0 and11E1D0). The earlier render_deep_evidence.json
+is a23function checkpoint and is superseded by the full files. Shader assembly
+remains in work/pe/shaders; exact native-to-shader record mapping is in
+render_shader_programs.json. Every per-function claim states a concrete behavior
+and a limit. No claim means every branch/callee/runtime condition is understood.
+
+COUNTS: {"native_fresh_bodies": 102, "native_claims": 102, "gx_tables": 24, "gx_slots": 120, "gx_distinct_targets": 64, "shaders": 47, "shader_programs": 46}
+
+0x14011c150 GX singleton
+  Returns the fixed GXDeviceImpl object at VA 0x1408A0970 after C++ thread-safe local-static initialization. Calling this getter before startup can construct the renderer; read-only diagnostics should inspect the fixed object instead.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14010a270 GX ownership initialization
+  Writes GXDeviceImpl vtable 0x1405A9028, clears D3D12 device at +736 and frame serial +816, creates MainFrameBuffer at +1344, ResolveFrameBuffer at +1632, four other targets at +1960 with stride288, and PrevFrameBuffer at +3112. Initializes command/context/upload containers.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140109f50 GX state defaults
+  Initializes the 728-byte state block whose receiver is GX+8 in 10A270. The offsets in this function therefore require +8 when interpreted relative to GX; it sets cached/dirty flags and default blend/depth/texture state.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011df90 D3D12 root signature
+  Creates seven root parameters: root0 VS CBV b2; root1 VS CBV b3; root2 VS CBV b4; root3 PS CBV b6; root4 PS sampler descriptor table s0; roots5/6 PS SRV descriptor tables t0/t1. Uses D3D12SerializeRootSignature v1, allows input-assembler layout, and stores the created root signature at GX+1144.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x1401100e0 Root signature bind closure
+  Loads GX from closure+8, gets the active command list, calls SetGraphicsRootSignature at vtable+240 with GX+1144, and SetDescriptorHeaps at +224 with two heaps (SRV manager heap and sampler heap).
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011e1d0 Embedded shader registration
+  Loads all21 pixel shaders into GX+31560+8*pixelIndex using D3DStripShader flags0. Builds 552-byte shader-program records beginning GX+31736, pairing vertex blobs with pixel blobs and input layouts. Program45 is movie YUV,46 plain texture copy,47 final gamma/color-vision presentation. shader_programs.json contains the recovered mapping.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140111830 Shader program registration helper
+  RCX GX; RDX layout descriptor {int elementCount,int vertexStride,ptr elements}; R8D programId; R9 ptr{shaderBytes,int size}; stack pixelIndex,flags,textureCount. Record is GX+31736+552*programId: VS+0,PS+8,stride+16,flags+20,textureCount+24,32-byte input descriptors+32,count+544. Does not range-check IDs or counts.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x1401121d0 Apply pending GX draw state
+  Compares desired/current render state, applies viewport, target/depth, textures, sampler descriptors, scissor, blend factor/stencil, uploads changed constants via111AE0 and binds a keyed PSO via113590. It increments GX+58244 on entry and GX+22936 on success. The first counter is also incremented by clear paths and must not be labeled draw calls.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140111ae0 Upload shader constants
+  Copies changed CPU mirrors to persistently mapped upload memory and calls SetGraphicsRootConstantBufferView at command-list+304. Root0:GX+23008 size144; root1:GX+23464 max3456, shader-dependent prefix; root2:GX+30380 size64 or interpolated camera; root3:GX+23300 size80. Each reservation is aligned to256bytes. Returns false if upload capacity is exhausted.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011aa80 Shader parameter change detection
+  Compares current/previous 3456-byte shader-parameter blocks when dirty. The mask points to byte counts for leading float4 vectors, LocalProjection matrices at +384, and matrices at +128. Supports full-block comparison when mask=-1; updates cached copies and dirty-result bytes.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011cf50 Constant-buffer resource allocation
+  Creates an UPLOAD-heap buffer of size elementSize*count through ID3D12Device::CreateCommittedResource, initial state2755 (GENERIC_READ), names it ConstantBuffers and maps it persistently. Resource at receiver+0,mappedCPU+8,elementSize+16,count+24.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140113590 PSO lookup/cache
+  Searches a tree keyed by a16-byte packed render-state descriptor, creates a missing PSO via117710, retains it in the cache, then calls command-list SetPipelineState (+200). COM references are balanced around cache insertion/use.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140117710 Create graphics PSO
+  Unpacks shader ID from key.low7bits, blend/depth/stencil/cull/topology/sample state into a D3D12_GRAPHICS_PIPELINE_STATE_DESC, fetches VS/PS blobs from the552-byte shader-program record, and calls ID3D12Device::CreateGraphicsPipelineState (+80). Rasterizer FillMode is unconditionally3 (SOLID); a native wireframe toggle is not established.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011a1b0 DrawInfo submission ABI
+  RCX DrawInfo, RDX ID3D12GraphicsCommandList*. Sets topology from receiver+28; GPU base from virtual slot0. Vertex buffer uses stride+8,count+20,offset+24. If indexCount+12>0, binds index buffer at offset+16 with DXGI_FORMAT_R16_UINT57 and issues DrawIndexedInstanced(indexCount,1,0,0,0); otherwise DrawInstanced(vertexCount,1).
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011a660 Mesh draw wrapper
+  RCX DrawInfo*. Obtains GX, requires a selected PS blob, records drawVertexBuffer, applies state; on constant-upload failure increments GX+58232, flushes, starts a new command buffer and retries. Finally dispatches DrawInfo virtual+16 with the active D3D12 command list.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011a330 Transient draw submission
+  RCX GX, EDX vertexCount,R8D topology,R9D mode. Finalizes transient DrawInfo through127EF0, applies GX state, flushes/retries on constant-buffer exhaustion, then dispatches virtual+16. Nonpositive count clears/updates transient bookkeeping without drawing.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140111970 Transient vertex allocation wrapper
+  ECX vertexCount,EDX vertexStride,R8D forwarded reserved argument; obtains GX and forwards to121FF0. The current callee consumes count and stride, reserving count*(stride+6) with4-byte alignment.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140121ff0 Transient vertex allocation
+  Selects current deferred or main frame vertex arena, reserves vertexCount*(vertexStride+6), returns CPU memory or flushes/restarts and retries when out of capacity. Counts this recovery at GX+58236. A second failure can still return NULL.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011a2f0 Transient draw public wrapper
+  ECX vertexCount,EDX topology,R8D mode are preserved across the singleton getter and forwarded to11A330 as EDX/R8D/R9D. The fourth pseudo argument is not an additional meaningful draw parameter.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140115e40 Surface copy with barriers
+  RCX destination Surface,RDX command list,R8 source Surface. Transitions source to COPY_SOURCE2048 and destination to COPY_DEST1024 through ResourceBarrier(+208), calls CopyResource(+136), transitions destination to PIXEL_SHADER_RESOURCE128 and restores the original source state. Receiver virtual+40/+48 identify destination resource/state; source virtual+24/+32 identify source resource/state.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140127af0 Begin/restart GX command recording
+  Selects a fresh or deferred command buffer, records/restores framebuffer dimensions, binds root signature/heaps through1100E0, obtains GPU/CPU calibration data, and forces cached state dirty. This mutates recording state and is not safe as an arbitrary trainer refresh call.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140128100 Begin render frame
+  Resets target/depth selectors, clears both constant/vertex exhaustion counters at+58232/+58236, sets performance timestamp, resets per-camera interpolation slots and calls127AF0. On a normal frame also resets+58244. Replayed/interpolated frames follow a different branch.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x1401219f0 Final presentation pass
+  Selects a current or previous frame source, transitions the active swap-chain buffer to RENDER_TARGET4, schedules fillScreen(target5,program47,...), returns the buffer to COMMON/PRESENT0 and flushes. Gamma and accessibility operate at this final pass, after scene drawing.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011aef0 Fullscreen pass enqueue
+  RCX GX,EDX targetId,R8D programId,R9 primarySurface,stack secondarySurface. Captures these into the fillScreen closure and queues/runs it through119BA0. Native callers must establish resource/command state first.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140128260 Render-frame completion
+  Finalizes current target, calls presentation pass1219F0, logs submission timing, executes command lists via121470, resolves timestamp history via129180, advances resource-ring indices and frame serialGX+816, and retires framebuffer resources. Does not itself justify a universal FPS measure.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140120ed0 Interpolated replay frame
+  Sets GX+22944 replay mode, constructs two interpolated camera matrices from current/previous data, begins a render frame, invokes saved command closures, ends the frame and clears replay mode. This explains why render callbacks/constant state can be replayed independently of simulation ticks.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140114f10 CPU submission history
+  Increments GX+58240, captures QueryPerformanceCounter with current frame and submission index, appends a record to a critical-section-protected history, retaining at most180 records. It is a submission counter, not polygon count.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140129180 GPU timestamp history
+  Waits/tests completion and maps timestamp readback resources, converts GPU timing through calibration and performance-counter frequency, updates pacing measurements, and appends bounded history under GX+31392 critical section. Raw linked-list traversal from a trainer needs this ownership protocol.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140126600 Set per-draw fog enable
+  ECX low byte is copied to GX+640. Apply1121D0 writes it to cbConstantVS+52 at GX+23060. GS decoders472DA0/472E90 set it from primitive bit0x20, so the next material/primitive can immediately overwrite it.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140125f00 Shader-vector setter
+  ECX selector,RDX float4*,R8D arrayIndex. Selector4097 writes Ambient atGX+23480;4098 writes FogParam at+23496;8192 writes FogColorRGB at+23348. Other selectors writeGX+23464+16*(selector+arrayIndex). No bounds checking; do not expose arbitrary selectors.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140126540 GS fog-color adapter
+  Takes packed RGB in ECX, extracts low3bytes, converts/scales through13FCC0, writes FogColor at GX+23348. This is color for fogged pixel shaders, not a global lighting field.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140472da0 Packed GS primitive state
+  Decodes packed primitive flags subject to top-bit/control gates, then calls texture enable127350,fog enable126600,alpha/color mode125C80 and texture-coordinate mode1271A0. Fog enable is extracted from primitive payload bit0x20 after shifting47.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140472e90 Unpacked GS primitive state
+  RCX points to primitive-state word; calls texture enable frombit0x10, fog enablefrom0x20, color/alpha modefrom0x40 and coordinate modebit0x100. These material-level updates make an isolated post-update fog write unreliable.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140125d00 Set color-vision shader constants
+  ECX type,EDX severity are copied to GX+23364/+23368 (PS constant offsets64/68). No range clamp in this low-level setter; the shader uses type/severity to index a matrix table.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x1401268c0 Set gamma adjustment
+  Input is float in XMM0 (confirmed ASM). Writes adjustment atGX+716 and inverseGamma=2.2/(adjustment+2.2) atGX+23360. Values at/below -2.2 are invalid for a sensible gamma exponent; use the native settings path/range for controls.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x1405061c0 Apply stored brightness
+  Fetches settings via14CDE0, sign-extends int16 atoffset12, divides by50.0 and calls1268C0 with floatXMM0. Merely changing renderer gamma does not update persisted settings.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140506240 Apply stored color-vision setting
+  Fetches int16 settings type at+16 and severity at+18. Disabled type uses(0,0); enabled severity is clamped1..10 before125D00. This wrapper does not clamp the type.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x1405309c0 Developer font initialization/bind
+  Lazily creates and caches a128x128 indexed font texture using16-entry embedded paletteVA1407848C0 and8192-byte imageVA140784900, renderer pointer1408AEEF8, cache142B58DA0. Sets GS texture/depth/blend state for debug drawing. Initialization is tied to a valid render context.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x1405303f0 Developer glyph packet generation
+  ECX x,EDX y,R8 pointer to4int color,R9 zero-terminated text. Produces packed sprite packets; uppercases ordinary glyphs, supports newline, inline@RGBdigits and escaped glyphs, advances9pixels per glyph/line, sends through534080. Not Unicode text rendering and no bounded external string API.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140533d40 Developer packet to PC quads
+  Converts a GS sprite packet into four28-byte PC vertices per glyph/quad. Calls472DA0, selects program3 via127030, allocates4*count vertices using111970, converts12.4fixed positions/UVs, then calls11A2F0(4*count,6,2). This connects the retained desktop renderer to the same GX pipeline.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140115cd0 GX virtual slot
+  Forwards destination/source copy arguments to115E40, then resets receiver+96 to0.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140119510 GX virtual slot
+  No-operation callback (return only).
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140119520 GX virtual slot
+  No-operation callback (return only).
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140119550 GX virtual slot
+  No-operation callback (return only).
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140119530 GX virtual slot
+  If receiver is nonnull, calls its virtual destructor at+8 with deleteFlag1.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140119560 GX virtual slot
+  If receiver is nonnull, calls its virtual destructor at+8 with deleteFlag1.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140119580 GX virtual slot
+  Releases/retire-marks framebuffer allocations through123860, clears cached resource indices to-1, optionally also releases SRV allocation, then calls virtual+88 cleanup.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x1401196b0 GX virtual slot
+  Runs embedded resolve-framebuffer virtual+80 at receiver+288, then ordinary framebuffer cleanup119580.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011bec0 GX virtual slot
+  Returns backing resource pointer from RenderTargetManager+8+72*receiver.index32.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011bee0 GX virtual slot
+  Forwards resource getter to receiver virtual+24.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011c0f0 GX virtual slot
+  Returns SRV descriptor index from receiver.manager280+4712+4*index48.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011c110 GX virtual slot
+  Returns previous-frame descriptor index from receiver+48 using owner+324 frame-ring index minus1, adjusted by3 when negative.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011c130 GX virtual slot
+  Returns zero descriptor index for staging/region surface.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011c140 GX virtual slot
+  Returns texture descriptor index uint32 atreceiver+64.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011c720 GX virtual slot
+  Returns framebuffer dimensions from+8/+12; when scaling fields+104/+120 are enabled, rescales byGX scale,+116 and reference sizes+132/+136, truncating toint. No zero-denominator guards in the enabled branch.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011c810 GX virtual slot
+  Copies raw uint64 width/height pair fromreceiver+8 toRDX output and returns output pointer.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011cd50 GX virtual slot
+  Selects a framebuffer backing resource: render-target allocation when indices+48/+44match and not-1, otherwise shader-resource allocation. Both managers use72-byte slots.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011cd90 GX virtual slot
+  Returns previous-frame resource from owner+288+8*previousRingIndex, owner pointeratreceiver+40.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011cdc0 GX virtual slot
+  Returns resource pointer atreceiver+32.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011cdd0 GX virtual slot
+  Returns resource pointer atreceiver+40.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011ce10 GX virtual slot
+  Calls ID3D12Resource::GetGPUVirtualAddress(+88) for Mesh resourceatreceiver+48.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14011ce20 GX virtual slot
+  Calls ID3D12Resource::GetGPUVirtualAddress(+88) for VertexResource atreceiver+40.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x1401212f0 GX virtual slot
+  Returns1 to identify the previous-frame surface special path.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140121300 GX virtual slot
+  Returns0 for ordinary surface path.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x1401213d0 GX virtual slot
+  Appends command pointer receiver+16 into destination vector+16 when requested selector<=0 or equalsreceiver+8; grows vector on capacity exhaustion.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140121420 GX virtual slot
+  Iterates a vector of child command lists and calls each virtual slot0 with selector-1.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140121610 GX virtual slot
+  Iterates the referenced command-list vector and calls each virtual slot0 with the partial-list selectoratreceiver+16.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x1401237a0 GX virtual slot
+  Returns address of resource-state uint32 at RenderTargetManager+16+72*index32.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x1401237c0 GX virtual slot
+  Forwards state-address getter to receiver virtual+32.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x1401237d0 GX virtual slot
+  Returns selected framebuffer resource-state address; same index-selection rules as11CD50 but points to manager slot+16.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140123810 GX virtual slot
+  Returns previous-frame resource-state address in owner ring atowner+312+4*previousRingIndex.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140123840 GX virtual slot
+  Returns receiver+40 as state-field address.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140123850 GX virtual slot
+  Returns receiver+68 as texture state-field address.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140124840 GX virtual slot
+  No-operation manager cleanup callback.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140124890 GX virtual slot
+  No-operation framebuffer cleanup callback.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140124850 GX virtual slot
+  Frees an SRV descriptor allocator bit for manager.slotIndices[a2], then sets that index to-1. Requires a valid index and owning allocator.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x1401248a0 GX virtual slot
+  Releases and clears the three cached COM references at receiver+576,+584,+592.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x140471a3c GX virtual slot
+  Tail jump to CRT _purecall; abstract GX table entries are not callable implementations.
+  Limit: Static evidence only; no game execution or renderer writes were performed.
+0x14010dec0 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7BatchCopyCommandBuffer@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010DEC0(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010df40 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7CommandBuffer@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010BA20(, sub_14010DF40(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010df80 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7CommandList@DeferredContext@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010DF80(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010dfb0 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7CommandLists@DeferredContext@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010BAA0(, sub_14010DFB0(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010dff0 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7CopyCommandBuffer@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010DFF0(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010e070 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7DepthStencilManager@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010E070(, sub_1404393E4(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010e0d0 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7DrawInfo@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010E0D0(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010e100 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7FrameBuffer@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010BCA0(, sub_14010E100(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010e140 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7FrameBufferManager@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010E140(, sub_1404393E4(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010e1a0 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7FrameBufferRegion@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010E1A0(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010e200 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7GXDeviceImpl0@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010E200(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010e270 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7GXDeviceImpl@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010BE40(, sub_14010E270(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010e2b0 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7ICommandList@DeferredContext@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010E2B0(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010e2e0 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7MainFrameBuffer@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010BCA0(, sub_14010E2E0(, sub_1404393E4(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010e360 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7Mesh@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010E360(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010e3f0 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7PartialLists@DeferredContext@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010E3F0(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010e420 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7PrevFrameBuffer@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010E420(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010e450 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7RenderTargetManager@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010E450(, sub_1404393E4(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010e4b0 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7ResolveFrameBuffer@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010BCA0(, sub_14010E4B0(, sub_1404393E4(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010e510 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7ShaderResourceManager@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010E510(, sub_1404393E4(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010e570 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7StagingTexture@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010E570(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010e5d0 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7Surface@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010E5D0(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010e600 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7Texture@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010E600(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.
+0x14010e6c0 GX scalar deleting destructor
+  Deleting-destructor wrapper for ??_7VertexResource@GXDevice@GX@Axa@@6B@. If deleteFlag lowbit is1 it calls j_j_free(receiver); otherwise it returns after local destruction. Direct helper calls: sub_14010E6C0(.
+  Limit: This finding covers deletion dispatch only. It does not claim every transitive allocator/resource operation has been audited.

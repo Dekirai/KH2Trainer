@@ -1,0 +1,306 @@
+[
+  {
+    "Id": "target_hp",
+    "Category": "Combat practice",
+    "Name": "Current target HP",
+    "Description": "HP of the living enemy currently selected by automatic targeting or manual lock-on. Unsupported or stale targets show no value.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 98,
+    "CapabilitySlot": 98,
+    "Minimum": 0,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "No saved progression is changed.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A7A40 / 0x3DCD70 / 0x3BF4F0 / 0x411350",
+        "Finding": "Player lock-on structure, packed target, active actor list and status backlink.",
+        "Level": "Static code and guarded implementation"
+      }
+    ]
+  },
+  {
+    "Id": "target_max_hp",
+    "Category": "Combat practice",
+    "Name": "Target maximum HP",
+    "Description": "Maximum HP of the current living enemy.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 99,
+    "CapabilitySlot": 99,
+    "Minimum": 0,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "No saved progression is changed.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3C0860 / 0x3D2EB0",
+        "Finding": "Enemy status current HP +0 and maximum +4.",
+        "Level": "Static code and guarded implementation"
+      }
+    ]
+  },
+  {
+    "Id": "target_revenge",
+    "Category": "Combat practice",
+    "Name": "Target revenge value",
+    "Description": "Current revenge accumulation. Available only for validated enemy actors; some enemies use additional scripted rules.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 100,
+    "CapabilitySlot": 100,
+    "Minimum": 0,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "No saved progression is changed.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3DBB90 / 0x3DBBF0 / 0x40DD70",
+        "Finding": "Enemy float +3400 accumulates attack parameter +42 and is compared for the revenge event.",
+        "Level": "Static code and guarded implementation"
+      }
+    ]
+  },
+  {
+    "Id": "target_revenge_threshold",
+    "Category": "Combat practice",
+    "Name": "Target revenge threshold",
+    "Description": "The enemy's native revenge threshold. The trainer does not change this threshold.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 101,
+    "CapabilitySlot": 101,
+    "Minimum": 0,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "No saved progression is changed.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3DB840 / 0x431E30 / 0x40DD70",
+        "Finding": "Enemy float +3404 starts at 100, can be set by scripts, and is compared with the current value.",
+        "Level": "Static code and guarded implementation"
+      }
+    ]
+  },
+  {
+    "Id": "target_refill_hp",
+    "Category": "Combat practice",
+    "Name": "Refill locked enemy HP",
+    "Description": "Restore the manually locked living enemy's HP to its maximum. Does not resurrect enemies or reset their AI, timers, phases, or rewards.",
+    "Kind": "Action",
+    "CommandId": 1102,
+    "ValueSlot": -1,
+    "CapabilitySlot": 102,
+    "Minimum": 0,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "No saved progression is changed.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3C0860 / 0x3DD650",
+        "Finding": "Validated nonlethal update to current HP only. Manual lock state 2 is required.",
+        "Level": "Static code and guarded implementation"
+      }
+    ]
+  },
+  {
+    "Id": "target_reset_revenge",
+    "Category": "Combat practice",
+    "Name": "Reset locked enemy revenge",
+    "Description": "Set the manually locked enemy's current revenge value to zero once. Does not cancel a revenge action that has already started.",
+    "Kind": "Action",
+    "CommandId": 1103,
+    "ValueSlot": -1,
+    "CapabilitySlot": 103,
+    "Minimum": 0,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "No saved progression is changed.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3DBB90 / 0x40DD70",
+        "Finding": "Only current enemy float +3400 changes; native threshold and AI remain unchanged.",
+        "Level": "Static code and guarded implementation"
+      }
+    ]
+  },
+  {
+    "Id": "target_set_revenge",
+    "Category": "Combat practice",
+    "Name": "Set locked enemy revenge",
+    "Description": "Set current revenge accumulation to practice the native threshold response. Requires a living enemy in manual lock-on.",
+    "Kind": "Action",
+    "CommandId": 1104,
+    "ValueSlot": -1,
+    "CapabilitySlot": 104,
+    "Minimum": 0,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "No saved progression is changed.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x40DD70 case 0x1C",
+        "Finding": "The event handler triggers revenge when the enemy's current value reaches its threshold.",
+        "Level": "Static code and guarded implementation"
+      }
+    ],
+    "Arguments": [
+      {
+        "Name": "Revenge value",
+        "Minimum": 0,
+        "Maximum": 1000000,
+        "DefaultValue": 0
+      }
+    ]
+  },
+  {
+    "Id": "target_lock_mode",
+    "Category": "Combat practice",
+    "Name": "Targeting mode",
+    "Description": "0: none; 1: automatic target; 2: manual lock-on; 3: special targeting. Enemy actions require mode 2.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 105,
+    "CapabilitySlot": 105,
+    "Minimum": 0,
+    "Maximum": 3,
+    "DefaultValue": 0,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "No saved progression is changed.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3DCD70 / 0x3DD650 / 0x3DD510",
+        "Finding": "Native lock-on state machine.",
+        "Level": "Static code and guarded implementation"
+      }
+    ]
+  },
+  {
+    "Id": "player_damage_guard",
+    "Category": "Combat practice",
+    "Name": "Block player HP damage",
+    "Description": "Block negative HP changes before the supported player's native HP callback subtracts them. Healing still works. Hit reactions, status effects, direct script writes, and scripted death paths remain active. Turns off after a player or scene change or connection loss.",
+    "Kind": "Toggle",
+    "CommandId": 1106,
+    "ValueSlot": 106,
+    "CapabilitySlot": 106,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Restores the original callback only if the trainer still owns its slot. No HP floor or save data is modified.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3D3BA0 → 0x3D3790 → VTable 0x5C4B68 → 0x3A75F0",
+        "Finding": "Exact callback replacement using compare-and-swap; only negative main-HP deltas for the validated current player are suppressed.",
+        "Level": "Static code and guarded implementation"
+      }
+    ]
+  },
+  {
+    "Id": "damage_guard_count",
+    "Category": "Combat practice",
+    "Name": "Blocked HP changes",
+    "Description": "Number of negative main-HP callback changes blocked since the damage guard was last enabled. This counts callback operations, not necessarily individual attacks.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 107,
+    "CapabilitySlot": 107,
+    "Minimum": 0,
+    "Maximum": 9007199254740991,
+    "DefaultValue": 0,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "No saved progression is changed.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A75F0 callback ABI",
+        "Finding": "Trainer counter increments only when the guarded negative HP callback is suppressed.",
+        "Level": "Static code and guarded implementation"
+      }
+    ]
+  },
+  {
+    "Id": "damage_guard_last",
+    "Category": "Combat practice",
+    "Name": "Last blocked HP amount",
+    "Description": "Magnitude of the last negative main-HP callback suppressed by the damage guard.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 108,
+    "CapabilitySlot": 108,
+    "Minimum": 0,
+    "Maximum": 2147483648,
+    "DefaultValue": 0,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "No saved progression is changed.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A75F0 callback ABI",
+        "Finding": "Signed 32-bit delta magnitude is widened before negation.",
+        "Level": "Static code and guarded implementation"
+      }
+    ]
+  },
+  {
+    "Id": "target_set_hp",
+    "Category": "Combat practice",
+    "Name": "Set locked enemy HP",
+    "Description": "Set the manually locked living enemy's HP above zero, at least its native HP floor, and no higher than its maximum. Native phase scripts may react to the new HP. Does not award a kill or resurrect an enemy.",
+    "Kind": "Action",
+    "CommandId": 1110,
+    "ValueSlot": -1,
+    "CapabilitySlot": 110,
+    "Minimum": 0,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "No saved progression is changed.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3C0860 / 0x3D2EB0",
+        "Finding": "Current HP is changed nonlethally; death and reward callbacks are not invoked.",
+        "Level": "Static code and guarded implementation"
+      }
+    ],
+    "Arguments": [
+      {
+        "Name": "Target HP",
+        "Minimum": 1,
+        "Maximum": 1000000,
+        "DefaultValue": 1
+      }
+    ]
+  }
+]

@@ -1,0 +1,73 @@
+Locked dual-wield Drive crash: native loading contract
+=====================================================
+Status: static evidence saved; helper frozen for independent review/root tests.
+No game process, live UI, or IDB was modified.
+
+Finding
+-------
+The reported Final Form failure has a concrete native path. A fresh locked form
+has level1 but weapon0 (3A0E70). Native form acquisition normally populates the
+second weapon for Valor1, Master4 and Final5 (3C3FE0). Direct forced transition
+bypassed that acquisition step.
+
+3E0CC0(object,1) reads the leading WORD in the form record selected by signed
+object+87. A zero value returns no weapon object. 3E0660 then skips both offhand
+model and MSET loading; 3A7A40 skips constructing the offhand actor. Independent
+consumer evidence shows second-weapon bone selectors reaching unguarded consumers.
+This closes the gap in the earlier analysis: an optional constructor branch did
+not prove that Final Form's later commands tolerate a missing offhand.
+
+Repair contract
+---------------
+New file: trainer/Native/DriveWeaponSupport.inl
+API: PlanFormWeapon(form, items, replacement)
+SHA256: B204A6F9D09461BA413E001575C1C31336B3CA66D7CEA08F9C4DE461E0F3DFA9
+
+This helper only reads memory. For forms1/4/5, it preserves an existing usable
+Keyblade. If the slot is empty or invalid, it plans the currently equipped Sora
+primary Keyblade. It validates item type2, the exact target form object's character
+and form fields, the went group/model mapping, a direct named weapon object, and
+the wmst offhand name. The item mapping ordinal is WORD(item+4), not the typebyte.
+
+Root integration owns the exact two-byte form-slot write. Planning must occur
+before queuing and again immediately before native Begin. The value must be
+present before the asynchronous loader runs and must remain available through
+construction and subsequent status rebuilds. No inventory keyblade is consumed;
+no Drive gauge, form unlock, or other form-record bytes are changed by this plan.
+The full native acquisition helper is unsuitable because it also grants form
+inventory and removes an owned keyblade.
+
+Real table bounds
+-----------------
+3F4C30 publishes the fixed system BAR at2AE5E50 and installs went/wmst from its
+first type2/tag matches. The helper binds table globals to those decoded entry
+pointers. Entry+12 is the payload length; every accessed DWORD or32-byte name
+must remain within its entry.
+
+The owning allocation is bounded by native3E6010's header: size atbar-16,
+magic23234141 atbar-12, kind1 atbar-8; size is rounded to64 bytes. The BAR entry
+table and both payloads must fit this allocation. Packed self pointer atBAR+8
+must decode to the container. This prevents readable adjacent memory from being
+mistaken for a valid mapping or motion row. No guessed fixed model-index cap is
+used.
+
+Evidence
+--------
+drive_locked_crash_native_evidence.json:15 functions,905 actual ASM instructions.
+drive_locked_crash_bar_evidence.json:5 functions,1407 actual ASM instructions.
+Combined:20 functions,2312 fully counted dedicated-ASM instructions. Pseudocode
+and every disassembly page are stored. Structured claims with address/file anchors
+are in drive_locked_crash_native.json.
+Independent consumer evidence: drive_locked_crash_review_evidence.json.
+
+Limits and review
+-----------------
+No crash dump or live fault address was captured. The supported loading and
+consumer paths match the reported empty-offhand distinction. A named model/MSET
+entry does not prove arbitrary modded files exist or contain valid assets.
+Allocation failures and corrupt model/bone files are separate possible failures.
+Alternative resource loaders that replace raw table pointers independently of the
+system BAR are rejected conservatively.
+
+Source and fixture reviews/builds are coordinated by Root. This agent does not
+run the main build. Gummi v0.8 files remain at their paused checkpoint.

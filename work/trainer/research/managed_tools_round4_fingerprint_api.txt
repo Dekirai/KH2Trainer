@@ -1,0 +1,134 @@
+ASSET FINGERPRINT CORE: INTEGRATION CONTRACT
+==========================================
+New Core files:
+  trainer/KH2Trainer.Core/AssetFingerprintModels.cs
+  trainer/KH2Trainer.Core/AssetFingerprintService.cs
+  trainer/KH2Trainer.Core/AssetFingerprintFiles.cs
+  trainer/KH2Trainer.Tests/AssetFingerprintTests.cs
+  work/trainer/tests/AssetFingerprintHarness/{csproj,Program.cs}
+After the initial contract, Root also assigned the Asset Explorer view/viewmodel
+and three existing asset Core files for integration. The only existing Core
+changes add immutable BAR/package ordinal metadata; parsing/decoding/export
+behavior is unchanged. No shared Program.cs, product project/build or package
+file was changed by this agent.
+
+Selection API
+--------------
+  AssetFingerprintSelection.FromLoose(payload, sourceKey)
+  AssetFingerprintSelection.FromPackage(index, inspectedAsset, sourceKey,
+                                         remasteredOrdinal: null or int)
+  selection.Child(barEntry)
+  selection.WithSourceKey(newSourceLabel)
+
+The selection stores its immutable AssetPayload. Keep it alongside each
+AssetRow/BrowsePage. When opening a BAR, derive child selections from its exact
+parent selection and the BarDocument entries returned by the reader. When
+inspecting a HED entry, use FromPackage for the original and each remaster.
+This preserves entry ordinals, including aliases or empty equal-name remasters.
+
+sourceKey is a caller-chosen namespace label, e.g. "Original KH2" or
+"My modified objects". It must be1..512 characters, with no directory separators,
+colon/control characters or surrounding whitespace. It is case sensitive.
+Use distinct labels for unrelated source collections. Reusing the same label
+and identical locator intentionally addresses the same index observation.
+The source label is never resolved as a local or network path.
+
+Hash and index API
+------------------
+  var service = new AssetFingerprintService(optionalLimits);
+  AssetFingerprint record = await service.CaptureAsync(reader, selection, token);
+  var index = AssetFingerprintIndex.Create(optionalRecords, optionalLimits);
+  index = index.With(record);
+  IReadOnlyList<AssetFingerprintMatch> matches = index.FindMatches(record);
+  // Explicit compatibility-only mode:
+  matches = index.FindMatches(record, includeLegacyMd5: true);
+
+Record properties:Id, SourceKey, Path, Length, Md5, Sha256, DisplayName.
+Path parts retain source kind, HED/BAR ordinal, remaster ordinal, name,
+offset/length, package stored offset, BAR type/raw tag hex and metadata digest.
+Id hashes the canonical source label and path. It identifies an observation
+location; it does not replace Sha256, the payload content digest.
+
+With returns a new index. It adds a new locator or explicitly replaces the
+existing record with the same Id. Create/Load reject duplicate Ids rather than
+silently discarding one. FindMatches returns all records, including the query's
+own Id if present; the UI may hide that self-match. SHA256AndLength is the
+default match kind. LegacyMd5AndLength is returned only when explicitly enabled
+and SHA256 differs. MD5 is retained for compatibility with developer-source
+matching, not security/provenance or a guaranteed byte-equality claim.
+
+Serialization API
+------------------
+  await index.SaveAsync(destinationStream, token);
+  index = await AssetFingerprintIndex.LoadAsync(sourceStream, limits, token);
+
+Format:KH2Trainer.AssetFingerprintIndex, Version:1. Streams belong to the caller
+and stay open. A loaded index never opens a source asset. Its hashes remain
+untrusted claims until the user freshly captures the corresponding content.
+Unknown versions/properties, missing fields, duplicate properties/locators,
+invalid enums/digests/identities and malformed path relationships are rejected.
+No legacy raw-object cache importer or automatic UNC access is implemented.
+
+Save serializes into bounded temporary memory before touching the destination.
+If serialization exceeds its configured byte limit, the destination is unchanged.
+Once copying starts, cancellation/I/O failure may leave a partial caller stream.
+For explicit files, the added AssetFingerprintFiles API implements that policy:
+  await AssetFingerprintFiles.SaveNewAsync(index, newPath, protectedFolders, token);
+  index = await AssetFingerprintFiles.LoadAsync(localPath, limits, token);
+SaveNew uses a CreateNew temporary file, holds directory handles against folder
+replacement, closes the output, checks cancellation and publishes with
+overwrite:false. It cleans up only its owned temp file on failure. It rejects
+device/reparse/UNC paths, unsafe Windows aliases and protected destination roots.
+The UI always supplies the default game folder plus game roots discovered above
+opened assets. Existing source/index files cannot be overwritten. The core
+stream serializer remains independent of filesystem operations.
+
+Limits and lifecycle
+--------------------
+Defaults:512MiB selected payload;10,000 records;16MiB JSON;32 path parts.
+Configurable hard caps:16GiB selected payload;100,000 records;64MiB JSON;64 parts.
+Hash buffers are64KiB. Existing package decoding may allocate up to the reader's
+separate decoded-payload limit; this module does not bypass or relax that limit.
+Loose/BAR payload hashing does not allocate their full byte length. Hashing is
+sequential, checks cancellation each block and verifies exact declared length.
+Existing source file identity and BAR/HED metadata checks remain in force.
+Index JSON reads consume at most one byte beyond their configured byte limit.
+
+Integrated UI
+--------------
+AssetExplorerView.xaml / AssetExplorerViewModel.cs now provide Add selected
+fingerprint, Add current container, Find matching selected content, Load index,
+Save new index and Clear in-memory index. SHA256/size matching retains all hits,
+including the current location when already indexed. Source label/ancestry and
+byte length are shown first; full MD5/SHA256/locator identity are in Details.
+Loading replaces the list only after successful complete validation. It never
+opens the saved source paths. Capture/save/load/compare use the existing Busy
+and Cancel flow; Clear is in-memory only. Stored payload selections travel with
+each asset row and navigation-history page, including HED -> original/remaster
+-> nested BAR paths. There is no automatic folder scan or native engine call.
+
+Tests
+------
+Shared Program integration is one call owned by Root:
+  await AssetFingerprintTests.RunAsync(tempWorkspace, Check);
+Optional read-only fixture comparison:
+  await AssetFingerprintTests.RunRealAsync(pathToLooseBar, Check);
+Own isolated harness links only the existing asset reader plus these new files,
+so it does not build the product or mutate shared build outputs.
+
+UI checks are reusable in the real application verification project:
+  AssetFingerprintUiChecks.Run(Path.Combine(output, "Fingerprints"), app)
+New file:work/trainer/ui-verification/AssetFingerprintUiChecks.cs.
+Returns a report object after30 checks and two offscreen renders at780/1100px.
+No visible window, startup, game call or user input is used. The independent
+AssetFingerprintUiHarness links the real view/viewmodel and asset code, exact
+copies of Observable/AsyncCommand plus the DefaultPath constant, and loads the
+current App.xaml resources. Root's existing verification project can run the
+same checks against the actual compiled application.
+
+Final author validation:100 fingerprint checks including3 direct byte-slice
+comparisons against local00battle.bin;105 existing asset-reader regression
+checks;30 WPF checks,2 renders,0 binding errors; no compiler warnings. The8.3
+protected-folder alias test ran with an actual short alias and was rejected.
+Package/remaster record-forgery regression tests validate the immutable metadata
+fix identified in the independent peer review. See final checkpoint for hashes.

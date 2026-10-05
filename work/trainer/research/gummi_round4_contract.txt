@@ -1,0 +1,60 @@
+Gummi round4: proposed ENEMY_SHOT clear and active-count contract
+Date: 2026-10-04
+Status: Source/tests/catalog/research frozen after root's independent review found no blocker. Own synthetic tests:208 checks,0 failures. No live call performed. Root common integration is separate.
+
+Purpose
+360 gummi.projectiles.clear — one-shot Action, no arguments. Removes currently active ENEMY_SHOT records through the original native bulk-clear routine.
+361 gummi.projectiles.active — ReadOnly integer0..768. Counts the same native pool's active bit0x100.
+Category: Gummi Ship. RequiresScene=false because Sora's field scene is irrelevant; native Gummi checks apply independently.
+CanSaveInProfile=false for the action. No persistent toggle, hook, undo or automatic repeat.
+ChangesProgression=false for the direct action: the verified call path does not write score, rewards, inventory or saves. Avoiding hits can naturally change subsequent gameplay outcomes.
+
+Implemented module API (include after GummiFeatures.inl)
+bool GummiProjectileHandle(const TrainerContext&, unsigned slot, const double args[8], TrainerResult&);
+void GummiProjectileSnapshot(const TrainerContext&);
+void GummiProjectileCapabilities();
+No Tick/Reset are needed because no native pointer or ongoing effect is retained.
+
+Native call
+RVA21E830, void (__fastcall *)(). No RCX/RDX arguments, no return-status interpretation.
+It scans exactly768 records from [base+AF8288], stride176, calls23E020(record), then23DAC0(record) if active.
+23E020 reads flags DWORD+128 bit0x100.
+23DAC0 clears that bit and calls record vtable slot+48. For exact ENEMY_SHOT vtable base+5B5B70, the slot is base+21F1F0.
+21F1F0 writes DWORD([base+AF8278] +16*record.spriteIndex152 +12)=0.
+23DAC0 calls a deleting destructor only when record.flags bit1 is set. The proposed preflight rejects that condition.
+
+Fresh lifetime and thread gates
+1. Reuse gummi::BuildContext / ActionReady / SameLifetime: current module in its live mode list, matching module and Gummi scheduler/heap, running module1, missionphase8, live playerphase2 and positive HP, no death/transition flags0x40010. Require host.base==g_base.
+2. gummi::HostAndThreadReady: bridge enabled, shared memory present, nonzero fresh heartbeat<=5000ms, current thread==g_gameThread. No worker execution.
+3. Verify the entire current scheduler chain without mutation: manager readable72bytes; current-running node manager+32==0; head+16/tail+24; each node readable152bytes, owner+88==manager, previous+128 consistent, next+120 bounded and acyclic, nondecreasing priority+100. At most2048 nodes.
+4. Require exactly one nonfiber node with callback1F6080, group1, priority22000, cleanup1F60D0. The installer1F6120 establishes exactly this task. No cached task address survives the command.
+5. Pool and main-buffer pointers must be nonzero and their entire arithmetic spans overflow-safe. Require readable pool header and135168-byte body, QWORD(pool-8)==768, writable record body and12288-byte main sprite buffer. Reject overlapping pool/main-buffer ranges. At least DWORD alignment for fields and QWORD alignment for records.
+6. Scan all768 records: exact vptr base+5B5B70, sprite index152 equals its fixed pool index0..767, and no individually allocated ownership bit1. Count flags0x100. This is backed by21EA80 initialization and21E660 spawning.
+7. Verify the cleanup vtable slot still points at21F1F0; verify full code-byte pins of21E830(75),23E020(12),23DAC0(59),21F1F0(26). Pins in gummi_round4_code_bytes.json come from the original hash-matched PE, using exported function boundaries.
+8. Before dispatch rebuild the Gummi context and task/pool checks, compare heap/scheduler/player/route/variant and pool/buffer identity to the first preflight, and require running gates again. Call native exactly once. Do not dereference old pool/context pointers after native returns.
+
+Snapshot
+Freshly resolve the same Gummi module/task/pool ownership. A paused module2 may be accepted for a read-only count while the task remains owned; no mutation is performed. Publish only when all complete ownership/bounds checks pass. No retained previous count is marked valid after scene loss.
+Snapshot need not call23E020: bounded reads of each flags DWORD are equivalent to its four-instruction predicate.
+
+Why the task witness matters
+21E8F0 destroys both FX, zeros the FX handles, frees the sprite buffers and vector pool but does not zero AF8278/AF8280/AF8288. Nonzero pointer and readable address alone cannot prove live ownership. The scheduler node is unlinked before its cleanup1F60D0 is invoked by native task removal.
+Task list layout/teardown is freshly captured in gummi_round4_owner_evidence.json from root's new sessionaba00f14 after actual auto_wait. Eight functions contain476 instructions; each actual page count, start address and full decompile was independently checked. In particular14F680 and14FA60 unlink the task before invoking cleanup+104.
+
+Semantics and limits
+Only ENEMY_SHOT is cleared. ENEMY_LASER and other projectile families use separate pools. Do not silently replace21E830 with broad wrapper1F6050.
+No collision callback, item drop, DRAIN absorption point award, HP change or enemy destruction occurs in the verified clear path. Main shot sprite records are cleared; already created impact effects are left to their native visual lifetime.
+Enemies can fire again on later frames. This is a single clear, not a no-projectile mode.
+The count includes all active ENEMY_SHOT records, including a record in its impact/terminal phase; it is not guaranteed to equal visible flying bullets.
+The exact native build and unchanged targeted callbacks are assumed. Checks reject modifications to this pool contract. Future asynchronous game/mod teardown from an unrelated thread is not synchronized by the game's ordinary single-thread scheduler contract.
+No live runtime result has been claimed. Synthetic tests should exercise the real preflight implementation with only native callouts replaced.
+
+Required isolated test cases
+Valid zero/all/sparse active pools; exactly-one dispatch; inactive entries untouched by fake clear; flag1 rejection; wrong vtable/cleanup/code; index-1/index768/wrong fixed index; short pool/header/buffer; count header mismatch; pointer overflow and overlap; missing/cyclic/backlink-invalid task chain; wrong task cleanup/fiber/group/priority/duplicate; stale module/heap/route/player; paused action rejection; heartbeat zero/expiry and wrong thread; changed pool between preflights; no reads through stale objects after call. ReadOnly snapshot publishes0..768 only for a valid owned pool.
+
+Implemented files
+trainer/Native/GummiProjectileFeatures.inl
+work/trainer/tests/GummiProjectileGuardTests.cpp
+work/trainer/tests/build_gummi_projectile_tests.cmd
+work/trainer/research/gummi_projectile_features.json
+The208-check suite runs the real guards and replaces only the final native clear callout. It uses actual guarded/read-only virtual-memory pages, compares all pool/sprite bytes against expected native effects, and invalidates globals inside the fake callout to detect forbidden post-call reads. No main-project or game execution occurs in this suite.

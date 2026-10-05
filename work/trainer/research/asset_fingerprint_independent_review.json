@@ -1,0 +1,62 @@
+{
+  "date": "2026-10-04",
+  "reviewer": "pe_inventory",
+  "status": "No blocking unresolved finding in the final reviewed Core state.",
+  "scope": "Read-only review of fingerprint factories, payload-identity metadata, bounded JSON/streams, explicit local save/load, and the focused tests. No independent build or filesystem probe was run this round.",
+  "hashes": {
+    "trainer/KH2Trainer.Core/AssetFingerprintModels.cs": "9a616fac4963d5ca07555520e3fae05ac8515e6e7de4efb0cd5b79dc629a5ed9",
+    "trainer/KH2Trainer.Core/AssetFingerprintService.cs": "a40b8fee936fd788d79e954dc574b58398eb0a5893818772a90b03ef0310f6da",
+    "trainer/KH2Trainer.Core/AssetFingerprintFiles.cs": "7f237c4a4983370b5387eb37f2831e8c12473980e0fed0139f9a168f0bb0c643",
+    "trainer/KH2Trainer.Core/AssetExplorerModels.cs": "6e2c508b2dbd220471194b981954b399d146e5d9f4caf88d229269c21c9dca1e",
+    "trainer/KH2Trainer.Core/AssetArchiveReader.cs": "4ed44bc98c448eac213a0d94698102505a5f42cab9cc819bc071aea1fa3fe32e",
+    "trainer/KH2Trainer.Core/AssetPackageCodec.cs": "07b652385885ff6a29841d6ca210955dd55be3e9ae13a8bf5905e3f0ec33b307",
+    "trainer/KH2Trainer.Tests/AssetFingerprintTests.cs": "fa098d51aab6eef1f975446801e96d7720afa43ea1e7784c88403311cd1818b5"
+  },
+  "resolved_findings": [
+    {
+      "finding": "Public PackageAssetInfo/RemasteredAssetInfo records allowed a substituted/remapped remaster record to claim ordinal0 while hashing the immutable payload for ordinal1; same-span HED aliases also required explicit row identity.",
+      "resolution": "PayloadInfo now carries immutable internal HED EntryOrdinal and RemasteredOrdinal set by the reader/codec. FromPackage compares both against the requested entry. Regression cases use equal names/stored offsets and HED aliases."
+    },
+    {
+      "finding": "Child accepted a modified raw RelativeOffset on a zero-length BAR record because its physical payload.Offset is normalized to0.",
+      "resolution": "AssetPayload now carries immutable BAR EntryOrdinal/RawOffset/Type/TagHex; Child compares all four. Regression preserves the empty payload but changes the record offset and verifies rejection."
+    }
+  ],
+  "verified": [
+    "Selected payloads are opened only through the existing stamped reader, which revalidates file identity and parent/package metadata. Loaded fingerprint locators are descriptive and never used to reopen their saved names.",
+    "Identity includes source namespace, nested path, record ordinals, BAR type/tag/raw span and metadata hashes. Alias entries retain distinct locator IDs even when payload hashes and ranges match.",
+    "Capture streams in64KiB chunks, enforces declared length including a one-byte overrun check, and disposes the opened stream on all paths. Cancellation is checked during streaming and before digest publication.",
+    "JSON has a byte cap, depth cap, entry/path caps, exact required field sets, duplicate-property rejection, ordinal/type/span checks, uppercase hash-shape checks and recomputed locator-ID checks. Missing/null fields do not obtain silent default identities.",
+    "SHA256 plus length is the preferred match. MD5 plus length is separately opt-in and labelled LegacyMd5AndLength; loaded digests remain unverified claims about past content, not proof of a current file.",
+    "Generic LoadAsync/SaveAsync leave caller streams open. Bounded serialization happens before touching the destination; cancellation while copying can partially write a caller-owned stream, as expected from a stream API.",
+    "SaveNewAsync uses a new owned temporary file, held directory handles, repeated path validation and File.Move(overwrite:false). Existing destinations are not overwritten; only its own temporary file is removed on failure.",
+    "Fingerprint-file APIs reject explicit UNC/device paths and unsafe Windows destination names; protected directory checks follow Path.GetFullPath. The suspected8.3 bypass was already disproven on this host and the new author-run SaveNew-specific alias test rejects the short alias without creating a file."
+  ],
+  "tests": {
+    "author_reported_core_checks": 100,
+    "author_reported_core_failures": 0,
+    "includes_real_BAR_slices": 3,
+    "author_reported_existing_reader_checks": 105,
+    "author_reported_UI_checks": 30,
+    "independent_rerun": false,
+    "reviewed_regressions": [
+      "Remaster ordinal substitution",
+      "Same-span HED alias substitution",
+      "Zero-length BAR raw-offset substitution",
+      "Null/wrong/missing/duplicate JSON properties and duplicate identities",
+      "Bounded nonseekable JSON consumes at most one byte past cap",
+      "Cancellation and caller-stream lifetime",
+      "Real short-path protected-directory rejection",
+      "CreateNew/no overwrite and owned-temp cleanup"
+    ]
+  },
+  "limitations": [
+    "This review does not certify arbitrary hostile filesystem namespace manipulation through separate drive mappings.",
+    "Imported indexes carry claimed hashes; only a new capture verifies current bytes.",
+    "No live game or UI actions were performed by this reviewer."
+  ],
+  "references": [
+    "work/trainer/research/asset_explorer_source_review_pe.json",
+    "work/trainer/review/asset_alias_probe/Program.cs"
+  ]
+}

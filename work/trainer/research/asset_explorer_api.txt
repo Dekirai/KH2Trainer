@@ -1,0 +1,83 @@
+ASSET EXPLORER CORE API — v0.7
+
+Namespace KH2Trainer.Core. No bridge, process handle, UI, native game function,
+external tool process, or OpenKh assembly is used by these APIs.
+
+new AssetArchiveReader(AssetReadLimits? limits = null,
+                       IEnumerable<string>? protectedDirectories = null)
+
+AssetPayload OpenLooseFile(string path)
+PackageIndex OpenPackageIndex(string hedPath, string? namesFile = null,
+                              CancellationToken cancellationToken = default)
+PackageAssetInfo InspectPackageEntry(PackageIndex index, int ordinal,
+                                    CancellationToken cancellationToken = default)
+Task<BarDocument> ReadBarAsync(AssetPayload payload, CancellationToken = default)
+Task<byte[]> ReadPrefixAsync(AssetPayload payload, int maximumBytes = 65536,
+                            CancellationToken = default)
+Task<Stream> OpenReadAsync(AssetPayload payload, CancellationToken = default)
+Task ExportAsync(AssetPayload payload, string destinationFile,
+                 CancellationToken = default)
+static string Recognize(ReadOnlySpan<byte> prefix)
+static string TypeName(ushort type)
+
+Index/Inspect/OpenLooseFile are synchronous. A WPF caller should use Task.Run for
+file operations; all UI updates occur after the awaited operation. Package names
+are optional exact MD5 matches from a local UTF-8 line list. Unknown hashes remain
+visible. A name key is not a checksum of the payload contents.
+
+PackageIndex.Entries exposes immutable records: Ordinal, Name, NameHash,
+HasResolvedName, Offset(Int64), StoredLength, OriginalLength, IsAvailable.
+InspectPackageEntry returns Original and Remastered[].Payload. Remaster metadata
+also preserves NameBytesHex, LogicalOffset, OriginalAssetOffset, StoredOffset and
+StoredMode. StoredOffset is relative to the containing package record, not file0.
+
+BarDocument exposes VersionFlags, RuntimeBase, Auxiliary and Entries. Each entry
+has Ordinal,Type,TypeName,LinkIndex,TagHex,escaped Tag,RelativeOffset,Length,AliasOf,
+Payload and a safe SuggestedFileName. Duplicate tags and exact aliases are valid.
+Nested payloads carry exact parent metadata fingerprints and depth limits.
+
+AssetPayload is an immutable bounded locator. Name/Description are display text,
+not filesystem paths. SourcePath identifies the original loose file or PKG.
+Dispose the stream returned by OpenReadAsync. A package payload is decoded into
+one bounded memory buffer before being exposed; even a short preview validates
+the complete selected compressed payload. No decoded cache or long-lived source
+handle is retained after an operation. Changing source identity invalidates old
+locators. The Windows volume/file ID, creation/write times and length are checked;
+HED, package metadata and parent BAR tables additionally have digest checks.
+
+Supported disk data: BAR version1 with unrelocated base0; arbitrary bounded entry
+types; retail HED32 and PKG header16/remaster48; raw(-2), transformed(-1), positive
+zlib stored length, native small-payload bypass. Other storage modes fail explicitly.
+Only complete16-byte blocks in the first256 stored bytes are transformed.
+Zlib decoding validates exact output length and Adler checksum; compressed padding
+is limited to15 bytes of0xCD/0. Header-derived physical remaster offsets are used.
+Export returns logical payload length. OpenKh's loose uncompressed remasters may
+include additional alignment padding; the real fixture comparison checks that
+padding separately and never silently appends it to exported logical payloads.
+
+Default limits: 1,000,000 HED/name rows;65,536 BAR/remaster children;32MiB metadata;
+512MiB stored/decoded package payload;depth16;preview1MiB absolute maximum.
+Loose-file extraction streams its selected range and does not allocate its full
+length. Prefix signatures are hints, not complete image/model validators.
+
+Export requires an explicitly chosen NEW file in an existing folder. It uses a
+create-new temporary file, verifies exact output length, checks cancellation, then
+moves without overwrite. Source paths, existing targets, device/ADS/Windows aliases,
+reparse-point traversal, protected folders and the actual detected game root are
+rejected. Existing parent directories are held against rename/reparse replacement
+until publication/cleanup. Caller-supplied display names must be sanitized before
+being used as a SaveDialog suggestion; the core never invents output subpaths.
+
+Errors are explicit: IOException (source changed, unavailable path/destination),
+InvalidDataException (format/limits/checksum), EndOfStreamException (truncation),
+ArgumentOutOfRangeException (API parameter), OperationCanceledException. Cancellation
+does not overwrite or delete pre-existing files. Decoder failures do not expose a
+partial decoded stream. Arbitrary concurrent attackers who can rewrite payload
+bytes while restoring metadata are not an authenticated-content threat model;
+raw assets themselves have no cryptographic content authentication.
+
+Test integration (Root owns Program.cs):
+await AssetExplorerTests.RunAsync(workspace, Check);
+Optional private retail comparison, with explicit local installation path:
+await AssetExplorerTests.RunRetailAsync(gameRoot, Check);
+No copyrighted game fixtures are stored in the test source or distributed package.

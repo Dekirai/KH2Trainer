@@ -1,0 +1,17 @@
+Actor movement and stop/VM controls
+==================================
+Four implemented values:344 Walking speed(Actor+296,0..32),345 Running speed(+300,0..64),346 Maximum falling speed(+312,0.1..100),347 Base jump height(+304,0..1000). All are one-time float32 writes to current Sora, including stable forms0..6. No native call or hook is used.
+
+Normal input selects walking/running at analog magnitude0.8. Special Actions can select other movement rules. High Jump can replace the base jump height with its growth-table value; an existing jump is not restarted. Fall speed is a downward cap used by several verified jump/air paths. The repeated native gravity constant remains separate.
+
+Native initialization is2/8/160 for walk/run/base jump. The falling cap comes from loaded parameter+20; the UI preset20 is not a restore value. All edit bounds are trainer policy, not claimed engine limits.
+
+Sora constructor405030 uses the same descriptor750300 for form arguments; vtable5CBA28+296 contains404FB0, which forwards to3A8FA0. Fresh static bytes are recorded in actor_controls_deep_identity.json. The shared pool/list/scene/thread/heartbeat gates, status and motion backlinks, exact descriptor, supported consistent form and absence of attachment/transition protect the one-time four-byte stores.
+
+No automatic restore or reapplication exists. Scripts can access Actor+296 through VM trap42FAA0 and overwrite the block. Actor reconstruction runs40A440 again. A profile explicitly applied by the user writes once to the then-current valid actor; it does not subscribe to later scene or form changes. Snapshots show finite current values, including values outside the edit range.
+
+Research-only stop candidate: Actor+1612 stores an aggregate mask and four timed stop IDs.3B6730 takes Actor/ID/float duration in RCX/EDX/XMM2.40A920 can dereference a null slot when all four IDs are occupied; row lookup also assumes valid loaded stop data.3BFD30 still runs descriptor pre-update before the stop gate, so complete AI suspension is not proven. Native3DBAA0 applies a stop ID to enemy-category actors, while3B42D0 globally removes it. Neither is exposed without ownership and table proofs. Generic gravity, AI-only pause and new invincibility controls remain open.
+
+Evidence:31 complete fresh function bodies in actor_controls_deep_continuation_evidence.json support29 specific findings listed in actor_controls_deep.json. This is focused semantic coverage, not a claim that every Actor/VM function is understood. Earlier16-body evidence is retained separately.
+
+Validation: ActorMovementGuardTests previously compiled /W4 without warnings and ran914 checks with0 failures. All seven forms, four fields, exact byte writes, policy boundaries, malformed identities, transitions, unreadable/read-only memory and capabilities are tested. This round did not rerun builds or touch the live game. Independent native_debug review reported no blocker; its hash-pinned review is separate.

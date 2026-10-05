@@ -1,0 +1,44 @@
+{
+  "title": "Independent LootFeatures review",
+  "scope": "Independent review of the module, isolated test source, catalog, shared guards and complete native assembly. No build, live test or product edits by this reviewer. Seven focused test-source assertions were added with Root's explicit authorization.",
+  "sha256": {
+    "trainer/Native/LootFeatures.inl": "CA0099B3275CA217048A88866D91A1CACD0226F241FAA6931AA41DC7A2ECDB07",
+    "work/trainer/tests/LootGuardTests.cpp": "4E6038FCB916E0E7407C5AE876F66E9F7170878BBF258A5EF89EB1797860F695",
+    "work/trainer/research/loot_features.json": "C60A00CAA854FF8E01F81E32DF62D1E35B05F53D8D48F28559F6BA25993165D0",
+    "trainer/Native/DamageTuningFeatures.inl": "820B577E8FB2D98E2DBC979C2EF6EFCECAC8E71D36AA6C1FF57282FF316816B0",
+    "trainer/Native/CombatFeatures.inl": "FEE3EE15DC156536E224DB1ED01975679C1ADF41811703B2BAB2B363BF4A0907"
+  },
+  "blocking_findings": [],
+  "conclusion": "No significant implementation or semantic defect found in the reviewed versions.",
+  "checks": [
+    "Exactly four-byte one-time writes to current STATUS+520,+568,+572,+580; the retained percentage alone is divided by100 before float conversion. No direct save/inventory writes, callbacks, retained actor pointer or native engine calls.",
+    "Thread/base/current-player/status-backlink and living-player gates come from damage_tuning::Ready and combat::PlayerReady. PoolOwns checks632-byte alignment,80-slot range, positive refcount and a validated bounded free list. Loot additionally verifies ability-object owner at STATUS+504.",
+    "Commands demand a fresh host and writable field. Field pause supports readouts while rejecting writes. Snapshot values are published only when finite; regular IPC snapshot clearing owns stale validity bits.",
+    "Party order is player, ally0, ally1, matching3D5C50/3C3270. The code limits to exactly2 ally slots and uses bounded/cycle-detecting live-list membership, STATUS allocation/backlinks and native deleting flags before contributions. Dead valid allies remain included, matching native behavior.",
+    "Native3ABA40 adds script base then each Jackpot in scalar SSE float32. Native3DC170 multiplies retained factors and adds Lucky factors in the same0..2 order. Explicit casts round each source operation before storage as double.",
+    "Draw radius calculation matches native default120 plus Draw only for Actor categorybit4, then STATUS+452. Explicit native radius and vertical/Action/form gates are outside this diagnostic and are disclosed.",
+    "Catalog defaults0/0/0/100 match ability subobject initializer4016B0. Command ranges are trainer policy, not native hard limits. Descriptions distinguish contributions/factors from final probability and collected rewards.",
+    "Catalog edits are non-profile one-time values; there is no auto-restore promise. STATUS rebuild3C1D90 reinitializes modifiers. Saveback3C2120 does not copy the four modifier fields."
+  ],
+  "test_notes": {
+    "reported_by_author": "213 isolated checks passed before this review. Reviewer added seven targeted checks at Root's request; final source hash is pinned above, central rerun pending. No parallel build by reviewer.",
+    "covered": "Exact whole-status byte comparison, bounds/nonfinite input, deleted/unlisted/dead allies, invalid pool/backlinks, cyclic list, scene/Drive/menu/thread/heartbeat gates, real read-only page, fixed capability mask.",
+    "implemented_regression_additions": [
+      "Float32 addition regression: base1, player0.1f, ally0.2f must yield1.3000000715255737, not1.2999999523162842 (double accumulation rounded at the end). Existing .25/.5 fixtures do not distinguish these.",
+      "Three-party retention regression: .7f,.9f,.3f must yield0.18900001049041748 before UI percent conversion, not0.1889999955892563.",
+      "Add a second ally to exercise the third native party slot and truncation-free readout order."
+    ]
+  },
+  "evidence": [
+    "work/trainer/research/loot_controls_deep_asm.json",
+    "work/trainer/research/loot_controls_deep_batch0.json",
+    "work/trainer/research/loot_controls_deep_batch1.json",
+    "work/trainer/research/loot_controls_deep_batch2.json",
+    "work/trainer/research/loot_controls_deep_batch3.json",
+    "work/trainer/research/loot_controls_deep_data.json"
+  ],
+  "limitations": [
+    "Static review and synthetic guard tests do not execute the original drop generator or validate visible gameplay effects.",
+    "Single-frame snapshots calculate modifier diagnostics; they do not guarantee item grants, pool capacity, final pickup success or a fixed script base."
+  ]
+}

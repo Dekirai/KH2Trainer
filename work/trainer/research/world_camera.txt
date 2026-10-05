@@ -1,0 +1,274 @@
+KH2 trainer research: world, time, camera, developer tools
+Static analysis, 2026-10-04
+Target SHA256: 9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed
+Image base: 0x140000000. All short addresses below are RVAs.
+No game process access, game writes or IDB mutations were performed.
+Machine-readable feature inventory: world_camera.json
+Fresh IDA pseudocode and ASM: world_camera_evidence.json
+
+PRIORITY IMPLEMENTATION FINDINGS
+
+1. Raw room travel has an existing native wrapper: 434CF0.
+2. Camera position, target, up vectors and FOV have verified setters and render consumers.
+3. Global game speed has a real consumer at 1548E0; zero is unsafe because the engine computes 1/delta.
+4. Native field pause/step now use the outer captured-image task and verified task order; see field_pause.txt. Runtime rendering remains untested.
+5. Several attractive developer labels are inert in the observed retail path. Do not expose them as working cheats.
+
+WORLD / ROOM TRAVEL
+
+MapTarget10 is exactly ten bytes:
+  +0 u8 world
+  +1 u8 area
+  +2 u8 entrance
+  +3 reserved byte; initialize zero in our own structure
+  +4 i16 map spawn-set ID
+  +6 i16 battle spawn-set ID
+  +8 i16 event spawn-set ID
+
+Current target is at RVA717008. SaveData starts at RVA9A98B0. The default three spawn-set IDs are at:
+  SaveData + 16 + 384*world + 6*area.
+152BE0 first reads those defaults, then substitutes non-0xFFFF fields from MapTarget10. It writes the current world/area at SaveData+12 and entrance at SaveData+14. Travel can therefore affect a subsequently saved location.
+
+Native developer entry:
+  void __fastcall DebugMapJump(const MapTarget10* target), RVA434CF0, target in RCX.
+It calls3F5700, sets bit0x100 in DWORD RVA2A11400, then calls:
+  152990(target, 1, 0, 0, 0).
+ASM confirms all five arguments. The return is incidental; treat the wrapper as void.
+
+152990 synchronously copies8+2 bytes from the target into static pending state. There is no retained pointer to the caller's local structure. In the ordinary field branch it registers task152A90 at priority300000 on gameplay scheduler[RVA716868]. Task152A90 waits for existing menu/event conditions, tears down the room and reloads through152BE0. The alternate branch when byteRVA9BA8D1 is set is an event-only transition path; exclude it initially.
+
+Required trainer gates:
+  exact supported game build;
+  engine frame thread;
+  byteRVA9BA8D0 == 1 (scene ready);
+  byteRVA9BA8D1 == 0;
+  [RVA716868] != nullptr;
+  [RVA9BA928] == nullptr (no pending transition task);
+  no native menu transition at RVA9006B0;
+  world/area bounds checked against both native UI limits and the live area table.
+A queue entry should be consumed only once. Repeated requests before scene-ready drops would otherwise schedule multiple transitions.
+
+Bounds from native UI:19 worlds,64 areas, entrance0..255.
+World codes, from pointer tableRVA717210:
+  0 zz, 1 es, 2 tt, 3 di, 4 hb, 5 bb, 6 he, 7 al, 8 mu, 9 po,
+  10 lk, 11 lm, 12 dc, 13 wi, 14 nm, 15 wm, 16 ca, 17 tr, 18 eh.
+These are literal EXE labels. Human-readable world names and room titles are not established by this table.
+
+Additional live area table:
+  pointer[RVA2A10558]
+  +4 u32 world count
+  +8 +4*world: u16 area count, u16 relative record offset
+  area record address = table + relativeOffset +64*area.
+3A5B80 establishes this layout but also tests area-record flag4; that flag test is NOT a general existence check. Check pointer and count validity before reading. Numerical validity still does not prove all assets/spawn sets exist.
+
+Spawn-set UI labels:
+  '-' -> -1, meaning current SaveData default.
+  'a'..'y' ->0..24.
+  'za'..'zz' ->25..50.
+434A70 ASM constructs these labels. Arbitrary int16 values beyond that UI range are not validated here.
+
+RELOAD CURRENT ROOM
+
+Copy the current ten bytes from717008 and pass them to434CF0 under the same gates. Native4349F0 performs the same operation for its secondary-controller shortcut.
+This is a room reload, not a complete practice savestate. HP, inventory, mission history and boss phase are not restored by this wrapper alone.
+
+PARTY PRESETS
+
+3E2E20(int world) returns SaveData-backed bytesRVA9ACDE4 +4*world.
+3E38C0(uint8_t* party,int slot,uint8_t member) writes member&0x9F.
+434BB0 handles four slots and supplies:
+  SORA=0, DONALD=1, GOOFY=2, W_FRIEND=3, NOENTRY=18.
+The UI's '-' means leave the slot unchanged.
+Use slot0..3 only. Apply before travel/reload, as the native MapJump widget does. Snapshot original bytes per world for restoration. Rewriting these bytes does not prove already spawned actors update instantly.
+
+TIME / SIMULATION
+
+Game speed scalar: floatRVA717424, initialized to1.
+Effective delta: floatRVA717480.
+Unscaled delta: floatRVA717484.
+Reciprocal delta: floatRVA717488.
+
+1548E0 (normal registered App task at priority800000) and154740 compute:
+  effective = min(rawDelta * speedScalar, 6)
+  inverse = 1 / effective
+and reset timing counters. Physics, BDX script waits, particles and many game systems consume717480. Task/fiber integer waits in14FD60 still count scheduler iterations; speed changes are not a promise of uniform wall-clock scaling across every subsystem.
+
+1545B0 is a small native tail chunk accepting float inXMM0 and storing717424.41DD00 is the script wrapper taking a pointer to a float, not a float argument.
+154580 resets speed1 on scene/event paths.1543F0 can animate speed from an interpolation object at717510. Do not constantly overwrite it without considering native slow-motion.
+
+Conservative trainer range:0.1..3.0, finite only.
+Never set zero, negative, infinity or NaN. The native reciprocal has no zero guard. Delta is capped6.
+Suggested implementation: wrap the existing outer timing task, call its saved original, then multiply the freshly generated effective delta and recompute reciprocal. This preserves the native speed scalar and avoids cumulative multiplication. That is a scheduling design; interaction with all consumers needs runtime testing.
+Alternative direct scalar editing is simpler but can override cutscene slow-motion and be reset by the engine. Restore only a value still owned by the trainer.
+
+Important correction:3ABD60 and2A1141C are target-acquisition/distance scaling. Consumers3BD460 and3DD160 compare actor distances and target ranges. They are not a game-speed API.
+
+NORMAL PAUSE
+
+1572B0 is the normal Start-button task. It checks:
+  DWORD ABB878 ==0;
+  scene-ready9BA8D0;
+  !1515C0() (native menu state);
+  DWORD[156DC0()+264] ==0;
+  !19BA60();
+then handles a custom actor pause interface3AD540, otherwise calls2E4950(0,-1).
+For an "Open pause menu" button, preserve these gates and use the native path.
+
+FIELD FREEZE / FRAME STEP
+
+Static field module begins716860; intstate716884 is module+36.
+150310 dispatches the module scheduler only while state==1.
+  0 inactive,1 running,2 paused,3 closing.
+1515E0, normal pause setup, sets2.1514B0 restores1.
+
+State2 suppresses scene rendering tasks as well as simulation. The native menu path also:
+  sets bit1 in ABB854 through157130(1);
+  sets ABADE0 through156780;
+  captures the frame through153430.
+1567A0 draws the captured texture via1533B0(216) when ABADE0==1.
+These side effects matter. Blindly setting716884=2 is not yet a complete verified trainer pause implementation.
+
+A possible step design is one controlled outer-frame interval with state1 followed by state2, but it must account for task order, image capture and scene ownership. One outer frame is not necessarily one fixed60Hz simulation tick.
+Restore only a pause established by the trainer. Never clear a native menu pause or resume an inactive/closing module.
+Freecam while state2 is set does not run the normal camera tasks. This combination requires an additional render design, not another camera flag.
+
+CAMERA / FOV
+
+Camera getter19CE40(uint8_t current):
+  current!=0 -> AC1020 +128*int[AC1838].
+  current==0 -> AC1B50 +128*index, unless byteAC183C selects the current bank.
+Valid initialized bank indices are0 and1.
+The storage is static; do not confuse it with a heap pointer.
+
+Camera layout:
+  +0 vtable (kn::Camera)
+  +8 view matrix (16 floats)
+  +72 eye Vec4
+  +88 target Vec4
+  +104 up Vec4
+  +120 extra float, not assumed to be a working roll control.
+
+Setter19D340:
+  void __fastcall(void* camera,const Vec4* eye,const Vec4* target,const Vec4* up)
+  RCX,RDX,R8,R9.
+It copies all vectors and forces eye.w=1.
+19D390 sets eye/target without up.
+19D3D0 sets eye/target and an extra float inXMM3; use19D340 for an explicit freecam basis.
+
+Pan19D420(camera,float right,float up):
+  RCX,XMM1,XMM2.
+It translates both eye and target along normalized camera right/up axes.
+Orbit19D5A0(camera,int axis,float radians):
+  RCX,EDX,XMM2.
+Axis0 uses sin/cos around the vertical plane; axis1 uses a cross-product rotation about the target. Useful primitives, not an already connected freecam mode.
+
+Projection getter19CFC0(uint8_t current):
+  current!=0 -> AC1840 +388*index;
+  alternate bank AC1220 unlessAC183C selects current.
+Projection fields:
+  +64 focal length
+  +68 horizontal FOV radians
+  +72 vertical FOV radians
+  +76 x scale
+  +80 y scale
+  +108 near, +112 far
+  +116/+120 clamped near/far
+  +132/+196 auxiliary projection matrices
+  +260/+324 PC projection matrices.
+
+Verified FOV setter19DDE0:
+  void __fastcall(void* projection,float radians,int vertical)
+  RCX,XMM1,R8D.
+  vertical0: angle is horizontal, compute focal then vertical angle.
+  vertical1: angle is vertical, compute focal then horizontal angle.
+Uses tan(angle/2),512 and416 virtual extents, existing x/y scales. It updates all three focal/FOV fields coherently. No clamping inside the function.
+Mathematical bounds0<angle<pi; proposed trainer UI30..120degrees is conservative, not a native guarantee.
+19CAD0 ASM passes focal+64 to4748B0, then rebuilds matrices. Editing just an FOV metadata field would be insufficient.
+
+ACTUAL RENDER CONSUMER / HOOK DESIGN
+
+19CBA0 is the camera update task. It copies previous camera/projection banks, rebuilds the view matrix from eye/target/up, builds projection matrices and submits the view matrix through137E20.
+165700 is a field-camera producer and rewrites FOV and eye/target each frame.
+Thus writing camera fields after the whole App update would race the next normal producer and may never affect the intended draw.
+
+A precise design is to wrap existing direct task nodes whose callback equals19CBA0:
+  gameplay scheduler[RVA716868];
+  node callback+0, owner+88, group+96, priority+100, continuation+112,
+  next+120, previous+128, allocation152bytes.
+162C50 registers19CBA0 at priorities30000 and90030, with bank-select tasks around them. Other scene initializers162F20/1631E0 also register camera tasks.
+The wrapper sets current-bank vectors/FOV immediately before calling the saved original. It must use the bank index at that instant. Do not call19CBA0 an extra time as a generic refresh; it advances previous-bank snapshots and renderer state.
+Track scheduler/node lifetime at every transition. Never retain old node pointers across room teardown.
+
+Validate finite vectors, nonzero up and nonparallel viewing/up axes, and eye!=target. Keep the native up orientation rather than assuming conventional positive-Y up.
+On disable, stop overriding so the native controller can regenerate its camera. Whole-structure restoration from a previous scene is unsafe. Testing must cover field, cutscene and worldmap modes independently.
+
+NATIVE DEVELOPER CALLBACK INVENTORY
+
+The direct native registrations to41FAC0 were exhausted:12 callsites plus the public metadata reference. Root41FCD0 adds its own static records.18 principal records are in JSON, plus submenu visibility control420870.
+
+Callback RVAs / arguments / effect:
+  433B20 ()            Setinfo: read-only current-world scene information.
+  4340A0 (int world)   Progress editor, dbg/progress-%s.dbg.
+  434D30 ()            Open MapJump widget.
+  435040 ()            Signal list, dbg/signal.bin; click can trigger/cancel signals.
+  435510 ()            World state:19-row view.
+  435D10 ()            Global item editor.
+  435CE0 ()            Selected-actor item editor; requires a selected valid actor.
+  435430 (int option)  Debug geometry flags.
+  436750 ()            Munny editor.
+  436B50 (int world)   Mission list, dbg/mission-%s.dbg; click schedules room travel.
+  436280 ()            World-flag editor, dbg/worldflag.dbg.
+  436F00 ()            Battle report view.
+  3F18A0 (int world)   Localset list, dbg/localset-%s.bin; click resolves and travels.
+  420D40 ()            Hide desktop (state1).
+  420D80 (int bool)    Status widget visibility.
+  420D50 (int bool)    Motion-info bit only; no consumer found.
+  420D70 ()            Destroy current savepoint through418D50.
+  420DB0 (int bool)    Treasure-off bit only; no consumer found.
+  420870 (int group)  Toggle bit in749814 menu flatten mask. Do not enableall19 groups; fixed temporary popup array has no bounds check.
+
+All window-opening callbacks require initialized debug root/allocator and engine thread. They are not safe generic worker-thread APIs. Several constructors assume optional debug resources exist and that allocations succeed. Missing-resource UI is not equivalent to a finished trainer feature.
+
+Mutating subactions:
+  Progress434720 enables listed progress flags until selected entry;434780 toggles a single flag through39AFC0. Reset434260 zeroes32bytes of world progress and384bytes of room spawn defaults.
+  Signal435380 may call3A3460 then3AABE0(signal,-1).
+  Mission436D60 resolves MapTarget10 and calls152990.
+  Localset3F1D20 uses39FBC0 (unchecked bsearch result), then3F5700/3E68F0 and152990.
+  Worldflag apply436230 calls3DEEF0 and optional worldmap refresh; reset436410 calls3DF060 first.
+  Item get-all435A80 calls3C3F00 repeatedly and3D5D60.
+  Munny4367D0->3024E0 writes SaveData+9280.
+
+Debug geometry options:
+  0BG,1OBJ,2HIT,3ATTACK,4RC,5BBOX,6ZONE,7STATUS,8TARGET,9ALL OFF.
+Flags begin749818.435430 toggles a bit or clears the first DWORD for9.
+Only bit0 has a direct consumer found here:4384E0 ->438CC0 enqueues a shape for eligible actors.
+The enqueue primitives remain; execution of a complete visible geometry overlay is not established by labels alone.
+
+RENDER / INPUT FLAGS WITH REAL CONSUMERS
+
+749804 bit26 (0x04000000): captions suppressed in2CFFA0/2D0100.
+749804 bit27 (0x08000000): word-layout guide lines via14E020->14E6D0.
+749838 bit0: off-screen check display,14EB70/14DF40 call127130(0.6/1.0), then126500.
+Off-screen check is a debug viewport adjustment, not arbitrary resolution scale or camera FOV.
+
+Use bitwise ownership and restore the owned bit, preserving unrelated engine/mod bits. Do not savekh2.cnf automatically.
+
+App input pointer[RVA79CF00]:
+  keyboard current index +5280 (must0/1);
+  keyboard buffer +4768 +256*index;
+  Right Ctrl byte scan157;
+  mouseX +572 float, mouseY +576 float;
+  wheel +588, buttons +592 u16.
+532E30 masks left/right mouse buttons unless Right Ctrl is held.534AE0 generates edge flags.
+Logical game input slots beginBF3270, stride88; newly pressed bits are+8.
+Native developer hidden reset uses logical slot1 edge0x8000. It is not a generic primary-player block button, and the App can reorder physical controllers by activity.
+
+EXCLUSIONS / LIMITS
+
+- Motion-info and treasure-off bits have only setter xrefs in this native pass.
+- Legacy config movement/attack/EXP labels do not establish active gameplay multipliers.
+- Worldflag2A11400 bit0x20 pauses certain effects; it is not verified full simulation pause.
+- Camera and timing primitives are verified statically; the proposed trainer hooks still need controlled runtime validation.
+- Pause/frame-step and freecam together are not yet a completed feature.
+- World and room numerical bounds do not guarantee playable progression or installed assets.
+- No boss-specific phase rewind or complete runtime savestate was found in this scope.

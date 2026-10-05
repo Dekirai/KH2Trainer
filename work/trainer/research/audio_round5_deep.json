@@ -1,0 +1,923 @@
+{
+  "title": "Spatial listener selection, transforms and lifetime",
+  "target_sha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "scope": "88 complete native bodies,4064 instructions,16934 original bytes verified. Research only; frozen Trainer0.9 unchanged.",
+  "conclusions": [
+    "Active listener is the last enabled entry with maximal unsigned priority; kind1/base,2/point,3/line are distinct native classes.",
+    "Cached listener position is manager+132, subject to valid selected membership and last native update; raw nonnull selected pointer is insufficient after list changes.",
+    "Native calls may allocate/delete, consume reverb requests, or notify callbacks. A diagnostic snapshot should directly copy validated fields under existing lock/lifetime constraints.",
+    "071940/50/60 are concrete false-return stubs, not missing callable developer tools.",
+    "Disabling/deleting every listener is unsuitable:072070 includes a null dereference when both previous/current selected pointers are null.",
+    "Only three direct root writes were found among34 supplied IDA xrefs: one publication and two cleanup clears; this does not exclude computed/external writes."
+  ],
+  "diagnostic_contract": {
+    "status": "Read-only contract independently reviewed statically; implementation pending.",
+    "thread": "Reuse existing audio_mix ThreadReady and successful GraphReady on the validated application post-Update engine thread. Existing audio_lifecycle report supplies initialization/shutdown serialization.",
+    "locks": "Acquire global Sound CS2B81278 with TryEnter first, validate roots, then TryEnter manager CS+776 only after manager range/vtable/byte816 validation and the independent post-Update lifetime gate. Byte816 alone is not a lifetime witness:070E20 deletes the CS without clearing it. Retain both during list/selected/matrix copies; release the captured acquired manager CS before the captured global CS in guaranteed cleanup. Never wait for a lock or call native getters.",
+    "graph": "Manager global2B81DF8 readable992B, vtable61A3E0, initialized byte816==1; layout global2B81DE8 readable1440B/vtable619DE8; manager+8==layout and layout+8==manager. Driver graph stays the existing verified graph. Recheck same roots under the locks.",
+    "members": "Count+24 must be0..capacity, capacity+32 in1..1024 (trainer bound), highwater+28 between count and capacity. Validate full pointer array capacity*8 and each counted nonnull unique pointer/ID. DWORD IDs+12 nonzero, QWORD backlink+16==manager, BYTE kind+8 and vtable must form a known pair (base61A780/1,point61A8D8/2,line61A998/3), range136B for base/point or184B for line. Delete-ID071640 and Delete-All071740 leave selected+120 unchanged. No dereference of selected+120 until it equals a validated list member.",
+    "freshness": "Selected must be registered, enabled and equal to the last maximal unsigned-priority enabled member for active readouts. Structural/readiness counts may still be available without selected. Cached transform must be finite but may precede the newest controller setter; label as last native audio update. Do not recompute the inverse, invoke update or expose unverified manager+148 as velocity.",
+    "candidate_slots": {
+      "408": "Listener graph ready",
+      "409": "Registered listeners",
+      "410": "Listener capacity",
+      "411": "Peak registered listeners",
+      "412": "Enabled listeners",
+      "413": "Selected listener ID",
+      "414": "Selected listener kind",
+      "415": "Selected unsigned priority",
+      "416": "Cached listener X",
+      "417": "Cached listener Y",
+      "418": "Cached listener Z"
+    },
+    "deferred": "Speaker-mode/channel configuration, gain/envelope controls, listener overrides and object creation remain research only. Slots419..423 stay reserved but unused until actual behavior and user value are clear.",
+    "limitations": [
+      "The graph can change immediately after unlock.",
+      "A valid member may have a newer matrix than the cached manager position; there is no dedicated frame stamp.",
+      "External mods invoking private audio teardown from other threads are outside the observed native lifecycle.",
+      "Pointer reuse and arbitrary corrupt memory cannot be proved away by structural checks."
+    ]
+  },
+  "claims": [
+    {
+      "addr": "0x140137410",
+      "Finding": "Builds a matrix via13B6D0, waits for ListenerManager, packages the supplied ID in a controller and calls continuous matrix operation032390, then destroys the temporary controller.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140031f30",
+      "Finding": "Constructs a ListenerController with vtable618180, ID DWORD+8 from EDX, and borrowed manager QWORD+16 from R8; it does not create a listener.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140031f50",
+      "Finding": "Deleting ListenerController destructor restores vtable618180 and, when flags&1, frees through031E80 unless flags&4 selects nullsub_1 with size32. This size branch prevents assuming an allocation size solely from the visible24-byte fields.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140031fa0",
+      "Finding": "Default ListenerController construction sets vtable618180 and clears ID+8 and manager+16.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140031fc0",
+      "Finding": "ListenerController copy construction copies only ID+8 and borrowed manager+16, while restoring the controller vtable; no listener ownership/refcount is acquired.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x1400322a0",
+      "Finding": "Controller matrix operation locks global Sound CS, then manager CS through vtable+440, resolves ID through manager+40 and dispatches listener+40. It releases the manager lock before the global lock and returns false for a missing listener.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140032390",
+      "Finding": "Controller continuous-matrix operation uses the same global-then-manager lock order and ID resolution as0322A0 but dispatches listener vtable+48; base implementation copies the matrix without setting the changed bit.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x1400708b0",
+      "Finding": "Constructs the992-byte ListenerManager: own CS+776 with flag+816, pointer-list+768 with capacity+32, count+24 and peak+28, dynamic envelope at+56, five speaker configurations, and one default type2 PointListener. Default selected pointer+120 starts null; constructor is not a safe hot-reset API.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140070e20",
+      "Finding": "ListenerManager deleting destructor removes/frees each list member under its own CS, then frees the list, deletes that CS and selects interface vtable61A5B0. It does not clear byte816 before/after DeleteCriticalSection, so that byte alone cannot establish a live lock. Flags&1 select manager storage disposal; size992 appears in the flags&4 branch.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x1400710a0",
+      "Finding": "Copies global LayoutManager2B81DE8 into current ListenerManager2B81DF8+8 with no local null checks or lock.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x1400710c0",
+      "Finding": "Creates/reuses listener IDs under manager CS. Auto-ID uses/increments+16; types0/1 create136-byte base Listener, type2 creates136-byte PointListener, type3 creates184-byte LineListener. Same ID/type reuses existing object; changed type destroys/compacts first. Count+24 and peak+28 are maintained, capacity+32 gates insertion. Allocation failure can still leave a null inserted slot; invalid types can return an ID without insertion.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x1400714e0",
+      "Finding": "Builds an output ListenerController containing requested ID and this manager; the method only packages a borrowed reference.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071500",
+      "Finding": "Returns the pointer with matching nonzero ID+12 after searching list+768/count+24 under manager CS. The lock is released before return, so the pointer alone carries no lifetime lease.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x1400715a0",
+      "Finding": "Nonzero-ID lookup uses the same manager-CS-protected list search and returns a borrowed pointer after unlocking; nested users must retain their surrounding lock.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071640",
+      "Finding": "Deletes a matching nonzero listener ID under manager CS, invokes virtual deleting destructor, compacts subsequent pointers, clears the vacated tail slot and decrements count+24. It leaves selected+120 unchanged, so selected can reference the removed object until the next native selection update.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071740",
+      "Finding": "Deletes all registered listener objects under manager CS, clears their pointer slots and resets count+24 to zero, while leaving selected+120 unchanged. It is not a benign snapshot getter, and the retained selected pointer is not safe to dereference without renewed membership validation.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x1400717f0",
+      "Finding": "Resolves listener ID under manager CS and sets enabled through virtual+16. The inlined base operation clears bit0 of byte+132 then ORs the entire caller byte; callers must supply boolean0/1.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x1400718a0",
+      "Finding": "Resolves listener under manager CS and returns its enabled state through virtual+24, inlining byte+132&1 for the base implementation; missing ID returns false.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071940",
+      "Finding": "ListenerManager vtable slot7 is a two-instruction false-return stub. No listener storage is touched by this body; the intended API name remains unresolved.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071950",
+      "Finding": "ListenerManager vtable slot8 is a two-instruction false-return stub with no storage access; API-level purpose remains unresolved.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071960",
+      "Finding": "ListenerManager vtable slot9 is a two-instruction false-return stub with no storage access; API-level purpose remains unresolved.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071970",
+      "Finding": "Under manager CS, resolves an ID and invokes virtual+32 to copy its position into the caller buffer. Base case transforms the matrix+56 through0409E0, copies the final row and forces output w=1; missing ID returns false.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071a30",
+      "Finding": "Under manager CS, resolves ID and rejects NaN only in input matrix elements12/13/14 before listener virtual+40. Infinity and the other matrix elements are not screened by this native method.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071b00",
+      "Finding": "Like071A30 but calls listener virtual+48, the continuous matrix setter; only translation NaNs are explicitly rejected.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071bd0",
+      "Finding": "Under manager CS, resolves ID and dispatches listener virtual+64 with an unsigned priority value, returning false for a missing listener.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071c60",
+      "Finding": "Under manager CS, obtains listener priority via virtual+72 or DWORD+120 for the base implementation; missing ID returns zero, indistinguishable from priority0 in this getter alone.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071cf0",
+      "Finding": "Under manager CS, resolves an ID and writes its DWORD+124 mode through virtual+80, with a direct store for base075920. No numeric range validation occurs here.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071db0",
+      "Finding": "Tail-calls DynamicValue086260 on manager+56, returning the computed envelope scalar; it is not simply a raw read of current float+64.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071dc0",
+      "Finding": "Returns scalar SSE MAXSS of manager float+104 and (float+96 minus float+100). Operand order is preserved; no stronger semantic name is assigned to these fields.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071de0",
+      "Finding": "Copies cached16-byte position at manager+132 only when selected pointer+120 is nonnull. It performs no local locking, membership validation or update; true does not independently establish a fresh frame.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071e00",
+      "Finding": "Copies cached16-byte field+148 only when selected pointer+120 is nonnull; this body does not establish that field as velocity or refresh it.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071e20",
+      "Finding": "Copies the four cached matrix rows at manager+164..+227 when selected pointer+120 is nonnull. No local lock or frame stamp accompanies the copy.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071e70",
+      "Finding": "Copies a caller64-byte matrix into manager+292..+355 and sets byte+129=1; no local lock or matrix validation is present.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071eb0",
+      "Finding": "Returns false when byte+129 is zero, otherwise copies manager's64-byte matrix at+292 to the output.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071ef0",
+      "Finding": "When a selected listener exists, passes manager matrix+228 and caller vector to041280; otherwise directly copies the input16-byte vector. No allocation or listener creation is performed.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140071f50",
+      "Finding": "Compares reverb request floats+40/+44 to submitted copies+48/+52, packages reverb controller0, conditionally calls its virtual+80, updates the submitted copies, then zeroes request+40/+44. It is a state-consuming operation, not a read-only reverb getter.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140072070",
+      "Finding": "Listener update receives elapsed milliseconds from077FC0. It clears selected+120 before entering own CS, then scans enabled members and chooses the greatest UNSIGNED priority, with later list entries winning ties. It invokes selected virtual+152, caches matrix+164, position+132 and transformed matrix+228. Mode+124 changes create a300ms envelope to1 or0.05; scalar+96 approaches selected+128 by at most elapsed/1100. It publishes changed byte+128 and clears each listener's bit1. If both previous and new selected pointers are null, the observed equal-pointer path dereferences null at0723D3; do not delete/disable all listeners. Optional layout callback+1368 receives an88-byte timestamped matrix record.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140072650",
+      "Finding": "Stores speaker-configuration index at manager+356, then uses the group's byte channel count at+518+2*index and its angle table at+528+24*index to build cosine/sine vectors at+360 with16-byte stride. This body performs no index or count bounds check.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140073640",
+      "Finding": "Converts float in XMM1 to (2pi-input)-pi/2; subtracts2pi once if result>pi. It is a single conditional correction, not an arbitrary-angle modulo routine.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140073670",
+      "Finding": "Converts float in XMM1 to input-3pi/2; adds2pi once if result<-pi. Constants were checked against original PE float32 bytes.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x1400736a0",
+      "Finding": "Converts float in XMM1 to (2pi-input)-pi/2, adding2pi once if negative. Return uses XMM0; values outside ordinary angle ranges are not repeatedly normalized.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x1400736d0",
+      "Finding": "Converts float in XMM1 to input-pi/2, adding2pi once if negative. Return uses XMM0.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x1400736f0",
+      "Finding": "Maps XMM1 input p to angle=(p-1)*0.5*pi and writes caller R8 vector(10*cos(angle),0,10*sin(angle),1). No input range validation occurs.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140073a50",
+      "Finding": "Writes eight output floats based on source flags at+12 and float+4: bit8 and value1 select fixed routing vectors, bits1/2 select fixed distributions, otherwise calls0740B0 and optionally adds8% of the first two outputs to outputs4/5 for bit4. Detailed speaker-channel naming remains unresolved.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140073c00",
+      "Finding": "Enters manager's CRITICAL_SECTION at+776 only when byte+816 is nonzero. It does not validate object lifetime.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140073c20",
+      "Finding": "Leaves manager's CRITICAL_SECTION at+776 only when byte+816 is nonzero; paired caller ownership remains required.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x1400746e0",
+      "Finding": "Requires a selected listener, transforms an input four-vector by cached matrix+164, normalizes its xyz direction, computes yaw atan2(x,-z) and elevation atan2(y,sqrt(x*x+z*z)), and returns each angle multiplied by2/pi. Zero horizontal direction is treated as yaw0. No current-frame stamp is produced.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140075540",
+      "Finding": "Base Listener virtual type query returns constant1, as consumed by0710C0 when matching an existing ID/type.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140075820",
+      "Finding": "Base enabled setter clears bit0 of listener byte+132 then ORs the entire DL value. Only boolean callers preserve all unrelated bits.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140075830",
+      "Finding": "Base enabled query returns listener byte+132&1.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140075840",
+      "Finding": "Base position getter takes output pointer in RDX, saves it in R8 across0409E0(listener+56,stack64), copies the final16-byte row and overwrites w with1. The decompiler omits the output argument; full ASM establishes it.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140075870",
+      "Finding": "Base changed-matrix setter sets byte+132 bit1 and copies four16-byte rows to+56..+119, returning true.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x1400758a0",
+      "Finding": "Base continuous-matrix setter copies the same64 bytes at+56 without setting bit1, returning true.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x1400758d0",
+      "Finding": "Copies listener's64-byte matrix at+56 into the caller buffer and returns true.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140075900",
+      "Finding": "Base priority setter stores EDX into DWORD+120 and returns true.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140075910",
+      "Finding": "Returns priority DWORD+120 as an unsigned32-bit result.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140075920",
+      "Finding": "Stores caller DWORD into listener mode+124 with no local bounds check.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140075930",
+      "Finding": "Returns listener mode DWORD+124.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140075940",
+      "Finding": "Stores XMM1 float into listener+128; no finite/range check occurs.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140075950",
+      "Finding": "Returns listener float+128 through XMM0.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x1400759b0",
+      "Finding": "Base per-update virtual+152 returns enabled bit0 of byte+132 and does not update the matrix.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x1400759c0",
+      "Finding": "Serializes through listener virtual+168 into64 stack bytes and invokes optional layout callback+1360 with that buffer/size64. It is an observer-export path, not a no-side-effect field accessor.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140075d20",
+      "Finding": "Deserializes enabled bit0 from source byte1, priority from DWORD4, and two16-byte fields from source+16/+32 into listener+24/+40; returns source+48.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140075f10",
+      "Finding": "PointListener changed-matrix setter sets changed bit1, copies the64-byte matrix at+56 and invokes075FB0 observer emission.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140075f50",
+      "Finding": "PointListener continuous-matrix setter copies matrix+56 and invokes075FB0 without setting changed bit1.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140075f80",
+      "Finding": "PointListener priority setter stores DWORD+120 and invokes075FB0.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140075fa0",
+      "Finding": "PointListener per-update virtual+152 returns enabled bit0 with no local matrix mutation.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140075fb0",
+      "Finding": "For a nonnull layout with observer byte+1353 enabled, creates a64-byte record through075C60/075A20 and calls optional layout callback+1360. Consequently point-listener setters can trigger external callbacks.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x1400763f0",
+      "Finding": "LineListener changed-matrix setter sets changed bit1, copies matrix+56 and invokes076920 observer emission.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140076430",
+      "Finding": "LineListener continuous-matrix setter copies matrix+56 and invokes076920 without setting changed bit1.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140076460",
+      "Finding": "LineListener priority setter stores DWORD+120 and invokes076920.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140076480",
+      "Finding": "Sets one of two endpoint listener IDs at+168/+172 only for index<2 and a resolvable target. If the target is another LineListener it rejects a recursive dependency reported by virtual+144.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140076500",
+      "Finding": "Searches the two endpoint IDs for a requested ID; resolves other endpoint objects and recursively calls virtual+144 for LineListeners. It is a dependency traversal, so arbitrary cyclic external edits would be unsafe.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140076600",
+      "Finding": "Returns endpoint ID DWORD+168+4*index for index0/1, otherwise zero.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140076620",
+      "Finding": "Stores XMM1 interpolation factor at LineListener+176 and returns true; the native method does not clamp it to0..1.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140076630",
+      "Finding": "Copies raw DWORD of interpolation factor+176 to caller output and returns true.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140076640",
+      "Finding": "If enabled, resolves up to two endpoint listener IDs and invokes endpoint LineListener update recursively. It adds their reported positions to local endpoint vectors and writes endpoint0+(endpoint1-endpoint0)*factor(+176) to listener+24. It does not clamp the factor; full auditory routing beyond this calculation remains separately unresolved.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140076920",
+      "Finding": "For observer-enabled layout, packages line endpoint fields+136/+152, ID+168, factor+176 and flag+180 into a64-byte record, conditionally transforms it through0760B0, and calls optional layout callback+1360. Unlike075FB0 it dereferences the layout before a null check.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140076f20",
+      "Finding": "SoundSystem CreateCore allocates ListenerManager992 bytes only if global2B81DF8 is null, initializes capacity from config+48, binds layout2B81DE8+8 to manager and manager+8 to layout, and sets speaker configuration2. This is the only observed nonzero direct writer of the manager global.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140077a30",
+      "Finding": "Alternate cleanup joins both periodic audio workers before deleting ListenerManager via virtual destructor and nulling2B81DF8. The root remains nonnull during its destructor; this path is not a safe worker-thread snapshot boundary.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140077be0",
+      "Finding": "Normal cleanup stops/joins audio workers, drains native voices, deletes ListenerManager and then clears2B81DF8. Safe trainer reads depend on the existing app-thread post-update lifetime contract, not merely the root being nonnull.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140077fa0",
+      "Finding": "Returns global ListenerManager pointer2B81DF8 in RAX with no lock, null check or acquired lifetime.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140077fc0",
+      "Finding": "Acquires global Sound CS before invoking listener update and layout update. If elapsed argument has its sign bit set, computes elapsed milliseconds from QPC; otherwise uses the supplied interval. The outer CS covers selected-pointer clearing that happens before the listener's inner CS.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x14007aa70",
+      "Finding": "Directly dispatches current manager vtable+384 without a null check; API meaning of that slot remains unresolved.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140136e10",
+      "Finding": "Waits until ListenerManager exists, deletes all current listeners through manager+48, creates a type1 listener with automatic ID via+16, enables it via+80, then configures layout/reverb and audio workers. It is initialization, not a safe Trainer reset action.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140137e20",
+      "Finding": "When game sound manager8BBD08 exists, packages game listener ID8BBDB0, constructs a matrix via13F850 from constants/input, calls continuous setter032390 and destroys the temporary controller.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140137f70",
+      "Finding": "Builds a matrix via13B6D0, waits for ListenerManager, packages the supplied ID and calls changed-matrix operation0322A0 before destroying the controller.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    },
+    {
+      "addr": "0x140139e50",
+      "Finding": "Debug sound-play path logs sound position and separately obtains current listener cached position through ListenerManager virtual+96. This supports the position meaning of manager+132; no live logging was invoked.",
+      "Evidence": [
+        "work/trainer/research/audio_round5_full_asm.json",
+        "work/trainer/research/audio_round5_extra_asm.json",
+        "work/trainer/research/audio_round5_original_verification.json"
+      ],
+      "Limitations": "Specific static behavior in the exact Steam1.0.0.2 PE. No native execution, live sound test or complete semantic understanding is implied."
+    }
+  ]
+}

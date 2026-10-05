@@ -1,0 +1,39 @@
+KH2 TRAINER — SOURCE BUILD
+
+Requirements: Windows x64, .NET SDK 8 or newer, Python 3, and Visual Studio
+Build Tools with the C++ desktop workload and a Windows SDK. setup-toolchain.cmd
+discovers the installed MSVC toolchain with vswhere. No NuGet test framework
+or third-party application libraries are required.
+
+From PowerShell in the extracted source workspace:
+  .\trainer\build.ps1
+
+The default build compiles the native DLL, assembles the reviewed catalogs,
+runs isolated native and C# tests, and publishes a self-contained x64 EXE.
+Use -FrameworkDependent only when the destination already has .NET 8 Desktop
+Runtime installed. The output path is printed when packaging finishes.
+
+Game-specific research catalogs and test sources live in work/trainer beside
+the trainer directory. Preserve this directory layout in source distributions.
+The embedded native bridge and JSON catalogs must be rebuilt together.
+
+The test harnesses use synthetic memory and fixtures. They do not run the
+game's functions or replace visual and gameplay validation. No test silently
+modifies the original game executable, mod configurations or real save files.
+
+Protocol version 3 carries 512 value/capability slots and stamps each command with the host's GetTickCount-compatible
+timestamp. Unstarted commands expire after eight seconds. The five-second
+host timeout uses the timestamp's age, including after game suspension.
+
+The bridge remains loaded until the game exits. Restart the game before
+testing a different trainer build. The launcher rejects a mismatched resident
+bridge instead of mixing old native code with a new feature catalog.
+
+Optional read-only retail asset checks:
+Pass -AssetGameDirectory '<KH collection installation folder>' to build.ps1.
+This compares decoded package payloads with an existing OpenKh extracted corpus.
+Without this parameter, the portable synthetic Core tests still run.
+The build also renders the feature-card template, Asset Explorer, asset
+fingerprints and Game Messages offscreen using synthetic data. It checks their
+bindings, navigation and dark backgrounds. No game or visible window is opened.
+Sources, nested research evidence and validation reports are included.

@@ -1,0 +1,112 @@
+Independent Motion control review — resolved findings
+==================================================
+2026-10-04. Read-only analysis; no product/native/game/UI edits.
+
+Evidence: motion_independent_complete_evidence.json contains18 whole function
+bodies and complete ASM; motion_independent_readout_evidence.json adds8. The
+26 functions contain3468 ASM instructions. Every actual stored line count equals
+instruction_count and total_instructions. All pseudocode pages were combined.
+motion_independent_completeness.json records counts. The earlier10-function file
+is only a preliminary subset. motion_independent_writer_scan.json records the
+scoped rendered-listing searches and their limits.
+
+Confirmed contract
+------------------
+Actor+344 is an embedded MotionController, initialized by3B3200→3C61B0 with
+owner atcontroller+16 (Actor+360). Speed is float controller+336 (Actor+680),
+initialized to1. 3BFD30 passes global delta717480 inXMM1 to3C6740(controller RCX).
+3C6740 advances frame by delta*speed and also processes blend/loop/queue, root
+motion and triggers. Ordinary3C8A40/3C86A0/3C88C0 motion changes do not reset speed.
+Thus an actor-wide lease is consistent; it must not be keyed to current motion ID.
+
+Scoped searches find42FCE0 as the direct Actor+680 writer and3C61B0 as the
+controller+336 initializer. Other2A8h hits in3F29E0/3F34A0 are command-list UI
+buffers, as their full bodies show. This is not proof against writes through
+computed aliases, whole-object copies or external mods.
+
+42FCE0 synchronously consumes a pointer inRCX to8-byte VM operands. Operand0's
+lowDWORD is decoded; object+4 is decoded again to obtain Actor. Operand1's low
+float (args+8) is copied toActor+680.3B3200 stores the Actor's encoded self pointer
+atActor+4; the first decoded object must not be mislabeled as a YS execution
+context. Writer does not validate pointers/float and returns no VM result.
+
+Complete41B400 ASM confirms rootBank[instruction>>6],16-byte entries and
+temporary8-byte operand array passed inRCX. Bank1/index107 is slot755A20;
+root753498 must point to755370; metadata2 has return-bit0x40000000 clear.
+3E1720 can replace a bank table, but its only two observed callers26ACC0/26ACE0
+replace bank9, not bank1. Continuous bank1/slot checks are a compatibility guard.
+
+3E1410 can execute a final BDX handler during YS teardown. The observer must
+still forward original exactly once during host loss/scene teardown. Its code
+must remain resident after slot removal because a caller may already hold it.
+
+Readouts
+--------
+Motion atActor+368 has native Motion wrapper vtable; resource atMotion+8. Base
+constructor1C3840 stores this resource pointer without cloning it. Prototype0
+duration getter1DA660 readsresource+20; RAW1DB440 readsresource+32.3C8A40 caches
+duration atcontroller+64 (Actor+408) and usescontroller+68 frame, +72 blend
+duration, +76 blend target, +40 logicalID, +44 resolvedID. These are runtime data.
+3C6AA0 obtains render model through ownerActor+1968;1A4E30 dispatches through
+model+32's resource object. Model/resource identity may bound the speed lease,
+but a model loss does not change that the speed field itself belongs to Actor.
+No getters with hidden mutation or engine evaluation calls are needed for readouts.
+
+3C8520 couples sampled motion to accumulated translation/yaw.40E740 calls active
+interval handlers even if a frame value is held;40E960 invokes crossed-point
+handlers. Therefore speed0/seek/arbitraryMotionID are not harmless visual edits.
+The proposed0.1..3 limits are trainer policy, not engine-established safe extrema.
+
+Concrete source findings sent to author/root
+-------------------------------------------
+1. CurrentOwner initially accepted unchanged heap/room/Actor identity without
+   ScenePhase. Maintain could restore speed after a pending room transition,
+   event/title entry or sceneReady loss while stale global identity fields still
+   matched. Restore must require a stable current scene, while permitting model
+   or ordinary motion changes on the same current Actor.
+
+2. Stop initially cleared observedActor before its scriptChanged/restore check.
+   A concurrent WriterHook could read watched0, perform an identical-float native
+   write and finish before baseline restoration, so native ownership would be
+   overwritten. Checking scriptChanged in Tick alone is insufficient; Root resets
+   effects before MotionTick when heartbeat expires. Suggested fix: serialize
+   callback observation+original and the Start/Update/Stop mutation sections;
+   preserve forwarding on all paths and release the lock during exceptions.
+   Native42FCE0 has no recursive callback path in its inspected body.
+
+Required tests after fixes
+-------------------------
+- Normal motion ID/resource changes keep the actor-wide override.
+- Same-value and different-value script writes revoke ownership before nativewrite.
+- Same-value script write at expired heartbeat followed directly by Reset/Disable
+  does not restore baseline; another Actor's writer does not revoke this lease.
+- Concurrent callback vs Enable/slider/Stop has an explicit serial order; no
+  loss of native ownership and no stale observedActor clear/reset race.
+- Pending room/event/title/unready lifecycle produces no restore to old fields.
+- Model/motion data loss on the same stable current Actor may compare-restore.
+- Changed Actor, form, status backlink, heap/scheduler/room, external value, table
+  or callback slot causes no overwrite of foreign data/hook.
+- Slot installation only exact native→own; removal only own→native; already
+  dispatched callback still forwards exactly once after removal, bridge pinned.
+- Wrong-thread Tick/Reset never writes Actor memory. Readout invalidity publishes
+  no stale valid value and field pause remains read-only in snapshots.
+
+Resolution in the frozen final source
+-------------------------------------
+The callback and Start/UpdateRate/Stop mutations now share an exclusive SRW lock.
+The wrapper observes ownership before Original and releases the lock via finally
+even when the native callback raises an exception. Baseline capture, observation
+publication and initial field write are serialized together. Rate updates check
+fresh host, table, owned slot, current Actor and exact written value under lock.
+
+Restore now requires stable ScenePhase and a currently resolved/listed Actor,
+plus TableReady/OwnSlot and absence of observed script ownership under lock.
+Explicitly unready reset contexts never restore. Hook/bank loss ends the lease
+without restoring a value whose writer can no longer be observed, including the
+direct Reset and simultaneous HostExpired paths that run before MotionTick.
+Model pointer, resource pointer and resource-vtable identity additionally bind
+the lease; ordinary Motion/resource/ID changes on the same model remain allowed.
+
+Status: all concrete findings above are resolved in the independently read frozen
+source. Author reports454 tests,0 failures, no warnings. Final verdict, precise
+test attribution, limitations and hashes are in motion_independent_final_review.

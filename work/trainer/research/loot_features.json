@@ -1,0 +1,206 @@
+[
+  {
+    "Id": "loot.draw",
+    "Category": "Loot and Collection",
+    "Name": "Player Draw radius bonus",
+    "Kind": "Number",
+    "CommandId": 1352,
+    "ValueSlot": 352,
+    "CapabilitySlot": 352,
+    "Minimum": 0,
+    "Maximum": 5000,
+    "DefaultValue": 0,
+    "Step": 10,
+    "Unit": "units",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "Description": "Adds horizontal world units to the normal pickup radius. The normal vertical threshold, explicit script radii and form-specific collection restrictions remain.",
+    "RestoreBehavior": "One-time runtime writes, no save/ability inventory changes, hooks or retained pointers. Equipment/abilities/form/actor changes can recompute them.",
+    "Evidence": [
+      {
+        "Address": "RVA0x401730/0x3D7470/0x3DC500",
+        "Finding": "Adds horizontal world units to the normal pickup radius. The normal vertical threshold, explicit script radii and form-specific collection restrictions remain.",
+        "Level": "Complete native ASM and isolated fixtures; no live test"
+      }
+    ]
+  },
+  {
+    "Id": "loot.jackpot",
+    "Category": "Loot and Collection",
+    "Name": "Player Jackpot bonus",
+    "Kind": "Number",
+    "CommandId": 1353,
+    "ValueSlot": 353,
+    "CapabilitySlot": 353,
+    "Minimum": 0,
+    "Maximum": 9,
+    "DefaultValue": 0,
+    "Step": 0.25,
+    "Unit": "+factor",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "Description": "Adds to the party orb-quantity factor. 0 adds nothing; 1 adds one extra base quantity. Counts round upward. Some alternate native prize systems also use this factor.",
+    "RestoreBehavior": "One-time runtime writes, no save/ability inventory changes, hooks or retained pointers. Equipment/abilities/form/actor changes can recompute them.",
+    "Evidence": [
+      {
+        "Address": "RVA0x401730/0x3D7470/0x3DC170",
+        "Finding": "Adds to the party orb-quantity factor. 0 adds nothing; 1 adds one extra base quantity. Counts round upward. Some alternate native prize systems also use this factor.",
+        "Level": "Complete native ASM and isolated fixtures; no live test"
+      }
+    ]
+  },
+  {
+    "Id": "loot.lucky",
+    "Category": "Loot and Collection",
+    "Name": "Player Lucky Lucky bonus",
+    "Kind": "Number",
+    "CommandId": 1354,
+    "ValueSlot": 354,
+    "CapabilitySlot": 354,
+    "Minimum": 0,
+    "Maximum": 99,
+    "DefaultValue": 0,
+    "Step": 0.25,
+    "Unit": "+factor",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "Description": "Adds to the party item-drop factor: 1 plus all eligible party bonuses. Each of the three table item slots rolls separately. Normal suppression flags and pickup rules remain.",
+    "RestoreBehavior": "One-time runtime writes, no save/ability inventory changes, hooks or retained pointers. Equipment/abilities/form/actor changes can recompute them.",
+    "Evidence": [
+      {
+        "Address": "RVA0x401730/0x3D7470/0x3DC170",
+        "Finding": "Adds to the party item-drop factor: 1 plus all eligible party bonuses. Each of the three table item slots rolls separately. Normal suppression flags and pickup rules remain.",
+        "Level": "Complete native ASM and isolated fixtures; no live test"
+      }
+    ]
+  },
+  {
+    "Id": "loot.retained",
+    "Category": "Loot and Collection",
+    "Name": "Player munny retained",
+    "Kind": "Number",
+    "CommandId": 1355,
+    "ValueSlot": 355,
+    "CapabilitySlot": 355,
+    "Minimum": 0,
+    "Maximum": 100,
+    "DefaultValue": 100,
+    "Step": 5,
+    "Unit": "%",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "Description": "The player contribution to the fraction of munny orbs kept as munny. 100% keeps them; 0% converts them to Drive orbs. Party contributions multiply and retained counts round down.",
+    "RestoreBehavior": "One-time runtime writes, no save/ability inventory changes, hooks or retained pointers. Equipment/abilities/form/actor changes can recompute them.",
+    "Evidence": [
+      {
+        "Address": "RVA0x401730/0x3D7470/0x3DC170",
+        "Finding": "The player contribution to the fraction of munny orbs kept as munny. 100% keeps them; 0% converts them to Drive orbs. Party contributions multiply and retained counts round down.",
+        "Level": "Complete native ASM and isolated fixtures; no live test"
+      }
+    ]
+  },
+  {
+    "Id": "loot.radius",
+    "Category": "Loot and Collection",
+    "Name": "Normal pickup horizontal radius",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 356,
+    "CapabilitySlot": 356,
+    "Minimum": -1000000,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "Unit": "units",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "Description": "Default horizontal radius including Draw and the current status bonus; explicit native radius overrides and vertical/form gates are separate.",
+    "RestoreBehavior": "",
+    "Evidence": [
+      {
+        "Address": "RVA0x3ABA40/0x3DC170/0x3DC500/0x3D5C50",
+        "Finding": "Default horizontal radius including Draw and the current status bonus; explicit native radius overrides and vertical/form gates are separate.",
+        "Level": "Read-only calculation from validated current actors and STATUS records"
+      }
+    ]
+  },
+  {
+    "Id": "loot.party_quantity",
+    "Category": "Loot and Collection",
+    "Name": "Party orb quantity factor",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 357,
+    "CapabilitySlot": 357,
+    "Minimum": -1000000,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "Unit": "x",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "Description": "Current script base plus eligible party Jackpot contributions, in native float32 order.",
+    "RestoreBehavior": "",
+    "Evidence": [
+      {
+        "Address": "RVA0x3ABA40/0x3DC170/0x3DC500/0x3D5C50",
+        "Finding": "Current script base plus eligible party Jackpot contributions, in native float32 order.",
+        "Level": "Read-only calculation from validated current actors and STATUS records"
+      }
+    ]
+  },
+  {
+    "Id": "loot.party_lucky",
+    "Category": "Loot and Collection",
+    "Name": "Party item-drop factor",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 358,
+    "CapabilitySlot": 358,
+    "Minimum": -1000000,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "Unit": "x",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "Description": "One plus eligible party Lucky contributions. This is a multiplier of each table rate, not a displayed final probability.",
+    "RestoreBehavior": "",
+    "Evidence": [
+      {
+        "Address": "RVA0x3ABA40/0x3DC170/0x3DC500/0x3D5C50",
+        "Finding": "One plus eligible party Lucky contributions. This is a multiplier of each table rate, not a displayed final probability.",
+        "Level": "Read-only calculation from validated current actors and STATUS records"
+      }
+    ]
+  },
+  {
+    "Id": "loot.party_retained",
+    "Category": "Loot and Collection",
+    "Name": "Party munny retained",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 359,
+    "CapabilitySlot": 359,
+    "Minimum": -1000000,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "Unit": "%",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "Description": "Product of eligible party retention contributions. Each munny count is multiplied and truncated before the remainder becomes Drive orbs.",
+    "RestoreBehavior": "",
+    "Evidence": [
+      {
+        "Address": "RVA0x3ABA40/0x3DC170/0x3DC500/0x3D5C50",
+        "Finding": "Product of eligible party retention contributions. Each munny count is multiplied and truncated before the remainder becomes Drive orbs.",
+        "Level": "Read-only calculation from validated current actors and STATUS records"
+      }
+    ]
+  }
+]

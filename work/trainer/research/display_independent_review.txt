@@ -1,0 +1,38 @@
+INDEPENDENT DISPLAY REVIEW — 2026-10-04
+
+Reviewed source SHA256:
+C2F5063C043E46791FF52478458DE9E2EB73251597505D719A3D1FF1D8420E29
+trainer/Native/DisplayFeatures.inl
+Test source reviewed:
+C623D9326E11E729E2A964912E043B9EEDAEB32AC9B4976D77DE84EF9F409ED7
+work/trainer/tests/DisplayGuardTests.cpp
+
+No new blocking source or ABI issue found in this static review.
+
+The full wrapper/setter bodies establish signed-short CX brightness and CX/DX
+color arguments.1268C0 writes adjustment+716 and gamma2.2/(adjustment+2.2) at+23360;
+125D00 writes paired color mode/severity+23364/+23368. The module's validated ranges
+keep the denominator finite and positive and preserve native disabled-mode0.
+
+121D90 calls the application Update slot without surrounding presentation-mutex
+ownership.1287D0 takes GX+30848 around the separate timing-thread replay path.
+The module uses the matching verified MSVCP140 imports, captures both targets,
+rechecks lifetime after lock, performs bounded leaf preview calls, and unlocks once
+in __finally. A nonzero unlock result permanently gates further module activity.
+The CommonBridge LogFault path marks failure and continues exception search, so a
+native SEH does not lead to another trainer call with uncertain mutex ownership.
+
+Loaded-settings restore snapshots/validates all fields before either setter and
+does not write configuration. A second-setter fault can leave the first preview
+applied; this is explicitly documented, with no unsafe compensating calls.
+
+Epoch is checked for completed initialization both before and after locking. Its
+numeric value is not compared as a generation token; it must not be described as
+proof against exact object/handle reuse. Thread/app/stop/device identity gates and
+the native shutdown order support the intended normal application lifecycle.
+
+Evidence read: render_controls_deep_evidence_*.json, render_controls_deep.txt,
+display_implementation.*, DisplayGuardTests.cpp, and CommonBridge OnFrame/LogFault.
+No native build, game injection, UI action, IDB write or source mutation was done
+for this independent review. Runtime mutex wait latency and driver/device-loss
+behavior remain untested, as the implementation report states.

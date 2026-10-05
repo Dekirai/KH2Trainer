@@ -1,0 +1,886 @@
+{
+  "title": "Gummi round5: editor ownership, camera and history semantics",
+  "status": "Research only; no product code, IDB mutation, game process access, UI automation or save changes.",
+  "original_path": "E:\\SteamLibrary\\steamapps\\common\\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-\\KINGDOM HEARTS II FINAL MIX.exe",
+  "original_sha256": "9002B2DE6A1F91A790BD0673DE125D1CF833F7942BFEC827CDCF6BA64D5849ED",
+  "private_idb": "work/trainer/ida/round5_gummi.i64",
+  "session": "5b5ee46c",
+  "claims": [
+    {
+      "Address": "0x140243A10",
+      "Finding": "Initializes a Gummi menu scheduler at AF9F08 and module-state+8; registers the initialization fiber244230 in group0, priority1000. The teardown branch clears subsystem state and schedules removal of all current menu tasks.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140243a10",
+        "work/trainer/research/gummi_round5_evidence/0x140243a10.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Scheduler/global existence alone cannot distinguish initialized editor state from setup or teardown. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140243BC0",
+      "Finding": "The Gummi menu initialization fiber loads menu resources, installs recurring tasks and allocates a1414672-byte WORKAREA. It invokes25DCD0(workarea,2,43400) and attaches the resulting object to AF9F08 through2646C0.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140243bc0",
+        "work/trainer/research/gummi_round5_evidence/0x140243bc0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "This function yields repeatedly via150060/39D460 and is not a synchronous external entrypoint. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402438F0",
+      "Finding": "Menu shutdown clears AF9FA0, drops the VM bank, removes tasks from AF9F08 and releases subsystems. The scheduler global is not nulled here.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x1402438f0",
+        "work/trainer/research/gummi_round5_evidence/0x1402438f0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "A nonnull AF9F08 is not a lifetime proof; validate current scheduler/task ownership. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14025DCD0",
+      "Finding": "Constructs WORKAREA with vtable5B7330, inline GRID+128 and four HISTORY objects at+6256 with stride352064. It destroys a previous AFBEF0 before publishing the new object; owner group/priority are stored at+1414624/+1414628.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14025dcd0",
+        "work/trainer/research/gummi_round5_evidence/0x14025dcd0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Constructor initializes global ownership but later editor setup establishes grid, cursor and camera links. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14025DE80",
+      "Finding": "WORKAREA destruction releases its allocated grid buffers, clears global AFBEF0, destroys four inline histories and the grid.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14025de80",
+        "work/trainer/research/gummi_round5_evidence/0x14025de80.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Even valid-looking old grid buffers must not survive this destructor. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14025E070",
+      "Finding": "The deleting WORKAREA destructor performs the same owned-buffer/history teardown and conditionally frees the1414672-byte object through the Gummi menu allocator.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14025e070",
+        "work/trainer/research/gummi_round5_evidence/0x14025e070.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Deleting flags and allocator availability are native caller invariants. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402646C0",
+      "Finding": "Creates the WORKAREA task from stored group/priority: callback25E190, userdata+24=workarea, cleanup+104=25E1A0.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x1402646c0",
+        "work/trainer/research/gummi_round5_evidence/0x1402646c0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The task carries the native ownership proof; do not create a duplicate task. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14025E190",
+      "Finding": "WORKAREA recurring callback passes task userdata+24 to263840.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14025e190",
+        "work/trainer/research/gummi_round5_evidence/0x14025e190.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The downstream render/update routine was not independently recaptured for a trainer entrypoint. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14025E1A0",
+      "Finding": "WORKAREA task cleanup invokes userdata's deleting destructor withEDX=1.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14025e1a0",
+        "work/trainer/research/gummi_round5_evidence/0x14025e1a0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Any task disappearance invalidates cached workarea pointers. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14026C120",
+      "Finding": "EDITBASE constructor sets active byte+8, initializes its embedded widgets, publishes AFC118 and initializes material/decor mode+12272=1 and editor phase+12276=0.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14026c120",
+        "work/trainer/research/gummi_round5_evidence/0x14026c120.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "AFC118 is published before the editor fiber finishes setup; phase and task checks are required. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14026C3B0",
+      "Finding": "EDITBASE deletion clears AFC118, tears down embedded widgets, changes the vtable to MENUBASE and frees12336 bytes when requested.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14026c3b0",
+        "work/trainer/research/gummi_round5_evidence/0x14026c3b0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "AFC118 clearing is a destruction signal, not the only possible indication of an in-progress exit. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14027B570",
+      "Finding": "Creates a12336-byte GUMIEDIT with vtable5B78D0, part limit+12292=300 and main-ship flagAFC0C0=0; schedules it through274540 and stores the input plan at+12216.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14027b570",
+        "work/trainer/research/gummi_round5_evidence/0x14027b570.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The limit is a native editor field; changing it alone would not validate cost, grids or serialized plan capacity. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14027B7D0",
+      "Finding": "Creates the corresponding TINYEDIT with vtable5B7920, part limit64 and AFC0C0=1; ownership and plan setup match GUMIEDIT.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14027b7d0",
+        "work/trainer/research/gummi_round5_evidence/0x14027b7d0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Companion/editor geometry differs; do not treat the main-ship limit as universal. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140274540",
+      "Finding": "Registers a MENUBASE fiber on the supplied scheduler, group0/priority1000, callback2745A0, userdata+24=menu and cleanup2745B0.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140274540",
+        "work/trainer/research/gummi_round5_evidence/0x140274540.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The fiber may be suspended inside editor code; a trainer must not invoke its main callback directly. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402745A0",
+      "Finding": "Dispatches the menu's virtual slot+16 withRCX=menu andRDX=task. EDITBASE/GUMIEDIT/TINYEDIT resolve that slot to26CBB0.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x1402745a0",
+        "work/trainer/research/gummi_round5_evidence/0x1402745a0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "This ABI is a fiber entry, not an ordinary one-shot command. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402745B0",
+      "Finding": "Menu task cleanup calls the owned menu deleting destructor withargument1 and clears task userdata+24.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x1402745b0",
+        "work/trainer/research/gummi_round5_evidence/0x1402745b0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Task removal ends editor ownership. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14026C9D0",
+      "Finding": "Editor exit clears active+8, removes named UI entries, stops the workarea view and marks the named work-area camera for deletion before removing its registry entry.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14026c9d0",
+        "work/trainer/research/gummi_round5_evidence/0x14026c9d0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "It invokes fiber-dependent native UI helpers; do not use as a trainer hide operation. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14026CBB0",
+      "Finding": "The active editor fiber enters phase1 for normal editing, phase4 for camera preview, and other phases for selection/dialog/save. It processes native commands, yields every loop, and exits when active byte+8 clears.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14026cbb0",
+        "work/trainer/research/gummi_round5_evidence/0x14026cbb0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Safe external view actions must observe active editor plus phase1 or4 after setup; this body also writes the tutorial-progress byte and must not be replayed. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14026E9C0",
+      "Finding": "Editor setup installs the named UI objects, loads a supplied plan, resets its history, binds the named camera to widgets and enables regular editing.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14026e9c0",
+        "work/trainer/research/gummi_round5_evidence/0x14026e9c0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "This setup yields and depends on loaded menu resources; not an external initialization shortcut. Static analysis; no live execution.",
+      "PriorAuditTier": 1,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14026D620",
+      "Finding": "Native command dispatch maps command-kind2/subcode0 and menu71 to269B50; kind2/subcode1 and menu70 to265580. Preview entry checks camera transition flags, changes camera mode, hides named widgets and changes editor phase to4.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14026d620",
+        "work/trainer/research/gummi_round5_evidence/0x14026d620.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The complete dispatcher includes resource lists, dialogs and fiber-dependent actions; only its proven synchronous branches are candidate operations. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14026D450",
+      "Finding": "Preview exit returns the camera to mode0, restores named widgets, resets help/cost/cursor UI and puts editor phase at0 for its normal loop.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14026d450",
+        "work/trainer/research/gummi_round5_evidence/0x14026d450.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Calling28FFE0 alone would omit these editor/UI state transitions. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14026E440",
+      "Finding": "Creates a2624-byte WORKAREACAMERA, replacing any previous named object after setting its deletion flag. It schedules on151E50()->+8, i.e. global716CB8, in group0/priority65000, initializes viewport/FOV and invokes its update twice.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14026e440",
+        "work/trainer/research/gummi_round5_evidence/0x14026e440.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The camera scheduler differs from editor/workarea schedulerAF9F08. New creation is not a trainer operation. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140271D00",
+      "Finding": "Base CAMERA construction registers callback272070 with cleanup272090; task userdata+24 holds the camera and+32 is an optional pointer-to-pointer to clear. It initializes current/previous projection and view matrices.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140271d00",
+        "work/trainer/research/gummi_round5_evidence/0x140271d00.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Camera ownership must be found on the exact current scheduler; not inferred solely from its vtable. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140272070",
+      "Finding": "The camera task checks camera flags+2352 bit1: if set it schedules task deletion; otherwise it dispatches virtual slot+8.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140272070",
+        "work/trainer/research/gummi_round5_evidence/0x140272070.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Reject a camera already marked for deletion even if its named registry entry still exists. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140272090",
+      "Finding": "Camera task cleanup deletes the object and clears the optional task+32 owner pointer.26E440 passesnull for that pointer.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140272090",
+        "work/trainer/research/gummi_round5_evidence/0x140272090.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The registry is separately managed and must also be validated; cleanup alone does not guarantee it is cleared. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14028FD70",
+      "Finding": "WORKAREACAMERA construction installs vtable5B7D48, initializes rotation/default/focus fields, calls290C60, sets remaining transition frames+2604=0 and flags+2612=4, and copies the supplied projection.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14028fd70",
+        "work/trainer/research/gummi_round5_evidence/0x14028fd70.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Default construction fields are not evidence that setup has finished. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14028FF20",
+      "Finding": "Deleting WORKAREACAMERA destructor destroys its base camera data and frees2624 bytes through the menu allocator.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14028ff20",
+        "work/trainer/research/gummi_round5_evidence/0x14028ff20.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The body does not independently clear the named registry or AFBEF0 camera backlink. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14028FFE0",
+      "Finding": "Mode switch takesRCX=camera,DL=preview. Preview saves current Euler angles+2448 as the return baseline+2464 and FOV as+2592; leaving preview starts20 transition units, restores baseline angles/FOV and re-enables editor workarea/grid flags.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14028ffe0",
+        "work/trainer/research/gummi_round5_evidence/0x14028ffe0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "It also changes WORKAREA flags throughAFBEF0. Full preview entry/exit requires the UI/controller branches in26D620/26D450. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402901A0",
+      "Finding": "Camera input first drains remaining+2604 by an integer derived from min(frameDelta717484,2), then honors the global input lock. Preview input modifies native horizontal FOV within constants73DCC0..C4 (approximately20..90 degrees) and Euler angles; edit input starts bounded angle transitions.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x1402901a0",
+        "work/trainer/research/gummi_round5_evidence/0x1402901a0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Physical button naming is not established here. FOV is an angle in radians, not a camera-distance field. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140290190",
+      "Finding": "Returns whether camera transition/lock flag+2612 contains0x20.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140290190",
+        "work/trainer/research/gummi_round5_evidence/0x140290190.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "This predicate validates no object, scheduler or scene lifetime. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140290900",
+      "Finding": "Native view reset takesRCX=camera andEDX=duration, stores2*duration in+2604/+2608 and sets transition flag0x10. Preview restores saved entry angles/FOV; edit mode restores native defaults and computes the cursor/grid focus. Yaw baseline is normalized in a loop by2*pi.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140290900",
+        "work/trainer/research/gummi_round5_evidence/0x140290900.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Ignore the incidental return value. Require finite bounded Euler values, duration>0, idle transition and valid workarea/cursor dependencies to avoid stale pointers or pathological normalization loops. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140290C60",
+      "Finding": "Initializes editor target rotation from globals73DD10..18 and derives a snapped pitch for focus calculations using73DCD8/73DCD4.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140290c60",
+        "work/trainer/research/gummi_round5_evidence/0x140290c60.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Default angles are native configuration values; no arbitrary world-camera rotation semantics are implied. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140290D00",
+      "Finding": "WORKAREACAMERA virtual update invokes2901A0, dispatches mode0 to290D50 or mode1 to2915F0, and increments+2616.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140290d00",
+        "work/trainer/research/gummi_round5_evidence/0x140290d00.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Other mode values are unsupported by this update; reject them in a trainer context. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140290D50",
+      "Finding": "Editor-mode update interpolates Euler/FOV while transition frames remain, owns the boolean input lock during transition, updates selected-cursor focus, then builds view/projection data for current and previous frames.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140290d50",
+        "work/trainer/research/gummi_round5_evidence/0x140290d50.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "This routine has broad geometry/render dependencies and must remain under its native task, rather than being called after arbitrary field writes. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402915F0",
+      "Finding": "Preview-mode update interpolates only while+2604>0, releases its input-lock flag when idle, transforms the base camera around WORKAREA center and rebuilds current/previous projection matrices. An idle one-shot projection change is consumed by the next native update.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x1402915f0",
+        "work/trainer/research/gummi_round5_evidence/0x1402915f0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Native user zoom or reset can overwrite a one-shot trainer zoom; no persistent ownership or restoration is proposed. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140291DB0",
+      "Finding": "Named-object getter calls291E20; if absent it decrements freeCount73EB50, indexes the80-entry pool at73DD90 and copies the new name after zeroing its pointer.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140291db0",
+        "work/trainer/research/gummi_round5_evidence/0x140291db0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "This is a mutating find-or-create routine with native unchecked capacity/name assumptions. Do not call it as a trainer getter. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140291E20",
+      "Finding": "Searches the80 records at73DD90..73EA10, each40 bytes with pointer+0 and name+8, skipping entries listed in free indices73EA10 using count73EB50. It returns the existing matching record ornull.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140291e20",
+        "work/trainer/research/gummi_round5_evidence/0x140291e20.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Native strlen/strcmp assume valid NUL-terminated names and a valid free list; a trainer should perform its own bounded scan. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140291D60",
+      "Finding": "Releases a named record by pushing its index onto the registry free list and clearing its pointer.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140291d60",
+        "work/trainer/research/gummi_round5_evidence/0x140291d60.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The freed record's name storage may remain; scanning names alone can find stale entries. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402943E0",
+      "Finding": "Sets globalAFD1D8=1, used by camera transitions and cursor operations as an input lock.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x1402943e0",
+        "work/trainer/research/gummi_round5_evidence/0x1402943e0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "It is a boolean, not a reference count; external lock acquisition/release would interfere with other native owners. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402943F0",
+      "Finding": "Clears globalAFD1D8=0.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x1402943f0",
+        "work/trainer/research/gummi_round5_evidence/0x1402943f0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "A trainer should not clear this flag to force a blocked view command. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140294400",
+      "Finding": "Reads the currentAFD1D8 input-lock byte.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140294400",
+        "work/trainer/research/gummi_round5_evidence/0x140294400.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The byte alone does not identify which native operation owns the lock. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14019CE90",
+      "Finding": "Reads projection FOV float atprojection+68+4*axis. Camera+16 andaxis0 thus read camera+84.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14019ce90",
+        "work/trainer/research/gummi_round5_evidence/0x14019ce90.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Axis bounds are caller invariants. Static analysis; no live execution.",
+      "PriorAuditTier": 3,
+      "PriorAuditClaims": [
+        1014
+      ]
+    },
+    {
+      "Address": "0x14019DDE0",
+      "Finding": "Projection setterABI isvoid(RCX=projection,XMM1=angleRadians,R8D=axis). Axis0 derives focal scale+64 and both FOVs+68/+72 from tan(angle/2), viewport dimensions+76/+80 and constants512/416.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14019dde0",
+        "work/trainer/research/gummi_round5_evidence/0x14019dde0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Require finite positive viewport dimensions and bounded angle. It modifies projection data only; regular camera update builds dependent matrices. Static analysis; no live execution.",
+      "PriorAuditTier": 3,
+      "PriorAuditClaims": [
+        1012,
+        1042,
+        2710,
+        2713
+      ]
+    },
+    {
+      "Address": "0x1402641D0",
+      "Finding": "Camera focus uses WORKAREA cursor+1414568 if active and cursor+2840 is nonzero; otherwise it copies workarea center+32. Active focus uses282FA0, plane selection264150 and GRID helpers24B1D0/24B220.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x1402641d0",
+        "work/trainer/research/gummi_round5_evidence/0x1402641d0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The edit-mode reset needs valid cursor, grid and finite vectors in addition to camera ownership. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140264150",
+      "Finding": "Selects the focus/grid plane from cursor mode+2844 and matrix components, returning0/1/2.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140264150",
+        "work/trainer/research/gummi_round5_evidence/0x140264150.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The supplied matrix must be valid and finite; no resource lifetime validation occurs. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140264A60",
+      "Finding": "Selection predicate returns whether the current workarea cursor exists and lacks inactive flag4 at+16.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140264a60",
+        "work/trainer/research/gummi_round5_evidence/0x140264a60.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Nonnull alone is insufficient to access cursor data safely. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140282FA0",
+      "Finding": "Builds a cursor position from actor-like fields+1072/+1120; unless flags+2976 contain4, adjusts by transformed grid-cell half extents read through currentAFBEF0.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140282fa0",
+        "work/trainer/research/gummi_round5_evidence/0x140282fa0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "It reads cursor data through+2976 and the current global workarea; reject stale cursor/workarea pairings. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14024B1D0",
+      "Finding": "Copies the grid focus vector+6072 and replaces one component using the supplied position and selected plane0/1/2 (or stored plane+6112 fornegative).",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14024b1d0",
+        "work/trainer/research/gummi_round5_evidence/0x14024b1d0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The argument is the inline GRID atWORKAREA+128, not the WORKAREA base. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14024B220",
+      "Finding": "Copies grid focus+6072 and replaces one component with grid position+6040/+6044/+6048 for the selected/stored plane.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14024b220",
+        "work/trainer/research/gummi_round5_evidence/0x14024b220.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "No pointer or plane validity checks are performed. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402601A0",
+      "Finding": "Editor grid setup initializes workarea bounds/dimensions, clears linked parts, binds camera atworkarea+1414552, resets four histories and sets history cursor=-1 with zero range.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x1402601a0",
+        "work/trainer/research/gummi_round5_evidence/0x1402601a0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Setup assumes valid native geometry and may release/rebuild existing content; never use as a simple trainer reset. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140260440",
+      "Finding": "Allocates a2992-byte CURSOR fromAFBA60, creates it with camera/cost context and stores it atworkarea+1414568. It starts with inactive flag4.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140260440",
+        "work/trainer/research/gummi_round5_evidence/0x140260440.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The cursor's allocation and resources are owned by the editor; existence is not an invitation to construct another. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14026C830",
+      "Finding": "Connects editor, workarea, named camera, embedded cost objecteditor+12016 and cursor. The current camera is stored inworkarea+1414552 and cost in+1414576; the editor material/decor mode is copied toAFBEE8.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14026c830",
+        "work/trainer/research/gummi_round5_evidence/0x14026c830.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "These exact backlinks can be used in a read-only current-editor guard. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140264600",
+      "Finding": "Begins a history transaction by incrementing current cursor+1414652 and end+1414648, retaining up tofour entries, renormalizing indices byfour, and resetting the selected history slot through its shared tail27EB00.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140264600",
+        "work/trainer/research/gummi_round5_evidence/0x140264600.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Complete dedicated ASM includes the noncontiguous shared tail; its41 original bytes are saved separately. Signed modulo requires valid nonnegative history indices. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402645A0",
+      "Finding": "Resets allfour history records and storesbegin=end=0,current=-1.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x1402645a0",
+        "work/trainer/research/gummi_round5_evidence/0x1402645a0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "This discards undo history; not proposed as a harmless view action. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140265580",
+      "Finding": "REDO wrapper computesnext=current+1; ifnext<end it storesnext and invokes27EB30 onworkarea+6256+352064*(next%4).",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140265580",
+        "work/trainer/research/gummi_round5_evidence/0x140265580.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Corrects the old report's Undo label for27EB30. Must retain native history invariants and valid grid/resources. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140269B50",
+      "Finding": "UNDO wrapper checksbegin<=current, calls27EB70 on the current ring slot, then decrements current.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140269b50",
+        "work/trainer/research/gummi_round5_evidence/0x140269b50.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Corrects the old report's Redo label for27EB70. It can allocate/recreate parts via downstream helpers. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14027E5E0",
+      "Finding": "Constructs2000 snapshot records split into two1000-entry groups, clears counts+28/+32 and sets applied side+352052=1.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14027e5e0",
+        "work/trainer/research/gummi_round5_evidence/0x14027e5e0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Snapshot handles include pointers into the current workarea; copying this object across editor lifetimes would be invalid. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14027E740",
+      "Finding": "Appends a176-byte snapshot to group0 or1 up to1000 entries, including transform, object information, flags and grid-handle pointer.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14027e740",
+        "work/trainer/research/gummi_round5_evidence/0x14027e740.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The helper only checkscount<1000, not negative counts or handle ownership. Static analysis; no live execution.",
+      "PriorAuditTier": 3,
+      "PriorAuditClaims": [
+        1357
+      ]
+    },
+    {
+      "Address": "0x14027E8E0",
+      "Finding": "Clears both group counts and sets applied side1.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14027e8e0",
+        "work/trainer/research/gummi_round5_evidence/0x14027e8e0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Does not itself reconstruct a scene or create a new editing transaction. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14027EA50",
+      "Finding": "Removes the requested history group by dereferencing each retained grid handle, selecting material/decor mode and calling262C20 for an existing part; restoresAFBEE8 afterward.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14027ea50",
+        "work/trainer/research/gummi_round5_evidence/0x14027ea50.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Every handle and current part/grid relationship must still belong to the same workarea. Static analysis; no live execution.",
+      "PriorAuditTier": 3,
+      "PriorAuditClaims": [
+        1359
+      ]
+    },
+    {
+      "Address": "0x14027E900",
+      "Finding": "Recreates the requested history group: allocates2576-byteGUMI objects viaAFBA60, constructs from saved snapshots, inserts with267300 and restoresAFBEE8. Selection may also recolor the recreated part.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14027e900",
+        "work/trainer/research/gummi_round5_evidence/0x14027e900.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Allocator success and referenced part assets are assumed; an external undo implementation still needs complete part/resource preflight. Static analysis; no live execution.",
+      "PriorAuditTier": 3,
+      "PriorAuditClaims": [
+        1358
+      ]
+    },
+    {
+      "Address": "0x14027EB30",
+      "Finding": "REDO-side helper removes old group0, recreates added group1 and marks side1, unless already applied.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14027eb30",
+        "work/trainer/research/gummi_round5_evidence/0x14027eb30.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The old gummi_controls_deep.json named this Undo-direction; group behavior was accurate but human label was reversed. Static analysis; no live execution.",
+      "PriorAuditTier": 3,
+      "PriorAuditClaims": [
+        1360
+      ]
+    },
+    {
+      "Address": "0x14027EB70",
+      "Finding": "UNDO-side helper removes added group1, recreates old group0 and marks side0, unless already undone.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14027eb70",
+        "work/trainer/research/gummi_round5_evidence/0x14027eb70.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The old gummi_controls_deep.json named this Redo-direction; no released trainer action calls either helper. Static analysis; no live execution.",
+      "PriorAuditTier": 3,
+      "PriorAuditClaims": [
+        1361
+      ]
+    },
+    {
+      "Address": "0x140267300",
+      "Finding": "Part insertion withrecording enabled snapshots the added part into history group1. It updates cost, grid occupancy and the packed-pointer linked part list, supporting the corrected redo/undo interpretation.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140267300",
+        "work/trainer/research/gummi_round5_evidence/0x140267300.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The full body is captured, but bounds/resource proof for arbitrary externally supplied parts remains incomplete. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14025FC20",
+      "Finding": "Bulk part removal withrecording enabled snapshots removed parts into group0; it updates cost, invokes part cleanup, unlinks packed-pointer list entries and clears grid ownership cells.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14025fc20",
+        "work/trainer/research/gummi_round5_evidence/0x14025fc20.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The linked-list search assumes valid native membership; no trainer delete-all operation is proposed. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140262C20",
+      "Finding": "Part removal derives occupied grid cells from native part dimensions/transforms and routes each through263010 while temporarily selecting the appropriate material/decor mode.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140262c20",
+        "work/trainer/research/gummi_round5_evidence/0x140262c20.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Division by cell dimensions, float-to-int conversion and grid indices require valid geometry; this is an unresolved undo preflight dependency. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14026C540",
+      "Finding": "Returns current editor globalAFC118.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14026c540",
+        "work/trainer/research/gummi_round5_evidence/0x14026c540.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Borrowed pointer only; no ready-state/lifetime checks. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14026C550",
+      "Finding": "Returns whetherAFC118 isnull, distinguishing absence of a current editor for the debug plan exporter.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14026c550",
+        "work/trainer/research/gummi_round5_evidence/0x14026c550.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "Do not reinterpret true as 'editor ready'. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402654F0",
+      "Finding": "A native developer plan-export command serializes either the raw workarea or the current editor plan and calls52FDE0 with '/kh2/proj/gumi/edit/plan/%DATE%.pln' when part counts are nonzero.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x1402654f0",
+        "work/trainer/research/gummi_round5_evidence/0x1402654f0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "No exporter or filesystem operation was executed. The old internal destination and downstream transport are not proposed as a user-facing trainer operation. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14026C6A0",
+      "Finding": "Serializes the workarea via260F90, adds editor customization data through28A420 and copies32DWORDs of ship parameters fromeditor+1456 into the resulting plan+16.",
+      "Evidence": [
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14026c6a0",
+        "work/trainer/research/gummi_round5_evidence/0x14026c6a0.json",
+        "work/trainer/research/gummi_round5_original_bytes.json"
+      ],
+      "Limitations": "The returned allocation is native-owned; the serializer and downstream write protocol require further study for an offline blueprint-export feature. Static analysis; no live execution.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    }
+  ],
+  "evidence_summary": {
+    "function_count": 70,
+    "dedicated_asm_instruction_count": 5866,
+    "pseudocode_line_count": 3964,
+    "original_code_spans": 151,
+    "original_code_bytes": 26836,
+    "all_page_and_joined_counts_match": true,
+    "all_instruction_addresses_have_original_bytes": true,
+    "all_code_bytes_match_original_exe": true,
+    "current_original_sha256": "9002B2DE6A1F91A790BD0673DE125D1CF833F7942BFEC827CDCF6BA64D5849ED",
+    "audit_path": "work\\trainer\\audit\\function_status.jsonl",
+    "audit_sha256_at_comparison": "296be32925ccbb270709e0b54903ba3bc15a43326d612b1feb39842e896504c1",
+    "prior_tier_counts": {
+      "0": 62,
+      "1": 1,
+      "3": 7
+    },
+    "scope": "Counts concern complete captured bodies and the stated claims, not full semantic coverage of every branch."
+  }
+}

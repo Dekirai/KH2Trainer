@@ -1,0 +1,326 @@
+GUMMI GAMEPLAY — VERTIEFTE STATISCHE ANALYSE
+
+Kernbefund
+Gummi-Spiel und Soras Feldspiel verwenden eigene Spielerobjekte, Statusfelder und Modulzustände. Ein lebendes Gummi-Schiff lässt sich über den nativen Heilhelfer behandeln; Score kann über den nativen Punktehelfer erhöht werden. Beides benötigt die aktuellen Gummi-Objekt- und Modulprüfungen.
+
+Die Einerstelle des Scores zählt maximal neun Schadensereignisse. Reguläre Punkte kommen in Zehnerschritten hinzu. Treffer senken außerdem die Medaillenstufe; späteres Heilen macht diese Folgen nicht rückgängig. Die Rank-Schleife verarbeitet den Score und vergibt beim Abschluss Belohnungen.
+
+Belegte Schnittstellen
+- Player = QWORD[base+AF0540], PLAYER_STATE = Player+570.
+- HP float32 = Player+578; MaxHP int32 = Player+57C.
+- Heal2265E0: void(state inRCX,float amount inXMM1); deckelt HP, setzt GaugeEvent=1; kein Revive.
+- AddScore207A50: void(int amount inECX), kein definierter Rückgabewert; respektiert ScoreLock.
+- Gummi GAME_MODE716C10: Scheduler+8, packednext+20, State+36. State1 läuft; Pause setztState2.
+- ModulheapAE94F0 muss9A8780 entsprechen; beide werden beim Abbau genullt. SchedulerAD9478 mussModule+8 sein.
+- Aktionsfreigabe nur Missionphase8, Spielerphase2, positiverHP und ohne Dead/Rebirthflag.
+
+Implementierung und Grenzen
+Slots128..143 bieten13 Anzeigen und3 Einmalaktionen. RequiresScene=false umgeht ausschließlich die Sora-UI-Sperre; native Gummi-Prüfungen bleiben verpflichtend. Capabilities melden implementierte Funktionen statisch, Value-valid-Bits die tatsächliche Verfügbarkeit.
+Keine persistenten Effekte, kein Hook, kein MaxHP-/Medalsetter. Vollständige native Heil-/Score-Funktionsbytes werden vor jedem Aufruf geprüft. Bei Pause bleiben Anzeigen möglich, Änderungen werden abgelehnt.
+195 isolierte Checks bestanden. Die Tests benutzen synthetischen Speicher und Mock-Funktionen; kein Spielcode und kein laufendes Spiel wurden ausgeführt. Live-Verhalten ist noch nicht validiert.
+
+Abdeckung
+60 konkrete Funktionsbefunde, davon22 mit vollständiger frischer ASM. Weitere Befunde beruhen auf frischem vollständigem Pseudocode plus benachbarter ASM. Kein Vollständigkeitsanspruch für gb/gm.
+Nicht abgeschlossen: Energie-/Waffenressourcen, Editor und Schiffbau, gegnerische KI, Route-/GBX-Parser, exakte Save-Commitgrenzen. RTTI und Exportinventar allein wurden nicht als Semantik gezählt.
+
+Funktionsbefunde
+
+0x1401e18f0
+Gummi module event0 creates its scheduler, stores it at module+8 and RVAAD9478, and starts subsystem initialization. Event1 tears down objects/resources, destroys the scheduler, then clears the Gummi heap through1E2020.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: The scheduler global is not explicitly nulled in this path; nonzero scheduler alone does not establish active module ownership. Static evidence only; this analysis did not execute the game.
+
+0x1401e13b0
+Registers the mission fiber1E1BA0 at priority1000 and the subordinate Gummi systems/tasks. Initializes the module heap binding via1E2060 and installs player, HUD and mission subsystems.
+Beleg: work/trainer/research/gummi_deep_evidence.json, work/trainer/research/gummi_deep_gates.json
+Grenze: Many registration helpers remain separate analysis targets. Decompiler's unused register arguments are not callable ABI evidence. Static evidence only; this analysis did not execute the game.
+
+0x1401e1ab0
+Resource-loading fiber waits for asynchronous loads and finally writes mission phase3 at RVAAD9474, releasing the main mission fiber's loading wait.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Asset parser semantics and all failure/cancellation paths are not yet independently traced. Static evidence only; this analysis did not execute the game.
+
+0x1401e1ba0
+Central mission fiber owns phaseAD9474: initialization/loading0..3, intro4..7, normal gameplay8, death10/11, rebirth12/13, goal14/16 and results/exit18/19. It spawns the ship at phase3, resets score/medals, starts active ship phase2 after intro, and observes ship phases4/5 for death/rebirth.
+Beleg: work/trainer/research/gummi_deep_evidence.json, work/trainer/research/gummi_deep_gates.json
+Grenze: Labels describe observed behavior in this fiber; unknown/unhandled numeric states are not inferred. Never force this field to skip resource or transition work. Static evidence only; this analysis did not execute the game.
+
+0x1401e12c0
+Standalone Gummi cleanup destroys associated object/resource systems, destroys AD9478 scheduler and clears AE94F0 heap before restoring display/fade/timing state.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Not a trainer exit API; full caller ownership and alternate cleanup sequencing have not been validated. Static evidence only; this analysis did not execute the game.
+
+0x1401fcf00
+Allocates5136bytes for the active player ship, obtains input controller0 and constructs it through1FC8F0. Optionally allocates two1440byte companions, stored at player+0x688/+0x690, and assembles ship/weapon formation state.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Do not call to create a second player; resource ownership and registration extend beyond this allocator. Static evidence only; this analysis did not execute the game.
+
+0x1401fc8f0
+Constructs the embedded ship atP+0x488 and PLAYER_STATE atP+0x570; stores input atP+0x568 and tuning pointer atP+0x560. Encodes descriptor72A860 into DWORD[P], publishes AF0540=P, then populates loadout stats and the ship-state backlink.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: The published global can exist before initialization is complete. DWORD[P] is a packed pointer, not a native vptr; lifetime and active phases must also be checked. Static evidence only; this analysis did not execute the game.
+
+0x1401fbf80
+Player dispatcher destruction accepts the player in RDX, destroys effects and embedded objects, sets AF0540=0, and frees the player through1E2030.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: RCX is dispatcher context, not the player. This is destructive lifetime machinery, not a trainer reset. Static evidence only; this analysis did not execute the game.
+
+0x1401fd150
+Returns the active Gummi player pointer from AF0540 without validity checks.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: A getter result alone does not prove a fully initialized or living ship. Static evidence only; this analysis did not execute the game.
+
+0x1401fd1e0
+Player update switches phaseP+0x5D8: initial0→1, active2, completion3, stopped/dead4, rebirth5. Active logic handles movement, weapons, timed regeneration and hit feedback; rebirth triggers200150 after120ticks and resumes state2 at240ticks.
+Beleg: work/trainer/research/gummi_deep_evidence.json, work/trainer/research/gummi_deep_round2.json
+Grenze: Ticks come from154430; they are not established wall-clock milliseconds. Full movement/weapon subgraphs remain open. Static evidence only; this analysis did not execute the game.
+
+0x1401ff340
+Attack-object damage path checks player immunity/death/rebirth flag masks, sets pending-hit and temporary immunity flags, subtracts Attack+24 integer damage through225E60, and sets death flag0x10 ifHP becomes zero.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Shield path231770/231760 and damage-source schema beyondAttack+24 are not fully characterized; no safe direct hook contract is claimed. Static evidence only; this analysis did not execute the game.
+
+0x1401ff4f0
+Integer-damage variant uses RCX=player and EDX=damage, shares flag checks, pending-hit feedback, immunity timer and lethal handling with1FF340.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Callers and all immunity ownership paths are still open; directly writing immunity flags would require separate restoration analysis. Static evidence only; this analysis did not execute the game.
+
+0x140225c30
+Initializes PLAYER_STATE vptr5B5E70, clears HP/stat fields and event/flag fields, and starts percentage field+60 at100.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Names of every aggregated stat are not inferred from their positions. Static evidence only; this analysis did not execute the game.
+
+0x140225d00
+Adds EDX delta to int32 maxHP atstate+12, clamps maxHP to at least1, refills floatHP atstate+8, and returns the resulting maximum in EAX.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: This is additive loadout construction, not an absolute maximum setter; signed overflow is not guarded. Static evidence only; this analysis did not execute the game.
+
+0x140225e60
+Subtracts integer damage from floatHP, chooses gauge event2/3/4 using10% and40% ofmaxHP, clamps lethal HP to0 and returns false; positive remaining HP returns true.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Negative damage can raise HP without a maximum cap. Do not repurpose it as healing. Static evidence only; this analysis did not execute the game.
+
+0x140225f50
+Reads floatHP atstate+8 and truncates it to an integer for display/consumers.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: The returned integer loses fractionalHP; raw float is the authoritative gauge. Static evidence only; this analysis did not execute the game.
+
+0x140225f60
+Returns int32 maxHP fromstate+12.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Positivity comes from initialized loadout construction, not this accessor. Static evidence only; this analysis did not execute the game.
+
+0x140226260
+Low-HP predicate is currentHP<=0.3*maxHP, inclusive at the boundary.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: No scene or object validation inside this helper. Static evidence only; this analysis did not execute the game.
+
+0x1402265e0
+Native heal takes RCX=PLAYER_STATE and XMM1=float amount. Nonpositive input becomes1; HP=min(HP+amount,float(maxHP)); gauge eventstate+80=1. It does not revive or change player phase.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Return is void. Caller must reject nonfinite/negative inputs and dead/rebirth contexts; a zero refill must skip this call. Static evidence only; this analysis did not execute the game.
+
+0x1401ffc60
+HP pickup computes amount=(1+state+48/100)*int(tuning+100), passes it in XMM1 to2265E0, then sets player heal-feedback flag4.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Tuning data and additive pickup-bonus validity need loadout ownership; use the smaller native heal helper for a trainer action. Static evidence only; this analysis did not execute the game.
+
+0x140200150
+Rebirth routine clears death flag0x10, sets rebirth flag0x40000, resets main/companion ship presentation, heals by2260A0's maxHP percentage and spawns effect5.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Large coordinated state changes make this unsuitable as generic heal/revive without additional transition proof. Static evidence only; this analysis did not execute the game.
+
+0x140225ee0
+Returns HP-pickup scale1+int32(state+48)/100.f; pickup caller1FFC60 uses this multiplier.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: No internal clamp; modified parts can create unusual or negative scales. Static evidence only; this analysis did not execute the game.
+
+0x1402260a0
+Returns integer rebirth-heal amount=int((state+64/100.f)*maxHP); caller200150 converts it to XMM1 for the native healer.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Percentage range is loadout-derived and not clamped here. Static evidence only; this analysis did not execute the game.
+
+0x140207a50
+Native score adder takes ECX=int amount, ignores additions while byte72B134 is nonzero, otherwise performs unsigned addition. Above99,999,990 it stores99,999,990+sum%10.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Some return paths leave RAX undefined; call asvoid. Negative/overflowing inputs are unsafe. Multiples10 preserve the separately used low digit. Static evidence only; this analysis did not execute the game.
+
+0x140207a90
+Increments only the score's ones digit until it reaches9. Player pending-hit processing invokes it together with the medal penalty.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: It ignores the ordinary score-addition lock. This is a saturated damage-event count embedded in the score, not a free point increment. Static evidence only; this analysis did not execute the game.
+
+0x140207ae0
+Resets score72B130 and additions-lock72B134 tozero at mission initialization.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Resetting midmission would erase both points and recorded damage events. Static evidence only; this analysis did not execute the game.
+
+0x140207ac0
+Sets byte72B134 to1, locking ordinary score additions.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: The hit-counter path207A90 remains active; this is not a universal immutable-score switch. Static evidence only; this analysis did not execute the game.
+
+0x140207ad0
+Returns uint32 score72B130.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Consumers include rank tracking and result snapshots; this value is not merely a HUD cache. Static evidence only; this analysis did not execute the game.
+
+0x140207c30
+Collects one medal progress unit, raises level on ten units, tracks best level, emits level-up sound/event flags, and caps max level30 with progress9 and max flag1.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Calls audio and has side effects. Arbitrary level writes could break multiplier-table indexing and flags; initial trainer contract remains read-only. Static evidence only; this analysis did not execute the game.
+
+0x140207db0
+Damage penalty clears medal progress. Normal state loses1level; when max flag is set, mission variants1/2/3 lose5/10/15levels. Clamps level to0, sets hit-event flag4, preserves best level.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Other mission-variant values do not receive an invented penalty. Healing after damage cannot reverse an already recorded medal penalty. Static evidence only; this analysis did not execute the game.
+
+0x140207d70
+Resets the four medal-state dwords (progress,current,best,flags) at72B2C0.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Mission initialization use only; not an appropriate isolated best-level setter. Static evidence only; this analysis did not execute the game.
+
+0x140207d90
+Returns medal maximum flag bit0 from72B2CC.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: A zero result is distinct from level0; use the correct flag field. Static evidence only; this analysis did not execute the game.
+
+0x140207400
+Rank task waits for active ship phase2, tracks row-selected metric (medal level,AF7146 word,orrawscore), advances at most one rank per frame up to6/16depending mission variant, then grants eligible unowned rewards once after ship completion state3.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: AF7146 metric's player-facing meaning remains unproved. Rank/reward changes may persist through native save paths; no direct rank setter is proposed. Static evidence only; this analysis did not execute the game.
+
+0x140207950
+Asynchronous rank-table callback selects a128byte row matching current route and mission variant from a count-prefixed table, storing selected row atAF4258.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Existing loader trusts table counts. Any trainer inspection must validate the entire row's readable range rather than copy its assumptions. Static evidence only; this analysis did not execute the game.
+
+0x1402076f0
+Registers207400 as a direct task at priority28500/group1 on the Gummi scheduler, and resets rank phase, current rank and award flags.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Task lifetime belongs to Gummi module; never reuse its pointer after module teardown. Static evidence only; this analysis did not execute the game.
+
+0x1402098e0
+Copies rawscore to output+0 and route,mission,bestmedal,rank to bytes+24..27 for results/stats.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: This is evidence that score/medal fields feed gameplay records. Exact disk serialization is outside this core-path analysis. Static evidence only; this analysis did not execute the game.
+
+0x140233920
+Adds source+8 points multiplied by a31-entry medal-level factor, rounded to nearest10 with halfway values rounded up.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Medal level is used directly as an array index. Range0..30 must be retained; source object's other fields remain unclassified. Static evidence only; this analysis did not execute the game.
+
+0x140233980
+Awards100points normally or1000atmaximum medal state.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: The caller/event identity is not established by this helper alone. Static evidence only; this analysis did not execute the game.
+
+0x1402339b0
+Awards base100 multiplied by the current medal factor and rounded to nearest10.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Do not infer a specific pickup type without caller evidence. Static evidence only; this analysis did not execute the game.
+
+0x140233a10
+Awards10points normally or100atmaximum medal state.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: The event source is not yet named; only the point rule is established. Static evidence only; this analysis did not execute the game.
+
+0x140235030
+Renders the score digit-by-digit, with distinct glyph variants for the ones digit and normal variants for higher digits, and updates HUD placement/opacity.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: HUD objects are presentation state; writing them does not change score. Glyph artwork itself was not visually inspected. Static evidence only; this analysis did not execute the game.
+
+0x140235cd0
+Reads active ship integerHP/maxHP for HUD, caches integerHP atHUD+400 and smooths missing-health fraction atHUD+404 with coefficient0.1.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: The cached/smoothed HUD fields are not authoritative HP and must not be edited as trainer state. Static evidence only; this analysis did not execute the game.
+
+0x1401ffc00
+Completion entry switches player phase to3, adjusts formation/weapon activity, and locks score via207AC0; if previously rebirthing it calls200150 first.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: This is a coordinated completion transition, not a safe general-purpose score lock or mission-complete shortcut. Static evidence only; this analysis did not execute the game.
+
+0x140200b50
+Writes active player phase2 atP+0x5D8; mission fiber uses it after intro setup.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: The isolated store does not make a ship safely active if resources or mission phase are not ready. Static evidence only; this analysis did not execute the game.
+
+0x1401fd040
+Player input task requires AF0540 and player phase2, reads its input-controller state, dispatches main/companion ship action on bit0x100, updates player flags and calls1FE6C0.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Full button mapping and weapon behavior remain unproved; no input injection contract is derived. Static evidence only; this analysis did not execute the game.
+
+0x1401fb8b0
+Aggregates base ship and installed-part stats into embedded PLAYER_STATE, including maxHP, pickup/rebirth/regen fields and several still-unnamed bonuses. Stores Ship+200=state, establishing player+0x550→player+0x570 backlink.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Other stat meanings and energy consumption are not inferred. Reinitialization can recompute temporary stat edits. Static evidence only; this analysis did not execute the game.
+
+0x1401e2580
+Initializes Gummi camera bank/projection state and associated direction/transform objects, separate from the main-world camera path.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Decompiler arguments include implicit SIMD/register values; no callable camera API is proposed from pseudocode alone. Static evidence only; this analysis did not execute the game.
+
+0x1401e2020
+Clears the Gummi module heap/context pointer AE94F0 during teardown.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: This is a lifetime sentinel, not a sufficient standalone gameplay-ready test. Static evidence only; this analysis did not execute the game.
+
+0x1401e2050
+Returns the currently bound Gummi heap/context pointer AE94F0.
+Beleg: work/trainer/research/gummi_deep_evidence.json
+Grenze: Caller must combine it with current player, scheduler and phase ownership. Static evidence only; this analysis did not execute the game.
+
+0x1401e2060
+Obtains the current module heap via151AD0 and binds it to AE94F0.
+Beleg: work/trainer/research/gummi_deep_evidence.json, work/trainer/research/gummi_deep_gates.json
+Grenze: Exact module descriptor identity is an additional integration gate still under review. Static evidence only; this analysis did not execute the game.
+
+0x1401fcdb0
+Non-freeing player destructor releases effects/subobjects and clears active globalAF0540 before completing base destruction.
+Beleg: work/trainer/research/gummi_deep_round2.json
+Grenze: Separate from dispatcher deallocation1FBF80; both observed lifetime paths invalidate cached player pointers. Static evidence only; this analysis did not execute the game.
+
+0x1401fc120
+Player descriptor vtable slot5 forwards its RDX player argument to1E53B0.
+Beleg: work/trainer/research/gummi_deep_round2.json
+Grenze: It is not the attack-damage callback; no damage hook should be installed here based on slot proximity. Static evidence only; this analysis did not execute the game.
+
+0x1401fc130
+Deleting destructor belongs to the gb::OBJ::VTABLE<gb::PLAYER> descriptor object, restores its native vptr and optionally frees that descriptor object.
+Beleg: work/trainer/research/gummi_deep_round2.json
+Grenze: It is not the ship destructor or a gameplay callback; packed descriptor indirection matters. Static evidence only; this analysis did not execute the game.
+
+0x140151ad0
+Returns the Gummi module heap9A8780; 1E2060 copies it to subsystem heapAE94F0.
+Beleg: work/trainer/research/gummi_deep_gates.json
+Grenze: Use equality of the two current heap bindings, not either nonzero pointer in isolation. Static evidence only; this analysis did not execute the game.
+
+0x140151980
+Gummi module shutdown calls1E18F0(1,&GAME_MODE716C10), frees supplementary state, releases heap9A8780 and explicitly zeros9A8780 after subsystem heapAE94F0 was cleared.
+Beleg: work/trainer/research/gummi_deep_gates.json
+Grenze: Actions must run after the original engine update and reject any changed lifetime key. Static evidence only; this analysis did not execute the game.
+
+0x140151a50
+Gummi startup allocates and initializes a13,500,416byte heap, assigns9A8780 and invokes1E18F0(0,&GAME_MODE716C10).
+Beleg: work/trainer/research/gummi_deep_gates.json
+Grenze: Allocation presence does not mean player construction or gameplay phase is ready. Static evidence only; this analysis did not execute the game.
+
+0x1401e1630
+Gummi restart path removes group1 tasks, tears down gameplay/presentation subsystems and sets mission phase17 before scheduling reconstruction on the outer manager.
+Beleg: work/trainer/research/gummi_deep_gates.json
+Grenze: Phase17 and missing tasks must invalidate trainer context; do not retain pointers across a restart even in the same route. Static evidence only; this analysis did not execute the game.
+
+0x140150540
+Enumerates native game modes from list8EC5D8 using packed next pointer atmode+20 and reports modes with state+36==1.
+Beleg: work/trainer/research/gummi_deep_gates.json
+Grenze: Native traversal is unbounded; trainer traversal must be bounded and reject cycles/corruption. Static evidence only; this analysis did not execute the game.
+
+0x140150310
+Owns GAME_MODE lifecycle: inserts descriptor into list8EC5D8, sets mode+36=1, dispatches scheduler+8 only in state1; state3 enters destruction, then zeros scheduler and state and unlinks mode.
+Beleg: work/trainer/research/gummi_deep_gates.json
+Grenze: Mode2 is suspended, so Gummi action gating must use716C34==1. Readouts can remain valid during suspension if all ownership checks pass. Static evidence only; this analysis did not execute the game.
+
+0x1401515e0
+Native pause/menu entry recognizes mode selector9006B4==2 as Gummi, captures the frame, and changes Gummi GAME_MODE state716C34 from a nonzero state to2 before launching the menu.
+Beleg: work/trainer/research/gummi_deep_gates.json
+Grenze: Menu request timing is still owned by the engine. The trainer checks current module state immediately before each action and does not modify it. Static evidence only; this analysis did not execute the game.

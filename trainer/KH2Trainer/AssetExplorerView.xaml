@@ -1,0 +1,60 @@
+<UserControl x:Class="KH2Trainer.AssetExplorerView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+ <StackPanel>
+  <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+   <StackPanel>
+    <TextBlock Text="Game assets" FontSize="20" FontWeight="SemiBold"/>
+    <TextBlock Text="Browse loose BAR containers and retail HED/PKG packages. Inspect their entries, open nested containers and export original or remastered assets to new files." TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,10,0,16"/>
+    <WrapPanel><Button Content="Open loose asset…" Command="{Binding OpenLooseCommand}" Margin="0,0,8,8"/><Button Content="Open package index…" Command="{Binding OpenPackageCommand}" Margin="0,0,8,8"/><Button Content="Cancel" Command="{Binding CancelCommand}" Margin="0,0,8,8"/></WrapPanel>
+    <WrapPanel Margin="0,4,0,6"><Button Content="Choose name list…" Command="{Binding ChooseNamesCommand}"/><Button Content="Clear name list" Command="{Binding ClearNamesCommand}"/></WrapPanel>
+    <TextBlock Text="{Binding NamesFileLabel}" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,8,0,0"/>
+    <TextBlock Text="{Binding Status}" TextWrapping="Wrap" Foreground="{StaticResource AccentBrush}" Margin="0,14,0,0"/>
+   </StackPanel>
+  </Border>
+  <Border Style="{StaticResource Card}">
+   <StackPanel>
+    <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap"/>
+    <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,8,0,16"/>
+    <WrapPanel><Button Content="Back" Command="{Binding BackCommand}" Margin="0,0,8,8"/><Button Content="Inspect / open selected" Command="{Binding InspectCommand}" Margin="0,0,8,8"/><Button Content="Export selected…" Command="{Binding ExportCommand}" Margin="0,0,8,8"/><Button Content="Export current container…" Command="{Binding ExportContainerCommand}" Margin="0,0,8,8"/></WrapPanel>
+    <TextBox Text="{Binding Filter,UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Idle}" ToolTip="Filter by name, hash, tag or type" Margin="0,8,0,8"/>
+    <TextBlock Text="{Binding CountText}" Style="{StaticResource Label}"/>
+    <ListBox ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow}" Height="300" IsEnabled="{Binding Idle}" Background="{StaticResource InputBrush}" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+     <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Padding" Value="10,8"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><Border x:Name="Row" Background="Transparent" Padding="{TemplateBinding Padding}" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsSelected" Value="True"><Setter TargetName="Row" Property="Background" Value="{StaticResource SelectionBrush}"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Row" Property="Background" Value="{StaticResource HoverBrush}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style></ListBox.ItemContainerStyle>
+     <ListBox.ItemTemplate><DataTemplate><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="140"/><ColumnDefinition Width="130"/></Grid.ColumnDefinitions><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Detail}"/><TextBlock Grid.Column="1" Text="{Binding Kind}" Foreground="{StaticResource MutedBrush}" Margin="10,0" TextTrimming="CharacterEllipsis"/><TextBlock Grid.Column="2" Text="{Binding SizeText}" HorizontalAlignment="Right" Foreground="{StaticResource MutedBrush}"/></Grid></DataTemplate></ListBox.ItemTemplate>
+    </ListBox>
+    <TextBlock Text="{Binding SelectionDetails}" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,14,0,10"/>
+    <TextBlock Text="BYTE PREVIEW · FIRST 4 KiB" Style="{StaticResource Label}"/>
+    <TextBox Text="{Binding Preview,Mode=OneWay}" IsReadOnly="True" FontFamily="Consolas" FontSize="12" Height="205" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" TextWrapping="NoWrap"/>
+   </StackPanel>
+  </Border>
+  <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+   <StackPanel>
+    <TextBlock Text="Compare asset content" FontSize="20" FontWeight="SemiBold"/>
+    <TextBlock Text="Keep fingerprints of selected assets and find matching payloads across archives. Only the selected payload is read. Names and nested entry locations stay distinct." TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,10,0,12"/>
+    <TextBlock Text="SOURCE LABEL" Style="{StaticResource Label}"/>
+    <TextBox Text="{Binding SourceLabel,UpdateSourceTrigger=PropertyChanged}" MaxLength="512" IsEnabled="{Binding Idle}" ToolTip="A portable label, such as Original KH2 or My modified assets. Use different labels for unrelated sources." Margin="0,4,0,10"/>
+    <WrapPanel>
+     <Button Content="Add selected fingerprint" Command="{Binding CaptureFingerprintCommand}" Margin="0,0,8,8"/>
+     <Button Content="Add current container" Command="{Binding CaptureContainerFingerprintCommand}" Margin="0,0,8,8"/>
+     <Button Content="Find matching selected content" Command="{Binding CompareFingerprintCommand}" Margin="0,0,8,8"/>
+    </WrapPanel>
+    <WrapPanel>
+     <Button Content="Load index…" Command="{Binding LoadFingerprintIndexCommand}" Margin="0,0,8,8"/>
+     <Button Content="Save new index…" Command="{Binding SaveFingerprintIndexCommand}" Margin="0,0,8,8"/>
+     <Button Content="Clear in-memory index" Command="{Binding ClearFingerprintIndexCommand}" Margin="0,0,8,8"/>
+    </WrapPanel>
+    <TextBlock Text="Loading replaces the in-memory list. Saving requires a new local file outside game folders." TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,0,0,10"/>
+    <TextBlock Text="{Binding FingerprintStatus}" TextWrapping="Wrap" Foreground="{StaticResource AccentBrush}" Margin="0,2,0,12"/>
+    <TextBlock Text="{Binding FingerprintCountText}" Style="{StaticResource Label}"/>
+    <ListBox ItemsSource="{Binding FingerprintRows}" SelectedItem="{Binding SelectedFingerprint}" Height="180" IsEnabled="{Binding Idle}" Background="{StaticResource InputBrush}" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+     <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Padding" Value="10,7"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><Border x:Name="FingerprintRow" Background="Transparent" Padding="{TemplateBinding Padding}"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsSelected" Value="True"><Setter TargetName="FingerprintRow" Property="Background" Value="{StaticResource SelectionBrush}"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="FingerprintRow" Property="Background" Value="{StaticResource HoverBrush}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style></ListBox.ItemContainerStyle>
+     <ListBox.ItemTemplate><DataTemplate><StackPanel><TextBlock Text="{Binding Location}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Location}"/><TextBlock Text="{Binding Summary}" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,4,0,0"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
+    </ListBox>
+    <TextBlock Text="MATCHING FINGERPRINTS" Style="{StaticResource Label}" Margin="0,14,0,4"/>
+    <ListBox ItemsSource="{Binding FingerprintMatches}" Height="125" Background="{StaticResource InputBrush}" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+     <ListBox.ItemTemplate><DataTemplate><StackPanel Margin="8,5"><TextBlock Text="{Binding Location}" TextWrapping="Wrap"/><TextBlock Text="{Binding Summary}" Foreground="{StaticResource MutedBrush}" FontSize="12"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
+    </ListBox>
+    <Expander x:Name="FingerprintDetailsExpander" Header="Fingerprint details" Margin="0,12,0,0"><TextBox Text="{Binding FingerprintDetails,Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" MinHeight="80" MaxHeight="210" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12"/></Expander>
+   </StackPanel>
+  </Border>
+ </StackPanel>
+</UserControl>

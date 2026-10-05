@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-04",
+  "scope": "Independent static review of CameraExtra and its final corrections. No product modifications, test build, or live action.",
+  "source": {
+    "path": "../../../trainer/Native/CameraExtraFeatures.inl",
+    "sha256": "2C6D52A1D29430E9EAB33143611EDD433FFBC01A523ABD93CC8F9B747C1A9299",
+    "status": "Final source fingerprint verified after reviewing both corrections."
+  },
+  "verdict": "Both reported guard/ownership findings are resolved. No remaining significant issue identified in the reviewed source. The queue phase, task identity and original forwarding match the inspected native path.",
+  "tests": {
+    "path": "../tests/CameraExtraGuardTests.cpp",
+    "sha256": "6A7744B5254AF28CA85A73655FA9E4022AF866EC098A8F694DE0A5E1F2DFBA00",
+    "reported_result": "Author reports 604 checks, zero failures and no /W4 warnings. Reviewer read the relevant final fixture cases; no duplicate build was run."
+  },
+  "findings": [
+    {
+      "id": "CAMERA-GETTER",
+      "status": "Resolved: CodeReady now checks all eight ControllerGetter bytes at164E70 before queueing and before dispatch",
+      "Finding": "CodeReady pins 430B40/430B60 and the two setters but omits their Controller getter 164E70. FreshLease checks static Controller718C60, while the native request wrappers obtain their target through this getter.",
+      "impact": "A changed getter can direct the validated setter to an object that FreshLease never checked.",
+      "recommendation": "Pin all eight getter bytes (48 8D 05 E9 3D 5B 00 C3), or call the checked pointer-argument setter directly with the validated Controller address.",
+      "Evidence": [
+        "camera_extra_independent_evidence.json",
+        "camera_independent_evidence_complete.json"
+      ]
+    },
+    {
+      "id": "CAMERA-FLAG-RESTORE",
+      "status": "Resolved: all post-Original flag writes were removed; the native consumer owns subsequent flag state",
+      "Finding": "FollowFrame clears a still-equal request byte after Original. Equality alone cannot distinguish an unconsumed trainer request from a request consumed and then replaced by native or modded code during the call.",
+      "impact": "The cleanup can erase a later writer's equal-valued request. The inspected unmodified consumer already clears these bytes synchronously.",
+      "recommendation": "Avoid the post-call restore based only on equality, or provide a stronger observed ownership guarantee. Add a synthetic test that Original consumes the trainer flag and then sets a new request.",
+      "Evidence": [
+        "camera_independent_evidence_complete.json"
+      ]
+    }
+  ],
+  "verified": [
+    "FreshLease requires thread, host, scene, owner0, submode0, bank0 and single-camera context; it resolves the current player/status pair and checks follow actor identity and actor controller readability.",
+    "Queued requests retain scheduler, heap, player, status, actor-controller identity and all10MapTargetbytes. Timeout is1500ms; lost conditions cancel without first writing an engine flag.",
+    "Installation scans the complete bounded scheduler list and rejects wrong owners, backlinks, ordering, tail, duplicate matching tasks and continuation/fiber nodes.",
+    "Hook mutation uses compare-exchange from exact original to own wrapper or own wrapper to exact original. It does not replace an observed foreign callback.",
+    "CurrentTask requires manager+32 to be the executing node, owner/group/priority/continuation/function identity, matching the intended native follow phase.",
+    "BeforeFollow requires both native flags to be clear and calls only one request immediately before Original. The pending trainer request is removed before dispatch.",
+    "Original follow callback is invoked once after normal preparation or caught preparation faults. The unmodified follow body checks owner0 and consumes recenter+65 or snap+64 in that same call.",
+    "Roll action240 uses the independently reviewed World API; it changes trainer-held radians and waits for the normal renderer phase.",
+    "Reset discards pending trainer requests and attempts only own callback restoration in the current fresh scheduler. The resident wrapper remains a forwarding path when no request exists."
+  ],
+  "test_recommendations": [
+    "Changed getter bytes reject before native setter invocation.",
+    "Whole-list malformed links, duplicate candidate, busy manager, foreign hook and CAS race preserve foreign state.",
+    "Lost host/scene/actor/heap/map/owner/submode after queuing results in no native request.",
+    "CurrentTask with manager+32 mismatch cancels; Original still exactly once.",
+    "Original consumes request; post-call code must preserve a new equal-valued request created after consumption.",
+    "Disable before callback clears only pending trainer state; no stale native request later."
+  ],
+  "evidence": [
+    "camera_independent_evidence_complete.json",
+    "camera_extra_independent_evidence.json"
+  ],
+  "limitations": [
+    "This verdict applies to the recorded final source and test fingerprints.",
+    "No synthetic execution or live behavior was tested by this reviewer.",
+    "The normal consumer is synchronous in inspected native code; unknown mods may alter deeper calls."
+  ]
+}

@@ -1,0 +1,164 @@
+{
+  "Address": "0x140291D60",
+  "session": "5b5ee46c",
+  "idb": "work/trainer/ida/round5_gummi.i64",
+  "input_sha256": "9002B2DE6A1F91A790BD0673DE125D1CF833F7942BFEC827CDCF6BA64D5849ED",
+  "disassembly": {
+    "pages": [
+      {
+        "addr": "0x140291D60",
+        "asm": {
+          "name": "sub_140291D60",
+          "start_ea": "0x140291d60",
+          "segment": ".text",
+          "lines": [
+            {
+              "addr": "140291d60",
+              "instruction": "sub rsp, 28h",
+              "label": "sub_140291D60"
+            },
+            {
+              "addr": "140291d64",
+              "instruction": "call sub_140291E20",
+              "refs": [
+                {
+                  "addr": "0x140291e20",
+                  "name": "sub_140291E20"
+                }
+              ]
+            },
+            {
+              "addr": "140291d69",
+              "instruction": "mov rcx, rax"
+            },
+            {
+              "addr": "140291d6c",
+              "instruction": "test rax, rax"
+            },
+            {
+              "addr": "140291d6f",
+              "instruction": "jz short loc_140291DAB",
+              "refs": [
+                {
+                  "addr": "0x140291dab",
+                  "name": "loc_140291DAB"
+                }
+              ]
+            },
+            {
+              "addr": "140291d71",
+              "instruction": "lea r8, unk_14073DD90",
+              "refs": [
+                {
+                  "addr": "0x14073dd90",
+                  "name": "unk_14073DD90"
+                }
+              ]
+            },
+            {
+              "addr": "140291d78",
+              "instruction": "mov rax, 6666666666666667h"
+            },
+            {
+              "addr": "140291d82",
+              "instruction": "sub rcx, r8"
+            },
+            {
+              "addr": "140291d85",
+              "instruction": "imul rcx"
+            },
+            {
+              "addr": "140291d88",
+              "instruction": "sar rdx, 4"
+            },
+            {
+              "addr": "140291d8c",
+              "instruction": "mov rax, rdx"
+            },
+            {
+              "addr": "140291d8f",
+              "instruction": "shr rax, 3Fh"
+            },
+            {
+              "addr": "140291d93",
+              "instruction": "add rdx, rax"
+            },
+            {
+              "addr": "140291d96",
+              "instruction": "movsxd rax, cs:dword_14073EB50",
+              "refs": [
+                {
+                  "addr": "0x14073eb50",
+                  "name": "dword_14073EB50"
+                }
+              ]
+            },
+            {
+              "addr": "140291d9d",
+              "instruction": "mov [r8+rax*4+0C80h], edx"
+            },
+            {
+              "addr": "140291da5",
+              "instruction": "inc cs:dword_14073EB50",
+              "refs": [
+                {
+                  "addr": "0x14073eb50",
+                  "name": "dword_14073EB50"
+                }
+              ]
+            },
+            {
+              "addr": "140291dab",
+              "instruction": "add rsp, 28h",
+              "label": "loc_140291DAB"
+            },
+            {
+              "addr": "140291daf",
+              "instruction": "retn"
+            }
+          ],
+          "stack_frame": [
+            {
+              "name": "__return_address",
+              "offset": "0x28",
+              "size": "0x8",
+              "type": "_UNKNOWN *"
+            }
+          ]
+        },
+        "instruction_count": 18,
+        "total_instructions": 18,
+        "cursor": {
+          "done": true
+        }
+      }
+    ],
+    "joined_line_count": 18,
+    "total_instructions": 18,
+    "complete": true
+  },
+  "pseudocode": {
+    "addr": "0x140291D60",
+    "code": "char *__fastcall sub_140291D60(const char *a1)\n{\n  char *result; // rax\n  __int64 v2; // rcx\n\n  result = sub_140291E20(a1); /*0x140291d64*/\n  if ( result ) /*0x140291d6f*/\n  {\n    v2 = result - (char *)&unk_14073DD90; /*0x140291d82*/\n    result = (char *)dword_14073EB50; /*0x140291d96*/\n    *((_DWORD *)&unk_14073DD90 + dword_14073EB50++ + 800) = v2 / 40; /*0x140291d9d*/\n  }\n  return result; /*0x140291dab*/\n}",
+    "line_count": 14,
+    "total_lines": 14,
+    "truncated": false,
+    "cursor": {
+      "done": true
+    },
+    "refs": [
+      {
+        "addr": "0x140291e20",
+        "name": "sub_140291E20"
+      },
+      {
+        "addr": "0x14073dd90",
+        "name": "unk_14073DD90"
+      },
+      {
+        "addr": "0x14073eb50",
+        "name": "dword_14073EB50"
+      }
+    ]
+  }
+}

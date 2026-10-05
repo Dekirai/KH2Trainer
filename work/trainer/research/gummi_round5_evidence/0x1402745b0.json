@@ -1,0 +1,106 @@
+{
+  "Address": "0x1402745B0",
+  "session": "5b5ee46c",
+  "idb": "work/trainer/ida/round5_gummi.i64",
+  "input_sha256": "9002B2DE6A1F91A790BD0673DE125D1CF833F7942BFEC827CDCF6BA64D5849ED",
+  "disassembly": {
+    "pages": [
+      {
+        "addr": "0x1402745B0",
+        "asm": {
+          "name": "sub_1402745B0",
+          "start_ea": "0x1402745b0",
+          "segment": ".text",
+          "lines": [
+            {
+              "addr": "1402745b0",
+              "instruction": "push rbx",
+              "label": "sub_1402745B0"
+            },
+            {
+              "addr": "1402745b2",
+              "instruction": "sub rsp, 20h"
+            },
+            {
+              "addr": "1402745b6",
+              "instruction": "mov rbx, rcx"
+            },
+            {
+              "addr": "1402745b9",
+              "instruction": "mov rcx, [rcx+18h]"
+            },
+            {
+              "addr": "1402745bd",
+              "instruction": "test rcx, rcx"
+            },
+            {
+              "addr": "1402745c0",
+              "instruction": "jz short loc_1402745CC",
+              "refs": [
+                {
+                  "addr": "0x1402745cc",
+                  "name": "loc_1402745CC"
+                }
+              ]
+            },
+            {
+              "addr": "1402745c2",
+              "instruction": "mov rax, [rcx]"
+            },
+            {
+              "addr": "1402745c5",
+              "instruction": "mov edx, 1"
+            },
+            {
+              "addr": "1402745ca",
+              "instruction": "call qword ptr [rax]"
+            },
+            {
+              "addr": "1402745cc",
+              "instruction": "mov qword ptr [rbx+18h], 0",
+              "label": "loc_1402745CC"
+            },
+            {
+              "addr": "1402745d4",
+              "instruction": "add rsp, 20h"
+            },
+            {
+              "addr": "1402745d8",
+              "instruction": "pop rbx"
+            },
+            {
+              "addr": "1402745d9",
+              "instruction": "retn"
+            }
+          ],
+          "stack_frame": [
+            {
+              "name": "__return_address",
+              "offset": "0x28",
+              "size": "0x8",
+              "type": "_UNKNOWN *"
+            }
+          ]
+        },
+        "instruction_count": 13,
+        "total_instructions": 13,
+        "cursor": {
+          "done": true
+        }
+      }
+    ],
+    "joined_line_count": 13,
+    "total_instructions": 13,
+    "complete": true
+  },
+  "pseudocode": {
+    "addr": "0x1402745B0",
+    "code": "__int64 __fastcall sub_1402745B0(__int64 a1)\n{\n  __int64 (__fastcall ***v2)(_QWORD, __int64); // rcx\n  __int64 result; // rax\n\n  v2 = *(__int64 (__fastcall ****)(_QWORD, __int64))(a1 + 24); /*0x1402745b9*/\n  if ( v2 ) /*0x1402745c0*/\n    result = (**v2)(v2, 1); /*0x1402745ca*/\n  *(_QWORD *)(a1 + 24) = 0; /*0x1402745cc*/\n  return result; /*0x1402745d4*/\n}",
+    "line_count": 11,
+    "total_lines": 11,
+    "truncated": false,
+    "cursor": {
+      "done": true
+    }
+  }
+}

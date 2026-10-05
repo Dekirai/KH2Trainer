@@ -1,0 +1,24 @@
+Independent read-only review: GameSession.cs / BackupStore.cs
+2026-10-04. Reviewed after local BridgeConnection catch disposal, ZIP-handle retention, archive bounds/path validation and restore rollback hardening.
+No core/UI files changed by this reviewer. No UI/Computer-Use calls.
+
+Initial findings and disposition
+1. Empty-target recovery is blocked. Restore creates prebackup with Create(target), and Create rejects no files. Therefore even an existing valid save directory cannot be restored after its files have been lost/deleted. Suggested test: backup nonemptyfolder, delete its files leaving directory, restore; expect backed-up bytes recovered with an explicit empty pre-state backup or equivalent handling.
+2. Concurrent-host concern is already handled by App.xaml.cs: Local\\KH2Trainer.Desktop mutex permits only one desktop trainer process per session. The core GameSession/BridgeConnection classes do not individually enforce cross-process ownership, but the shipped application has the needed entry-point guard. No additional session mutex change is needed.
+3. Save backup creation is allowed while game is running and opens/closes source files one at a time. FileShare.Read prevents simultaneous writing of the current file but does not make a multi-file capture coherent. Suggested policy: require game closed for backup creation too, or acquire read locks on all selected save files before capture and revalidate stable file set. Do not describe the current live multi-file result as a coherent in-memory/game snapshot.
+
+Reviewed safeguards that are present
+- Connect failure/cancellation/status error disposes its local BridgeConnection and Process.
+- Remote LoadLibrary timeout keeps path allocation alive while remote loader may still reference it; closes thread/process handles.
+- Exact executable hash and loaded known Panacea guard; existing incompatible bridge channel rejected.
+- Backup verification enforces manifest/version/count/total bounds, exact entries, hashes, case-insensitive duplicate rejection, safe relative paths and Windows device/alias restrictions.
+- Restore retains verified ZIP open across use, backs up previous files, checks gameRunning before each file, stages/hashes each replacement, checks reparse parents and attempts all rollback files.
+- Rollback failure includes verified pre-restore backup path rather than pretending success.
+
+Limits
+Static review only. Root owns fixes and tests. File-system races with a concurrently changing external process are not fully eliminated by pathname checks, but the normal closed-game workflow substantially narrows them.
+
+Implemented requested fixes, approved ownership from root
+BackupStore.cs and backup-only test cases in Program.cs changed. Create(sourceFolder, Func<bool>? gameRunning=null) defaults to detecting KH2 and checks before capture, before each file and before publishing the completed archive. Partial ZIP/tmp is cleaned up if the game begins running. Root passes an explicit detector in the UI.
+Restore now creates an explicit EmptySource=true, Files=[] pre-state archive for an empty existing target; this manifest is verifiable. Restoring actual files into that target succeeds. Attempting to use an empty pre-state archive as a restore source is rejected with a message explaining that it contains no save files and that existing files were not removed. Extra target files outside the source manifest are preserved.
+37 core tests passed,0failed. Added tests cover running-game refusal, mid-backup abort/temp cleanup, empty-directory recovery and pre-state verification, empty-manifest marker enforcement, extra target preservation, and interrupted multi-file rollback triggered by the first actual replacement. Synthetic temp files only; no real game/save mutation.

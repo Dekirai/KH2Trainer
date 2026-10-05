@@ -1,0 +1,254 @@
+{
+  "Status": "Implemented; independent read-only review completed; synthetic tests passed; no live game or UI actions",
+  "Date": "2026-10-04",
+  "Image": {
+    "Base": "0x140000000",
+    "SHA256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed"
+  },
+  "Sources": {
+    "IDA": "read-only adopted session3fc9284b, outputs/KH2_Native_annotiert.i64",
+    "Evidence": "drive_transition_evidence.json",
+    "EvidenceFunctions": 21,
+    "AllDedicatedAsmCursorsDone": true,
+    "LocalAsset": "E:\\SteamLibrary\\steamapps\\common\\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-\\Modding\\openkh\\data\\kh2\\03system.bin",
+    "LocalAssetSHA256": "fd4b8469ae33b337304198382c19e5562dabd11b72546a548070baef2daf4204",
+    "Labels": "item_catalog_en.json sourced from local item/msg data; live mod tables may differ",
+    "IndependentEvidence": [
+      "drive_independent_evidence.json",
+      "drive_independent_bounds.json"
+    ]
+  },
+  "Forms": [
+    {
+      "ID": 1,
+      "Name": "Valor Form",
+      "Item": 26,
+      "Command": 6,
+      "Cost": 3
+    },
+    {
+      "ID": 2,
+      "Name": "Wisdom Form",
+      "Item": 27,
+      "Command": 7,
+      "Cost": 3
+    },
+    {
+      "ID": 3,
+      "Name": "Limit Form",
+      "Item": 563,
+      "Command": 673,
+      "Cost": 4
+    },
+    {
+      "ID": 4,
+      "Name": "Master Form",
+      "Item": 31,
+      "Command": 11,
+      "Cost": 4
+    },
+    {
+      "ID": 5,
+      "Name": "Final Form",
+      "Item": 29,
+      "Command": 12,
+      "Cost": 5
+    },
+    {
+      "ID": 6,
+      "Name": "Antiform",
+      "Item": 30,
+      "Command": 13,
+      "Cost": 9,
+      "Selectable": false
+    }
+  ],
+  "Contract": {
+    "TriggerSlot": 122,
+    "RevertSlot": 123,
+    "NativeValidate": "bool __fastcall(uintptr_t Actor,const void* Command48) @ RVA3A9EA0",
+    "NativeDispatch": "void __fastcall(uintptr_t Actor,const void* Command48) @ RVA405440",
+    "Descriptor": "Engine-owned command table record, never stack temporary; pending operation keeps IDs and actor, not command pointer.",
+    "Restore": "No persistent trainer patch. Engine completes/cleans up transition; no automatic revert/reset/second dispatch.",
+    "Ownership": "Game thread only; fresh host heartbeat nonzero and <=5000ms; fresh validated player/status/scene; actor replacement owned by engine.",
+    "InputPolicy": "Trigger1..5 only, unlocked form and base Sora mode1. Revert form1..6 mode2. Active summons/events/menus/capture/pause/transitions/dead/special/attached actor rejected.",
+    "Outcome": "Native Anti/Final random selection preserved; native costs, usage and Final-unlock side effects preserved."
+  },
+  "Implementation": [
+    "trainer/Native/DriveFeatures.inl",
+    "work/trainer/tests/DriveGuardTests.cpp",
+    "work/trainer/tests/build_drive_tests.cmd",
+    "work/trainer/research/drive_features.json"
+  ],
+  "Tests": {
+    "Checks": 236,
+    "Failures": 0,
+    "Compiler": "MSVC x64 /W4 no warnings",
+    "Scope": "Synthetic fake memory and callback counters only, plus embedded original command-byte fixtures for all5 forms/Revert. No process discovery, injection or game native calls. Uses the actual shared ProgressionFeatures.inl read-only rebuild helpers in the fake-memory harness."
+  },
+  "Limitations": [
+    "No live execution test has been performed. The tests validate trainer gates/dispatch exactly once, not native asset loading, animation or post-transition status.",
+    "No forced Antiform, no locked-form bypass, no infinite/discount Drive cost. Requested form may yield native Anti/Final result.",
+    "Heap allocation and asynchronous asset loading retain native failure assumptions; code validates current structures/model table availability but cannot guarantee future allocations/files.",
+    "Guards intentionally reject modified command schemas, patched entry points, unsupported actor variants, form-to-form direct changes and special scenes.",
+    "Current player can be replaced on a later native frame. Common bridge must reacquire TrainerContext after each command and ongoing feature leases must follow their existing identity rules."
+  ],
+  "Claims": [
+    {
+      "Address": "0x1403A9EA0",
+      "Finding": "Native command acceptance wrapper",
+      "Evidence": "RCX Actor*, RDX command record*, bool AL. Sequentially requires 3B6A10, 3BA070, then 401D60(command,actor,0)<4.",
+      "Limitations": "Wrapper does not check inventory unlock itself; trainer explicitly checks selected form ownership."
+    },
+    {
+      "Address": "0x1403B6A10",
+      "Finding": "Playable character restrictions",
+      "Evidence": "Rejects special form12 and applies command flags for Sora/Roxas/other character variants.",
+      "Limitations": "Trainer narrows further to status.character1 and packed player controller750300."
+    },
+    {
+      "Address": "0x1403BA070",
+      "Finding": "Action-state eligibility",
+      "Evidence": "Command flags, controller action bits, current action396, cooldown2964, motion availability and airborne/battle state determine whether a command can interrupt.",
+      "Limitations": "Exact motion semantics remain native; trainer does not clear locks."
+    },
+    {
+      "Address": "0x140401D60",
+      "Finding": "Native Drive rules",
+      "Evidence": "Type4 checks source kind, locks2A10504/508, alive Sora, playable flag, party4005E0, controller bit20, forbidden form7/12, Limit map restriction, fieldflag40000 and gauge cost. Final checks command/form masks and command category.",
+      "Limitations": "Result<4 is native accepted state. Trigger costs check additional explicit gauge."
+    },
+    {
+      "Address": "0x1404005E0",
+      "Finding": "Partner requirement",
+      "Evidence": "Valor requires Goofy(character3); Wisdom Donald(character2); Limit(form3) bypasses partners. Other Drive forms consider both partners and availability3C38F0.",
+      "Limitations": "Native special multiplier3A3990>1 bypass remains authoritative; no fabricated allies."
+    },
+    {
+      "Address": "0x140405440",
+      "Finding": "Native dispatcher ABI",
+      "Evidence": "void __fastcall(Actor* RCX,const Command48* RDX). Type4 reads signed formword+4, calls421D60, looks up actual result form command, spends cost3C2780, increments usage3E69A0, starts40CE60. Type5 starts40CE60(actor,0).",
+      "Limitations": "Trainer calls exactly once after validation. Returning means queued, not completed."
+    },
+    {
+      "Address": "0x140421D60",
+      "Finding": "Normal Anti/Final selection",
+      "Evidence": "Native flag25 may bypass roll; requestedFinal reduces Anti counter. Other forms may increment Anti counter, roll Anti, or grant/unlock Final via3C3FE0(29,1) under native story/party/gauge rules.",
+      "Limitations": "Intentionally preserved: requested form is not guaranteed outcome. Changes may persist in save."
+    },
+    {
+      "Address": "0x1403C2780",
+      "Finding": "Native Drive gauge cost",
+      "Evidence": "RCX Status*, EDX cost. Subtracts bars+433, clamps zero and clears fractional bar+432 when appropriate.",
+      "Limitations": "Actual resulting form cost, including Anti, is native; trainer never patches gauge."
+    },
+    {
+      "Address": "0x1403E69A0",
+      "Finding": "Usage counters and achievement side effect",
+      "Evidence": "Increments per-form Save word9AD884+2*form to999. Checks Anti usage13 and calls Steam achievement bridge when eligible.",
+      "Limitations": "One-shot action can change progression; catalog marks ChangesProgression=true."
+    },
+    {
+      "Address": "0x14040CE60",
+      "Finding": "Begin form/revert transition",
+      "Evidence": "RCX Actor*, EDX form. Allocates56-byte context;40CAA0 queues fiber; nonzero form starts motion52 and partner removal; form0 marks context+48. Sets Actor288bit100 and Save9ACDD4 form.",
+      "Limitations": "This low-level function has native allocation-failure assumptions, especially form0. We use ordinary dispatcher, not a custom allocator or direct write."
+    },
+    {
+      "Address": "0x14040CAA0",
+      "Finding": "Engine ownership of pending operation",
+      "Evidence": "Context Actor+0,form+8,modelID+12,flags+16,fade+24,status+32,task+40,revert+48. Stores global2AE9FA8, builds actor scheduler2A17180 fiber callback40CF10, registers40CF20 cleanup.",
+      "Limitations": "No command descriptor retained. Descriptor points into engine table throughout synchronous dispatch."
+    },
+    {
+      "Address": "0x14040D000",
+      "Finding": "Actor replacement lifecycle",
+      "Evidence": "Fiber loads target resources3E0630, waits for transition motion, allocates3608-byte Actor405030, preserves spatial state/counters, initializes formHP/MP/timer, remaps actor references through3BD2E0/3AB070/2C4480/3D06E0/3AC320/3E49B0/53DAE0, waits old actor removal.",
+      "Limitations": "Never call directly: requires valid running native fiber in RDX and context."
+    },
+    {
+      "Address": "0x14040CF20",
+      "Finding": "Cleanup on native scheduler task destruction",
+      "Evidence": "Restores pending status initialization if interrupted, releases native locks/fade, clears2AE9FA8 if still its context, frees56-byte operation.",
+      "Limitations": "Trainer never cancels or frees native context. Reset is no-op for one-shot actions."
+    },
+    {
+      "Address": "0x140405030",
+      "Finding": "Sora actor constructor",
+      "Evidence": "Uses3A7A40 to register new current player and Status backlink, installs packed controller750300, playable flag1000000, initializes gauge role and Anti effect.",
+      "Limitations": "Current Actor pointer can change asynchronously; do not retain stale player leases."
+    },
+    {
+      "Address": "0x1403B6920",
+      "Finding": "Form command lookup",
+      "Evidence": "Form→static WORD table5C5D08→item table3E39A0→item+16 command ID→command table3B68B0.",
+      "Limitations": "Native helpers assume rows exist. Trainer scans bounded tables and validates descriptors before dispatch."
+    },
+    {
+      "Address": "0x1403C3EF0",
+      "Finding": "Static form-to-item mapping",
+      "Evidence": "Image table5C5D08:0,26,27,563,31,29,30. Local extracted item/messages confirm Valor/Wisdom/Limit/Master/Final/Anti labels.",
+      "Limitations": "Old debug string table predates inserted Limit row and is not used as current mapping."
+    },
+    {
+      "Address": "0x1403C4720",
+      "Finding": "Form unlock ownership",
+      "Evidence": "Item flags+3 bit1 uses Save+14016 DWORD[slot/32] bit(slot%32); otherwise countSave+13696+slot (type19 unavailable).",
+      "Limitations": "Trainer performs matching bounded read only; no grant/unlock bypass."
+    },
+    {
+      "Address": "0x140405190",
+      "Finding": "Room-appropriate form resources",
+      "Evidence": "Form>0 reads config2A252F0 WORD[form+11]. Base form reads worldSave9ACDE4[4*world]&31, WORD[index+8].",
+      "Limitations": "Trainer verifies model IDs exist in object tables before asking native loader. Files/resources and mod replacement validity still belong to engine."
+    },
+    {
+      "Address": "0x1403E0F10",
+      "Finding": "Object table lookup",
+      "Evidence": "Up to3 pointers2A25030, 8-byte header,count+4,96-byte rows; bsearch by DWORD objectID.",
+      "Limitations": "Trainer validates bounded sorted records and model name presence. Does not read game process outside bridge."
+    },
+    {
+      "Address": "0x1403DE250",
+      "Finding": "Summon lifecycle state",
+      "Evidence": "Returns dword2A24EDC.",
+      "Limitations": "Nonzero rejects trainer Drive/Revert requests."
+    },
+    {
+      "Address": "0x1403D6FC0",
+      "Finding": "Normal actor command callsite",
+      "Evidence": "Type4/5 eventually call actor virtual slot312; wrapper404FD0 moves actor and descriptor into405440 ABI.",
+      "Limitations": "Trainer enters this proven dispatcher after full native validator. It does not fabricate controller input packets."
+    },
+    {
+      "Address": "0x1403A3990 / 0x1403E3830 / 0x1403E2E60",
+      "Finding": "Area and costume/party bounds",
+      "Evidence": "Drive party checks read area+1704 float and all4 current-world costume indexes. Physical costume table has18 entries;18 is absent-character sentinel only in the world roster. Revert saved party IDs must be0..17 with valid object rows.",
+      "Limitations": "World/form resource table IDs that are context aliases in3DFEB0 are conservatively rejected."
+    },
+    {
+      "Address": "0x1403C04E0 / 0x1403C2120 / 0x1403C1D90 / 0x1404014A0",
+      "Finding": "Immediate native status rebuild and retention",
+      "Evidence": "Finds first active character1 Status in80x632 native pool, increments refcount and writes old status to Save before rebuilding. Trainer validates free-list bounds/uniqueness, exact pool entry and refcount, exact Sora/Drive/Form Save pointers, save header and writable range, level and equipment/ability data.",
+      "Limitations": "Uses audited progression::RefreshDataReady/LevelRow/AbilityItem helpers; these validate readable structures, not all semantic balance parameters."
+    },
+    {
+      "Address": "0x1403BFB70 / 0x1403BF4F0",
+      "Finding": "Native actor list traversal",
+      "Evidence": "Both traverse packednext+2704 from2A171C8 without a bound. Trainer validates complete list up to2048 nodes, all2708-byte headers, no cycles, current player present.",
+      "Limitations": "2048 is a conservative trainer limit, not a proven native capacity."
+    },
+    {
+      "Address": "0x1403C3FE0 / 0x1403C4A40",
+      "Finding": "Final unlock inventory side effect bounded",
+      "Evidence": "Potential native Final unlock uses item29 locator and scans type2 weapons, may remove one stock weapon to initialize Form weapon. Trainer requires item type21, unique indexes<256 or count slots<320 and same boundaries for every scanned type2 weapon.",
+      "Limitations": "The legitimate native inventory/progression changes remain enabled."
+    },
+    {
+      "Address": "0x1403C17C0",
+      "Finding": "Finite native form timer construction",
+      "Evidence": "Duration factor params+104 multiplied by(level+3), Anti override usesparams+140+1. Trainer requires finite normal maximumfactor*10 and Antifactor*(param+1), anti byte-gauge range0..254.",
+      "Limitations": "Bounds apply to the supported native gameplay layout."
+    }
+  ]
+}

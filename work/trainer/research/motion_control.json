@@ -1,0 +1,145 @@
+{
+  "title": "Actor-bound Sora animation tools",
+  "version": "0.5",
+  "status": "Native source and tests frozen; no UI/game-process/live test performed",
+  "apis": [
+    "MotionHandle",
+    "MotionTick",
+    "MotionSnapshot",
+    "MotionCapabilities",
+    "MotionReset"
+  ],
+  "slots": {
+    "160": "motion.speed",
+    "161": "motion.override",
+    "162": "motion.actual_speed",
+    "163": "motion.frame",
+    "164": "motion.duration",
+    "165": "motion.logical_id",
+    "166": "motion.resolved_id",
+    "167": "motion.blend_duration",
+    "168": "motion.blend_target",
+    "169": "motion.format",
+    "170": "motion.state"
+  },
+  "scope": "Sora charID1/controller750300, including forms0..6; no Roxas claim",
+  "state_enum": [
+    "Off",
+    "Active",
+    "Disabled",
+    "ScriptChanged",
+    "ValueChanged",
+    "IdentityChanged",
+    "HostExpired",
+    "HookChanged",
+    "ResourceInvalid",
+    "HookUnavailable"
+  ],
+  "claims": [
+    {
+      "addr": "0x1403C61B0",
+      "Finding": "Constructor receives controller in RCX and Actor in RDX, sets owner+16 and speed+336 tofloat1. Actor embeds the controller at+344, so speed is Actor+680. Logical/resolved IDs initialize to-1.",
+      "Evidence": [
+        "motion_control_evidence.json:0x1403C61B0"
+      ],
+      "Limitations": "These are runtime Actor fields, not save data. Full model compatibility is not inferred from this constructor alone."
+    },
+    {
+      "addr": "0x1403C6740",
+      "Finding": "Advance uses float delta*controllerSpeed to increment frame; handles loop/blend, root motion and gameplay triggers. Zero is not a full actor pause.",
+      "Evidence": [
+        "motion_control_evidence.json:0x1403C6740"
+      ],
+      "Limitations": "Rate0 is excluded from the trainer selection. Speed affects gameplay timing and motion-derived displacement; it is not purely cosmetic."
+    },
+    {
+      "addr": "0x1403C8A40",
+      "Finding": "Motion/resource replacement resets duration/frame/blend/trigger state but does not reset speed+336. Therefore speed ownership is Actor-wide, and a per-motion lease that simply expires would leak the override.",
+      "Evidence": [
+        "motion_control_evidence.json:0x1403C8A40",
+        "motion_playback_evidence.json:0x1403C86A0"
+      ],
+      "Limitations": "Unknown modded writers can change this behavior. Normal motion/resource identity changes are allowed only with a valid fresh supported View and unchanged Actor/model identities."
+    },
+    {
+      "addr": "0x14042FCE0",
+      "Finding": "Synchronous void fastcall(uint32_t* RCX) callback reads second8-byte operand lowfloat at+8; decodes first operand handle, then its packed Actor field+4, and writes the float unchanged to Actor+680. No meaningful return value.",
+      "Evidence": [
+        "motion_control_evidence.json:0x14042FCE0",
+        "motion_vm_independent_evidence.json"
+      ],
+      "Limitations": "The first decoded object is an Actor handle/object, not a YS script-context struct. Original performs no validation; wrapper always forwards its behavior exactly once."
+    },
+    {
+      "addr": "0x140755A20",
+      "Finding": "Aligned8-byte callback field in16-byte record. Bank1 root at753498 points755370; index107 record has Writer42FCE0, metadataDWORD2, tailDWORD0. Only callback pointer is CAS-swapped.",
+      "Evidence": [
+        "motion_vm_independent_evidence.json",
+        "motion_vm_independent_review.txt"
+      ],
+      "Limitations": "No friendly VM operation name is established. Foreign replacement is preserved; loss of writer observation makes restoration unsafe and ends ownership without field restoration."
+    },
+    {
+      "addr": "0x14041C4AA..0x14041C518",
+      "Finding": "Dispatcher copies two8-byte operands into its stack array and calls the writer synchronously with RCX. Return flag is absent for this record.",
+      "Evidence": [
+        "motion_vm_independent_evidence.json",
+        "motion_independent_complete_evidence.json"
+      ],
+      "Limitations": "Wrapper never retains the argument array. Bridge is pinned; unhooking alone does not prove no callback is already in flight."
+    },
+    {
+      "addr": "0x1403C6AA0",
+      "Finding": "Pose submission resolves model through controllerOwnerActor+1968. Model+32 is the model resource object; its vtable and identity are part of the lease. Palette slots+80/+88 swap during pose submission and must not be treated as stable model generation.",
+      "Evidence": [
+        "motion_control_evidence.json:0x1403C6AA0",
+        "../../native_decompile/0x1401a4d40.c"
+      ],
+      "Limitations": "Model/resource/header guards establish a plausible current engine object, not validation of every recursively referenced bone/IK asset buffer."
+    },
+    {
+      "addr": "0x1401DA660 / 0x1401DB440",
+      "Finding": "Prototype/RAW duration getters read respective resource+20/+32. Snapshot duration is published only if controller duration matches the supported header. RAW uses resource+36 samplecount; classes are identified by vtables5B4958/5B4A38 and header tags0/1.",
+      "Evidence": [
+        "motion_deep_evidence.json",
+        "motion_independent_readout_evidence.json"
+      ],
+      "Limitations": "Readouts are omitted for unknown formats or inconsistent resources. Frame/ID are never written."
+    },
+    {
+      "addr": "0x14040D000",
+      "Finding": "Drive constructs a distinct new Actor via405030\u21923A7A40\u21923D5840\u21923D2DA0\u21923DA940\u21923B3200\u21923C61B0. Native constructor initializes speed1. Direct copies transfer position, motion vector and counters3356/3360; seven reference-transfer helpers do not bulk-copy the controller or speed field.",
+      "Evidence": [
+        "motion_drive_transfer_evidence.json",
+        "motion_control_evidence.json:0x1403C61B0"
+      ],
+      "Limitations": "Subsequent native scripts may set a new speed; the trainer does not rebind to the new Actor or claim its final rate must stay1."
+    },
+    {
+      "addr": "MotionFeatures.inl WriterHook / Stop / Start / UpdateRate",
+      "Finding": "Private SRW lock serializes observation+native original with all trainer speed mutations. Equal-value script writes revoke ownership before the original. Reset verifies script signal, slot/bank validity and fresh Actor ownership under lock before comparing/restoring bits.",
+      "Evidence": [
+        "../../../trainer/Native/MotionFeatures.inl",
+        "../tests/MotionGuardTests.cpp"
+      ],
+      "Limitations": "Arbitrary third-party direct writes that bypass this callback and write identical bits are not detectable. The private lock coordinates this wrapper and trainer writes, not all external modules."
+    },
+    {
+      "addr": "MotionFeatures.inl CurrentOwner / Maintain",
+      "Finding": "Lease binds current Actor, status, controller owner, form, scene heap, field/Actor schedulers, all10 room bytes, model/resource/vtable. Normal motion changes survive. Actor/Form/scene loss never dereferences an old Actor for restoration. Model/motion loss can restore the Actor-owned field only when the exact current Actor/scene remain valid.",
+      "Evidence": [
+        "../../../trainer/Native/MotionFeatures.inl",
+        "../tests/MotionGuardTests.cpp"
+      ],
+      "Limitations": "When identity, scene safety or writer observation is uncertain, no restore is attempted; the current field is left to the engine. Exact ABA reuse of all identities between sampled updates is not ruled out."
+    }
+  ],
+  "validation": {
+    "checks": 454,
+    "failures": 0,
+    "compiler": "MSVC C++17 /O2 /W4; no warnings",
+    "scope": "Fake allocated memory and stub native callback only; actual SRW concurrency, exception unwinding, VirtualProtect/CAS failure injection and lifecycle tests.",
+    "source_sha256": "FA8CF241EE29E215DE28CA5D0DBC9CCF322837A4D7FE47493EB2836ADF3A3B17",
+    "tests_sha256": "AB69F3A633735388BCC803A2F5DCCA89BA35FFAFD34EDD54AFFA4456E9B1592B"
+  }
+}

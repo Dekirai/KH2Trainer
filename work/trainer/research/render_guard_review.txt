@@ -1,0 +1,10 @@
+Independent review of RenderFeatures.inl
+
+Result: no substantial issue found in the current read-only renderer snapshot path.
+The object span58248 includes the final uint32 at58244. Ready checks the expected native vptr, a valid main-field context, the engine thread, and two nonzero renderer service fields before sampling. Samples do not dereference those service pointers. Each sampled float/selector is independently bounded; unsigned counters retain their full range.
+
+RenderGuardTests.cpp compiles with /W4 and passes42 checks using synthetic mapped memory. Tests cover missing/foreign vtable, teardown service pointers, wrong scene/base/thread, an unreadable tail page, every field mapping, individual invalid values, NaN/infinity, inclusive upper bounds, unsigned maxima, unchanged renderer memory, fresh validity masks after loss, and static capability ownership. No game code or UI was executed.
+
+Minor numeric policy detail: the double lower bound0.0001 for the float at+23360 excludes the nearest float0.0001f, which rounds slightly below that double. This is conservative and not a safety problem. If the intended inclusive lower bound is a representable float, use0.0001f (promoted to double) in Bounded. No source change made by this review.
+
+Limits: this is a sampled diagnostics view; renderer workers may update fields between reads. It does not promise a coherent completed frame or establish that service pointer contents are valid. The outer bridge is responsible for zeroing snapshot validity before each domain snapshot, as in the current TrainerFrame implementation.

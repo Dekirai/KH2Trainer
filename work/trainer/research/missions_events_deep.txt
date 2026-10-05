@@ -1,0 +1,46 @@
+Mission events - research checkpoint
+===================================
+Status: Root authorized and implemented the three new native Mission actions.
+Existing v0.6 sources/reports/packages are unchanged.
+No game-process, UI, native-call execution or IDB mutation.
+
+Practical implementation
+Three one-time actions: set a configured counter, set a configured gauge,
+and set configured score. Use the complete native setters, retaining boundary
+events and normal progression/transition effects. Slots230..232. See missions_events_contract.txt and missionevents_features.json.
+Counter/gauge boundary events synchronously run eight BDX contexts,
+Actor callbacks, then condition handlers. The latter may award items,
+change flags, start a presentation or schedule a room transition.
+No universal mission-win/fail or immediate-retry contract is established.
+
+Lifecycle findings
+- Mission and widgets are reused static storage. Normal mission teardown
+  nulls the published mission and queues its script removal; BAR release
+  decrements a cache reference rather than immediately freeing the BAR.
+- Temporary BDX event execution shares/refcounts script work and Actor;
+  destruction can itself execute BDX. Deferred script deletion can be
+  flushed synchronously by Actor action cleanup, not just next frame.
+- Mission+16 cleanup is an effect group. Counter/gauge HUDs are separately
+  allocated and hold SEQD animation resources. Threshold transitions may
+  use these after the boundary event, so their native lifetime matters.
+- Gauge owner mask+1696 blocks the standard setter and must be respected.
+- Native score is a counter-derived object with ID-1/max9999. Direct set
+  changes score without replaying award multipliers or resetting history.
+
+Evidence
+See missions_events_deep.json for address-specific claims, existing file
+anchors and limits. Fresh full ASM saved in:
+ missions_events_deep_evidence.json
+ missions_events_lifecycle_evidence.json
+ missions_events_hud_lifetime_evidence.json
+ missions_events_vm_evidence.json
+VM function41B400 has1094 actual saved instructions, collected in100-line
+pages after rejecting a misleading10-line preview marked done.
+New module MissionEventFeatures.inl:496 isolated checks/0 failures, no live test.
+Additional fresh allocator/entry evidence: missions_events_implementation_evidence.json.
+Threshold/SFX evidence: missions_events_threshold_evidence.json.
+Only widget flag1 is required. Flag4 controls native boundary events and sound;
+configured hidden widgets remain supported, including score. Threshold-only
+updates retain HUD/audio effects without requiring a mission BDX dispatch.
+99 functions/4580 actual instructions across the six new ASM files; all counts
+and claim anchors verified. These collection counts are not coverage percentages.

@@ -1,0 +1,814 @@
+{
+  "Schema": 1,
+  "SourceSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "Scope": "Offline reference for one verified executable. Original message text is preserved, including spacing and legacy launcher names. This catalog cannot display game dialogs, modify saves, change language or request shutdown.",
+  "SharedNativeBehavior": "Native 0x1401042E0 returns true immediately if AppInterface + 4752 is already nonnegative. Otherwise it may terminate a process named WaitTitleProject.exe, calls the audio-pause wrapper, sets GX + 776, and sends synchronous WM_APP+1 to the game window with an in-process int output pointer. After the dialog it clears pause/suspend and applies the ID-specific branch. These paths are documented, never invoked by this catalog. Retry labels do not establish a retry operation within the dialog dispatcher.",
+  "Languages": [
+    {
+      "Id": 0,
+      "Code": "ja",
+      "Name": "Japanese"
+    },
+    {
+      "Id": 1,
+      "Code": "en",
+      "Name": "English"
+    },
+    {
+      "Id": 2,
+      "Code": "fr",
+      "Name": "French"
+    },
+    {
+      "Id": 3,
+      "Code": "it",
+      "Name": "Italian"
+    },
+    {
+      "Id": 4,
+      "Code": "de",
+      "Name": "German"
+    },
+    {
+      "Id": 5,
+      "Code": "es",
+      "Name": "Spanish"
+    }
+  ],
+  "Messages": [
+    {
+      "Id": 0,
+      "Title": "Corrupt save data",
+      "Summary": "Reports that corrupt save data will be deleted and recreated. The dialog itself does not delete files; that operation belongs to its caller.",
+      "NativeStyle": 0,
+      "PrimaryEffect": "Acknowledgement returns false. This dispatcher has no additional shutdown action for ID 0.",
+      "SecondaryEffect": "No second button.",
+      "Localizations": [
+        {
+          "LanguageId": 0,
+          "Text": "セーブデータが壊れています\nこのセーブデータを削除し、新たにセーブデータを作成します",
+          "PrimaryButton": "OK",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405af540",
+          "PrimaryButtonAddress": "0x1405aee00",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x1407144f0"
+        },
+        {
+          "LanguageId": 1,
+          "Text": "Save data is corrupt and will be deleted.Creating new save data.",
+          "PrimaryButton": "OK",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405af5a0",
+          "PrimaryButtonAddress": "0x1405aee00",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714510"
+        },
+        {
+          "LanguageId": 2,
+          "Text": "Les données de sauvegarde sont corrompues et vont être supprimées.\nCréation de nouvelles données de sauvegarde.",
+          "PrimaryButton": "OK",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405af630",
+          "PrimaryButtonAddress": "0x1405aee00",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714530"
+        },
+        {
+          "LanguageId": 3,
+          "Text": "I dati salvati sono danneggiati e verranno eliminati.Creazione di un nuovo salvataggio.",
+          "PrimaryButton": "OK",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405af710",
+          "PrimaryButtonAddress": "0x1405aee00",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714550"
+        },
+        {
+          "LanguageId": 4,
+          "Text": "Speicherdaten sind fehlerhaft und werden gelöscht.\nNeue Speicherdaten werden erstellt.",
+          "PrimaryButton": "O.K.",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405af7c0",
+          "PrimaryButtonAddress": "0x1405af870",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714570"
+        },
+        {
+          "LanguageId": 5,
+          "Text": "Los datos de guardado están dañados y se van a eliminar.\nCreando nuevos datos de guardado.",
+          "PrimaryButton": "ACEPTAR",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405af880",
+          "PrimaryButtonAddress": "0x1405af938",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714590"
+        }
+      ]
+    },
+    {
+      "Id": 1,
+      "Title": "System data creation failed",
+      "Summary": "Reports a failed attempt to create system data. The first button quits; the second button returns to the caller, whose surrounding workflow can retry.",
+      "NativeStyle": 2,
+      "PrimaryEffect": "The relabeled first button returns true, calls the managed ExitApplication bridge and returns true to the native caller.",
+      "SecondaryEffect": "The relabeled second button returns false. This dispatcher does not itself retry file creation.",
+      "Localizations": [
+        {
+          "LanguageId": 0,
+          "Text": "作成に失敗しました\n再度システムファイルの作成を実行します",
+          "PrimaryButton": "ゲームの終了",
+          "SecondaryButton": "OK",
+          "TextAddress": "0x1405af948",
+          "PrimaryButtonAddress": "0x1405af988",
+          "SecondaryButtonAddress": "0x1405aee00",
+          "RecordAddress": "0x1407145b0"
+        },
+        {
+          "LanguageId": 1,
+          "Text": "Failed to create system data.\nRe-attempting to create system data.",
+          "PrimaryButton": "Quit Game",
+          "SecondaryButton": "OK",
+          "TextAddress": "0x1405af9a0",
+          "PrimaryButtonAddress": "0x1405afa28",
+          "SecondaryButtonAddress": "0x1405aee00",
+          "RecordAddress": "0x1407145d0"
+        },
+        {
+          "LanguageId": 2,
+          "Text": "Échec de la création des données système.\nNouvelle tentative de création de données système.",
+          "PrimaryButton": "Quitter",
+          "SecondaryButton": "OK",
+          "TextAddress": "0x1405afa40",
+          "PrimaryButtonAddress": "0x1405afb00",
+          "SecondaryButtonAddress": "0x1405aee00",
+          "RecordAddress": "0x1407145f0"
+        },
+        {
+          "LanguageId": 3,
+          "Text": "La creazione dei dati di sistema non è andata a buon fine.\nNuovo tentativo di creazione dei dati di sistema in corso.",
+          "PrimaryButton": "Esci",
+          "SecondaryButton": "OK",
+          "TextAddress": "0x1405afb10",
+          "PrimaryButtonAddress": "0x1405afc00",
+          "SecondaryButtonAddress": "0x1405aee00",
+          "RecordAddress": "0x140714610"
+        },
+        {
+          "LanguageId": 4,
+          "Text": "Systemdaten konnten nicht erstellt werden.\nErneuter Versuch, Systemdaten zu erstellen.",
+          "PrimaryButton": "Beenden",
+          "SecondaryButton": "O.K.",
+          "TextAddress": "0x1405afc10",
+          "PrimaryButtonAddress": "0x1405afcc0",
+          "SecondaryButtonAddress": "0x1405af870",
+          "RecordAddress": "0x140714630"
+        },
+        {
+          "LanguageId": 5,
+          "Text": "Error al crear datos del sistema.\nVolviendo a intentar crear datos del sistema.",
+          "PrimaryButton": "Salir",
+          "SecondaryButton": "ACEPTAR",
+          "TextAddress": "0x1405afcd0",
+          "PrimaryButtonAddress": "0x1405afd70",
+          "SecondaryButtonAddress": "0x1405af938",
+          "RecordAddress": "0x140714650"
+        }
+      ]
+    },
+    {
+      "Id": 2,
+      "Title": "Save failed",
+      "Summary": "Reports failure to save game data. The text does not identify the underlying I/O error.",
+      "NativeStyle": 0,
+      "PrimaryEffect": "Acknowledgement returns false. This dispatcher has no additional shutdown action for ID 2.",
+      "SecondaryEffect": "No second button.",
+      "Localizations": [
+        {
+          "LanguageId": 0,
+          "Text": "セーブに失敗しました",
+          "PrimaryButton": "OK",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405afd80",
+          "PrimaryButtonAddress": "0x1405aee00",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714670"
+        },
+        {
+          "LanguageId": 1,
+          "Text": "Failed to save game data.",
+          "PrimaryButton": "OK",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405afd98",
+          "PrimaryButtonAddress": "0x1405aee00",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714690"
+        },
+        {
+          "LanguageId": 2,
+          "Text": "Échec de l'enregistrement des données de jeu.",
+          "PrimaryButton": "OK",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405afdd0",
+          "PrimaryButtonAddress": "0x1405aee00",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x1407146b0"
+        },
+        {
+          "LanguageId": 3,
+          "Text": "Il salvataggio dei dati di gioco non è andato a buon fine.",
+          "PrimaryButton": "OK",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405afe30",
+          "PrimaryButtonAddress": "0x1405aee00",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x1407146d0"
+        },
+        {
+          "LanguageId": 4,
+          "Text": "Spieldaten konnten nicht gespeichert werden.",
+          "PrimaryButton": "O.K.",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405afeb0",
+          "PrimaryButtonAddress": "0x1405af870",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x1407146f0"
+        },
+        {
+          "LanguageId": 5,
+          "Text": "Error al guardar datos del juego.",
+          "PrimaryButton": "ACEPTAR",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405aff10",
+          "PrimaryButtonAddress": "0x1405af938",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714710"
+        }
+      ]
+    },
+    {
+      "Id": 3,
+      "Title": "Delete failed",
+      "Summary": "Reports failure to delete game data. The dialog itself does not perform deletion.",
+      "NativeStyle": 0,
+      "PrimaryEffect": "Acknowledgement returns false. This dispatcher has no additional shutdown action for ID 3.",
+      "SecondaryEffect": "No second button.",
+      "Localizations": [
+        {
+          "LanguageId": 0,
+          "Text": "削除に失敗しました",
+          "PrimaryButton": "OK",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405aff58",
+          "PrimaryButtonAddress": "0x1405aee00",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714730"
+        },
+        {
+          "LanguageId": 1,
+          "Text": "Failed to delete game data.",
+          "PrimaryButton": "OK",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405aff70",
+          "PrimaryButtonAddress": "0x1405aee00",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714750"
+        },
+        {
+          "LanguageId": 2,
+          "Text": "Échec de la suppression des données de jeu.",
+          "PrimaryButton": "OK",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405affb0",
+          "PrimaryButtonAddress": "0x1405aee00",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714770"
+        },
+        {
+          "LanguageId": 3,
+          "Text": "La cancellazione dei dati di gioco non è andata a buon fine.",
+          "PrimaryButton": "OK",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405b0010",
+          "PrimaryButtonAddress": "0x1405aee00",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714790"
+        },
+        {
+          "LanguageId": 4,
+          "Text": "Spieldaten konnten nicht gelöscht werden.",
+          "PrimaryButton": "O.K.",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405b0090",
+          "PrimaryButtonAddress": "0x1405af870",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x1407147b0"
+        },
+        {
+          "LanguageId": 5,
+          "Text": "Error al eliminar datos del juego.",
+          "PrimaryButton": "ACEPTAR",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405b00f0",
+          "PrimaryButtonAddress": "0x1405af938",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x1407147d0"
+        }
+      ]
+    },
+    {
+      "Id": 4,
+      "Title": "Corrupt data cannot be loaded",
+      "Summary": "Reports corrupt save data that could not be loaded. The same ID is also used from the native save-image decoding error path.",
+      "NativeStyle": 0,
+      "PrimaryEffect": "Acknowledgement returns false. This dispatcher has no additional shutdown action for ID 4; the decoding error caller can still unwind.",
+      "SecondaryEffect": "No second button.",
+      "Localizations": [
+        {
+          "LanguageId": 0,
+          "Text": "セーブデータが壊れているため、ロードできません",
+          "PrimaryButton": "OK",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405b0138",
+          "PrimaryButtonAddress": "0x1405aee00",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x1407147f0"
+        },
+        {
+          "LanguageId": 1,
+          "Text": "Save data is corrupt. Failed to load game data.",
+          "PrimaryButton": "OK",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405b0170",
+          "PrimaryButtonAddress": "0x1405aee00",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714810"
+        },
+        {
+          "LanguageId": 2,
+          "Text": "Les données de sauvegarde sont corrompues. Échec du chargement des données de jeu.",
+          "PrimaryButton": "OK",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405b01d0",
+          "PrimaryButtonAddress": "0x1405aee00",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714830"
+        },
+        {
+          "LanguageId": 3,
+          "Text": "I dati salvati sono danneggiati. Il caricamento dei dati di gioco non è andato a buon fine.",
+          "PrimaryButton": "OK",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405b0280",
+          "PrimaryButtonAddress": "0x1405aee00",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714850"
+        },
+        {
+          "LanguageId": 4,
+          "Text": "Speicherdaten sind fehlerhaft. Spieldaten konnten nicht geladen werden.",
+          "PrimaryButton": "O.K.",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405b0340",
+          "PrimaryButtonAddress": "0x1405af870",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714870"
+        },
+        {
+          "LanguageId": 5,
+          "Text": "Los datos de guardado están dañados. Error al cargar datos del juego.",
+          "PrimaryButton": "ACEPTAR",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405b03d0",
+          "PrimaryButtonAddress": "0x1405af938",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714890"
+        }
+      ]
+    },
+    {
+      "Id": 5,
+      "Title": "Launcher offline: shutdown request",
+      "Summary": "Retains an Epic Games Launcher offline message in this Steam executable. It does not establish that the Epic path is active in a given session.",
+      "NativeStyle": 1,
+      "PrimaryEffect": "The relabeled first button returns true; the dispatcher writes 256 to AppInterface + 4752 and returns true. MyApp Update subsequently returns exit status 2.",
+      "SecondaryEffect": "The relabeled Retry button returns false. This dispatcher does not itself reconnect or authenticate.",
+      "Localizations": [
+        {
+          "LanguageId": 0,
+          "Text": "Epic Gamesのステータスがオフライン状態になっています\nインターネット接続をご確認ください",
+          "PrimaryButton": "ゲームの終了",
+          "SecondaryButton": "リトライ",
+          "TextAddress": "0x1405b0460",
+          "PrimaryButtonAddress": "0x1405af988",
+          "SecondaryButtonAddress": "0x1405b04c8",
+          "RecordAddress": "0x1407148b0"
+        },
+        {
+          "LanguageId": 1,
+          "Text": "The Epic Games Launcher is in Offline Mode.\nPlease check your internet connection.",
+          "PrimaryButton": "Quit Game",
+          "SecondaryButton": "Retry",
+          "TextAddress": "0x1405b04e0",
+          "PrimaryButtonAddress": "0x1405afa28",
+          "SecondaryButtonAddress": "0x1405b0588",
+          "RecordAddress": "0x1407148d0"
+        },
+        {
+          "LanguageId": 2,
+          "Text": "Le lanceur Epic Games est en mode hors ligne.\nVeuillez vérifier votre connexion Internet.",
+          "PrimaryButton": "Quitter",
+          "SecondaryButton": "Réessayer",
+          "TextAddress": "0x1405b05a0",
+          "PrimaryButtonAddress": "0x1405afb00",
+          "SecondaryButtonAddress": "0x1405b0658",
+          "RecordAddress": "0x1407148f0"
+        },
+        {
+          "LanguageId": 3,
+          "Text": "Il launcher di Epic Games è in modalità offline.\nVerifica la tua connessione Internet.",
+          "PrimaryButton": "Esci",
+          "SecondaryButton": "Riprova",
+          "TextAddress": "0x1405b0670",
+          "PrimaryButtonAddress": "0x1405afc00",
+          "SecondaryButtonAddress": "0x1405b0720",
+          "RecordAddress": "0x140714910"
+        },
+        {
+          "LanguageId": 4,
+          "Text": "Der Epic Games Launcher befindet sich im Offline-Modus.\nBitte überprüfe deine Internetverbindung.",
+          "PrimaryButton": "Beenden",
+          "SecondaryButton": "Wiederholen",
+          "TextAddress": "0x1405b0730",
+          "PrimaryButtonAddress": "0x1405afcc0",
+          "SecondaryButtonAddress": "0x1405b07f8",
+          "RecordAddress": "0x140714930"
+        },
+        {
+          "LanguageId": 5,
+          "Text": "El iniciador de Epic Games no tiene conexión.\nComprueba tu conexión a internet.",
+          "PrimaryButton": "Salir",
+          "SecondaryButton": "Reintentar",
+          "TextAddress": "0x1405b0810",
+          "PrimaryButtonAddress": "0x1405afd70",
+          "SecondaryButtonAddress": "0x1405b08b0",
+          "RecordAddress": "0x140714950"
+        }
+      ]
+    },
+    {
+      "Id": 6,
+      "Title": "Launcher offline: close request",
+      "Summary": "Has the same original text and buttons as ID 5, but its native post-dialog branch requests a managed window close instead of setting the shutdown field.",
+      "NativeStyle": 1,
+      "PrimaryEffect": "The relabeled first button returns true and calls the managed ExitApplication bridge.",
+      "SecondaryEffect": "The relabeled Retry button returns false. No retry implementation is present in this dispatcher.",
+      "Localizations": [
+        {
+          "LanguageId": 0,
+          "Text": "Epic Gamesのステータスがオフライン状態になっています\nインターネット接続をご確認ください",
+          "PrimaryButton": "ゲームの終了",
+          "SecondaryButton": "リトライ",
+          "TextAddress": "0x1405b0460",
+          "PrimaryButtonAddress": "0x1405af988",
+          "SecondaryButtonAddress": "0x1405b04c8",
+          "RecordAddress": "0x140714970"
+        },
+        {
+          "LanguageId": 1,
+          "Text": "The Epic Games Launcher is in Offline Mode.\nPlease check your internet connection.",
+          "PrimaryButton": "Quit Game",
+          "SecondaryButton": "Retry",
+          "TextAddress": "0x1405b04e0",
+          "PrimaryButtonAddress": "0x1405afa28",
+          "SecondaryButtonAddress": "0x1405b0588",
+          "RecordAddress": "0x140714990"
+        },
+        {
+          "LanguageId": 2,
+          "Text": "Le lanceur Epic Games est en mode hors ligne.\nVeuillez vérifier votre connexion Internet.",
+          "PrimaryButton": "Quitter",
+          "SecondaryButton": "Réessayer",
+          "TextAddress": "0x1405b05a0",
+          "PrimaryButtonAddress": "0x1405afb00",
+          "SecondaryButtonAddress": "0x1405b0658",
+          "RecordAddress": "0x1407149b0"
+        },
+        {
+          "LanguageId": 3,
+          "Text": "Il launcher di Epic Games è in modalità offline.\nVerifica la tua connessione Internet.",
+          "PrimaryButton": "Esci",
+          "SecondaryButton": "Riprova",
+          "TextAddress": "0x1405b0670",
+          "PrimaryButtonAddress": "0x1405afc00",
+          "SecondaryButtonAddress": "0x1405b0720",
+          "RecordAddress": "0x1407149d0"
+        },
+        {
+          "LanguageId": 4,
+          "Text": "Der Epic Games Launcher befindet sich im Offline-Modus.\nBitte überprüfe deine Internetverbindung.",
+          "PrimaryButton": "Beenden",
+          "SecondaryButton": "Wiederholen",
+          "TextAddress": "0x1405b0730",
+          "PrimaryButtonAddress": "0x1405afcc0",
+          "SecondaryButtonAddress": "0x1405b07f8",
+          "RecordAddress": "0x1407149f0"
+        },
+        {
+          "LanguageId": 5,
+          "Text": "El iniciador de Epic Games no tiene conexión.\nComprueba tu conexión a internet.",
+          "PrimaryButton": "Salir",
+          "SecondaryButton": "Reintentar",
+          "TextAddress": "0x1405b0810",
+          "PrimaryButtonAddress": "0x1405afd70",
+          "SecondaryButtonAddress": "0x1405b08b0",
+          "RecordAddress": "0x140714a10"
+        }
+      ]
+    },
+    {
+      "Id": 7,
+      "Title": "Launcher login failed",
+      "Summary": "Retains an Epic Games Launcher login error. Acknowledging the information dialog leads to the native shutdown request regardless of the dialog boolean result.",
+      "NativeStyle": 0,
+      "PrimaryEffect": "The information dialog returns false, but the native ID-7 branch unconditionally writes 256 to AppInterface + 4752 and returns true.",
+      "SecondaryEffect": "No second button.",
+      "Localizations": [
+        {
+          "LanguageId": 0,
+          "Text": "ログインが確認できないため、Epic Games Launcherに戻ります",
+          "PrimaryButton": "ゲームの終了",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405b08d0",
+          "PrimaryButtonAddress": "0x1405af988",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714a30"
+        },
+        {
+          "LanguageId": 1,
+          "Text": "Unable to log in.Returning to the Epic Games Launcher.",
+          "PrimaryButton": "Quit Game",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405b0920",
+          "PrimaryButtonAddress": "0x1405afa28",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714a50"
+        },
+        {
+          "LanguageId": 2,
+          "Text": "Connexion impossible.Retour au lanceur Epic Games.",
+          "PrimaryButton": "Quitter",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405b0990",
+          "PrimaryButtonAddress": "0x1405afb00",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714a70"
+        },
+        {
+          "LanguageId": 3,
+          "Text": "Impossibile accedere.Ritorno al launcher di Epic Games in corso.",
+          "PrimaryButton": "Esci",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405b0a00",
+          "PrimaryButtonAddress": "0x1405afc00",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714a90"
+        },
+        {
+          "LanguageId": 4,
+          "Text": "Anmeldung fehlgeschlagen.Kehre zum Epic Games Launcher zurück.",
+          "PrimaryButton": "Beenden",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405b0a90",
+          "PrimaryButtonAddress": "0x1405afcc0",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714ab0"
+        },
+        {
+          "LanguageId": 5,
+          "Text": "No se ha podido iniciar sesión.Volviendo al iniciador de Epic Games.",
+          "PrimaryButton": "Salir",
+          "SecondaryButton": null,
+          "TextAddress": "0x1405b0b10",
+          "PrimaryButtonAddress": "0x1405afd70",
+          "SecondaryButtonAddress": null,
+          "RecordAddress": "0x140714ad0"
+        }
+      ]
+    }
+  ],
+  "ClosePrompts": [
+    {
+      "Id": "idle",
+      "NativeGameStatus": 0,
+      "Title": "Exit confirmation",
+      "Behavior": "Uses the generic exit text when native game status is 0. Unknown status values also retain this text. Returning OK allows the owning close workflow to proceed.",
+      "Localizations": [
+        {
+          "LanguageId": 0,
+          "Text": "ゲームを終了します\n本当によろしいですか？",
+          "PrimaryButton": "はい",
+          "SecondaryButton": "いいえ",
+          "TextAddress": "0x1405aee68",
+          "PrimaryButtonAddress": "0x1405af4e8",
+          "SecondaryButtonAddress": "0x1405af518",
+          "RecordAddress": "0x1407143f8"
+        },
+        {
+          "LanguageId": 1,
+          "Text": "Exit the game?",
+          "PrimaryButton": "Yes",
+          "SecondaryButton": "No",
+          "TextAddress": "0x1405aee98",
+          "PrimaryButtonAddress": "0x1405af4f0",
+          "SecondaryButtonAddress": "0x1405af520",
+          "RecordAddress": "0x140714400"
+        },
+        {
+          "LanguageId": 2,
+          "Text": "Quitter le jeu ?",
+          "PrimaryButton": "Oui",
+          "SecondaryButton": "Non",
+          "TextAddress": "0x1405aeeb8",
+          "PrimaryButtonAddress": "0x1405af4f8",
+          "SecondaryButtonAddress": "0x1405af528",
+          "RecordAddress": "0x140714408"
+        },
+        {
+          "LanguageId": 3,
+          "Text": "Vuoi uscire dal gioco?",
+          "PrimaryButton": "Sì",
+          "SecondaryButton": "No",
+          "TextAddress": "0x1405aeee0",
+          "PrimaryButtonAddress": "0x1405af500",
+          "SecondaryButtonAddress": "0x1405af520",
+          "RecordAddress": "0x140714410"
+        },
+        {
+          "LanguageId": 4,
+          "Text": "Spiel beenden?",
+          "PrimaryButton": "Ja",
+          "SecondaryButton": "Nein",
+          "TextAddress": "0x1405aef10",
+          "PrimaryButtonAddress": "0x1405af508",
+          "SecondaryButtonAddress": "0x1405af530",
+          "RecordAddress": "0x140714418"
+        },
+        {
+          "LanguageId": 5,
+          "Text": "¿Salir del juego?",
+          "PrimaryButton": "Sí",
+          "SecondaryButton": "No",
+          "TextAddress": "0x1405aef30",
+          "PrimaryButtonAddress": "0x1405af510",
+          "SecondaryButtonAddress": "0x1405af520",
+          "RecordAddress": "0x140714420"
+        }
+      ]
+    },
+    {
+      "Id": "gameplay",
+      "NativeGameStatus": 1,
+      "Title": "Exit with unsaved progress",
+      "Behavior": "Uses the unsaved-progress warning when native game status is 1. Choosing the relabeled Yes/OK button also starts a separate progress-form thread until EndMessageClose sets the shared completion flag.",
+      "Localizations": [
+        {
+          "LanguageId": 0,
+          "Text": "ゲームを終了します\nセーブを行っていない場合、現在の状況が失われてしまいます\n本当によろしいですか？",
+          "PrimaryButton": "はい",
+          "SecondaryButton": "いいえ",
+          "TextAddress": "0x1405aef60",
+          "PrimaryButtonAddress": "0x1405af4e8",
+          "SecondaryButtonAddress": "0x1405af518",
+          "RecordAddress": "0x140714428"
+        },
+        {
+          "LanguageId": 1,
+          "Text": "Exit the game?\nAll unsaved game progress will be lost.",
+          "PrimaryButton": "Yes",
+          "SecondaryButton": "No",
+          "TextAddress": "0x1405aefd0",
+          "PrimaryButtonAddress": "0x1405af4f0",
+          "SecondaryButtonAddress": "0x1405af520",
+          "RecordAddress": "0x140714430"
+        },
+        {
+          "LanguageId": 2,
+          "Text": "Quitter le jeu ?\nToute progression non sauvegardée sera perdue.",
+          "PrimaryButton": "Oui",
+          "SecondaryButton": "Non",
+          "TextAddress": "0x1405af040",
+          "PrimaryButtonAddress": "0x1405af4f8",
+          "SecondaryButtonAddress": "0x1405af528",
+          "RecordAddress": "0x140714438"
+        },
+        {
+          "LanguageId": 3,
+          "Text": "Vuoi uscire dal gioco?\nTutti i progressi non salvati andranno persi.",
+          "PrimaryButton": "Sì",
+          "SecondaryButton": "No",
+          "TextAddress": "0x1405af0c0",
+          "PrimaryButtonAddress": "0x1405af500",
+          "SecondaryButtonAddress": "0x1405af520",
+          "RecordAddress": "0x140714440"
+        },
+        {
+          "LanguageId": 4,
+          "Text": "Spiel beenden?\nUngespeicherter Fortschritt geht verloren.",
+          "PrimaryButton": "Ja",
+          "SecondaryButton": "Nein",
+          "TextAddress": "0x1405af150",
+          "PrimaryButtonAddress": "0x1405af508",
+          "SecondaryButtonAddress": "0x1405af530",
+          "RecordAddress": "0x140714448"
+        },
+        {
+          "LanguageId": 5,
+          "Text": "¿Salir del juego?\nPerderás el progreso que no se haya guardado.",
+          "PrimaryButton": "Sí",
+          "SecondaryButton": "No",
+          "TextAddress": "0x1405af1d0",
+          "PrimaryButtonAddress": "0x1405af510",
+          "SecondaryButtonAddress": "0x1405af520",
+          "RecordAddress": "0x140714450"
+        }
+      ]
+    },
+    {
+      "Id": "busy",
+      "NativeGameStatus": 2,
+      "Title": "Exit in progress",
+      "Behavior": "Uses the exiting-progress text for native game status 2. ShowEndMessageBox still presents it using the same relabeled Yes/No confirmation; it starts no additional progress thread in this state.",
+      "Localizations": [
+        {
+          "LanguageId": 0,
+          "Text": "ゲームを終了しています…\nデータ破損の恐れがあるため、PCの電源を切らずにお待ちください",
+          "PrimaryButton": "はい",
+          "SecondaryButton": "いいえ",
+          "TextAddress": "0x1405af250",
+          "PrimaryButtonAddress": "0x1405af4e8",
+          "SecondaryButtonAddress": "0x1405af518",
+          "RecordAddress": "0x140714458"
+        },
+        {
+          "LanguageId": 1,
+          "Text": "Exiting game...\nDon't turn off your PC at this time.",
+          "PrimaryButton": "Yes",
+          "SecondaryButton": "No",
+          "TextAddress": "0x1405af2b0",
+          "PrimaryButtonAddress": "0x1405af4f0",
+          "SecondaryButtonAddress": "0x1405af520",
+          "RecordAddress": "0x140714460"
+        },
+        {
+          "LanguageId": 2,
+          "Text": "Fermeture du jeu…\nVeuillez ne pas éteindre votre PC.",
+          "PrimaryButton": "Oui",
+          "SecondaryButton": "Non",
+          "TextAddress": "0x1405af320",
+          "PrimaryButtonAddress": "0x1405af4f8",
+          "SecondaryButtonAddress": "0x1405af528",
+          "RecordAddress": "0x140714468"
+        },
+        {
+          "LanguageId": 3,
+          "Text": "Stai uscendo dal gioco...\nNon spegnere il PC.",
+          "PrimaryButton": "Sì",
+          "SecondaryButton": "No",
+          "TextAddress": "0x1405af390",
+          "PrimaryButtonAddress": "0x1405af500",
+          "SecondaryButtonAddress": "0x1405af520",
+          "RecordAddress": "0x140714470"
+        },
+        {
+          "LanguageId": 4,
+          "Text": "Spiel wird beendet …\nSchalte den PC währenddessen nicht aus.",
+          "PrimaryButton": "Ja",
+          "SecondaryButton": "Nein",
+          "TextAddress": "0x1405af3f0",
+          "PrimaryButtonAddress": "0x1405af508",
+          "SecondaryButtonAddress": "0x1405af530",
+          "RecordAddress": "0x140714478"
+        },
+        {
+          "LanguageId": 5,
+          "Text": "Saliendo del juego...\nNo apagues el ordenador ahora mismo.",
+          "PrimaryButton": "Sí",
+          "SecondaryButton": "No",
+          "TextAddress": "0x1405af470",
+          "PrimaryButtonAddress": "0x1405af510",
+          "SecondaryButtonAddress": "0x1405af520",
+          "RecordAddress": "0x140714480"
+        }
+      ]
+    }
+  ],
+  "Evidence": [
+    "managed_tools_round3_metadata.json: original FieldRVA 0x7144F0, 8 x 6 records of 32 bytes",
+    "managed_tools_round3_evidence.json: CIL 0x1A70, 0x1B00, 0x1BF0, 0x8620, 0x8640",
+    "managed_tools_round3_wndproc.json: CIL 0xC370, WM_APP+1 dispatch",
+    "managed_tools_round3_native_evidence.json: native 0x1401042E0 and language/status getters",
+    "managed_tools_round3_exit_native.json: native MyApp Update 0x14014EB70",
+    "managed_tools_round3_edges.json: CLR ExitApplication fixup MethodDef 0x060000AA"
+  ]
+}

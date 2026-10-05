@@ -1,0 +1,418 @@
+[
+  {
+    "Id": "gummi.hp",
+    "Category": "Gummi",
+    "Name": "Ship HP",
+    "Description": "Read the current Gummi ship HP, including fractional recovery.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 128,
+    "CapabilitySlot": 128,
+    "Minimum": 0,
+    "Maximum": 2147483647,
+    "DefaultValue": 0,
+    "Step": 0.1,
+    "Unit": "HP",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only. Values become unavailable when Gummi module ownership is lost.",
+    "Evidence": [
+      {
+        "Address": "0x140225F50 / 0x1402265E0",
+        "Finding": "Authoritative float HP is at PLAYER_STATE+8 (player+0x578).",
+        "Level": "Static IDA decompilation and critical ABI assembly; isolated guard tests passed. Live Gummi validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.max_hp",
+    "Category": "Gummi",
+    "Name": "Maximum ship HP",
+    "Description": "Read maximum HP calculated from the selected ship and its installed parts.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 129,
+    "CapabilitySlot": 129,
+    "Minimum": 1,
+    "Maximum": 2147483647,
+    "DefaultValue": 1,
+    "Step": 1,
+    "Unit": "HP",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only. Values become unavailable when Gummi module ownership is lost.",
+    "Evidence": [
+      {
+        "Address": "0x140225D00 / 0x1401FB8B0",
+        "Finding": "Loadout aggregation initializes int32 maximum HP at PLAYER_STATE+12.",
+        "Level": "Static IDA decompilation and critical ABI assembly; isolated guard tests passed. Live Gummi validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.heal",
+    "Category": "Gummi",
+    "Name": "Heal ship",
+    "Description": "Recover a positive amount of HP on the living Gummi ship. The amount cannot exceed its current maximum HP. Close the pause menu before applying.",
+    "Kind": "Number",
+    "CommandId": 1130,
+    "ValueSlot": -1,
+    "CapabilitySlot": 130,
+    "Minimum": 0.01,
+    "Maximum": 2147483647,
+    "DefaultValue": 25,
+    "Step": 1,
+    "Unit": "HP",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "One-time action. Disconnecting does not roll back the result.",
+    "Evidence": [
+      {
+        "Address": "0x1402265E0",
+        "Finding": "Native recovery takes PLAYER_STATE in RCX and float amount in XMM1; clamps HP and sets its healing event.",
+        "Level": "Static IDA decompilation and critical ABI assembly; isolated guard tests passed. Live Gummi validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.refill",
+    "Category": "Gummi",
+    "Name": "Refill ship HP",
+    "Description": "Restore the living Gummi ship to its current maximum HP. A ship that is dead or rebirthing is excluded.",
+    "Kind": "Action",
+    "CommandId": 1131,
+    "ValueSlot": -1,
+    "CapabilitySlot": 131,
+    "Minimum": 0,
+    "Maximum": 0,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "One-time action. Disconnecting does not roll back the result.",
+    "Evidence": [
+      {
+        "Address": "0x1402265E0",
+        "Finding": "Calls the native healer with missing HP. Skips the call when already full because native zero means one HP.",
+        "Level": "Static IDA decompilation and critical ABI assembly; isolated guard tests passed. Live Gummi validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.score",
+    "Category": "Gummi",
+    "Name": "Mission score",
+    "Description": "Read the native mission score. Its low digit also records up to nine damage events.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 132,
+    "CapabilitySlot": 132,
+    "Minimum": 0,
+    "Maximum": 99999999,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only. Values become unavailable when Gummi module ownership is lost.",
+    "Evidence": [
+      {
+        "Address": "0x140207AD0 / 0x140207A90",
+        "Finding": "Global uint32 score RVA72B130; hit processing increments only its ones digit.",
+        "Level": "Static IDA decompilation and critical ABI assembly; isolated guard tests passed. Live Gummi validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.add_points",
+    "Category": "Gummi",
+    "Name": "Add mission points",
+    "Description": "Add points in multiples of 10, preserving the recorded damage digit. Native limits and the mission score lock apply. Later rewards and saves can reflect this change.",
+    "Kind": "Number",
+    "CommandId": 1133,
+    "ValueSlot": -1,
+    "CapabilitySlot": 133,
+    "Minimum": 10,
+    "Maximum": 99999990,
+    "DefaultValue": 1000,
+    "Step": 10,
+    "Unit": "points",
+    "RequiresScene": false,
+    "ChangesProgression": true,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "One-time action. Disconnecting does not roll back the result.",
+    "Evidence": [
+      {
+        "Address": "0x140207A50 / 0x140207400",
+        "Finding": "Calls the native score adder with ECX=int amount; ignores undefined RAX. Rank and reward processing consumes this score.",
+        "Level": "Static IDA decompilation and critical ABI assembly; isolated guard tests passed. Live Gummi validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.damage_count",
+    "Category": "Gummi",
+    "Name": "Recorded damage events",
+    "Description": "Read the score's damage digit. It stops increasing at nine events.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 134,
+    "CapabilitySlot": 134,
+    "Minimum": 0,
+    "Maximum": 9,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "hits",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only. Values become unavailable when Gummi module ownership is lost.",
+    "Evidence": [
+      {
+        "Address": "0x140207A90 / 0x1401FD1E0",
+        "Finding": "Pending hit processing adds one to score only when score%10 is less than nine.",
+        "Level": "Static IDA decompilation and critical ABI assembly; isolated guard tests passed. Live Gummi validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.medal_level",
+    "Category": "Gummi",
+    "Name": "Medal level",
+    "Description": "Read current medal level. Taking damage can lower it, including a larger penalty after reaching maximum level.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 135,
+    "CapabilitySlot": 135,
+    "Minimum": 0,
+    "Maximum": 30,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only. Values become unavailable when Gummi module ownership is lost.",
+    "Evidence": [
+      {
+        "Address": "0x140207C30 / 0x140207DB0",
+        "Finding": "Current level is int32 RVA72B2C4; the native path caps at30 and applies mission-specific hit penalties.",
+        "Level": "Static IDA decompilation and critical ABI assembly; isolated guard tests passed. Live Gummi validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.medal_progress",
+    "Category": "Gummi",
+    "Name": "Medal progress",
+    "Description": "Read progress toward the next medal level. Ten progress units advance a level.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 136,
+    "CapabilitySlot": 136,
+    "Minimum": 0,
+    "Maximum": 9,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only. Values become unavailable when Gummi module ownership is lost.",
+    "Evidence": [
+      {
+        "Address": "0x140207C30",
+        "Finding": "Progress is int32 RVA72B2C0; native pickup handling rolls it over after ten.",
+        "Level": "Static IDA decompilation and critical ABI assembly; isolated guard tests passed. Live Gummi validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.best_medal",
+    "Category": "Gummi",
+    "Name": "Best medal level",
+    "Description": "Read the highest medal level reached during this mission.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 137,
+    "CapabilitySlot": 137,
+    "Minimum": 0,
+    "Maximum": 30,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only. Values become unavailable when Gummi module ownership is lost.",
+    "Evidence": [
+      {
+        "Address": "0x140207C30 / 0x1402098E0",
+        "Finding": "Best level RVA72B2C8 is retained after hit penalties and copied into result records.",
+        "Level": "Static IDA decompilation and critical ABI assembly; isolated guard tests passed. Live Gummi validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.mission_phase",
+    "Category": "Gummi",
+    "Name": "Mission phase",
+    "Description": "Read the native Gummi mission phase. Normal gameplay is 8; loading, death, rebirth and results use separate phases.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 138,
+    "CapabilitySlot": 138,
+    "Minimum": 0,
+    "Maximum": 19,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only. Values become unavailable when Gummi module ownership is lost.",
+    "Evidence": [
+      {
+        "Address": "0x1401E1BA0",
+        "Finding": "The mission fiber owns int32 RVAAD9474; action gating requires phase8.",
+        "Level": "Static IDA decompilation and critical ABI assembly; isolated guard tests passed. Live Gummi validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.ship_phase",
+    "Category": "Gummi",
+    "Name": "Ship phase",
+    "Description": "Read the Gummi player phase: 2 is active, 3 is completion, 4 is stopped or dead, and 5 is rebirth.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 139,
+    "CapabilitySlot": 139,
+    "Minimum": 0,
+    "Maximum": 5,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only. Values become unavailable when Gummi module ownership is lost.",
+    "Evidence": [
+      {
+        "Address": "0x1401FD1E0",
+        "Finding": "Player phase is int32 player+0x5D8 and drives the ship update state machine.",
+        "Level": "Static IDA decompilation and critical ABI assembly; isolated guard tests passed. Live Gummi validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.route",
+    "Category": "Gummi",
+    "Name": "Route ID",
+    "Description": "Read the current Gummi route identifier.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 140,
+    "CapabilitySlot": 140,
+    "Minimum": 0,
+    "Maximum": 4294967295,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only. Values become unavailable when Gummi module ownership is lost.",
+    "Evidence": [
+      {
+        "Address": "0x1402098E0 / 0x140207950",
+        "Finding": "Route RVA9A8788 selects rank data and is copied to result records.",
+        "Level": "Static IDA decompilation and critical ABI assembly; isolated guard tests passed. Live Gummi validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.mission_variant",
+    "Category": "Gummi",
+    "Name": "Mission variant",
+    "Description": "Read the current mission variant. An unset native value is displayed as variant 1 without changing game memory.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 141,
+    "CapabilitySlot": 141,
+    "Minimum": 0,
+    "Maximum": 4294967295,
+    "DefaultValue": 1,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only. Values become unavailable when Gummi module ownership is lost.",
+    "Evidence": [
+      {
+        "Address": "0x140207950 / 0x140151AE0",
+        "Finding": "Native variant is RVA716C04; engine getter treats0 as1 and can write it, while trainer snapshot is read-only.",
+        "Level": "Static IDA decompilation and critical ABI assembly; isolated guard tests passed. Live Gummi validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.rank",
+    "Category": "Gummi",
+    "Name": "Rank progress",
+    "Description": "Read the native mission rank cursor when its selected rank-data row matches this route and variant.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 142,
+    "CapabilitySlot": 142,
+    "Minimum": 0,
+    "Maximum": 16,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only. Values become unavailable when Gummi module ownership is lost.",
+    "Evidence": [
+      {
+        "Address": "0x140207400 / 0x140207950",
+        "Finding": "Rank RVA AF4204 advances at most once per update and caps at6 or16 depending on mission variant.",
+        "Level": "Static IDA decompilation and critical ABI assembly; isolated guard tests passed. Live Gummi validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.score_locked",
+    "Category": "Gummi",
+    "Name": "Score additions locked",
+    "Description": "Read whether ordinary point additions are locked for the current mission, such as during completion.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 143,
+    "CapabilitySlot": 143,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only. Values become unavailable when Gummi module ownership is lost.",
+    "Evidence": [
+      {
+        "Address": "0x140207AC0 / 0x1401FFC00",
+        "Finding": "Byte RVA72B134 suppresses ordinary score additions; completion enables this lock.",
+        "Level": "Static IDA decompilation and critical ABI assembly; isolated guard tests passed. Live Gummi validation is pending."
+      }
+    ]
+  }
+]

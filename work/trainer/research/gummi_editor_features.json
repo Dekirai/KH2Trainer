@@ -1,0 +1,184 @@
+[
+  {
+    "Id": "gummi.editor.view.reset",
+    "Category": "Gummi Editor",
+    "Name": "Reset editor camera",
+    "Description": "Reset the current Gummi or Teeny Ship editor view through the native transition. Available while editing or in preview after other view transitions finish. A view already at its baseline can stay unchanged.",
+    "Kind": "Action",
+    "CommandId": 1424,
+    "ValueSlot": -1,
+    "CapabilitySlot": 424,
+    "Minimum": 0,
+    "Maximum": 0,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "One-time native view operation. Normal editor input and view reset may replace the result. Disconnect does not undo it. Profiles cannot replay it.",
+    "Evidence": [
+      {
+        "Address": "0x140290900",
+        "Finding": "RCX=current camera, EDX=10. Native reset uses 20 transition units and current edit/preview baseline.",
+        "Level": "Complete native IDA assembly and original bytes; isolated owner, numeric and callout tests. No live editor validation."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.editor.preview.fov",
+    "Category": "Gummi Editor",
+    "Name": "Preview horizontal FOV",
+    "Description": "Set the preview camera horizontal field of view once. Enter the editor preview first. The 20\u201390 degree range matches native zoom input; normal zoom and reset remain active.",
+    "Kind": "Number",
+    "CommandId": 1425,
+    "ValueSlot": -1,
+    "CapabilitySlot": 425,
+    "Minimum": 20,
+    "Maximum": 90,
+    "DefaultValue": 45,
+    "Step": 1,
+    "Unit": "degrees",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "One-time native view operation. Normal editor input and view reset may replace the result. Disconnect does not undo it. Profiles cannot replay it.",
+    "Evidence": [
+      {
+        "Address": "0x14019DDE0 / 0x1402901A0",
+        "Finding": "RCX=camera+16, XMM1=radians, R8D=0. Native zoom clamps to 20\u201390 degrees.",
+        "Level": "Complete native IDA assembly and original bytes; isolated owner, numeric and callout tests. No live editor validation."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.editor.phase",
+    "Category": "Gummi Editor",
+    "Name": "Editor phase",
+    "Description": "Current validated editor phase: 1 is editing and 4 is preview. Other or detached editor phases are unavailable.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 426,
+    "CapabilitySlot": 426,
+    "Minimum": 1,
+    "Maximum": 4,
+    "DefaultValue": 1,
+    "Step": 1,
+    "Unit": "phase",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Fresh diagnostic value; no game writes.",
+    "Evidence": [
+      {
+        "Address": "0x14026CBB0",
+        "Finding": "Current editor+12276 with matching active editor task and camera mode.",
+        "Level": "Complete native IDA assembly and original bytes; isolated owner, numeric and callout tests. No live editor validation."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.editor.camera.fov",
+    "Category": "Gummi Editor",
+    "Name": "Current horizontal FOV",
+    "Description": "Current native horizontal camera FOV, refreshed while the editor owner chain is valid.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 427,
+    "CapabilitySlot": 427,
+    "Minimum": 0,
+    "Maximum": 180,
+    "DefaultValue": 45,
+    "Step": 1,
+    "Unit": "degrees",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Fresh diagnostic value; no game writes.",
+    "Evidence": [
+      {
+        "Address": "0x14019CE90",
+        "Finding": "Float camera+84 converted from radians.",
+        "Level": "Complete native IDA assembly and original bytes; isolated owner, numeric and callout tests. No live editor validation."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.editor.camera.pitch",
+    "Category": "Gummi Editor",
+    "Name": "Camera target pitch",
+    "Description": "Target Euler pitch. During a transition this can differ from the interpolated visible orientation.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 428,
+    "CapabilitySlot": 428,
+    "Minimum": -720,
+    "Maximum": 720,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "degrees",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Fresh diagnostic value; no game writes.",
+    "Evidence": [
+      {
+        "Address": "0x140290D50",
+        "Finding": "Float camera+2448; interpolated Euler is at+2496.",
+        "Level": "Complete native IDA assembly and original bytes; isolated owner, numeric and callout tests. No live editor validation."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.editor.camera.yaw",
+    "Category": "Gummi Editor",
+    "Name": "Camera target yaw",
+    "Description": "Target Euler yaw. During a transition this can differ from the interpolated visible orientation.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 429,
+    "CapabilitySlot": 429,
+    "Minimum": -720,
+    "Maximum": 720,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "degrees",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Fresh diagnostic value; no game writes.",
+    "Evidence": [
+      {
+        "Address": "0x140290D50",
+        "Finding": "Float camera+2452; interpolated Euler is at+2496.",
+        "Level": "Complete native IDA assembly and original bytes; isolated owner, numeric and callout tests. No live editor validation."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.editor.view.transition",
+    "Category": "Gummi Editor",
+    "Name": "View transition remaining",
+    "Description": "Remaining native camera transition units. Zero or a negative remainder is idle; these units are not promised milliseconds.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 430,
+    "CapabilitySlot": 430,
+    "Minimum": -2147483648,
+    "Maximum": 2147483647,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "native units",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Fresh diagnostic value; no game writes.",
+    "Evidence": [
+      {
+        "Address": "0x1402901A0 / 0x140290D50",
+        "Finding": "Int camera+2604 is decremented using capped frame-delta conversion; reset sets 20.",
+        "Level": "Complete native IDA assembly and original bytes; isolated owner, numeric and callout tests. No live editor validation."
+      }
+    ]
+  }
+]

@@ -1,0 +1,38 @@
+CAMERA EXTRA — FINAL ISOLATED VALIDATION
+
+Source: trainer/Native/CameraExtraFeatures.inl
+SHA256: 2C6D52A1D29430E9EAB33143611EDD433FFBC01A523ABD93CC8F9B747C1A9299
+Tests: work/trainer/tests/CameraExtraGuardTests.cpp
+SHA256: 6A7744B5254AF28CA85A73655FA9E4022AF866EC098A8F694DE0A5E1F2DFBA00
+Catalog: work/trainer/research/cameraextra_features.json
+SHA256: F67C56D7F75F763A2527F274E25A77AEBB207D90FDAE5A1F0F5C834C829EFC0E
+
+Executed by pe_inventory using build_camera_extra_tests.cmd:
+CameraExtraGuardTests: 604 checks, 0 failures
+MSVC /W4 build: no warnings, exit0. Synthetic memory and mock callouts only.
+
+Implemented: roll degrees, native owner/controller readouts, queued native
+recenter and snap, pending state, follows-player state, native distance and
+eye-to-target distance. Slots240..248; no additional feature slots are claimed.
+
+The queue validates current player/status/controller plus scheduler, scene heap
+and all10 bytes of the map target. It expires after1.5 seconds or when connection,
+owner, mode, scene, player or native task routing changes. The callback always
+invokes its normal original exactly once. Native request flags are set only at
+that boundary, not when the UI command is accepted.
+
+Independent review fixes: pinned164E70 getter; removed post-call flag clearing.
+An equal flag value after the native update may belong to a new native writer.
+The trainer therefore does not erase it. Normal166100/165110 consume the original
+request synchronously, as established by complete native code and assembly.
+
+Tests exercise both actions across24 rejection cases, valid-looking identity
+replacement, scene transitions, heartbeat failure, timer wrap, reset, foreign
+thread, task-list ambiguity/cycles/torn links, compare-exchange races, altered
+native code routes, memory protection, bounded roll conversion and read-only
+snapshot validity. They execute the actual CameraExtraFeatures module.
+
+Limits: no live game/visual test; World integration is Root's separate scope.
+There is no proven native generation counter for an entirely unobserved exact
+same-address ABA. No stale node pointers are cached. Arbitrary modifications
+inside unrelated native code remain outside the supported build contract.

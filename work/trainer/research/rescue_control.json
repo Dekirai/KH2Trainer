@@ -1,0 +1,223 @@
+{
+  "title": "Mickey rescue counter and diagnostics",
+  "status": "Catalog and static review complete. No game/UI access or product changes by this reviewer.",
+  "scope": "One-time saved-counter edit and seven read-only diagnostics. No actor creation, forced rescue, RNG call, or save-file operation.",
+  "source": {
+    "path": "../../../trainer/Native/RescueFeatures.inl",
+    "sha256": "2057F35AA06B0ABFBF2568C3297F287AA0BCEA16915AE0BD6E01D6332B20DA29"
+  },
+  "tests": {
+    "path": "../tests/PlayerBridgeTests.cpp",
+    "sha256": "891DB78CC3624257B63A78F10D041E0AF869975C85122FAA16F14D1FA7BD3194",
+    "review": "Read the RescueTests fixture and IPC/capability integration checks. Root reports 178 checks, zero failures after adding four Mission/Camera IPC/capability checks; RescueTests are unchanged. No build or test execution by this reviewer. The old player_bridge_results.txt predates these additions; use the root release test log for the final run."
+  },
+  "evidence": {
+    "path": "retry_gameover_evidence.json",
+    "sha256": "75122DB5E597E5C6A9ABB39672EEF9633314D9B9DAAC9A9E543F1C6A9E124B5B",
+    "independent_review": "rescue_independent_review.json"
+  },
+  "slots": [
+    {
+      "slot": 176,
+      "id": "rescue.use_count",
+      "kind": "Number",
+      "command": 1176
+    },
+    {
+      "slot": 177,
+      "id": "rescue.appearances",
+      "kind": "ReadOnly",
+      "command": 0
+    },
+    {
+      "slot": 178,
+      "id": "rescue.roll_threshold",
+      "kind": "ReadOnly",
+      "command": 0
+    },
+    {
+      "slot": 179,
+      "id": "rescue.mission_permission",
+      "kind": "ReadOnly",
+      "command": 0
+    },
+    {
+      "slot": 180,
+      "id": "rescue.game_over_active",
+      "kind": "ReadOnly",
+      "command": 0
+    },
+    {
+      "slot": 181,
+      "id": "rescue.game_over_type",
+      "kind": "ReadOnly",
+      "command": 0
+    },
+    {
+      "slot": 182,
+      "id": "rescue.game_over_phase",
+      "kind": "ReadOnly",
+      "command": 0
+    },
+    {
+      "slot": 183,
+      "id": "rescue.selected",
+      "kind": "ReadOnly",
+      "command": 0
+    }
+  ],
+  "layout": [
+    {
+      "rva": "0x9AD660",
+      "type": "uint16_t",
+      "meaning": "Rescue-use count; exponent in the native roll formula",
+      "bounds": [
+        0,
+        999
+      ],
+      "write": "Exactly two bytes, command 1176 only."
+    },
+    {
+      "rva": "0x9AD662",
+      "type": "uint16_t",
+      "meaning": "Separate recorded Mickey appearances",
+      "bounds": [
+        0,
+        999
+      ],
+      "write": "None."
+    },
+    {
+      "rva": "0x2AE5760",
+      "type": "pointer",
+      "meaning": "Loaded parameters: float decay at +216 and float minimum at +220",
+      "bounds": [
+        0,
+        1
+      ],
+      "write": "None; invalid values omit threshold."
+    },
+    {
+      "rva": "0x2A0FF68",
+      "type": "pointer",
+      "meaning": "Mission singleton; supported storage RVA 0x2A0F8B0; resource pointer +8, uint16 flags +4 with bit 0x200",
+      "write": "None."
+    },
+    {
+      "rva": "0x2AE8050",
+      "type": "pointer",
+      "meaning": "Game-over object: int type +0, int phase +16, uint8 selected +20",
+      "bounds": {
+        "type": [
+          0,
+          3
+        ],
+        "phase": [
+          0,
+          8
+        ],
+        "selected": [
+          0,
+          1
+        ]
+      },
+      "write": "None."
+    }
+  ],
+  "formula": "100 * max(powf(parameters.decay, unsigned rescueUseCount), parameters.minimum)",
+  "mutation_gates": [
+    "Exact base and game thread; nonzero host heartbeat no older than 5000 ms; not disabled.",
+    "Scene loaded, no unload or pending room transition; field scheduler readable and loaded SaveData header equals 0x0000003A4A32484B.",
+    "Active field state 1; no menu, cutscene or game-over sequence.",
+    "Fresh current actor pointer, readable actor/status, matching status pointer and packed actor backlink, living Sora character ID 1.",
+    "Existing use count and new integer both in 0..999; exactly two writable bytes."
+  ],
+  "restore_behavior": "The command changes loaded SaveData once. Disable all effects and disconnect leave it applied; a later normal game save may retain it. No profile replay is allowed.",
+  "snapshot_semantics": "Diagnostics also permit field state 2. The shared snapshot clears validity before publication. Missing/malformed data omit affected values; a missing mission or game-over object explicitly publishes inactive flags. Inactive game-over child values remain invalid.",
+  "covered_synthetic_cases": [
+    "IPC command 1176, value publication and capability slots 176..183.",
+    "Counts 0 and 999; invalid negative, fractional, 1000, NaN and Infinity input.",
+    "Full SaveData byte comparison: only the two counter bytes may change; appearance count and RNG sentinel remain unchanged.",
+    "Wrong loaded-save header, non-Sora/dead actor, active game-over, menu, event, pending transition, paused or lost scene, wrong thread, expired host and an actual read-only counter page.",
+    "Formula count 0, count 3 and count 999 with floor; malformed parameter suppression.",
+    "Mission absent/eligible/unreadable resource; game-over absent/valid/malformed phase; validity clearing."
+  ],
+  "limitations": [
+    "No runtime or visual behavior was tested by this reviewer.",
+    "An observed 100% conditional threshold is not a guarantee: native eligibility and strict RNG comparison remain in force.",
+    "The module relies on the shared bridge's game-thread serialization and valid build/base contract.",
+    "Only selected inspected functions receive claims; no completeness claim is made."
+  ],
+  "claims": [
+    {
+      "addr": "0x1403FC7A0",
+      "Domain": "native",
+      "Finding": "Initial rescue selection is limited to the inspected game-over type 0 and requires mission permission plus native party conditions. It derives the roll threshold from unsigned SaveData counter RVA 0x9AD660 using powf and a minimum floor, then compares against a native RNG value. The object stores type at +0 and selected flag at +20.",
+      "Evidence": [
+        "retry_gameover_evidence.json",
+        "rescue_independent_review.json"
+      ],
+      "Limitations": "This is a conditional threshold, not an unconditional probability or guaranteed appearance."
+    },
+    {
+      "addr": "0x1403FCE10",
+      "Domain": "native",
+      "Finding": "A subsequent native selection path reevaluates partner conditions and the same count-dependent threshold, then updates game-over rescue state.",
+      "Evidence": [
+        "retry_gameover_evidence.json",
+        "rescue_independent_review.json"
+      ],
+      "Limitations": "The trainer does not invoke this function or consume RNG."
+    },
+    {
+      "addr": "0x1403A3BD0",
+      "Domain": "native",
+      "Finding": "Checks bit 0x200 in the mission resource's 16-bit flags at resource+4.",
+      "Evidence": [
+        "retry_gameover_evidence.json",
+        "rescue_independent_review.json"
+      ],
+      "Limitations": "This permission alone does not make rescue eligible."
+    },
+    {
+      "addr": "0x1403FCEC0",
+      "Domain": "native",
+      "Finding": "Game-over update dispatches its phase at object+16 and observes the rescue flag at +20 as part of its native sequence.",
+      "Evidence": [
+        "retry_gameover_evidence.json",
+        "rescue_independent_review.json"
+      ],
+      "Limitations": "The trainer reports only bounded, readable state. It does not advance or replace the state machine."
+    },
+    {
+      "addr": "0x140415670",
+      "Domain": "native",
+      "Finding": "Native Mickey initialization increments unsigned counters RVA 0x9AD660 and 0x9AD662 with independent caps at 999.",
+      "Evidence": [
+        "retry_gameover_evidence.json",
+        "rescue_independent_review.json"
+      ],
+      "Limitations": "Changing one counter is not equivalent to running this constructor; the trainer never calls it."
+    },
+    {
+      "addr": "0x1404158C0",
+      "Domain": "native",
+      "Finding": "Another native Mickey initialization path increments the same two counters independently with the 999 cap.",
+      "Evidence": [
+        "retry_gameover_evidence.json",
+        "rescue_independent_review.json"
+      ],
+      "Limitations": "The two adjacent words have separate meanings and are not a single 32-bit value."
+    },
+    {
+      "addr": "0x140436F80",
+      "Domain": "native",
+      "Finding": "The native statistics widget reads RVA 0x9AD662 for its MICKEY APPEAR display.",
+      "Evidence": [
+        "retry_gameover_evidence.json",
+        "rescue_independent_review.json"
+      ],
+      "Limitations": "The roll exponent resides at RVA 0x9AD660, so its trainer edit preserves this displayed statistic."
+    }
+  ]
+}

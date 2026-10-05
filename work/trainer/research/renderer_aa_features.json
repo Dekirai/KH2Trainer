@@ -1,0 +1,260 @@
+[
+  {
+    "Id": "renderer_aa.apply",
+    "Category": "Renderer MSAA",
+    "Name": "Apply MSAA policy",
+    "Description": "Fixed requests the chosen sample count within the current native limit. Maximum retains native reductions while capping its next normal decision. 1 sample means no multisample AA. Resizes and replay frames remain native.",
+    "Kind": "Action",
+    "CommandId": 1447,
+    "ValueSlot": -1,
+    "CapabilitySlot": 447,
+    "Minimum": 0,
+    "Maximum": 8,
+    "DefaultValue": 0,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Disable or disconnect resumes native adaptation at later normal frame decisions. The resident hook remains; no save or configuration change.",
+    "Evidence": [
+      {
+        "Address": "0x14011A14F / 0x140113B80 / 0x140128100",
+        "Finding": "Fixed requests the chosen sample count within the current native limit. Maximum retains native reductions while capping its next normal decision. 1 sample means no multisample AA. Resizes and replay frames remain native.",
+        "Level": "Complete native ASM/original bytes and isolated execution/guard tests; live graphics not tested."
+      }
+    ],
+    "Arguments": [
+      {
+        "Name": "Policy",
+        "Minimum": 1,
+        "Maximum": 2,
+        "DefaultValue": 1,
+        "Choices": [
+          {
+            "Label": "Fixed",
+            "Value": 1
+          },
+          {
+            "Label": "Maximum",
+            "Value": 2
+          }
+        ]
+      },
+      {
+        "Name": "Samples",
+        "Minimum": 1,
+        "Maximum": 8,
+        "DefaultValue": 4,
+        "Choices": [
+          {
+            "Label": "1 (off)",
+            "Value": 1
+          },
+          {
+            "Label": "2",
+            "Value": 2
+          },
+          {
+            "Label": "4",
+            "Value": 4
+          },
+          {
+            "Label": "8",
+            "Value": 8
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "Id": "renderer_aa.native",
+    "Category": "Renderer MSAA",
+    "Name": "Resume native MSAA",
+    "Description": "Resume the game's automatic MSAA choice. The sample count can take several frames to change.",
+    "Kind": "Action",
+    "CommandId": 1448,
+    "ValueSlot": -1,
+    "CapabilitySlot": 448,
+    "Minimum": 0,
+    "Maximum": 8,
+    "DefaultValue": 0,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Disable or disconnect resumes native adaptation at later normal frame decisions. The resident hook remains; no save or configuration change.",
+    "Evidence": [
+      {
+        "Address": "0x14011A14F / 0x140113B80 / 0x140128100",
+        "Finding": "Disables the policy. Native adaptation can take several frames; this does not force a particular sample count. The installed pass-through hook stays resident.",
+        "Level": "Complete native ASM/original bytes and isolated execution/guard tests; live graphics not tested."
+      }
+    ]
+  },
+  {
+    "Id": "renderer_aa.mode",
+    "Category": "Renderer MSAA",
+    "Name": "Active MSAA policy",
+    "Description": "Current policy: Native, Fixed or Maximum. A lost connection or a replaced renderer disables the override.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 449,
+    "CapabilitySlot": 449,
+    "Minimum": 0,
+    "Maximum": 2,
+    "DefaultValue": 0,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Disable or disconnect resumes native adaptation at later normal frame decisions. The resident hook remains; no save or configuration change.",
+    "Evidence": [
+      {
+        "Address": "0x14011A14F / 0x140113B80 / 0x140128100",
+        "Finding": "0 native, 1 Fixed, 2 Maximum. Connection or renderer lifetime loss disables the active policy.",
+        "Level": "Complete native ASM/original bytes and isolated execution/guard tests; live graphics not tested."
+      }
+    ]
+  },
+  {
+    "Id": "renderer_aa.requested",
+    "Category": "Renderer MSAA",
+    "Name": "Requested samples",
+    "Description": "Sample count requested by the active policy. The current native hardware limit can reduce it.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 450,
+    "CapabilitySlot": 450,
+    "Minimum": 1,
+    "Maximum": 8,
+    "DefaultValue": 0,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Disable or disconnect resumes native adaptation at later normal frame decisions. The resident hook remains; no save or configuration change.",
+    "Evidence": [
+      {
+        "Address": "0x14011A14F / 0x140113B80 / 0x140128100",
+        "Finding": "Sample count requested by the active policy. The current native hardware limit can reduce it.",
+        "Level": "Complete native ASM/original bytes and isolated execution/guard tests; live graphics not tested."
+      }
+    ]
+  },
+  {
+    "Id": "renderer_aa.limit",
+    "Category": "Renderer MSAA",
+    "Name": "Native MSAA limit",
+    "Description": "Current negotiated sample capability after the native vendor restriction. This is a limit, not a graphics-quality preference.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 451,
+    "CapabilitySlot": 451,
+    "Minimum": 1,
+    "Maximum": 8,
+    "DefaultValue": 0,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Disable or disconnect resumes native adaptation at later normal frame decisions. The resident hook remains; no save or configuration change.",
+    "Evidence": [
+      {
+        "Address": "0x14011A14F / 0x140113B80 / 0x140128100",
+        "Finding": "Current negotiated sample capability after the native vendor restriction. This is a limit, not a graphics-quality preference.",
+        "Level": "Complete native ASM/original bytes and isolated execution/guard tests; live graphics not tested."
+      }
+    ]
+  },
+  {
+    "Id": "renderer_aa.current",
+    "Category": "Renderer MSAA",
+    "Name": "Current native samples",
+    "Description": "Sample count chosen for the current normal frame. Replay frames can temporarily use a previously recorded value.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 452,
+    "CapabilitySlot": 452,
+    "Minimum": 1,
+    "Maximum": 8,
+    "DefaultValue": 0,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Disable or disconnect resumes native adaptation at later normal frame decisions. The resident hook remains; no save or configuration change.",
+    "Evidence": [
+      {
+        "Address": "0x14011A14F / 0x140113B80 / 0x140128100",
+        "Finding": "Current normal-frame exponent converted to samples. Native replay may temporarily use historical attachment states.",
+        "Level": "Complete native ASM/original bytes and isolated execution/guard tests; live graphics not tested."
+      }
+    ]
+  },
+  {
+    "Id": "renderer_aa.proposal",
+    "Category": "Renderer MSAA",
+    "Name": "Last native proposal",
+    "Description": "Last validated normal-frame native quality decision before applying the policy. Unavailable until such a decision is observed.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 453,
+    "CapabilitySlot": 453,
+    "Minimum": 1,
+    "Maximum": 8,
+    "DefaultValue": 0,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Disable or disconnect resumes native adaptation at later normal frame decisions. The resident hook remains; no save or configuration change.",
+    "Evidence": [
+      {
+        "Address": "0x14011A14F / 0x140113B80 / 0x140128100",
+        "Finding": "Last validated normal-frame native quality decision before applying the policy. Unavailable until such a decision is observed.",
+        "Level": "Complete native ASM/original bytes and isolated execution/guard tests; live graphics not tested."
+      }
+    ]
+  },
+  {
+    "Id": "renderer_aa.chosen",
+    "Category": "Renderer MSAA",
+    "Name": "Last policy result",
+    "Description": "Last sample count selected by the active policy. The game applies resource changes during its normal rendering update.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 454,
+    "CapabilitySlot": 454,
+    "Minimum": 1,
+    "Maximum": 8,
+    "DefaultValue": 0,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Disable or disconnect resumes native adaptation at later normal frame decisions. The resident hook remains; no save or configuration change.",
+    "Evidence": [
+      {
+        "Address": "0x14011A14F / 0x140113B80 / 0x140128100",
+        "Finding": "Last validated normal-frame quality decision returned by the active policy. The native caller owns resource changes.",
+        "Level": "Complete native ASM/original bytes and isolated execution/guard tests; live graphics not tested."
+      }
+    ]
+  },
+  {
+    "Id": "renderer_aa.hook",
+    "Category": "Renderer MSAA",
+    "Name": "MSAA control status",
+    "Description": "Shows whether MSAA controls are installed or a fault requires a game restart. A partial installation is not retried.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 455,
+    "CapabilitySlot": 455,
+    "Minimum": 0,
+    "Maximum": 2,
+    "DefaultValue": 0,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Disable or disconnect resumes native adaptation at later normal frame decisions. The resident hook remains; no save or configuration change.",
+    "Evidence": [
+      {
+        "Address": "0x14011A14F / 0x140113B80 / 0x140128100",
+        "Finding": "0 absent, 1 resident, 2 fault. A fault requires a game restart; the trainer will not retry a partial installation.",
+        "Level": "Complete native ASM/original bytes and isolated execution/guard tests; live graphics not tested."
+      }
+    ]
+  }
+]

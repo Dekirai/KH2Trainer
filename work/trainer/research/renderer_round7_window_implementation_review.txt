@@ -1,0 +1,22 @@
+Window display implementation: independent static review
+======================================================
+No blocking finding in the final source/test/catalog listed in the JSON.
+
+ABI and state: 124FE0 consumes RCX GX, RDX immutable two-float buffer and R8D mode0/2 synchronously. The supported branches copy a queued request and do not call mode1 enumeration or GPU methods.
+
+Lock order and race: Execute captures trusted native outer mutex. Locked revalidates, TryEnters resize CS31432, validates again and holds that recursion across the once-only native setter. Native EnterCriticalSection recursively acquires the same Windows CS; outer->inner matches native128470/119E90 order.
+
+Lifecycle: Display lease, owned live HWND/thread/process, code/IAT/constants and initialized compiler-cookie gates are checked before lock, after outer wait and after inner acquisition. No old object/request read occurs after setter return. The static-initialization guard is not treated as a renderer generation.
+
+Failure cleanup: Captured leave/unlock run through nested finally. Unknown native recursion depth after a setter failure is not guessed; only the module acquisition is released. Native/lock/leave failures latch Window, Display and RendererDiagnostics, and ordinary Reset cannot clear them.
+
+Input and collision: Finite exact integer dimensions640..7680 by360..4320 fit float32 safely. Mode2 ignores dimensions. Dirty/retry/transition and native WndProc suppression1064 reject competing writes. Unexpected native values suppress snapshots.
+
+Readout semantics: 433/434 are current native dimensions;435 is consumed native mode1048, not OS success.436 includes pending/retry/transition;437/438 are requested dimensions. Busy/invalid results leave all six absent rather than fabricating zeros.
+
+Tests: Read targeted ABI, geometry, full-byte pin, lifecycle-after-lock, busy-lock, uncertain native recursion and cross-module failure-latch tests. Author reports9896/0 and production /c warning-free; reviewer did not rerun.
+
+Limits:
+- No live window/monitor/GPU/driver result verified. Native consumption still owns later resize allocation and failure behavior.
+- Copied native synthetic bodies have no copied xdata; the suite correctly keeps exception seams in compiled functions and does not claim copied-body exception equivalence.
+- No native generation token proves impossible HWND/device identity ABA; the action uses a fresh bounded synchronous lease and makes no persistent ownership claim.

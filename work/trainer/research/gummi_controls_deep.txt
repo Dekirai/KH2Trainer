@@ -1,0 +1,92 @@
+Gummi controls, weapons and editor: findings for v0.8
+====================================================
+Unpublished work. These additions are separate from the delivered v0.7.1.
+No live gameplay or UI actions were performed.
+
+Useful controls completed
+-------------------------
+The main ship has an aggregated runtime state built from its installed parts.
+Three native adders change its movement, roll and lock-on bonuses. The trainer
+converts the requested final value to a checked delta and calls the appropriate
+adder once. These changes last until the game recalculates the loadout or replaces
+the ship.
+
+Movement bonus affects lateral speed, acceleration and bank-angle smoothing.
+It is not a forward route-speed setting. Its effective factor is clamped between
+0.1 and3; negative bonuses first pass through a loaded handling coefficient.
+
+Roll bonus changes the initial roll impulse, with an effective factor from0 to3.
+The roll countdown, effect and temporary immunity continue through native code.
+
+Lock-on bonus reduces future acquisition-delay reloads. Each of the four native
+categories keeps its resource-defined minimum, and already-running timers keep
+their current value.
+
+Special-weapon charge is an installed combo system with stock, partial progress,
+five possible main-ship stages and optional companion stages. Adding charge uses
+the game's normal multiplier, integer conversion and stock conversion. It does
+not create missing weapons or fire an attack. Native stock caps at9; saturation
+keeps progress100 and a full flag until activation. Readouts expose stock, progress,
+phase, remaining roll time and effective movement/roll factors.
+
+Exact slots, ranges, ABI, resource identities, lifecycle gates and integration
+entry points are documented in gummi_controls_contract.txt. The English feature
+catalog is gummi_extra_features.json. All edits act once; no persistent hook,
+automatic replay, retained ship pointer or automatic restoration is installed.
+
+Other concrete findings
+------------------------
+The inspected GUN update has separate fire-request, disabled and burst flags.
+Burst interval/countdown are at128/132; ordinary firing delay/countdown are at
+136/140. Native delay setter1F2680 changes both the base and remaining delay.
+Burst setter1F2620 also controls count and reset behavior; nonpositive intervals
+can change how many projectiles are emitted in an update.
+
+Gun lifetime is more involved than a single current-player pointer. A global list
+uses packed next160, while part-owned chains use next164. Part destruction unlinks
+and destroys its guns. Some part types redirect ownership. A future per-gun
+controller needs complete current-ship/part/gun selection and lifetime validation.
+
+DRAIN has its own staged behavior: charge/wait, projectile absorption and firing,
+then return to ready. This is separate from a demonstrated universal energy or
+overheat value. No universal overheat toggle is claimed by this research.
+
+The editor's HISTORY object holds two groups of up to1000 item records, each
+176 bytes. These are before/after groups, not1000 undo steps. Undo and redo remove
+one group's live objects and recreate the other group's objects through the menu
+allocator and WORKAREA. Their safe use requires editor-specific ownership and
+retained-handle checks.
+
+Round5 correction (working research source only):27EB70 is the Undo helper,
+called by269B50 before it decrements the WORKAREA history cursor.27EB30 is
+the Redo helper, called by265580 after it increments the cursor. The earlier
+JSON labels were reversed; the group0/group1 behavior was already accurate.
+See gummi_round5_deep.json and gummi_round5_history_correction.json for the
+caller/snapshot evidence. No released trainer action uses these helpers; the
+historical0.9 package and Source.zip remain unchanged.
+
+Editor capacity is recomputed from native base limits, mode, companion count and
+save-backed upgrades170/171/175. Changing a displayed capacity alone would not
+establish that placement and save validation accept the design.
+
+Evidence and validation
+-----------------------
+gummi_controls_deep_evidence.json:40 complete functions,2599 ASM instructions.
+gummi_controls_weapon_evidence.json:8 complete functions,354 ASM instructions.
+Total48 functions and2953 actual instructions; every stored full-function count
+was checked. All48 structured claim anchors in gummi_controls_deep.json resolve
+to existing function evidence. Nine code-byte signatures are recorded separately.
+
+GummiExtraGuardTests.cpp last author run:492 checks,0 failures. The harness replaces
+native callouts and uses fake memory. It exercises command bounds, exact call
+arguments and effects, lifecycle changes, code tampering, invalid resources,
+integer/float overflow, saturation, and absence of pointer reads after dispatch.
+These tests do not establish visual behavior or validate real game assets.
+
+Independent review is complete without a remaining blocker. Root integration
+and release validation remain separate steps. No common bridge,
+catalog assembler, UI or release build was changed by this module's author.
+
+Final correction: companion-only native combos advance index5 to6 during
+finish/recovery. The guard and tests now preserve charge/readout availability
+through those legitimate phases while rejecting invalid earlier-phase indices.

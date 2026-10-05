@@ -1,0 +1,274 @@
+Renderer round6: actual resolution and AA controls
+==================================================
+Windowed/maximized native requests are ready for guarded implementation. Actual fixed/capped MSAA has an identified normal-frame decision boundary preserving replay and resource creation, but needs a separately verified callsite-hook implementation. Fullscreen enumeration has an empty-set recursion edge.
+
+Capture: 63 full bodies / 9640 instructions / 42411 original function bytes.
+Semantic claims: 52; remaining captured functions are raw support, not new semantic coverage.
+
+Contract: renderer_round6_contract.txt/.json
+
+0x140124fe0
+Native display request takes GX inRCX, pointer to two float32 values inRDX and mode inR8D. Under resizeCS+31432 it copies all needed values into GX request fields and retains no caller buffer. Mode0 performs float32 16:9 fit/truncation; mode2 keeps dimensions unchanged; mode1 enumerates accepted monitor modes and selects exact-or-first. It writes pending dirty by comparing against active mode/dimensions.
+Limit: There is no completion/result token. Mode1 inherits11C970 recursion on an empty mode set; mode0/2 do not call enumeration. Native allocation/device failures occur later.
+Evidence: work/trainer/research/renderer_round6_full1.json
+
+0x140124fb0
+Public pointer/mode wrapper preservesRCX/RDX arguments around the GX singleton getter, then tailcalls124FE0 with GX inRCX, dimensionsRDX and modeR8D. Settings callers use this exact request route.
+Limit: Prefer already-leased GX plus124FE0 for a trainer; invoking the getter could initialize a missing singleton.
+Evidence: work/trainer/research/renderer_round6_full2.json
+
+0x140506c90
+Maps supplied settings mode0 to native exclusive mode1, settings1 to native maximized mode2, other values to native windowed0; loads unsigned16 dimensions from Settings+6/+8 and calls124FB0.
+Limit: This callback uses loaded dimensions rather than supplied custom dimensions. It does not itself validate arbitrary settings mode values.
+Evidence: work/trainer/research/renderer_round6_full2.json
+
+0x140506d10
+Loads Settings+4 mode and+6/+8 dimensions and repeats the same native1/2/0 mapping before124FB0. This is a narrow loaded-resolution reapply entry.
+Limit: No completed GPU-resize status is returned; fullscreen enumeration remains a dependency.
+Evidence: work/trainer/research/renderer_round6_full2.json
+
+0x140505d00
+ApplyAll routes screen mode/dimensions through124FB0 after reading settings. It also applies brightness, color vision, input mappings, frame rate, language and four audio levels.
+Limit: It is overbroad for a resolution-only trainer action and can affect unrelated runtime controls.
+Evidence: work/trainer/research/renderer_round6_full2.json
+
+0x14011c970
+Enumerates current-window monitor display modes, rejects width<800 or height<600, optionally rejects non16:9 modes, sorts/deduplicates and copies at most caller capacity float pairs. If nothing is copied, recursively calls itself with filter0 and the same capacity, then reports1.
+Limit: No terminal case was found for an empty unfiltered mode set or zero capacity. This proves a native pathological recursion path, not its occurrence on a normal monitor.
+Evidence: work/trainer/research/renderer_round6_full1.json
+
+0x140124970
+WndProc-oriented size/fullscreen path treats width=-41267 as a fullscreen command/query, otherwise handles IsZoomed/client-size fallback and queues underCS31432. It can alter active fullscreen1046 before enteringCS.
+Limit: This route is not a clean generic trainer resize API; negative sentinel dimensions have unrelated semantics and active-field access prevents treating all mode writers as one atomic request transaction.
+Evidence: work/trainer/research/renderer_round6_full1.json
+
+0x14010eb40
+Window procedure routes selected window size/fullscreen messages through124970 and handles close/activation state. The procedure is registered in11D0A0.
+Limit: Window callbacks can be reentered during native ShowWindow/SetWindowPos. Keep actual resizing in the native frame-consumption path.
+Evidence: work/trainer/research/renderer_round6_full2.json
+
+0x140119e90
+At normal begin-frame, consumes pending20-byte resize request underCS31432; outside thatCS, fence-waits129560, releases119890, sets transition1072=2, adjusts window123020, rebuilds117FD0, clears transition and refreshes viewport/scales. Successful resize resets30556 and mainMSAA to0/1sample. Otherwise computes native adaptive maximum from1108 and vendor flag1224, calls113B80 and applies changed result through114D30.
+Limit: This routine is frame-internal and must not be used as a trainer refresh call. Its full control flow establishes the proposed decision interception point11A14F.
+Evidence: work/trainer/research/renderer_round6_full0.json
+
+0x140123020
+Pre-resize mode handling restores or maximizes the native window. For ordinary window mode0 it bounds16:9 dimensions against cached primary-screen width/height and exits fullscreen if needed; mode2 maximizes; mode1 handles an existing maximized window.
+Limit: Cached primary metrics need not equal the active monitor work area. This is not arbitrary-aspect/internal-resolution scaling.
+Evidence: work/trainer/research/renderer_round6_full0.json
+
+0x140117fd0
+Rebuild selects fullscreen1088/1092, zoomed client rect or active window dimensions;1119B0 negotiates allocation and dimensions. It updates native window geometry, resizes/recreates swapchain, recreates main/depth/resolve descriptors and previous-frame resources. Fullscreen SetFullscreenState unavailability schedules a60-unit retry countdown underCS31432.
+Limit: COM operations are not fully checked/rolled back. Native geometry callbacks and device-loss behavior remain outside a static guarantee. Do not call directly from a post-Update handler.
+Evidence: work/trainer/research/renderer_round6_full0.json
+
+0x1401119b0
+Clamps each requested integer dimension to at least1, records float request1080/1084, invokes124B50 with mutable sample capability1108 and dimensions, then commits actual width/height8/12 and floats16/20.
+Limit: Requested/actual dimensions can differ. The caller does not use124B50 HRESULT as a transactional guard before storing dimensions.
+Evidence: work/trainer/research/renderer_round6_full0.json
+
+0x140124b50
+Negotiates shared framebuffer heap using cached local budget minus usage minus776MiB,4MiB alignment, native allocation estimator and capability ceiling retained at heaprecord+36. It may halve sample count, halve dimensions, use a fallback dimension pair, or later raise capability toward the retained maximum.
+Limit: 1108 is allocation state, not a user preference. The unsigned subtraction/cache can be implausible under low budgets and is not continuous freeVRAM measurement.
+Evidence: work/trainer/research/renderer_round6_full1.json
+
+0x1401145b0
+Computes placed-resource requirements using D3D12 allocation-info queries and maximum native/4MiB alignments, main color/depth plus auxiliary alias regions and a2048x1088 color region. The sample descriptor is threaded into main and selected auxiliary descriptions.
+Limit: This is evidence that sample count and heap capacity are coupled; it does not include all textures or guarantee future allocation success.
+Evidence: work/trainer/research/renderer_round6_full2.json
+
+0x140117ef0
+Releases previous heap, stores allocation bytes, creates a new native heap with4MiB alignment and flags132; success is based on the COM result.
+Limit: The old heap is already released before a failure; no rollback lease is provided.
+Evidence: work/trainer/research/renderer_round6_full2.json
+
+0x140124060
+Device initialization queries adapter description; DWORD at description+256==0x1002 setsGX1224. It probes color format87 sample counts8/4/2/1, records supported count/quality1108/1112, creates heaps/command queues/fence packets and initial pending resolution.
+Limit: 1224 is vendor-dependent policy, not the user AA toggle. A raw write can also affect creation of an auxiliary command-list path.
+Evidence: work/trainer/research/renderer_round6_full2.json
+
+0x140113b80
+Adaptive decision ABI is historyRCX, intervalEDX, float budgetXMM2, currentR9D, min/max stack args. It decreases by2 on low headroom bounded by min and raises by1 after30 good samples bounded by max. Cooldown/middle band checks current against max at113BED and returns min on excess. However1140EB jumps to1145A1 and returns current without max checking when current headroom is high but a history sample fails the sustained-good test.
+Limit: Corrects earlier universal-bound shorthand and this round preliminary cooldown/middle-band explanation after independent ASM review. Lowering1108 alone is not a reliable immediate cap; the unbounded early-history-return path is the precise counterexample.
+Evidence: work/trainer/research/renderer_round6_full1.json
+
+0x140114d30
+Reads target selectorEDX and exponentR8D, computes32-bit1<<CL, writes selected framebuffer+160 when changed, then recreates existing color/depth resources11B4F0/11B290. Main0, resolve5, auxiliaries1..4 and negative=current are native selectors.
+Limit: No lock, fence, range check or rollback. Only exponent0..3 belongs to the proved sample/PSO pipeline; raw shift semantics do not authorize wider inputs.
+Evidence: work/trainer/research/renderer_round6_full0.json
+
+0x140110820
+Recorded closure reads target+8 and GX+16. For auxiliary target1 it first matches sample count to currentGX30556 through114D30, then ensures its color resource via11B4F0.
+Limit: AA affects an auxiliary target as well as main0; bypassing native decision/replay bookkeeping can desynchronize this closure.
+Evidence: work/trainer/research/renderer_round6_full0.json
+
+0x140128100
+Begin-recording clears state and captures timing. With22944==0 it runs119E90 then shifts old30564 into30560 and current30556 into30564. With replay active it restores indexed historical exponent30564+4*index and calls114D30 if different.
+Limit: A forced policy must run before the native normal branch commits history. Post-frame writes to30556 do not preserve this behavior.
+Evidence: work/trainer/research/renderer_round6_full0.json
+
+0x140120ed0
+Sets replay22944=1 before128100, replays captured closures and interpolated state, finishes128260, then clears22944. It selects one of two native closure histories.
+Limit: Replay bypasses119E90; proposed AA policy must leave historical replay untouched rather than demanding one sample count during every intermediate frame.
+Evidence: work/trainer/research/renderer_round6_full1.json
+
+0x140128260
+Closing a normal interval restores exponent30564 before1219F0/submission, waits/collects completed GPU work and updates frame rings. It later collects each framebuffer resource pool.
+Limit: Do not intercept114D30 globally: this valid historical restoration is part of the native pipeline.
+Evidence: work/trainer/research/renderer_round6_full0.json
+
+0x1401219f0
+Uses current exponent30556 versus older30560 plus native replay/pass state to choose previous-frame/resolve handling, then records fillScreen/FlushFrameBuffers work and advances command fences.
+Limit: An AA override must preserve historical values and let this branch select its normal path; no new shader edit is necessary.
+Evidence: work/trainer/research/renderer_round6_full3.json
+
+0x140128470
+Holds presentation mutexGX30848 while closing current work, processing native fullscreen keyboard request, completing/replaying, collecting deferred resources and starting128100 for the next interval; unlocks before final application call.
+Limit: Proves outer-mutex-before-resizeCS order. A trainer can queue a short native request hereafter on the application thread, not execute a separate render pass.
+Evidence: work/trainer/research/renderer_round6_full1.json
+
+0x1401287d0
+Timing/presentation worker takes the same outer mutex around replay120ED0 or closing128260, but native Present/fence/timing work can also occur outside that lock.
+Limit: Outer mutex alone does not prove the GPU/Present is idle. The worker replay path sets22944 and does not execute the normal119E90 policy call.
+Evidence: work/trainer/research/renderer_round6_full1.json
+
+0x140128450
+Gets GX singleton and tailcalls128470. Its caller105E10 forms the normal timing/render facade.
+Limit: Not a safe trainer operation: it closes/submits/rebuilds native frame state.
+Evidence: work/trainer/research/renderer_round6_full3.json
+
+0x140105e10
+Calls128450, performs renderer-side12BA80 and SteamPlatformTick. Its known callers include timing tasks154740/1548E0 and an application adapter.
+Limit: This proves normal frame reachability, not an independent callable renderer initialization contract.
+Evidence: work/trainer/research/renderer_round6_full3.json
+
+0x1401548e0
+The native timing task updates game timing and calls105E10 in its normal frame path, establishing the gameplay-task route into128470/128100/119E90.
+Limit: The proposed policy also needs application-thread identity; gameplay scene state is not a renderer lifetime guard.
+Evidence: work/trainer/research/renderer_round6_full3.json
+
+0x140129560
+Increments/signals the provided queue/fence packet, waits indefinitely if completion is behind the new value, then logs the CPU wait under historyCS. Resize119E90 uses the main packetGX31480 before releasing resources.
+Limit: The native wait can block on driver/device failure; trainer request should queue and let this native path own synchronization.
+Evidence: work/trainer/research/renderer_round6_full1.json
+
+0x140129130
+Waits for an already scheduled fence target using SetEventOnCompletion and an infinite event wait, returning that target.129180 uses it before mapping completed GPU timing.
+Limit: A completion getter can block; never call it to make a trainer snapshot fresh.
+Evidence: work/trainer/research/renderer_round6_full3.json
+
+0x140119890
+Releases tracked previous-buffer descriptors, invokes framebuffer virtual release for targets0..4 and clears color/depth pools; its resize flag preserves the separately managed frame-texture pool.
+Limit: Requires caller GPU completion and valid virtual objects. It is not a user cache-clear action.
+Evidence: work/trainer/research/renderer_round6_full0.json
+
+0x140119630
+Clears each of64 pool entries, releases occupied COM pointers and resets descriptor/reference tracking via native slot cleanup.
+Limit: Safe lifetime comes from resize/shutdown fence discipline, not this helper.
+Evidence: work/trainer/research/renderer_round6_full4.json
+
+0x14011af70
+Finds descriptor-matching64-slot resources or first empty COM slot, then associates it with native ownership through125AA0. Returnsfalse both for existing-key reuse and no-free-slot.
+Limit: The boolean is not a generic allocation success status. A direct114D30 caller cannot assume resource creation succeeds from that result.
+Evidence: work/trainer/research/renderer_round6_full2.json
+
+0x140125aa0
+Nonzero frame context receives a pool-slot ownership reference; without a context, updates per-target current and historical slot indices, with separate tracking for sampled targets.
+Limit: These references retain old descriptors during replay. No trainer-owned resource pointer should be retained or purged.
+Evidence: work/trainer/research/renderer_round6_full3.json
+
+0x140123c60
+Pool collector activates when fewer than10 slots are empty; excludes swapchain target5, tracked current/sample/history indices and entries with nonempty context ownership.
+Limit: AA resource changes consume/cache multiple sample variants. Fixed policy must reuse this collector and not release previous variants manually.
+Evidence: work/trainer/research/renderer_round6_full4.json
+
+0x140117ac0
+Initializes framebuffer sample descriptor from the negotiated pair, assigns dimensions, reserves aligned color heap offset and creates its native color pool resource.
+Limit: Sample descriptor has count and quality; the proposed policy changes only a native exponent result, preserving quality/heap negotiation.
+Evidence: work/trainer/research/renderer_round6_full2.json
+
+0x140117240
+Reserves aligned depth heap space using the framebuffer sample descriptor and creates matching depth resources/descriptors.
+Limit: Color/depth samples and heap offsets are coordinated resources, not independent scalar options.
+Evidence: work/trainer/research/renderer_round6_full2.json
+
+0x14011b4f0
+Creates/reuses format87 placed color resource at framebuffer heap offset144, sample descriptor160/164, then creates RTV. Creation path dereferences the resulting resource without a universal HRESULT/null rollback.
+Limit: A native caller is not a proof of infallibility under OOM/device removal. Stay within native negotiated capability; no custom oversized allocation guarantee.
+Evidence: work/trainer/research/renderer_round6_full1.json
+
+0x14011b290
+Creates/reuses format20 placed depth resource at framebuffer heap offset152 with the same count/quality; creates a matching depth view.
+Limit: Failure handling is incomplete as in the native color path. No separate depth-only sample control is established.
+Evidence: work/trainer/research/renderer_round6_full1.json
+
+0x1401121d0
+Before drawing, reads selected framebuffer sample count+160, encodes1/2/4/8 as PSO key bits27..28 and compares the full16-byte key before113590. It also applies dirty target/viewport/constant state.
+Limit: No new shader binding or constant-layout change is needed for MSAA policy. Full1158-instruction ASM was recaptured in200-instruction pages after an initially misleading ten-line response.
+Evidence: work/trainer/research/renderer_round6_full5.json
+
+0x140113590
+Looks up/creates a PSO by the full16-byte packed key, retains/releases COM cache references and binds the selected PSO to the native command list.
+Limit: Changing only a PSO sample count without matching attachments would violate the native key/resource relationship.
+Evidence: work/trainer/research/renderer_round6_full4.json
+
+0x140117710
+Decodes PSO sample exponent from keyDWORD0 bits27..28 using1/2/4/8; obtains shader blobs from552-byte program records, sets native solid rasterizer and creates the graphics PSO.
+Limit: This proves sample-dependent PSO recreation; it does not establish a new wireframe or shader-replacement feature.
+Evidence: work/trainer/research/renderer_round6_full4.json
+
+0x1401253d0
+Selects direct shader-readable target reuse or transitions color/frame-texture resources and copies single-sample data versus resolves multisample data. Commands use the current native command-list context.
+Limit: Raw attachment writes bypass resource-state and resolve decisions. The proposed policy leaves this consumer unchanged.
+Evidence: work/trainer/research/renderer_round6_full3.json
+
+0x140121110
+Marks draw/PSO/constant/texture state dirty at native recording boundaries, resets cached staging data when needed, and lets the next native draw rebuild state.
+Limit: A trainer should not reproduce these dirty flags separately; normal begin/end paths already do so.
+Evidence: work/trainer/research/renderer_round6_full3.json
+
+0x140119ba0
+Native work facade can execute closures immediately, mark command-list boundaries and clone64-byte closure records for later replay, with context-dependent histories and C++ ownership.
+Limit: It is not a simple asynchronous safe-call queue for arbitrary renderer operations. Call124FE0 request directly at the verified thread point instead.
+Evidence: work/trainer/research/renderer_round6_full4.json
+
+0x140123990
+Rotates the four deferred-release buckets underCS31352 and releases entries in the selected bucket, preserving renderer ownership sequencing.
+Limit: Bucket rotation is frame-owned; no independent flush/GC action is specified.
+Evidence: work/trainer/research/renderer_round6_full3.json
+
+0x140119a60
+Queues old renderer objects in the current deferred-release bucket underCS31352;117FD0 uses it when replacing previous-frame texture.
+Limit: No immediate-delete or universalframecount lifetime is exposed to a trainer.
+Evidence: work/trainer/research/renderer_round6_full3.json
+
+0x14010a270
+Constructs the in-situ presentation mutex atGX30848 and initializes resizeCS31432 plus other renderer critical sections before worker use.
+Limit: Epoch and static address alone do not identify a live generation; use the application-thread shutdown-exclusion contract.
+Evidence: work/trainer/research/renderer_round6_full3.json
+
+0x14010be40
+Deletes resizeCS31432 and other critical sections, later destroys the presentation mutex and releases renderer resources/device references.
+Limit: The lock storage cannot itself lease object lifetime. Do not lock after teardown merely because its address remains readable.
+Evidence: work/trainer/research/renderer_round6_full3.json
+
+0x14011ad80
+Requests application exit byApp+4752=256, joins/closes application handleGX784, then setsGX808 and joins/closes timing handleGX792.
+Limit: A currently executing verified application callback finishes before native join completes. Unknown third-party destruction/reinitialization is outside this proof.
+Evidence: work/trainer/research/renderer_round6_full3.json
+
+0x140127370
+Shifts a64-float GPU-cost history and writes new float sample at index0.129180 feeds it with completed GPU timestamp-derived cost.
+Limit: The policy wrapper should call original113B80 to preserve these temporal statistics rather than fabricate them.
+Evidence: work/trainer/research/renderer_round6_full4.json
+
+0x140129180
+Waits/maps completed query intervals, converts calibrated64-bit GPU timestamps using native float32 math, appends history and feeds127370 adaptive-cost samples.
+Limit: The recorded signal is completed GPU work, not the current CPU frame. An override affects native policy without modifying measurement history.
+Evidence: work/trainer/research/renderer_round6_full4.json
+
+Corrections
+- 113B80 cooldown/middle band checks current against max and returns min on excess. The unbounded return is1140EB->1145A1 when high current headroom fails the sustained-good history test. Universal-bound shorthand and preliminary cooldown explanation were corrected.
+- Dedicated disasm can return ten lines while claiming a complete1158-instruction body;1121D0 was recaptured using200-instruction pages and everycount/address/offset verified.
+
+No implementation, native call, live game, UI, build, EXE patch or IDB mutation in this round.

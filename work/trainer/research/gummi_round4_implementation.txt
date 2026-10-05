@@ -1,0 +1,34 @@
+Implementation status — Gummi projectile controls
+2026-10-04
+
+Implemented: trainer/Native/GummiProjectileFeatures.inl, included after GummiFeatures.inl.
+Exports: GummiProjectileHandle, GummiProjectileSnapshot, GummiProjectileCapabilities.
+IPC: Command1360 / capability360 clears ENEMY_SHOT; capability/value361 reports active records0..768. No persistent state, Tick or Reset.
+Catalog: work/trainer/research/gummi_projectile_features.json.
+
+Own isolated validation
+Command: cmd /c work\trainer\tests\build_gummi_projectile_tests.cmd
+Compiler: MSVC C++17, /O2 /W4 /MT /EHsc.
+Latest output: GummiProjectileGuardTests:208 checks,0 failures.
+Compiler emitted no warnings in this run. Only this isolated test binary was built; no common/full-project build or game execution was performed by this agent.
+
+Tests use the production guards and replace only the final native clear callout. Covered contracts include:
+- Empty, sparse, last-slot and completely full pools; exactly one dispatch on accepted requests.
+- Byte-for-byte checks of all768 records and sprite entries against the expected limited native effects.
+- Full-record type/index/deleting-bit validation, including the final record.
+- Owner task, doubly linked list, sorting, duplicate/cycle, fiber/group/priority/cleanup and bounded traversal failures.
+- Read-only/unreadable memory pages, header/range/alignment/overlap checks and every code pin's final byte.
+- Living Gummi state, fresh host/game thread and identity changes between validation passes.
+- Correctly shaped replacement pool/buffer/task rejected; zero native calls after rejection.
+- Native callout invalidates globals; production handler performs no further borrowed-pointer reads.
+- Paused/read-only snapshots remain readable; invalidated module/pool data is not published.
+- Exact capability mask and Action/ReadOnly routing.
+
+Research validation
+75 initial functions contain2,973 complete ASM instructions. Root supplied8 additional owner/collision functions after the IDA restart/auto_wait, containing476 instructions. All83 starts, instruction totals and decompile completeness were checked.69 claims cite existing evidence paths. This is scope-specific static analysis, not a whole-game completeness statement.
+
+Runtime limits
+The clear action covers only ENEMY_SHOT, leaves other projectile classes and existing impact effects to their native paths, and does not stop new shots. It changes no save/score/reward state directly. Native allocation/module lifetime and game-thread scheduling remain the governing contract; arbitrary foreign-thread mod teardown is outside the synchronization guarantees.
+No live behavior or visual outcome has been verified in this round. Root independently reviewed the owner task, full pool/sprite validation,768 vptr/index/ownership checks, all four complete code pins, repeat validation and absence of post-call reads. Root reported no blocker. That source review is separate from the208 author checks above.
+
+Final status: source, catalog, test source and research frozen for root integration. No further edits or builds are planned for these files without coordination. Fingerprints are in gummi_round4_checkpoint.json.

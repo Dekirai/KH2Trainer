@@ -1,0 +1,111 @@
+{
+  "date": "2026-10-04",
+  "status": "Implementation and isolated tests complete; independent static source review passed without blocking findings. Frozen for root integration and package verification.",
+  "independentSourceReview": {
+    "reviewer": "pe_inventory",
+    "report": "work/trainer/research/audio_round5_implementation_review.json",
+    "result": "No blocking issue; complete source/test review plus five saved full native assembly bodies,826 instructions. Author1774-check run was not independently rerun by the reviewer.",
+    "historicalReportHash": "ff55376ff6df913b50a75765fae98c28e8b35b87cd32fb984b2d6c3a77a8ab5f",
+    "hashNote": "The independent review records the implementation report at review time. This later status-only refresh records that review outcome; source, test and catalogue hashes are unchanged. The historical report hash is intentionally retained and is not a fingerprint of this follow-up report."
+  },
+  "binarySha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "module": "trainer/Native/SpatialAudioFeatures.inl",
+  "namespace": "spatial_audio",
+  "slots": [
+    408,
+    409,
+    410,
+    411,
+    412,
+    413,
+    414,
+    415,
+    416,
+    417,
+    418
+  ],
+  "reservedUnused": [
+    419,
+    420,
+    421,
+    422,
+    423
+  ],
+  "integration": {
+    "includeAfter": "AudioFeatures.inl",
+    "capabilities": "SpatialAudioCapabilities()",
+    "snapshot": "SpatialAudioSnapshot(const TrainerContext&)",
+    "commands": "None",
+    "tick": "None",
+    "reset": "None",
+    "catalogue": "work/trainer/research/spatial_audio_features.json",
+    "tests": "work/trainer/tests/build_spatial_audio_tests.cmd",
+    "ownership": "No shared Bridge, UI, build pipeline or catalogue assembler files edited."
+  },
+  "behavior": [
+    "Uses real audio_mix::ThreadReady/GraphReady/SameGraph helpers; requires the validated application post-Update continuation lifecycle. A Sora scene is not required.",
+    "Require Writable on each captured CS before TryEnter: outer global Sound CS first, validate manager/layout roots, then manager CS+776. Revalidate roots/host and copy the complete bounded list under both locks.",
+    "Pairs captured acquired lock addresses with nested finally cleanup, releasing inner before outer even when validation returns early or a read/release raises SEH.",
+    "Checks capacity1..1024, count0..capacity, peak count..capacity, full capacity*8 array range and every counted nonnull unique pointer/nonzero ID, exact vtable/BYTEkind and manager backlink.",
+    "Reads member IDs/priorities as uint32; selects greatest enabled priority and later entry on ties. Never dereferences selected+120: it compares that pointer with the already validated winning member.",
+    "Active identity/priority/position publish together only when selected matches the winner and cached position4 floats plus both cached matrices are finite. Unknown manager+148 is not used.",
+    "No listener getters, creation, updates, observer callbacks or setters are invoked. No persistent trainer state, hook, restore lease or gameplay data write is introduced.",
+    "IPC values publish after both locks are released. Slot408 is valid0 on failed readiness; dependent fields remain invalid. Structural counts can be valid even when active selection is unavailable."
+  ],
+  "tests": {
+    "command": "work\\trainer\\tests\\build_spatial_audio_tests.cmd",
+    "compiler": "MSVC x64 /std:c++17 /O2 /W4 /MT /EHsc",
+    "checks": 1774,
+    "failures": 0,
+    "warnings": 0,
+    "coverage": [
+      "All three native classes and exact one-byte type versus adjacent padding.",
+      "Unsigned high-bit/max priorities, zero priorities, tie order and enabled bit0.",
+      "Valid zero coordinates/counts versus unavailable dependent slots; empty list and stale/dangling selected pointer with no dereference.",
+      "Full1024-member bound, count/capacity/peak limits, null/duplicate/foreign-owner/type mismatches, full list-span checks and pointer-overflow rejection.",
+      "Every cached position and matrix element screened for NaN/Infinity; unverified+148 field ignored.",
+      "Real Win32 critical sections held by another thread; both busy outcomes return promptly with correct release pairing.",
+      "Readable but read-only outer/inner critical sections are rejected before TryEnter can write them.",
+      "Manager/interface destruction, changed driver/layout roots, byte816, backlinks and host expiry after inner acquisition.",
+      "SEH injected at every Readable call, late member failure, TryEnter failure and inner-release failure; captured outer cleanup remains guaranteed.",
+      "All manager bytes outside the Win32 lock unchanged; only408..418 capabilities;419..423 unused."
+    ],
+    "limits": "Synthetic allocated memory and real OS locks only. No running game, native audio callbacks, UI, save or full package build."
+  },
+  "limitations": [
+    "Object/CS lifetime relies on normal serialized application Init/Update/Shutdown. Byte816 alone is not sufficient, and foreign-thread private teardown remains unsupported.",
+    "The cached position has no frame timestamp and may lag setters. Pointer reuse and arbitrary concurrent corrupt/modded writes cannot be ruled out by the checks.",
+    "The duplicate scan is bounded at1024 members and allocates a fixed24KiB Member array on the native stack; no allocator call occurs while the audio locks are held.",
+    "This adds diagnostics only; no claim about audible output or speaker-channel semantics is made."
+  ],
+  "fingerprints": [
+    {
+      "file": "trainer/Native/SpatialAudioFeatures.inl",
+      "sha256": "dfd1d90328dbb9cd2eb1f184e24685fa688c2a015692ff3d037924a74a9596aa"
+    },
+    {
+      "file": "work/trainer/tests/SpatialAudioGuardTests.cpp",
+      "sha256": "d54be54db563aec570ac4075ee8164ddaf075a82a78211f07b0926ef2640e374"
+    },
+    {
+      "file": "work/trainer/tests/build_spatial_audio_tests.cmd",
+      "sha256": "8307fbfc8b3eed861f34607d0973ccd29d824285e5ac16df9d98dece3de00f92"
+    },
+    {
+      "file": "work/trainer/research/spatial_audio_features.json",
+      "sha256": "1456d21fba1c822858423b7318bdf98192e074658ab2c013ad85737a0105a7b8"
+    },
+    {
+      "file": "work/trainer/research/audio_round5_deep.json",
+      "sha256": "8490e94200fb7235db8e0a53848165cf2dc5ac3a4fa26c27c5ed342bbd1912a1"
+    },
+    {
+      "file": "work/trainer/research/audio_round5_independent_review.json",
+      "sha256": "3edb0353eaf51b70cf6ff3754782f4e48802603cc4d7a5d2aafda7f58b67006c"
+    },
+    {
+      "file": "trainer/Native/AudioFeatures.inl",
+      "sha256": "a2e56de2e4e672f3402c20053ba30340e90c0c70e2312b11c7853cca1296fa26"
+    }
+  ]
+}

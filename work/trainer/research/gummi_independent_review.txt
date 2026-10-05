@@ -1,0 +1,15 @@
+2026-10-04 | Independent static delta review of GummiFeatures.inl
+No new substantial issue found in the reviewed source.
+Fresh full ASM/pseudocode2265E0 and207A50 saved in gummi_independent_evidence.json.
+Healing ABI is state RCX,float XMM1; writesHP+8 and dirty+80. Score uses intECX,
+has no reliable return value, and saturates to99999990 plus modulo10 remainder.
+Maximum accepted current score99999999 plus addition99999990 is199999989,
+below signed32-bit overflow. Multiples10 preserve native remainder semantics.
+Module-list membership, heap/scheduler/descriptor/state identity, current native
+module and mission/player phase gates are consistent. Two fresh contexts precede
+each action, and no ship pointer or effect survives across frames. Module pause2
+is read-only; calls require normal module1, mission8, player2, living ship.
+Heartbeat freshness and exact game-thread checks precede calls. Code bytes match
+native bodies. Snapshots are read-only and values are invalidated by parent bridge.
+Scope limits: did not independently rederive every mission field in this delta;
+no game-process access, UI test, live gameplay or source mutation performed.

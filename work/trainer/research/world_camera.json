@@ -1,0 +1,799 @@
+{
+  "schema": 1,
+  "analysis_date": "2026-10-04",
+  "target_sha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "image_base": "0x140000000",
+  "method": "Static IDA Hex-Rays + ASM + xrefs; no game/process writes, no IDB edits. Feature status distinguishes native primitives from untested trainer scheduling.",
+  "scope": "world, time, camera, native developer menus, render/input",
+  "features": [
+    {
+      "id": "world.current_location",
+      "name": "Current location",
+      "status": "verified_read",
+      "address": {
+        "rva": "0x717008",
+        "type": "MapTarget10"
+      },
+      "range": "world 0..18 or 255 sentinel; area/entrance u8; spawn-set fields int16",
+      "engine_abi": null,
+      "gates": [
+        "sceneReady at RVA0x9BA8D0"
+      ],
+      "restore": "none",
+      "evidence": [
+        "152BE0 copies current world/area/entrance, loads default spawn sets from SaveData, applies non--1 overrides",
+        "4349F0 copies exactly10bytes for reset"
+      ]
+    },
+    {
+      "id": "world.map_jump",
+      "name": "Travel to room",
+      "status": "verified_engine_call_needs_runtime_test",
+      "address": {
+        "rva": "0x434CF0",
+        "type": "function"
+      },
+      "engine_abi": "void __fastcall(const MapTarget10* target); target in RCX, return incidental. Wrapper calls152990(target,1,0,0,0).",
+      "range": "world0..18; area0..63 AND live area-table bounds; entrance0..255; spawnSets -1 or0..50 matches native UI",
+      "gates": [
+        "Engine frame thread",
+        "sceneReady RVA9BA8D0==1",
+        "event-only phase RVA9BA8D1==0",
+        "gameplay scheduler [RVA716868] nonnull",
+        "pending transition [RVA9BA928]==null",
+        "no menu transition RVA9006B0",
+        "valid world and area according to live AreaTable"
+      ],
+      "restore": "Operation changes scene and SaveData current location. No automatic undo; return by another validated jump. Do not restore scene pointers.",
+      "evidence": [
+        "434CF0 ASM14instructions",
+        "152990 synchronously copies8+2bytes and registers152A90 priority300000",
+        "152A90 waits for transition/menu/event conditions, tears down then152BE0",
+        "152BE0 stores current world/entrance in SaveData"
+      ]
+    },
+    {
+      "id": "world.restart_room",
+      "name": "Reload current room",
+      "status": "verified_engine_call_needs_runtime_test",
+      "address": {
+        "rva": "0x434CF0",
+        "argument_copy_rva": "0x717008"
+      },
+      "engine_abi": "Same as world.map_jump; local copy of current10bytes",
+      "range": "Current validated location",
+      "gates": [
+        "Same as world.map_jump"
+      ],
+      "restore": "Reloads room using current spawn-set selection; does NOT restore HP, inventory, mission history or arbitrary boss phase.",
+      "evidence": [
+        "4349F0 native controller shortcut does exactly this via3F5700/WorldFlag100/152990"
+      ]
+    },
+    {
+      "id": "world.party_preset",
+      "name": "Party preset for next room load",
+      "status": "verified_engine_call_needs_runtime_test",
+      "address": {
+        "rva": "0x9ACDE4",
+        "index": "4*world + slot",
+        "type": "uint8_t[19][4]",
+        "setter_rva": "0x3E38C0",
+        "getter_rva": "0x3E2E20"
+      },
+      "engine_abi": "uint8_t* __fastcall GetParty(int world); SetParty(uint8_t* worldParty,int slot,uint8_t member) RCX/EDX/R8B",
+      "range": "slot0..3; native labels map SORA0,DONALD1,GOOFY2,W_FRIEND3,NOENTRY18; - is no-change UI option",
+      "gates": [
+        "Valid world0..18",
+        "Apply before native map jump on engine thread",
+        "Use only native listed IDs until further character mapping"
+      ],
+      "restore": "Persistent SaveData bytes. Snapshot four original bytes per world; restoration affects subsequent room instantiation, not necessarily already spawned actors.",
+      "evidence": [
+        "434BB0 loops four selections and maps UIvalue4 to18",
+        "3E38C0 writes member&0x9F",
+        "3E2E20 returns9ACDE4+4*world"
+      ]
+    },
+    {
+      "id": "time.speed",
+      "name": "Game speed",
+      "status": "verified_data_path_needs_runtime_test",
+      "address": {
+        "rva": "0x717424",
+        "type": "float",
+        "effective_delta_rva": "0x717480",
+        "unscaled_delta_rva": "0x717484",
+        "inverse_delta_rva": "0x717488",
+        "setter_rva": "0x1545B0"
+      },
+      "engine_abi": "Setter at1545B0 consumes float inXMM0 (native tail chunk); prefer exact engine-thread data update or properly typed void(float), not41DD00(float) because41DD00 takes pointer to float.",
+      "range": "Engine has no positive lower clamp. Trainer recommended0.1..3.0, finite only. NEVER zero/negative/NaN; delta capped6 and inverse=1/delta.",
+      "gates": [
+        "Engine thread",
+        "sceneReady",
+        "Native writer conflicts: scene init152680->154580 resets1; eventtask1543F0 can overwrite; avoid cumulative multiplier"
+      ],
+      "restore": "Capture original scalar and restore only if still owned. Better wrap end-of-frame timing task to modify freshly computed delta and inverse while preserving engine scalar; this changes different scope than permanent speed field.",
+      "evidence": [
+        "1548E0 and154740 compute effective=min(raw*scalar,6), reciprocal1/effective",
+        "154600 also recomputes all three delta fields",
+        "41B400 BDX VM and many combat/physics consumers read717480",
+        "3ABD60 is target-acquisition scaling, not game speed"
+      ]
+    },
+    {
+      "id": "time.pause_menu",
+      "name": "Open normal pause menu",
+      "status": "verified_engine_call",
+      "address": {
+        "rva": "0x2E4950",
+        "type": "function"
+      },
+      "engine_abi": "void __fastcall(int menuType,int parameter); native pause uses(0,-1)",
+      "range": "Use0/-1 only for this feature",
+      "gates": [
+        "Match1572B0: ABB878==0,sceneReady,1515C0 false,(156DC0()+264)==0,19BA60 false; player custom pause handler3AD540 may take precedence",
+        "Engine thread",
+        "Ordinary field context"
+      ],
+      "restore": "Native menu owns resume; don't force module state while native menu is open.",
+      "evidence": [
+        "1572B0 native Start/pause path",
+        "1515E0 handles capture,pause bits,module state before menu"
+      ]
+    },
+    {
+      "id": "time.pause_simulation",
+      "name": "Pause field simulation",
+      "status": "implemented_static_verified_synthetic_tested_live_pending",
+      "address": {
+        "rva": "0x716884",
+        "type": "int32_t",
+        "module_rva": "0x716860"
+      },
+      "engine_abi": "No single confirmed public pause API. Field module state1=running,2=paused,0=inactive,3=closing. Native150310 dispatches module scheduler only in state1.",
+      "range": "Only1<->2, never0/3",
+      "gates": [
+        "Engine thread before next outer dispatch",
+        "Originalstate1 and sceneReady; no native menu, pending scene transition, event phase",
+        "Require trainer ownership; don't unpause state2 established by another system"
+      ],
+      "restore": "Slots116/117 now use outer1567A0 captured-frame drawing and capture153430 before timing1548E0. Trainer timer owner bit0x40000000 preserves native owners. Native menu/event takeover is retained; same-scene trainer state is restored. See field_pause.txt; no moving freecam in paused image.",
+      "evidence": [
+        "150310 module loop",
+        "1515E0 native pause state2 path",
+        "1514B0 native resume state1 path"
+      ]
+    },
+    {
+      "id": "time.frame_step",
+      "name": "Advance one field update",
+      "status": "implemented_static_verified_synthetic_tested_live_pending",
+      "address": {
+        "rva": "0x716884",
+        "type": "int32_t"
+      },
+      "engine_abi": "Trainer orchestration setsstate1, then captures and setsstate2 before next timing1548E0. Original timing runs once, then the trainer timer owner bit is restored. Not an existing native FrameStep API.",
+      "range": "One scheduler pass, not necessarily one60Hz simulation tick",
+      "gates": [
+        "All pause_simulation gates",
+        "Exact outer task identity/order and started field fiber with zero waits; no duplicate step while pending",
+        "No zero-delta approach"
+      ],
+      "restore": "Return to trainer-owned pause only if same scene/generation and module still1.",
+      "evidence": [
+        "150310 state gate",
+        "1548E0 variable delta means one outer frame can represent more than one logical unit"
+      ]
+    },
+    {
+      "id": "camera.inspect",
+      "name": "Camera inspector",
+      "status": "verified_read",
+      "address": {
+        "getter_rva": "0x19CE40",
+        "current_bank_rva": "0xAC1020",
+        "previous_bank_rva": "0xAC1B50",
+        "active_index_rva": "0xAC1838",
+        "stride": 128,
+        "fields": {
+          "vtable": 0,
+          "view_matrix": 8,
+          "eye_vector4": 72,
+          "target_vector4": 88,
+          "up_vector4": 104,
+          "extra_float": 120
+        }
+      },
+      "engine_abi": "void* __fastcall GetCamera(uint8_t current); current=1 forcesAC1020 bank, current=0 selectspreviousunlessbyteAC183C true",
+      "range": "index0..1; finite vectors",
+      "gates": [
+        "Valid scene and camera index0or1",
+        "Distinguish field/worldmap/menu bank users"
+      ],
+      "restore": "Read-only",
+      "evidence": [
+        "19CE40 ASM",
+        "19C6F0 constructor",
+        "19C910/19CBA0 look-at basis",
+        "19D340 setter",
+        "430DA0/430DE0 script eye/target getters"
+      ]
+    },
+    {
+      "id": "camera.fov",
+      "name": "Field of view",
+      "status": "verified_engine_call_needs_scheduled_hook",
+      "address": {
+        "getter_rva": "0x19CFC0",
+        "current_bank_rva": "0xAC1840",
+        "previous_bank_rva": "0xAC1220",
+        "active_index_rva": "0xAC1838",
+        "stride": 388,
+        "setter_rva": "0x19DDE0",
+        "fields": {
+          "focal_length": 64,
+          "horizontal_radians": 68,
+          "vertical_radians": 72,
+          "scale_x": 76,
+          "scale_y": 80,
+          "near": 108,
+          "far": 112,
+          "clamped_near": 116,
+          "clamped_far": 120
+        }
+      },
+      "engine_abi": "void __fastcall SetFov(void* projection,float angleRadians,int vertical); RCX,XMM1,R8D. vertical0=horizontal,1=vertical.",
+      "range": "Mathematically0<angle<pi, nonzero projection scale; trainer recommended30..120degrees. No engine clamp.",
+      "gates": [
+        "Engine thread immediately before19CBA0 projection update",
+        "index0..1, projection scale76/80 finite nonzero",
+        "Only apply to intended scene bank; camera controller165700 rewrites FOV each frame"
+      ],
+      "restore": "Stop override and let native camera controller regenerate. Snapshot only within same scene; don't restore stale wholecamera/projection structs across scene changes.",
+      "evidence": [
+        "19DDE0 tan(angle/2), recomputesfocal+hFov+vFov",
+        "19CAD0 ASM passes focal64 to projection4748B0",
+        "19CBA0 rebuildsprojection",
+        "165700 callsSetFov and camera target setter"
+      ]
+    },
+    {
+      "id": "camera.freecam",
+      "name": "Free camera",
+      "status": "verified_primitives_hook_design_needs_runtime_test",
+      "address": {
+        "set_vectors_rva": "0x19D340",
+        "build_camera_rva": "0x19CBA0",
+        "pan_rva": "0x19D420",
+        "orbit_rva": "0x19D5A0",
+        "scheduler_rva": "0x716868"
+      },
+      "engine_abi": "SetVectors(void*camera,const Vec4*eye,const Vec4*target,const Vec4*up) RCX/RDX/R8/R9. Pan(camera,float right,float up):RCX/XMM1/XMM2. Orbit(camera,int axis,float radians):RCX/EDX/XMM2; axis0yaw,1pitch.",
+      "range": "Finite eye/target/up; eye!=target, up nonzero and notparallel to viewingaxis. Use nativecoordinateunits; no established universal world bounds.",
+      "gates": [
+        "Wrap existing direct task nodes whose callback==base+19CBA0 in current gameplay scheduler",
+        "Set current bank fields immediatelybefore savedoriginal; registration162C50 includes priorities30000and90030, other scene modes also register",
+        "Track scene/node lifetime; no cached task pointers aftertransition",
+        "Maintain controls outside gamepad movement toavoid simultaneous player motion"
+      ],
+      "restore": "Disable override on transition and invalidation; let scene camera resume eachframe. Snapshot fieldscoped values optionally before eachoverride; no whole-bank restore after scenechange. Pause module2 also prevents camera tasks; freecam+pause needs another render strategy.",
+      "evidence": [
+        "19D340 copies eye72,target88,up104,sets eye.w=1",
+        "19CBA0 copiespreviousbank, derivesviewmatrix, updatesprojection and renderer137E20",
+        "162C50/162F20/1631E0 registercamera tasks",
+        "19D420 pan translateseye+target,19D5A0 orbitrotateseye abouttarget"
+      ]
+    },
+    {
+      "id": "render.hide_captions",
+      "name": "Hide event captions",
+      "status": "verified_data_toggle",
+      "address": {
+        "rva": "0x749804",
+        "type": "uint32_t",
+        "mask": "0x04000000"
+      },
+      "engine_abi": null,
+      "range": "bit26 only",
+      "gates": [
+        "Engine thread bitwise read-modify-write",
+        "Does not necessarily delete captions already created"
+      ],
+      "restore": "Restore only owned bit preserving other flags; don't savekh2.cnf unless explicit.",
+      "evidence": [
+        "2CFFA0/2D0100 earlyreturn whenbit26 set"
+      ]
+    },
+    {
+      "id": "render.word_guides",
+      "name": "Caption layout guides",
+      "status": "verified_data_toggle",
+      "address": {
+        "rva": "0x749804",
+        "type": "uint32_t",
+        "mask": "0x08000000"
+      },
+      "engine_abi": null,
+      "range": "bit27 only",
+      "gates": [
+        "Normal renderer frame"
+      ],
+      "restore": "Restoreownedbit",
+      "evidence": [
+        "14E020->14E6D0 drawsverticalguides"
+      ]
+    },
+    {
+      "id": "render.offscreen_check",
+      "name": "Off-screen check view",
+      "status": "verified_data_toggle",
+      "address": {
+        "rva": "0x749838",
+        "type": "uint32_t",
+        "mask": "0x1"
+      },
+      "engine_abi": null,
+      "range": "off/on",
+      "gates": [
+        "App frame14EB70 processeschange",
+        "Rendereravailable"
+      ],
+      "restore": "Restoreownedbit; nextAppframe recomputesnormal scale",
+      "evidence": [
+        "14EB70/14DF40 ->127130(0.6 or1.0) then126500 updatesdisplay",
+        "Not generalresolution scale or cameraFOV"
+      ]
+    },
+    {
+      "id": "dev.desktop",
+      "name": "Native developer desktop",
+      "status": "verified_code_path_runtime_partly_tested_by_parent",
+      "address": {
+        "init_rva": "0x41FCD0",
+        "state_rva": "0x2AF2A00",
+        "desktop_pointer_rva": "0x2AF7938",
+        "root_pointer_rva": "0x2AF3028",
+        "popup_rva": "0x420BE0"
+      },
+      "engine_abi": "Init void(); PopupToggle(int x,int y), requirespopupnulltoopen; callbacktask void(void*node)",
+      "range": "state2visible,0/1hidden",
+      "gates": [
+        "One-timeinit only",
+        "App79CF00,scheduler9BA888,renderer8AEEF8 nonnull",
+        "Loadedscene,itemtable2A25370,gameplayScheduler716868",
+        "RightCtrl+mouse nativeinput",
+        "32KiB allocator limits;don't flattenall19groups"
+      ],
+      "restore": "Hide only; keep DLL resident. Never repeatedlycallInit. Suppresshiddennativecallback toprevent secondarycontrollerroomreset.",
+      "evidence": [
+        "activator_research_debug.md",
+        "41FCD0/41FB90/532E30/5309C0"
+      ]
+    },
+    {
+      "id": "dev.savepoint_remove",
+      "name": "Remove current save point",
+      "status": "verified_destructive_scene_action",
+      "address": {
+        "rva": "0x418D50",
+        "current_pointer_rva": "0x2AEA4B8"
+      },
+      "engine_abi": "void()",
+      "range": "currentinstanceonly",
+      "gates": [
+        "Engine thread,loadedscene"
+      ],
+      "restore": "No confirmedrecreatecall; roomreload mayrestore. Not persistent global suppressallSavePoints.",
+      "evidence": [
+        "420D70 tailcalls418D50"
+      ]
+    },
+    {
+      "id": "dev.motion_info",
+      "name": "Motion info legacy switch",
+      "status": "ui_only_no_consumer_found",
+      "address": {
+        "rva": "0x2AF2C34",
+        "mask": "0x1",
+        "setter_rva": "0x420D50"
+      },
+      "engine_abi": "void(int0or1)",
+      "range": "0/1",
+      "gates": [
+        "Do notmarket asworkingfeature"
+      ],
+      "restore": "restoreownedbit",
+      "evidence": [
+        "AllnativeXrefs to2AF2C34 aretwosetters; nomotionreaderfound"
+      ]
+    },
+    {
+      "id": "dev.treasure_off",
+      "name": "Treasure box off legacy switch",
+      "status": "ui_only_no_consumer_found",
+      "address": {
+        "rva": "0x2AF2C34",
+        "mask": "0x2",
+        "setter_rva": "0x420DB0"
+      },
+      "engine_abi": "void(int0or1)",
+      "range": "0/1",
+      "gates": [
+        "Do notmarket asworkingfeature"
+      ],
+      "restore": "restoreownedbit",
+      "evidence": [
+        "AllnativeXrefs to2AF2C34 aretwosetters; noobjectconsumerfound"
+      ]
+    },
+    {
+      "id": "dev.debug_draw",
+      "name": "Legacy geometry debug flags",
+      "status": "partial_primitive_consumer_verified",
+      "address": {
+        "rva": "0x749818",
+        "type": "uint32_t",
+        "setter_rva": "0x435430"
+      },
+      "engine_abi": "void(int selection); selection9clearsfirstflagsDWORD,elseXORbit",
+      "range": "0BG,1OBJ,2HIT,3ATTACK,4RC,5BBOX,6ZONE,7STATUS,8TARGET,9ALLOFF",
+      "gates": [
+        "Root initdebugallocator; actualdrawcallreachabilitynotconfirmed"
+      ],
+      "restore": "Snapshotflagword; don'tpretendall9labels functional",
+      "evidence": [
+        "4384E0 readsbit0 and calls438CC0 shapeenqueue if3BA940(actor)",
+        "No directreaders ofotherbits foundinthispass"
+      ]
+    }
+  ],
+  "world_codes": [
+    {
+      "id": 0,
+      "code": "zz",
+      "source_rva": "0x717210"
+    },
+    {
+      "id": 1,
+      "code": "es",
+      "source_rva": "0x717210"
+    },
+    {
+      "id": 2,
+      "code": "tt",
+      "source_rva": "0x717210"
+    },
+    {
+      "id": 3,
+      "code": "di",
+      "source_rva": "0x717210"
+    },
+    {
+      "id": 4,
+      "code": "hb",
+      "source_rva": "0x717210"
+    },
+    {
+      "id": 5,
+      "code": "bb",
+      "source_rva": "0x717210"
+    },
+    {
+      "id": 6,
+      "code": "he",
+      "source_rva": "0x717210"
+    },
+    {
+      "id": 7,
+      "code": "al",
+      "source_rva": "0x717210"
+    },
+    {
+      "id": 8,
+      "code": "mu",
+      "source_rva": "0x717210"
+    },
+    {
+      "id": 9,
+      "code": "po",
+      "source_rva": "0x717210"
+    },
+    {
+      "id": 10,
+      "code": "lk",
+      "source_rva": "0x717210"
+    },
+    {
+      "id": 11,
+      "code": "lm",
+      "source_rva": "0x717210"
+    },
+    {
+      "id": 12,
+      "code": "dc",
+      "source_rva": "0x717210"
+    },
+    {
+      "id": 13,
+      "code": "wi",
+      "source_rva": "0x717210"
+    },
+    {
+      "id": 14,
+      "code": "nm",
+      "source_rva": "0x717210"
+    },
+    {
+      "id": 15,
+      "code": "wm",
+      "source_rva": "0x717210"
+    },
+    {
+      "id": 16,
+      "code": "ca",
+      "source_rva": "0x717210"
+    },
+    {
+      "id": 17,
+      "code": "tr",
+      "source_rva": "0x717210"
+    },
+    {
+      "id": 18,
+      "code": "eh",
+      "source_rva": "0x717210"
+    }
+  ],
+  "map_target10": {
+    "size": 10,
+    "fields": [
+      {
+        "offset": 0,
+        "type": "u8",
+        "name": "world"
+      },
+      {
+        "offset": 1,
+        "type": "u8",
+        "name": "area"
+      },
+      {
+        "offset": 2,
+        "type": "u8",
+        "name": "entrance"
+      },
+      {
+        "offset": 3,
+        "type": "u8",
+        "name": "reserved",
+        "note": "nativewidgetleavesituninitialized; rawtrainershouldinitialize0"
+      },
+      {
+        "offset": 4,
+        "type": "i16",
+        "name": "map_spawn_set"
+      },
+      {
+        "offset": 6,
+        "type": "i16",
+        "name": "battle_spawn_set"
+      },
+      {
+        "offset": 8,
+        "type": "i16",
+        "name": "event_spawn_set"
+      }
+    ],
+    "default_source": "SaveData(baseRVA9A98B0)+16+384*world+6*area supplies3ushort default spawnsets.",
+    "labels": "NativeUI'-'=-1; index1..25'a'..'y' -> values0..24; index26..51'za'..'zz'->values25..50. NOvalidmapassetdatabaseinEXEfound; labelsarenumericalchoices."
+  },
+  "area_table": {
+    "pointer_rva": "0x2A10558",
+    "world_count_offset": 4,
+    "world_entry_base": 8,
+    "world_entry_stride": 4,
+    "area_count_type": "uint16",
+    "area_count_offset": 0,
+    "record_offset_type": "uint16",
+    "record_offset_offset": 2,
+    "area_record_stride": 64,
+    "evidence": "3A5B80. Additional flag4testisspecificsemantics,notgeneralvalidity."
+  },
+  "developer_callbacks": [
+    {
+      "descriptor": "0x1405D67F0",
+      "label": "0x1405d6808",
+      "submenu": "0x",
+      "callback": "0x140433b20",
+      "name": "setinfo",
+      "callback_rva": "0x433b20",
+      "effect": "Read-only scene/set information widget; uses currentworld."
+    },
+    {
+      "descriptor": "0x1405D6878",
+      "label": "0x1405d6890",
+      "submenu": "0x142af2a10",
+      "callback": "0x1404340a0",
+      "name": "progress",
+      "callback_rva": "0x4340a0",
+      "effect": "World progress editor, loads dbg/progress-%s.dbg. Toggle39AFC0, get39A980. Reset434260 zeroes32bytesprogress plus384bytes roomset defaults forworld; persistent destructive operation."
+    },
+    {
+      "descriptor": "0x1405D69B8",
+      "label": "0x1405d69b0",
+      "submenu": "0x",
+      "callback": "0x140434d30",
+      "name": "mapjump",
+      "callback_rva": "0x434d30",
+      "effect": "Opens native MapJump widget; prefer direct434CF0 wrapper for WPF."
+    },
+    {
+      "descriptor": "0x1405D6A48",
+      "label": "0x1405d6a40",
+      "submenu": "0x",
+      "callback": "0x140435040",
+      "name": "signal",
+      "callback_rva": "0x435040",
+      "effect": "Loads dbg/signal.bin. Left-click435380 maycancelcurrent signal via3A3460 then trigger3AABE0(signal,-1). Not read-only."
+    },
+    {
+      "descriptor": "0x1405D6C68",
+      "label": "0x1405d6c58",
+      "submenu": "0x",
+      "callback": "0x140435510",
+      "name": "world state",
+      "callback_rva": "0x435510",
+      "effect": "Displays19world state summaries via3EE470/3F1E20; no clickhandler exceptnullsub."
+    },
+    {
+      "descriptor": "0x1405D6DD0",
+      "label": "0x1405bd840",
+      "submenu": "0x",
+      "callback": "0x140435d10",
+      "name": "item",
+      "callback_rva": "0x435d10",
+      "effect": "Opens inventory item editor; get-all435A80 uses3C3F00 and3D5D60."
+    },
+    {
+      "descriptor": "0x1405D6DE8",
+      "label": "0x1405bd840",
+      "submenu": "0x",
+      "callback": "0x140435ce0",
+      "name": "actor item",
+      "callback_rva": "0x435ce0",
+      "effect": "Uses selectedactor41FC40 and checksactor1736&4 beforecharacter itemeditor; null derefrisk ifcalledwithoutselection."
+    },
+    {
+      "descriptor": "0x1405D6BA8",
+      "label": "0x1405d6bc0",
+      "submenu": "0x1405d6a60",
+      "callback": "0x140435430",
+      "name": "debug draw",
+      "callback_rva": "0x435430",
+      "effect": "Toggles legacy geometry flags; seefeaturedev.debug_draw."
+    },
+    {
+      "descriptor": "0x1405D6EC0",
+      "label": "0x1405d6ed8",
+      "submenu": "0x",
+      "callback": "0x140436750",
+      "name": "munny",
+      "callback_rva": "0x436750",
+      "effect": "Munny editor0..999999, apply4367D0 writesSaveData9280 via3024E0."
+    },
+    {
+      "descriptor": "0x1405D6F28",
+      "label": "0x1405b6c08",
+      "submenu": "0x142af2a10",
+      "callback": "0x140436b50",
+      "name": "mission",
+      "callback_rva": "0x436b50",
+      "effect": "Loads dbg/mission-%s.dbg; click436D60 buildsMapTarget10 and152990. Localsetlookup39FBC0 bsearchresult notnullchecked."
+    },
+    {
+      "descriptor": "0x1405D6E78",
+      "label": "0x1405d6e60",
+      "submenu": "0x",
+      "callback": "0x140436280",
+      "name": "world flag",
+      "callback_rva": "0x436280",
+      "effect": "Loads dbg/worldflag.dbg; apply436230->3DEEF0 thenoptionalworldmaprefresh; reset436410->3DF060. Altersprogress."
+    },
+    {
+      "descriptor": "0x1405D7060",
+      "label": "0x1405d7078",
+      "submenu": "0x",
+      "callback": "0x140436f00",
+      "name": "battle report",
+      "callback_rva": "0x436f00",
+      "effect": "Read-only battle report display436F80."
+    },
+    {
+      "descriptor": "0x1405C9658",
+      "label": "0x1405bcf18",
+      "submenu": "0x142af2a10",
+      "callback": "0x1403f18a0",
+      "name": "localset",
+      "callback_rva": "0x3f18a0",
+      "effect": "Loads dbg/localset-%s.bin; click3F1D20 resolveslocalset39FBC0, resets3F5700/3E68F0 then152990. Requiresvalidresourcedata."
+    },
+    {
+      "descriptor": "0x1405D4E48",
+      "label": "0x1405d4e60",
+      "submenu": "0x",
+      "callback": "0x140420d40",
+      "name": "hide debug",
+      "callback_rva": "0x420d40",
+      "effect": "Setsdesktopstate1."
+    },
+    {
+      "descriptor": "0x1405D4EC8",
+      "label": "0x1405d4ee0",
+      "submenu": "0x1405d4e70",
+      "callback": "0x140420d80",
+      "name": "status",
+      "callback_rva": "0x420d80",
+      "effect": "Toggle(int) shows/hidesstatuswidget+64bit16 andconfig749828bit1; requiresstatuswidgetnonnull."
+    },
+    {
+      "descriptor": "0x1405D4EE8",
+      "label": "0x1405d4f00",
+      "submenu": "0x1405d4e70",
+      "callback": "0x140420d50",
+      "name": "motion info",
+      "callback_rva": "0x420d50",
+      "effect": "Sets2AF2C34bit0; noactualconsumerfound."
+    },
+    {
+      "descriptor": "0x1405D4F10",
+      "label": "0x1405d4f28",
+      "submenu": "0x",
+      "callback": "0x140420d70",
+      "name": "save point off",
+      "callback_rva": "0x420d70",
+      "effect": "DestroyscurrentSavePointinstance."
+    },
+    {
+      "descriptor": "0x1405D4F38",
+      "label": "0x1405d4f50",
+      "submenu": "0x1405d4e70",
+      "callback": "0x140420db0",
+      "name": "treasure box off",
+      "callback_rva": "0x420db0",
+      "effect": "Sets2AF2C34bit1; noactualconsumerfound."
+    }
+  ],
+  "input": {
+    "app_pointer_rva": "0x79CF00",
+    "keyboard_base_offset": 4768,
+    "keyboard_current_index_offset": 5280,
+    "keyboard_stride": 256,
+    "right_ctrl_scan_code": 157,
+    "mouse_x_offset": 572,
+    "mouse_y_offset": 576,
+    "mouse_wheel_offset": 588,
+    "mouse_buttons_offset": 592,
+    "logical_input_pointer_rva": "0xBF3270",
+    "logical_input_stride": 88,
+    "logical_input_pressed_offset": 8,
+    "notes": "532E30 gatesleft/rightmouseonRightCtrl. Keybufferindexmustbe0or1. Mouseedgecode buttons|(pressed<<5)|(released<<10). Keep trainerhotkeysseparatefromgameinputunlessintentionallyconsumed."
+  },
+  "important_exclusions": [
+    "Legacy speed/attack/EXPconfigfields749808/74980C..E/74982C haveonlyUIreadersinpreviousanalysis.",
+    "Worldflag2A11400bit0x20 pausesselectedeffectobjects in2BD190/2BE840, notverifiedfullgamepause.",
+    "3ABD60/2A1141C is target-acquisitiondistance scaling, NOTsimulation speed.",
+    "Scene pause state2 preventscamera tasks; freecamwhilepaused needsadditionalrenderwork.",
+    "Directnative menuconstructors assumemissingdebugresources/allocations succeed; exposeonlyverifiedsafe paths inWPF.",
+    "World/area rangechecks do notprove correspondingassets or mission spawnsets exist."
+  ],
+  "evidence_files": [
+    "world_camera_evidence.json",
+    "field_pause_evidence.json",
+    "native_retry_evidence.json",
+    "../../activator_research_debug.md",
+    "../../native_debug_findings.md",
+    "../../native_decompile/0x140*.c"
+  ]
+}

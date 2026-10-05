@@ -1,0 +1,516 @@
+{
+  "title": "Gummi controls, weapons and editor: native follow-up",
+  "status": "Source, tests, catalog and reports frozen; independent review complete without blocker; root integration pending; no live test",
+  "image_base": "0x140000000",
+  "build_sha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "claims": [
+    {
+      "Address": "0x140226120",
+      "Finding": "Computes movement factor clamp(1 + mobilityBonus/100,0.1,3); negative bonus is first multiplied by systemparam row0 float+16.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x140226120"
+      ],
+      "Limitations": "A raw negative bonus is not itself an exact percent reduction; the loaded parameter matters.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140225F10",
+      "Finding": "Computes roll-impulse factor clamp(1 + state+40/100,0,3).",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x140225F10"
+      ],
+      "Limitations": "Affects impulse paths; it does not shorten the roll duration or remove invulnerability ownership.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401FFE80",
+      "Finding": "Consumes mobility factor for maximum lateral speed, acceleration and deceleration. Integrates normal motion plus a decaying roll impulse. Roll time1512 decreases by154430 ticks and clears relevant roll flags on expiry.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x1401FFE80"
+      ],
+      "Limitations": "Engine ticks are not established milliseconds; forcing the countdown would also affect several roll/impact flags.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401FE860",
+      "Finding": "Inputbit0x400 while no active roll bit0x80 initializes roll impulse/timers, effect and temporary immunity. Also handles formation, sword request and drain/shield input.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x1401FE860"
+      ],
+      "Limitations": "No physical controller button is inferred from this internal input bit alone. Full trigger has effect/resource dependencies.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401F0F00",
+      "Finding": "GUN update uses requestbit1, disabledbit2, burstbit4, burst interval128/countdown132 and firing delay136/countdown140. It calls virtual shot slot16 and manages an effect instance.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x1401F0F00"
+      ],
+      "Limitations": "These are per-gun cadence states, not evidence of a universal player overheat gauge.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402313E0",
+      "Finding": "DRAIN phase2 waits30ticks, then phases3/4 initialize and absorb enemy shots; phase5 fires and phase6 returns to ready phase1.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x1402313E0"
+      ],
+      "Limitations": "Drain/shield phase writes alone would skip enemy-shot iteration, firing and effects.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401FB8B0",
+      "Finding": "Aggregates installed ship/ability contributions into PLAYER_STATE, including movement36, roll40, lock-on44 and special-charge multiplier52; publishes GUMISHIP+200 state backlink.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x1401FB8B0"
+      ],
+      "Limitations": "Rebuilding stats can overwrite one-time trainer values. Underlying editor parts and save data are unchanged by the new controls.",
+      "PriorAuditTier": 2,
+      "PriorAuditClaims": [
+        1200,
+        1218
+      ]
+    },
+    {
+      "Address": "0x14027E6F0",
+      "Finding": "HISTORY destructor frees a352064-byte object through the Gummi menu allocator when deletion flag1 is set.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x14027E6F0"
+      ],
+      "Limitations": "Allocator/layout dependency for editor lifetime; not a gameplay operation.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14027EC50",
+      "Finding": "COST destructor frees the200-byte cost widget using the menu allocator.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x14027EC50"
+      ],
+      "Limitations": "The published cost global is not itself sufficient ownership proof.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140225CD0",
+      "Finding": "Adds signed EDX to PLAYER_STATE+40 using RCX state; no allocation, event or callback.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x140225CD0"
+      ],
+      "Limitations": "Caller must prevent signed addition overflow; the trainer calculates a checked target-minus-current delta.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140225DB0",
+      "Finding": "Adds signed EDX to PLAYER_STATE+44 using RCX state, with no other writes.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x140225DB0"
+      ],
+      "Limitations": "The field controls lock-on delay formula; it is not a universal gun firing-speed multiplier.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140225DE0",
+      "Finding": "Adds signed EDX to PLAYER_STATE+36 using RCX state, with no other writes.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x140225DE0"
+      ],
+      "Limitations": "Runtime aggregated bonus only; does not modify installed parts or save records.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402260E0",
+      "Finding": "Converts signed state+44 lock-on bonus to float inXMM0.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x1402260E0"
+      ],
+      "Limitations": "No clamp in getter; actual per-category delay applies its resource minimum.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402260F0",
+      "Finding": "Returns 1 + signed state+52/100 as float special-charge gain multiplier.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x1402260F0"
+      ],
+      "Limitations": "No native finite/range check; trainer preflights resulting float conversion and integer addition.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401F8C60",
+      "Finding": "For a lock-on category with flag1, computes timer=max(row+16,row+8 - current-player bonus44*row+12); otherwise uses row+4 initial timer.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x1401F8C60"
+      ],
+      "Limitations": "Changing the bonus affects future timer reloads; it does not rewrite all already-running timers.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401F8870",
+      "Finding": "Computes the same bonus-adjusted lock-on delay from a parameter row with the row minimum.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x1401F8870"
+      ],
+      "Limitations": "Readout/getter semantics; not a standalone time-advance action.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140230BD0",
+      "Finding": "With comboRCX/pointsEDX, resolves combo+8 ship then ship+200 state, multiplies points by state52 coefficient, truncates to signed integer and adds combo+56. Each100points adds stock+60 up to9; saturation sets progress100 and flag4.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x140230BD0"
+      ],
+      "Limitations": "Trainer ignores incidental RAX, bounds conversion/addition, keeps native full-latch behavior and does not reset the combo phase.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140230B30",
+      "Finding": "Constructs the72-byte inline combo state, clearing ship pointers, counts, flags, stock and progress; initializes stage index5 when no stages exist.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x140230B30"
+      ],
+      "Limitations": "This object has no vtable; ownership is established through the parent and exact main-ship/state backlinks.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140230C50",
+      "Finding": "Scans a ship for sword-type installed parts, increments five main-ship stage counts and sets installation flag1; companion parts may enable flag1 without main-stage counts.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x140230C50"
+      ],
+      "Limitations": "A fabricated enable flag is not equivalent to installing weapon resources.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140230D20",
+      "Finding": "Consumes input requestflag2 and stock in phase0, then runs wait/fire/continue/finish/recovery phases1..5. Invokes native weapon IDs621,605..608 and eventually companion callbacks. Companion-only phase2/index5 increments the stage index to6 when entering phase4, retained through phase5 until reset.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x140230D20"
+      ],
+      "Limitations": "The trainer only adds charge and preserves these phases; no raw phase setter or fake attack object is exposed.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140231150",
+      "Finding": "Binds main and optional companion GUMISHIP pointers, scans their installed sword parts, adds initial stock from state56 and initializes stage/timer.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x140231150"
+      ],
+      "Limitations": "Initial stock and stage configuration depend on the selected loadout.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140231130",
+      "Finding": "Reads combo stock at+60.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x140231130"
+      ],
+      "Limitations": "Valid trainer readout is0..9 on an installed current combo.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140231110",
+      "Finding": "Reads combo progress+56 as a float fraction divided by100.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x140231110"
+      ],
+      "Limitations": "Trainer exposes0..100progress units so100means one full charge unit.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401FB330",
+      "Finding": "Returns GUMISHIP+200 authoritative PLAYER_STATE pointer.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x1401FB330"
+      ],
+      "Limitations": "A stale ship pointer is not made safe by this getter; trainer validates parent ownership before calling charge.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401FF7F0",
+      "Finding": "Normal player reward path checks combo installation, obtains enemy parameter byte15 and adds it through230BD0.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x1401FF7F0"
+      ],
+      "Limitations": "Trainer command supplies explicit points, bypassing the need to kill that enemy but retains charge conversion.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140206250",
+      "Finding": "Looks up first matching ID in systemparam header count+4 with32-byte rows beginning+8.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x140206250"
+      ],
+      "Limitations": "No native count or null validation; trainer uses bounded readable traversal.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401FD930",
+      "Finding": "Roll/bank-angle smoothing consumes the same mobility factor as movement, including tuning+24.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x1401FD930"
+      ],
+      "Limitations": "Mobility control changes handling as well as lateral speed; it is not an isolated forward travel-speed slider.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14027E740",
+      "Finding": "Records a176-byte editor item snapshot in one of two groups, with1000entries per group and counters at28/32.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x14027E740"
+      ],
+      "Limitations": "This is two before/after groups, not evidence of a1000-step undo stack.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14027E900",
+      "Finding": "Recreates items from one HISTORY group by allocating2576-byte GUMI objects, constructing them and adding them to the current WORKAREA; temporarily changes editor mode.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x14027E900"
+      ],
+      "Limitations": "Requires menu allocator, WORKAREA and retained item handles; not safe to invoke from the Gummi battle context.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14027EA50",
+      "Finding": "Removes current objects referenced by a selected HISTORY group from WORKAREA, switching temporary editor mode per item.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x14027EA50"
+      ],
+      "Limitations": "This is object destruction/replacement work, not a simple numerical rollback.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14027EB30",
+      "Finding": "Redo-direction helper removes group0 and recreates group1, then marks history side1. Corrected by gummi_round5_deep.json: WORKAREA caller265580 advances the history cursor before invoking this helper.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x14027EB30",
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140265580",
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140267300"
+      ],
+      "Limitations": "External editor ownership and retained pointer validity remain open.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14027EB70",
+      "Finding": "Undo-direction helper removes group1 and recreates group0, then marks history side0. Corrected by gummi_round5_deep.json: WORKAREA caller269B50 invokes this helper and then decrements the history cursor.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x14027EB70",
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x140269b50",
+        "work/trainer/research/gummi_round5_evidence.json#/functions/0x14025fc20"
+      ],
+      "Limitations": "No independent runtime editor Undo/Redo feature is exposed until complete menu ownership gates are proved.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14027EE60",
+      "Finding": "Recomputes editor cost capacity from base limits and save-backed upgrade IDs170/171/175; special mode uses a separate capacity, and companion count36 contributes additional capacity.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x14027EE60"
+      ],
+      "Limitations": "Writing the displayed limit can be overwritten here and would not prove placement/save acceptance checks.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401FC170",
+      "Finding": "Constructs embedded LOCKON and SIGHT objects at player+2960, using class5B5320 and initializing target slots.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x1401FC170"
+      ],
+      "Limitations": "An embedded address alone is insufficient; trainer checks the actual class and current parameter rows.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401F82F0",
+      "Finding": "Initializes four lock-on category timers by looking up128-byte lockonparam rows for IDs in5B51B8 and applying bonus44/minimum-delay formula.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x1401F82F0"
+      ],
+      "Limitations": "Trainer validates the current row pointers against the loaded table; it does not rebuild target slots.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401FBD10",
+      "Finding": "Looks up first playerparam ID in128-byte rows; player constructor uses ID0 and stores it at player+1376.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x1401FBD10"
+      ],
+      "Limitations": "Trainer verifies this exact current resource identity, not merely readable memory.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401FC8F0",
+      "Finding": "Constructs the5136-byte current player including GUMISHIP, PLAYER_STATE, LOCKON, combo and DRAIN; binds input/tuning and publishes AF0540.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x1401FC8F0"
+      ],
+      "Limitations": "Global publication occurs during construction, so module and gameplay phases remain required.",
+      "PriorAuditTier": 3,
+      "PriorAuditClaims": [
+        1161
+      ]
+    },
+    {
+      "Address": "0x1401F8FB0",
+      "Finding": "Target-acquisition loop checks each of four category timers and free sight slots, chooses eligible targets, creates targeting sprites and resets category delay.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x1401F8FB0"
+      ],
+      "Limitations": "Not called directly by the trainer: sprite allocation, target selection and owned sight lifetime remain native.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140232370",
+      "Finding": "LOCKON_GUN update delegates to GUN update, then clears completed sight references and optionally aligns effect orientation for weapon84.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x140232370"
+      ],
+      "Limitations": "Separate target-reference ownership prevents treating every gun as interchangeable cooldown memory.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401F09A0",
+      "Finding": "GUN destructor unlinks the object from a global packed-next160 list and optionally frees it through the Gummi allocator.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_deep_evidence.json#/functions/0x1401F09A0"
+      ],
+      "Limitations": "Global gun lists include more than the current player; a future per-gun controller must prove player-part ownership.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401F22D0",
+      "Finding": "Binds a gun to its owner, position/orientation, bone/parameter data and projectile type; clears burst/delay state.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_weapon_evidence.json#/functions/0x1401F22D0"
+      ],
+      "Limitations": "Gun ownership and parameter references outlive this initializer; no trainer reinitialization is exposed.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401F2380",
+      "Finding": "Alternative gun initialization uses default bone-1 and clears burst/delay state while copying attack parameters.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_weapon_evidence.json#/functions/0x1401F2380"
+      ],
+      "Limitations": "Initializer ABI has resource arguments; it is not a cooldown-reset API.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401F2620",
+      "Finding": "Enables burst flag4, sets float interval128 fromXMM1, clears countdown132 and sets burst count147 fromR8B.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_weapon_evidence.json#/functions/0x1401F2620"
+      ],
+      "Limitations": "Zero/negative delay changes burst-loop behavior and can emit several projectiles in one update.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401F2680",
+      "Finding": "Native gun delay setter writes XMM1float to base delay136 and remaining delay140.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_weapon_evidence.json#/functions/0x1401F2680"
+      ],
+      "Limitations": "Useful future candidate once a stable player-owned gun set is validated; not exposed through arbitrary pointers.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401F26A0",
+      "Finding": "Requests firing only when supplied selectorEDX equals gun byte144; sets requestflag1 and resets burst progress148 when burstflag4 is enabled.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_weapon_evidence.json#/functions/0x1401F26A0"
+      ],
+      "Limitations": "Request is deferred to the gun update; it does not immediately prove a projectile spawned.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401F26D0",
+      "Finding": "Clears only the gun fire-request flag1.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_weapon_evidence.json#/functions/0x1401F26D0"
+      ],
+      "Limitations": "Leaves cooldown and existing projectiles intact.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140200E00",
+      "Finding": "DECOGUMI_GUN destruction walks the part-owned gun chain via packednext164, unlinks each and invokes its virtual destructor, then destroys/frees the part.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_weapon_evidence.json#/functions/0x140200E00"
+      ],
+      "Limitations": "Per-gun actions need both part and gun lifetime checks, not only the global list.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140202BD0",
+      "Finding": "Initializes part gun behavior/owner references and updates model-space aiming; owner may be redirected according to part type.",
+      "Evidence": [
+        "work/trainer/research/gummi_controls_weapon_evidence.json#/functions/0x140202BD0"
+      ],
+      "Limitations": "Gun+56 alone is not a universal current-player ownership test.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    }
+  ],
+  "complete_functions": 48,
+  "actual_instructions": 2953,
+  "scope_limits": [
+    "No universal energy/overheat state identified in the inspected gun paths; no such toggle is claimed.",
+    "Per-gun cooldown330+ remains open until complete player-part/gun lifetime selection is implemented.",
+    "Editor History/Cost semantics are documented, but editor object/resource/placement/save lifecycle is not yet safe for mutation.",
+    "Main ship runtime controls do not edit design files or the save. Normal gameplay effects may still affect later mission results.",
+    "Immediate tuning products are validated; all later physics computations for arbitrarily modified assets are not claimed safe."
+  ],
+  "implementation": {
+    "source": "trainer/Native/GummiExtraFeatures.inl",
+    "tests": "work/trainer/tests/GummiExtraGuardTests.cpp",
+    "catalog": "work/trainer/research/gummi_extra_features.json",
+    "contract": "work/trainer/research/gummi_controls_contract.txt",
+    "checks": 492,
+    "failures": 0,
+    "live_tests": false,
+    "independent_review": "work/trainer/research/gummi_extra_independent_review.json"
+  }
+}

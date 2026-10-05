@@ -1,0 +1,1168 @@
+{
+  "scope": "Fresh complete IDA pseudocode and dedicated full assembly; read-only camera research",
+  "functions": [
+    {
+      "addr": "0x140164e90",
+      "code": {
+        "addr": "0x140164e90",
+        "code": "float __fastcall sub_140164E90(__int64 a1)\n{\n  __int64 v1; // rcx\n  __int64 v2; // rax\n  float v4; // [rsp+20h] [rbp-28h] BYREF\n  __int64 v5; // [rsp+24h] [rbp-24h]\n  int v6; // [rsp+2Ch] [rbp-1Ch]\n  _BYTE v7[24]; // [rsp+30h] [rbp-18h] BYREF\n\n  v1 = *(_QWORD *)(a1 + 80); /*0x140164ea1*/\n  v6 = 1065353216; /*0x140164ea5*/\n  v5 = 0; /*0x140164eab*/\n  v4 = 0.0; /*0x140164eb4*/\n  v2 = sub_1403B56E0(v1, v7); /*0x140164ebc*/\n  sub_1401A8E60(&v4, v2); /*0x140164ec9*/\n  return atan2f(-v4, -*((float *)&v5 + 1)); /*0x140164ee8*/\n}",
+        "line_count": 17,
+        "total_lines": 17,
+        "truncated": false,
+        "cursor": {
+          "done": true
+        },
+        "refs": [
+          {
+            "addr": "0x1403b56e0",
+            "name": "sub_1403B56E0"
+          },
+          {
+            "addr": "0x1401a8e60",
+            "name": "sub_1401A8E60"
+          },
+          {
+            "addr": "0x140471be0",
+            "name": "atan2f"
+          }
+        ]
+      },
+      "assembly": {
+        "addr": "0x140164e90",
+        "asm": {
+          "name": "sub_140164E90",
+          "start_ea": "0x140164e90",
+          "segment": ".text",
+          "lines": [
+            {
+              "addr": "140164e90",
+              "instruction": "sub rsp, 48h",
+              "label": "sub_140164E90"
+            },
+            {
+              "addr": "140164e94",
+              "instruction": "movss xmm0, cs:flt_140623A80",
+              "refs": [
+                {
+                  "addr": "0x140623a80",
+                  "name": "flt_140623A80"
+                }
+              ]
+            },
+            {
+              "addr": "140164e9c",
+              "instruction": "lea rdx, [rsp+48h+var_18]"
+            },
+            {
+              "addr": "140164ea1",
+              "instruction": "mov rcx, [rcx+50h]"
+            },
+            {
+              "addr": "140164ea5",
+              "instruction": "movss [rsp+48h+var_1C], xmm0"
+            },
+            {
+              "addr": "140164eab",
+              "instruction": "mov [rsp+48h+var_24], 0"
+            },
+            {
+              "addr": "140164eb4",
+              "instruction": "mov [rsp+48h+var_28], 0"
+            },
+            {
+              "addr": "140164ebc",
+              "instruction": "call sub_1403B56E0",
+              "refs": [
+                {
+                  "addr": "0x1403b56e0",
+                  "name": "sub_1403B56E0"
+                }
+              ]
+            },
+            {
+              "addr": "140164ec1",
+              "instruction": "mov rdx, rax"
+            },
+            {
+              "addr": "140164ec4",
+              "instruction": "lea rcx, [rsp+48h+var_28]"
+            },
+            {
+              "addr": "140164ec9",
+              "instruction": "call sub_1401A8E60",
+              "refs": [
+                {
+                  "addr": "0x1401a8e60",
+                  "name": "sub_1401A8E60"
+                }
+              ]
+            },
+            {
+              "addr": "140164ece",
+              "instruction": "movss xmm0, [rsp+48h+var_28]"
+            },
+            {
+              "addr": "140164ed4",
+              "instruction": "movss xmm1, dword ptr [rsp+48h+var_24+4]"
+            },
+            {
+              "addr": "140164eda",
+              "instruction": "xorps xmm0, cs:xmmword_140623EB0; Y",
+              "comments": [
+                "Y"
+              ],
+              "refs": [
+                {
+                  "addr": "0x140623eb0",
+                  "name": "xmmword_140623EB0"
+                }
+              ]
+            },
+            {
+              "addr": "140164ee1",
+              "instruction": "xorps xmm1, cs:xmmword_140623EB0; X",
+              "comments": [
+                "X"
+              ],
+              "refs": [
+                {
+                  "addr": "0x140623eb0",
+                  "name": "xmmword_140623EB0"
+                }
+              ]
+            },
+            {
+              "addr": "140164ee8",
+              "instruction": "add rsp, 48h"
+            },
+            {
+              "addr": "140164eec",
+              "instruction": "jmp atan2f",
+              "refs": [
+                {
+                  "addr": "0x140471be0",
+                  "name": "atan2f"
+                }
+              ]
+            }
+          ],
+          "stack_frame": [
+            {
+              "name": "var_28",
+              "offset": "0x20",
+              "size": "0x4",
+              "type": "_DWORD"
+            },
+            {
+              "name": "var_24",
+              "offset": "0x24",
+              "size": "0x8",
+              "type": "_QWORD"
+            },
+            {
+              "name": "var_1C",
+              "offset": "0x2c",
+              "size": "0x4",
+              "type": "_DWORD"
+            },
+            {
+              "name": "var_18",
+              "offset": "0x30",
+              "size": "0x18",
+              "type": "_BYTE[24]"
+            },
+            {
+              "name": "__return_address",
+              "offset": "0x48",
+              "size": "0x8",
+              "type": "_UNKNOWN *"
+            }
+          ],
+          "return_type": "float",
+          "arguments": [
+            {
+              "name": "arg0",
+              "type": "__int64"
+            }
+          ]
+        },
+        "instruction_count": 17,
+        "total_instructions": 17,
+        "cursor": {
+          "done": true
+        }
+      }
+    },
+    {
+      "addr": "0x1403b5b40",
+      "code": {
+        "addr": "0x1403b5b40",
+        "code": "__int64 __fastcall sub_1403B5B40(__int64 a1)\n{\n  bool v2; // zf\n  __int64 result; // rax\n\n  v2 = (unsigned __int8)sub_1403DA520() == 0; /*0x1403b5b4e*/\n  result = a1 + 112; /*0x1403b5b50*/\n  if ( v2 ) /*0x1403b5b54*/\n    return a1 + 1648; /*0x1403b5b56*/\n  return result; /*0x1403b5b5d*/\n}",
+        "line_count": 11,
+        "total_lines": 11,
+        "truncated": false,
+        "cursor": {
+          "done": true
+        },
+        "refs": [
+          {
+            "addr": "0x1403da520",
+            "name": "sub_1403DA520"
+          }
+        ]
+      },
+      "assembly": {
+        "addr": "0x1403b5b40",
+        "asm": {
+          "name": "sub_1403B5B40",
+          "start_ea": "0x1403b5b40",
+          "segment": ".text",
+          "lines": [
+            {
+              "addr": "1403b5b40",
+              "instruction": "push rbx",
+              "label": "sub_1403B5B40"
+            },
+            {
+              "addr": "1403b5b42",
+              "instruction": "sub rsp, 20h"
+            },
+            {
+              "addr": "1403b5b46",
+              "instruction": "mov rbx, rcx"
+            },
+            {
+              "addr": "1403b5b49",
+              "instruction": "call sub_1403DA520",
+              "refs": [
+                {
+                  "addr": "0x1403da520",
+                  "name": "sub_1403DA520"
+                }
+              ]
+            },
+            {
+              "addr": "1403b5b4e",
+              "instruction": "test al, al"
+            },
+            {
+              "addr": "1403b5b50",
+              "instruction": "lea rax, [rbx+70h]"
+            },
+            {
+              "addr": "1403b5b54",
+              "instruction": "jnz short loc_1403B5B5D",
+              "refs": [
+                {
+                  "addr": "0x1403b5b5d",
+                  "name": "loc_1403B5B5D"
+                }
+              ]
+            },
+            {
+              "addr": "1403b5b56",
+              "instruction": "lea rax, [rbx+670h]"
+            },
+            {
+              "addr": "1403b5b5d",
+              "instruction": "add rsp, 20h",
+              "label": "loc_1403B5B5D"
+            },
+            {
+              "addr": "1403b5b61",
+              "instruction": "pop rbx"
+            },
+            {
+              "addr": "1403b5b62",
+              "instruction": "retn"
+            }
+          ],
+          "stack_frame": [
+            {
+              "name": "__return_address",
+              "offset": "0x28",
+              "size": "0x8",
+              "type": "_UNKNOWN *"
+            }
+          ],
+          "return_type": "__int64",
+          "arguments": [
+            {
+              "name": "arg0",
+              "type": "__int64"
+            }
+          ]
+        },
+        "instruction_count": 11,
+        "total_instructions": 11,
+        "cursor": {
+          "done": true
+        }
+      }
+    },
+    {
+      "addr": "0x140165a40",
+      "code": {
+        "addr": "0x140165a40",
+        "code": "void __fastcall sub_140165A40(__int64 a1)\n{\n  *(_BYTE *)(a1 + 65) = 1; /*0x140165a40*/\n}",
+        "line_count": 4,
+        "total_lines": 4,
+        "truncated": false,
+        "cursor": {
+          "done": true
+        }
+      },
+      "assembly": {
+        "addr": "0x140165a40",
+        "asm": {
+          "name": "sub_140165A40",
+          "start_ea": "0x140165a40",
+          "segment": ".text",
+          "lines": [
+            {
+              "addr": "140165a40",
+              "instruction": "mov byte ptr [rcx+41h], 1",
+              "label": "sub_140165A40"
+            },
+            {
+              "addr": "140165a44",
+              "instruction": "retn"
+            }
+          ],
+          "stack_frame": [
+            {
+              "name": "__return_address",
+              "offset": "0x0",
+              "size": "0x8",
+              "type": "_UNKNOWN *"
+            }
+          ],
+          "return_type": "void",
+          "arguments": [
+            {
+              "name": "arg0",
+              "type": "__int64"
+            }
+          ]
+        },
+        "instruction_count": 2,
+        "total_instructions": 2,
+        "cursor": {
+          "done": true
+        }
+      }
+    },
+    {
+      "addr": "0x140165bc0",
+      "code": {
+        "addr": "0x140165bc0",
+        "code": "void __fastcall sub_140165BC0(__int64 a1)\n{\n  *(_BYTE *)(a1 + 64) = 1; /*0x140165bc0*/\n}",
+        "line_count": 4,
+        "total_lines": 4,
+        "truncated": false,
+        "cursor": {
+          "done": true
+        }
+      },
+      "assembly": {
+        "addr": "0x140165bc0",
+        "asm": {
+          "name": "sub_140165BC0",
+          "start_ea": "0x140165bc0",
+          "segment": ".text",
+          "lines": [
+            {
+              "addr": "140165bc0",
+              "instruction": "mov byte ptr [rcx+40h], 1",
+              "label": "sub_140165BC0"
+            },
+            {
+              "addr": "140165bc4",
+              "instruction": "retn"
+            }
+          ],
+          "stack_frame": [
+            {
+              "name": "__return_address",
+              "offset": "0x0",
+              "size": "0x8",
+              "type": "_UNKNOWN *"
+            }
+          ],
+          "return_type": "void",
+          "arguments": [
+            {
+              "name": "arg0",
+              "type": "__int64"
+            }
+          ]
+        },
+        "instruction_count": 2,
+        "total_instructions": 2,
+        "cursor": {
+          "done": true
+        }
+      }
+    },
+    {
+      "addr": "0x140176210",
+      "code": {
+        "addr": "0x140176210",
+        "code": "__int64 __fastcall sub_140176210(__int64 a1, __int64 a2)\n{\n  char v2; // di\n  __int64 result; // rax\n\n  v2 = a2; /*0x140176222*/\n  sub_140164870(a1, a2); /*0x140176228*/\n  *(_DWORD *)(sub_140164E70() + 72) = 4; /*0x140176232*/\n  *(_OWORD *)&encoded = *(_OWORD *)a1; /*0x14017623c*/\n  dword_140ABE480 = *(_DWORD *)(a1 + 16); /*0x14017624e*/\n  result = sub_140163590(); /*0x140176254*/\n  byte_140ABE448 = 1; /*0x14017625e*/\n  byte_14071A1B0 = v2; /*0x140176265*/\n  return result; /*0x140176259*/\n}",
+        "line_count": 15,
+        "total_lines": 15,
+        "truncated": false,
+        "cursor": {
+          "done": true
+        },
+        "refs": [
+          {
+            "addr": "0x140164870",
+            "name": "sub_140164870"
+          },
+          {
+            "addr": "0x140164e70",
+            "name": "sub_140164E70"
+          },
+          {
+            "addr": "0x140abe470",
+            "name": "encoded"
+          },
+          {
+            "addr": "0x140abe480",
+            "name": "dword_140ABE480"
+          },
+          {
+            "addr": "0x140163590",
+            "name": "sub_140163590"
+          },
+          {
+            "addr": "0x140abe448",
+            "name": "byte_140ABE448"
+          },
+          {
+            "addr": "0x14071a1b0",
+            "name": "byte_14071A1B0"
+          }
+        ]
+      },
+      "assembly": {
+        "addr": "0x140176210",
+        "asm": {
+          "name": "sub_140176210",
+          "start_ea": "0x140176210",
+          "segment": ".text",
+          "lines": [
+            {
+              "addr": "140176210",
+              "instruction": "mov [rsp+arg_0], rbx",
+              "label": "sub_140176210"
+            },
+            {
+              "addr": "140176215",
+              "instruction": "push rdi"
+            },
+            {
+              "addr": "140176216",
+              "instruction": "sub rsp, 20h"
+            },
+            {
+              "addr": "14017621a",
+              "instruction": "movss xmm0, cs:dword_1405B1D78",
+              "refs": [
+                {
+                  "addr": "0x1405b1d78",
+                  "name": "dword_1405B1D78"
+                }
+              ]
+            },
+            {
+              "addr": "140176222",
+              "instruction": "movzx edi, dl"
+            },
+            {
+              "addr": "140176225",
+              "instruction": "mov rbx, rcx"
+            },
+            {
+              "addr": "140176228",
+              "instruction": "call sub_140164870",
+              "refs": [
+                {
+                  "addr": "0x140164870",
+                  "name": "sub_140164870"
+                }
+              ]
+            },
+            {
+              "addr": "14017622d",
+              "instruction": "call sub_140164E70",
+              "refs": [
+                {
+                  "addr": "0x140164e70",
+                  "name": "sub_140164E70"
+                }
+              ]
+            },
+            {
+              "addr": "140176232",
+              "instruction": "mov dword ptr [rax+48h], 4"
+            },
+            {
+              "addr": "140176239",
+              "instruction": "movups xmm0, xmmword ptr [rbx]"
+            },
+            {
+              "addr": "14017623c",
+              "instruction": "movups cs:encoded, xmm0",
+              "refs": [
+                {
+                  "addr": "0x140abe470",
+                  "name": "encoded"
+                }
+              ]
+            },
+            {
+              "addr": "140176243",
+              "instruction": "mov eax, [rbx+10h]"
+            },
+            {
+              "addr": "140176246",
+              "instruction": "movss xmm0, cs:dword_140623BAC",
+              "refs": [
+                {
+                  "addr": "0x140623bac",
+                  "name": "dword_140623BAC"
+                }
+              ]
+            },
+            {
+              "addr": "14017624e",
+              "instruction": "mov cs:dword_140ABE480, eax",
+              "refs": [
+                {
+                  "addr": "0x140abe480",
+                  "name": "dword_140ABE480"
+                }
+              ]
+            },
+            {
+              "addr": "140176254",
+              "instruction": "call sub_140163590",
+              "refs": [
+                {
+                  "addr": "0x140163590",
+                  "name": "sub_140163590"
+                }
+              ]
+            },
+            {
+              "addr": "140176259",
+              "instruction": "mov rbx, [rsp+28h+arg_0]"
+            },
+            {
+              "addr": "14017625e",
+              "instruction": "mov cs:byte_140ABE448, 1",
+              "refs": [
+                {
+                  "addr": "0x140abe448",
+                  "name": "byte_140ABE448"
+                }
+              ]
+            },
+            {
+              "addr": "140176265",
+              "instruction": "mov cs:byte_14071A1B0, dil",
+              "refs": [
+                {
+                  "addr": "0x14071a1b0",
+                  "name": "byte_14071A1B0"
+                }
+              ]
+            },
+            {
+              "addr": "14017626c",
+              "instruction": "add rsp, 20h"
+            },
+            {
+              "addr": "140176270",
+              "instruction": "pop rdi"
+            },
+            {
+              "addr": "140176271",
+              "instruction": "retn"
+            }
+          ],
+          "stack_frame": [
+            {
+              "name": "__return_address",
+              "offset": "0x28",
+              "size": "0x8",
+              "type": "_UNKNOWN *"
+            },
+            {
+              "name": "arg_0",
+              "offset": "0x30",
+              "size": "0x8",
+              "type": "_QWORD"
+            }
+          ],
+          "return_type": "__int64",
+          "arguments": [
+            {
+              "name": "arg0",
+              "type": "__int64"
+            },
+            {
+              "name": "arg1",
+              "type": "__int64"
+            }
+          ]
+        },
+        "instruction_count": 21,
+        "total_instructions": 21,
+        "cursor": {
+          "done": true
+        }
+      }
+    },
+    {
+      "addr": "0x140176310",
+      "code": {
+        "addr": "0x140176310",
+        "code": "__int64 __fastcall sub_140176310(__int64 a1, __int64 a2)\n{\n  __int64 result; // rax\n\n  sub_140164870(a1, a2); /*0x140176321*/\n  *(_DWORD *)(sub_140164E70() + 72) = 3; /*0x14017632b*/\n  xmmword_140ABE4F0 = *(_OWORD *)a1; /*0x140176335*/\n  result = *(unsigned int *)(a1 + 16); /*0x14017633c*/\n  dword_140ABE500 = *(_DWORD *)(a1 + 16); /*0x14017633f*/\n  return result; /*0x140176345*/\n}",
+        "line_count": 11,
+        "total_lines": 11,
+        "truncated": false,
+        "cursor": {
+          "done": true
+        },
+        "refs": [
+          {
+            "addr": "0x140164870",
+            "name": "sub_140164870"
+          },
+          {
+            "addr": "0x140164e70",
+            "name": "sub_140164E70"
+          },
+          {
+            "addr": "0x140abe4f0",
+            "name": "xmmword_140ABE4F0"
+          },
+          {
+            "addr": "0x140abe500",
+            "name": "dword_140ABE500"
+          }
+        ]
+      },
+      "assembly": {
+        "addr": "0x140176310",
+        "asm": {
+          "name": "sub_140176310",
+          "start_ea": "0x140176310",
+          "segment": ".text",
+          "lines": [
+            {
+              "addr": "140176310",
+              "instruction": "push rbx",
+              "label": "sub_140176310"
+            },
+            {
+              "addr": "140176312",
+              "instruction": "sub rsp, 20h"
+            },
+            {
+              "addr": "140176316",
+              "instruction": "movss xmm0, cs:dword_1405B1D78",
+              "refs": [
+                {
+                  "addr": "0x1405b1d78",
+                  "name": "dword_1405B1D78"
+                }
+              ]
+            },
+            {
+              "addr": "14017631e",
+              "instruction": "mov rbx, rcx"
+            },
+            {
+              "addr": "140176321",
+              "instruction": "call sub_140164870",
+              "refs": [
+                {
+                  "addr": "0x140164870",
+                  "name": "sub_140164870"
+                }
+              ]
+            },
+            {
+              "addr": "140176326",
+              "instruction": "call sub_140164E70",
+              "refs": [
+                {
+                  "addr": "0x140164e70",
+                  "name": "sub_140164E70"
+                }
+              ]
+            },
+            {
+              "addr": "14017632b",
+              "instruction": "mov dword ptr [rax+48h], 3"
+            },
+            {
+              "addr": "140176332",
+              "instruction": "movups xmm0, xmmword ptr [rbx]"
+            },
+            {
+              "addr": "140176335",
+              "instruction": "movups cs:xmmword_140ABE4F0, xmm0",
+              "refs": [
+                {
+                  "addr": "0x140abe4f0",
+                  "name": "xmmword_140ABE4F0"
+                }
+              ]
+            },
+            {
+              "addr": "14017633c",
+              "instruction": "mov eax, [rbx+10h]"
+            },
+            {
+              "addr": "14017633f",
+              "instruction": "mov cs:dword_140ABE500, eax",
+              "refs": [
+                {
+                  "addr": "0x140abe500",
+                  "name": "dword_140ABE500"
+                }
+              ]
+            },
+            {
+              "addr": "140176345",
+              "instruction": "add rsp, 20h"
+            },
+            {
+              "addr": "140176349",
+              "instruction": "pop rbx"
+            },
+            {
+              "addr": "14017634a",
+              "instruction": "retn"
+            }
+          ],
+          "stack_frame": [
+            {
+              "name": "__return_address",
+              "offset": "0x28",
+              "size": "0x8",
+              "type": "_UNKNOWN *"
+            }
+          ],
+          "return_type": "__int64",
+          "arguments": [
+            {
+              "name": "arg0",
+              "type": "__int64"
+            },
+            {
+              "name": "arg1",
+              "type": "__int64"
+            }
+          ]
+        },
+        "instruction_count": 14,
+        "total_instructions": 14,
+        "cursor": {
+          "done": true
+        }
+      }
+    },
+    {
+      "addr": "0x1401774f0",
+      "code": {
+        "addr": "0x1401774f0",
+        "code": "__int64 __fastcall sub_1401774F0(__int64 a1, __int64 a2)\n{\n  __int64 v2; // rbx\n  __int64 result; // rax\n\n  sub_140164870(a1, a2); /*0x1401774fe*/\n  v2 = sub_140164E70(); /*0x140177508*/\n  result = sub_140164E80(); /*0x14017750b*/\n  *(_DWORD *)(v2 + 72) = 6; /*0x140177510*/\n  byte_140ABE580 = 1; /*0x140177517*/\n  return result; /*0x14017751e*/\n}",
+        "line_count": 12,
+        "total_lines": 12,
+        "truncated": false,
+        "cursor": {
+          "done": true
+        },
+        "refs": [
+          {
+            "addr": "0x140164870",
+            "name": "sub_140164870"
+          },
+          {
+            "addr": "0x140164e70",
+            "name": "sub_140164E70"
+          },
+          {
+            "addr": "0x140164e80",
+            "name": "sub_140164E80"
+          },
+          {
+            "addr": "0x140abe580",
+            "name": "byte_140ABE580"
+          }
+        ]
+      },
+      "assembly": {
+        "addr": "0x1401774f0",
+        "asm": {
+          "name": "sub_1401774F0",
+          "start_ea": "0x1401774f0",
+          "segment": ".text",
+          "lines": [
+            {
+              "addr": "1401774f0",
+              "instruction": "push rbx",
+              "label": "sub_1401774F0"
+            },
+            {
+              "addr": "1401774f2",
+              "instruction": "sub rsp, 20h"
+            },
+            {
+              "addr": "1401774f6",
+              "instruction": "movss xmm0, cs:dword_1405B1D78",
+              "refs": [
+                {
+                  "addr": "0x1405b1d78",
+                  "name": "dword_1405B1D78"
+                }
+              ]
+            },
+            {
+              "addr": "1401774fe",
+              "instruction": "call sub_140164870",
+              "refs": [
+                {
+                  "addr": "0x140164870",
+                  "name": "sub_140164870"
+                }
+              ]
+            },
+            {
+              "addr": "140177503",
+              "instruction": "call sub_140164E70",
+              "refs": [
+                {
+                  "addr": "0x140164e70",
+                  "name": "sub_140164E70"
+                }
+              ]
+            },
+            {
+              "addr": "140177508",
+              "instruction": "mov rbx, rax"
+            },
+            {
+              "addr": "14017750b",
+              "instruction": "call sub_140164E80",
+              "refs": [
+                {
+                  "addr": "0x140164e80",
+                  "name": "sub_140164E80"
+                }
+              ]
+            },
+            {
+              "addr": "140177510",
+              "instruction": "mov dword ptr [rbx+48h], 6"
+            },
+            {
+              "addr": "140177517",
+              "instruction": "mov cs:byte_140ABE580, 1",
+              "refs": [
+                {
+                  "addr": "0x140abe580",
+                  "name": "byte_140ABE580"
+                }
+              ]
+            },
+            {
+              "addr": "14017751e",
+              "instruction": "add rsp, 20h"
+            },
+            {
+              "addr": "140177522",
+              "instruction": "pop rbx"
+            },
+            {
+              "addr": "140177523",
+              "instruction": "retn"
+            }
+          ],
+          "stack_frame": [
+            {
+              "name": "__return_address",
+              "offset": "0x28",
+              "size": "0x8",
+              "type": "_UNKNOWN *"
+            }
+          ],
+          "return_type": "__int64",
+          "arguments": [
+            {
+              "name": "arg0",
+              "type": "__int64"
+            },
+            {
+              "name": "arg1",
+              "type": "__int64"
+            }
+          ]
+        },
+        "instruction_count": 12,
+        "total_instructions": 12,
+        "cursor": {
+          "done": true
+        }
+      }
+    },
+    {
+      "addr": "0x1401778d0",
+      "code": {
+        "addr": "0x1401778d0",
+        "code": "__int64 __fastcall sub_1401778D0(__int64 a1, __int64 a2)\n{\n  int v2; // xmm1_4\n  __int64 result; // rax\n\n  sub_140164870(a1, a2); /*0x1401778e9*/\n  result = sub_140164E70(); /*0x1401778ee*/\n  *(_DWORD *)(result + 72) = 7; /*0x140177903*/\n  dword_140ABE5DC = 1056964608; /*0x14017790a*/\n  dword_140ABE5D8 = v2; /*0x14017791a*/\n  HIDWORD(xmmword_14071A668) = 1065353216; /*0x140177927*/\n  dword_140ABE5E0 = 1092616192; /*0x14017792f*/\n  qword_140ABE5D0 = a1; /*0x140177937*/\n  *(_QWORD *)((char *)&xmmword_14071A668 + 4) = 0; /*0x14017793e*/\n  LODWORD(xmmword_14071A668) = 0; /*0x140177949*/\n  return result; /*0x140177922*/\n}",
+        "line_count": 17,
+        "total_lines": 17,
+        "truncated": false,
+        "cursor": {
+          "done": true
+        },
+        "refs": [
+          {
+            "addr": "0x140164870",
+            "name": "sub_140164870"
+          },
+          {
+            "addr": "0x140164e70",
+            "name": "sub_140164E70"
+          },
+          {
+            "addr": "0x140abe5dc",
+            "name": "dword_140ABE5DC"
+          },
+          {
+            "addr": "0x140abe5d8",
+            "name": "dword_140ABE5D8"
+          },
+          {
+            "addr": "0x14071a668",
+            "name": "xmmword_14071A668"
+          },
+          {
+            "addr": "0x140abe5e0",
+            "name": "dword_140ABE5E0"
+          },
+          {
+            "addr": "0x140abe5d0",
+            "name": "qword_140ABE5D0"
+          }
+        ]
+      },
+      "assembly": {
+        "addr": "0x1401778d0",
+        "asm": {
+          "name": "sub_1401778D0",
+          "start_ea": "0x1401778d0",
+          "segment": ".text",
+          "lines": [
+            {
+              "addr": "1401778d0",
+              "instruction": "push rbx",
+              "label": "sub_1401778D0"
+            },
+            {
+              "addr": "1401778d2",
+              "instruction": "sub rsp, 30h"
+            },
+            {
+              "addr": "1401778d6",
+              "instruction": "movss xmm0, cs:dword_1405B1D78",
+              "refs": [
+                {
+                  "addr": "0x1405b1d78",
+                  "name": "dword_1405B1D78"
+                }
+              ]
+            },
+            {
+              "addr": "1401778de",
+              "instruction": "mov rbx, rcx"
+            },
+            {
+              "addr": "1401778e1",
+              "instruction": "movaps [rsp+38h+var_18], xmm6"
+            },
+            {
+              "addr": "1401778e6",
+              "instruction": "movaps xmm6, xmm1"
+            },
+            {
+              "addr": "1401778e9",
+              "instruction": "call sub_140164870",
+              "refs": [
+                {
+                  "addr": "0x140164870",
+                  "name": "sub_140164870"
+                }
+              ]
+            },
+            {
+              "addr": "1401778ee",
+              "instruction": "call sub_140164E70",
+              "refs": [
+                {
+                  "addr": "0x140164e70",
+                  "name": "sub_140164E70"
+                }
+              ]
+            },
+            {
+              "addr": "1401778f3",
+              "instruction": "movss xmm0, cs:flt_140623A4C",
+              "refs": [
+                {
+                  "addr": "0x140623a4c",
+                  "name": "flt_140623A4C"
+                }
+              ]
+            },
+            {
+              "addr": "1401778fb",
+              "instruction": "movss xmm1, cs:flt_140623BB4",
+              "refs": [
+                {
+                  "addr": "0x140623bb4",
+                  "name": "flt_140623BB4"
+                }
+              ]
+            },
+            {
+              "addr": "140177903",
+              "instruction": "mov dword ptr [rax+48h], 7"
+            },
+            {
+              "addr": "14017790a",
+              "instruction": "movss cs:dword_140ABE5DC, xmm0",
+              "refs": [
+                {
+                  "addr": "0x140abe5dc",
+                  "name": "dword_140ABE5DC"
+                }
+              ]
+            },
+            {
+              "addr": "140177912",
+              "instruction": "movss xmm0, cs:flt_140623A80",
+              "refs": [
+                {
+                  "addr": "0x140623a80",
+                  "name": "flt_140623A80"
+                }
+              ]
+            },
+            {
+              "addr": "14017791a",
+              "instruction": "movss cs:dword_140ABE5D8, xmm6",
+              "refs": [
+                {
+                  "addr": "0x140abe5d8",
+                  "name": "dword_140ABE5D8"
+                }
+              ]
+            },
+            {
+              "addr": "140177922",
+              "instruction": "movaps xmm6, [rsp+38h+var_18]"
+            },
+            {
+              "addr": "140177927",
+              "instruction": "movss dword ptr cs:xmmword_14071A668+0Ch, xmm0"
+            },
+            {
+              "addr": "14017792f",
+              "instruction": "movss cs:dword_140ABE5E0, xmm1",
+              "refs": [
+                {
+                  "addr": "0x140abe5e0",
+                  "name": "dword_140ABE5E0"
+                }
+              ]
+            },
+            {
+              "addr": "140177937",
+              "instruction": "mov cs:qword_140ABE5D0, rbx",
+              "refs": [
+                {
+                  "addr": "0x140abe5d0",
+                  "name": "qword_140ABE5D0"
+                }
+              ]
+            },
+            {
+              "addr": "14017793e",
+              "instruction": "mov qword ptr cs:xmmword_14071A668+4, 0"
+            },
+            {
+              "addr": "140177949",
+              "instruction": "mov dword ptr cs:xmmword_14071A668, 0",
+              "refs": [
+                {
+                  "addr": "0x14071a668",
+                  "name": "xmmword_14071A668"
+                }
+              ]
+            },
+            {
+              "addr": "140177953",
+              "instruction": "add rsp, 30h"
+            },
+            {
+              "addr": "140177957",
+              "instruction": "pop rbx"
+            },
+            {
+              "addr": "140177958",
+              "instruction": "retn"
+            }
+          ],
+          "stack_frame": [
+            {
+              "name": "var_18",
+              "offset": "0x20",
+              "size": "0x10",
+              "type": "_OWORD"
+            },
+            {
+              "name": "__return_address",
+              "offset": "0x38",
+              "size": "0x8",
+              "type": "_UNKNOWN *"
+            }
+          ],
+          "return_type": "__int64",
+          "arguments": [
+            {
+              "name": "arg0",
+              "type": "__int64"
+            },
+            {
+              "name": "arg1",
+              "type": "__int64"
+            }
+          ]
+        },
+        "instruction_count": 23,
+        "total_instructions": 23,
+        "cursor": {
+          "done": true
+        }
+      }
+    }
+  ]
+}

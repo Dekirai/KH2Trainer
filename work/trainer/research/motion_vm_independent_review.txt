@@ -1,0 +1,39 @@
+Independent Motion VM callback contract
+======================================
+Read-only targeted review, no hook installed and no source modified.
+
+Fresh IDA bytes plus work/vm_tables_scan_with_holes.json identify entry755A20 as
+YS VM bank1/index107 (0x6B). Bank root753490[1]=755370; entry=base+16*107.
+The16-byte record is callback42FCE0, metadataDWORD2, tailDWORD0. Argument count2,
+return-value bit0x40000000 clear. No friendly script symbol is established.
+
+Fresh dispatcher ASM41C4AA..41C518 indexes bank by instruction>>6, entry by the
+following16-bit word*16, copies each8-byte VM operand into its local16-element
+argument array in argument order, and passes that array in RCX to the callback.
+The callback is synchronous. With metadata2 there is no returned-stack-value copy.
+
+42FCE0 is fully read (11 instructions). It reads the second operand's lowfloat
+from RCX+8, decodes the first operand's lowDWORD, reads+4 in that decoded object,
+decodes that packed actor pointer, and stores the unmodified float bits atActor680
+(0x2A8). ABI is void __fastcall(uint32_t* argumentWords), not (actor,float).
+The native callback does not validate either packed pointer or the float.
+
+For a later optional ownership-observation wrapper:
+- Preserve the synchronous array ABI and call the saved original exactly once.
+- Do not retain the interpreter's stack-array pointer beyond the callback.
+- Metadata count/flags/tail remain unchanged; modify only the aligned8-byte slot.
+- Install only by compare-exchange from exact42FCE0 after module/table/code checks.
+- Restore only if the slot still points to the trainer's own wrapper.
+- A script write of the samefloat value is still a new native ownership event.
+- Validate game-thread/fresh player/scene/status/motion lease before touching
+  trainer state, and keep the original native behavior for unrelated actors.
+- Mark the lease superseded before calling original, to avoid restoring a prior
+  trainer baseline over the script's requested value on a later reset.
+- The loaded bridge must remain resident until no callback can use its code;
+  slot restoration alone is not proof there is no in-flight callback.
+- This callback is an observed native writer, not proof all future modded code or
+  scripts can only write this field through the slot. Compare-restore remains needed.
+
+Evidence: motion_vm_independent_evidence.json stores fresh bank/entry bytes, the
+complete writer and targeted dispatcher pages900..1093. This is not a new claim
+to have re-read all1094 interpreter instructions.

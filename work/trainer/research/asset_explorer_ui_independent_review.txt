@@ -1,0 +1,33 @@
+ASSET EXPLORER WPF / CORE INTEGRATION REVIEW — 2026-10-04
+
+Read-only review of AssetExplorerViewModel.cs SHA256
+A1A69EF5BF9F204CDDFB4C6016546C595744730FDF2586B9B9FA47F74939B3E2
+and AssetExplorerView.xaml SHA256
+F1466FA52E5F714C023894D7AE1546A1ECEBF5FBE625BD8321FF903A17DC3246.
+
+No blocking API, navigation or export-target bug found on the actual UI paths.
+File work is moved off the dispatcher, source descriptors stay immutable, the
+selected row/index are captured before awaiting, and token checks precede page
+publication. UI buttons, filter and list selection use Idle gates. Package entries
+open to Original/Remastered payloads; nested BAR entries preserve parent locators.
+Back restores the previous source/index/container/selection/filter consistently.
+
+Export passes an explicitly chosen new destination to the Core, sanitizes the
+SaveDialog basename and uses BAR SuggestedFileName. The UI rejects existing files;
+the Core repeats the check atomically at publication and protects sources/game root.
+The current container can be exported independently of its selected child.
+
+The optional public-method reentrancy concern is resolved in the reviewed final
+hash: Run rejects Busy before changing operation/history. The existing command
+gates and this explicit guard prevent a second invocation from taking ownership
+of another operation's cancellation and Busy state. No remaining blocker found.
+
+No files were edited and no UI/live action was performed during this review.
+Root separately reports successful offscreen rendering and binding validation.
+
+Final Core counterpart review: asset_explorer_source_review_pe.txt/.json confirms
+the four source hashes and reports no blocking issue. Its isolated Windows 8.3
+alias probe was rejected correctly; the preliminary suspicion was disproved.
+Author tests remain 213 checks / 0 failures. No tests were rerun for this
+documentation-only finalization. Review and owned source files are frozen for
+the v0.7 package build.

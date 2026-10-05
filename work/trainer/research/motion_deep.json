@@ -1,0 +1,400 @@
+{
+  "schema": 1,
+  "status": "Substantial interim findings; paused for explicit Drive form implementation priority",
+  "analysisDate": "2026-10-04",
+  "method": "Read-only IDA plus existing full decompilation exports. No game/UI/process access or IDB/source mutations.",
+  "targetSHA256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "claims": [
+    {
+      "addr": "0x1401c3840",
+      "RVA": "0x1C3840",
+      "Finding": "Motion base constructor stores its resource-data pointer at+8, initializes vtable and clears five extension pointers; object is at least48 bytes.",
+      "Evidence": [
+        "../../native_decompile/0x1401c3840.c"
+      ],
+      "Limitations": "Read-only wrapper; pointed data belongs to external loaded resource."
+    },
+    {
+      "addr": "0x1401c3880",
+      "RVA": "0x1C3880",
+      "Finding": "Base destructor only resets Motion vtable; it does not free the+8 resource data.",
+      "Evidence": [
+        "../../native_decompile/0x1401c3880.c"
+      ],
+      "Limitations": "Deleting subclasses may free their wrapper, not the embedded resource header."
+    },
+    {
+      "addr": "0x1401c3940",
+      "RVA": "0x1C3940",
+      "Finding": "Scalar deleting destructor optionally frees the Motion wrapper when flags&1.",
+      "Evidence": [
+        "../../native_decompile/0x1401c3940.c"
+      ],
+      "Limitations": "Do not call on a resource-owned object."
+    },
+    {
+      "addr": "0x1401c5f20",
+      "RVA": "0x1C5F20",
+      "Finding": "Factory reads DWORD atobject+144 and tail-calls Prototype0 for0,RAW for1; RDX becomes object+144.",
+      "Evidence": [
+        "../../native_decompile/0x1401c5f20.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "Fresh ASM resolves missing arguments in pseudocode; unsupported type returns0."
+    },
+    {
+      "addr": "0x1401d2610",
+      "RVA": "0x1D2610",
+      "Finding": "Prototype0 constructor uses resource+16/+18 joint counts and prepares extra-bone data atresource+relativeOffset24.",
+      "Evidence": [
+        "../../native_decompile/0x1401d2610.c"
+      ],
+      "Limitations": "Counts must match the loaded model; not a generic safe animation import API."
+    },
+    {
+      "addr": "0x1401d2660",
+      "RVA": "0x1D2660",
+      "Finding": "Prototype0 deleting destructor resets subclass/base vtables and optionally frees wrapper.",
+      "Evidence": [
+        "../../native_decompile/0x1401d2660.c"
+      ],
+      "Limitations": "Does not establish ownership of underlying asset buffer."
+    },
+    {
+      "addr": "0x1401daff0",
+      "RVA": "0x1DAFF0",
+      "Finding": "RAW deleting destructor follows the same wrapper-only deletion pattern.",
+      "Evidence": [
+        "../../native_decompile/0x1401daff0.c"
+      ],
+      "Limitations": "No trainer call."
+    },
+    {
+      "addr": "0x1401dafb0",
+      "RVA": "0x1DAFB0",
+      "Finding": "RAW constructor calls the shared base constructor and assigns RAW vtable.",
+      "Evidence": [
+        "../../native_decompile/0x1401dafb0.c"
+      ],
+      "Limitations": "Resource pointer is shared, not cloned."
+    },
+    {
+      "addr": "0x1401da660",
+      "RVA": "0x1DA660",
+      "Finding": "Prototype0 virtual slot8 returns uint32 resource+20, consumed as controller duration by3C8A40.",
+      "Evidence": [
+        "../../native_decompile/0x1401da660.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "Do not equate with compressed key count at+32."
+    },
+    {
+      "addr": "0x1401db440",
+      "RVA": "0x1DB440",
+      "Finding": "RAW virtual slot8 returns uint32 resource+32, consumed as duration.",
+      "Evidence": [
+        "../../native_decompile/0x1401db440.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "RAW sample count is a distinct field resource+36."
+    },
+    {
+      "addr": "0x1401da670",
+      "RVA": "0x1DA670",
+      "Finding": "Prototype0 virtual slot48 returns((resourceFloat156-resourceFloat144)*60)/resourceFloat152;3C6740 uses this as loop restart offset.",
+      "Evidence": [
+        "../../native_decompile/0x1401da670.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "Names of source header fields inferred from consumers; division requires nonzero valid sample rate."
+    },
+    {
+      "addr": "0x1401db450",
+      "RVA": "0x1DB450",
+      "Finding": "RAW virtual slot48 returns((resourceFloat92-resourceFloat80)*60)/resourceFloat88; used for loop restart.",
+      "Evidence": [
+        "../../native_decompile/0x1401db450.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "Do not modify shared header to alter a single actor."
+    },
+    {
+      "addr": "0x1401da3a0",
+      "RVA": "0x1DA3A0",
+      "Finding": "Prototype0 bounds getter(slot32) validates two vec4 ranges and replaces nonfinite minXYZ with-1/maxXYZ with+1 before copying.",
+      "Evidence": [
+        "../../native_decompile/0x1401da3a0.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "This getter MUTATES shared resource bounds; read fields directly for read-only trainer."
+    },
+    {
+      "addr": "0x1401da9e0",
+      "RVA": "0x1DA9E0",
+      "Finding": "Checks four float lanes for NaN or infinity.",
+      "Evidence": [
+        "../../native_decompile/0x1401da9e0.c"
+      ],
+      "Limitations": "Fourth lane is checked even though fallback rewrites three XYZ lanes."
+    },
+    {
+      "addr": "0x1401db400",
+      "RVA": "0x1DB400",
+      "Finding": "RAW bounds getter(slot32) copies two vectors from resource+48 and+64.",
+      "Evidence": [
+        "../../native_decompile/0x1401db400.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "Unlike Prototype0 getter, observed body does not sanitize or mutate resource."
+    },
+    {
+      "addr": "0x1401db030",
+      "RVA": "0x1DB030",
+      "Finding": "RAW auxiliary snapshot slot24 returns null.",
+      "Evidence": [
+        "../../native_decompile/0x1401db030.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "Blend snapshot code must accept absent optional motion auxiliary data."
+    },
+    {
+      "addr": "0x1401d2810",
+      "RVA": "0x1D2810",
+      "Finding": "Prototype0 slot24 builds up to32 sorted special-joint records,64 bytes each, plus sentinel; allocates through supplied heap vtable+8 and derives values from current model skeleton matrices.",
+      "Evidence": [
+        "../../native_decompile/0x1401d2810.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "Requires compatible skeleton/model; allocation is freed by1C5CB0 through its original heap."
+    },
+    {
+      "addr": "0x1401d2c80",
+      "RVA": "0x1D2C80",
+      "Finding": "Prototype0 pose evaluator(slot16) allocates temporary matrices/channel flags, restores default bone transforms when motion changed, applies static per-channel entries, evaluates animated/special channels and dispatches1D3B80 or1D60F0 by resource+4.",
+      "Evidence": [
+        "../../native_decompile/0x1401d2c80.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "Float time is XMM3; detailed IK/special-constraint algorithms remain to be audited."
+    },
+    {
+      "addr": "0x1401da6a0",
+      "RVA": "0x1DA6A0",
+      "Finding": "Prototype0 slot40 samples root transform at time+resourceStart*60/sampleRate; brackets keys by binary search and evaluates nine channels through1D30C0.",
+      "Evidence": [
+        "../../native_decompile/0x1401da6a0.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "Returns1 when root track absent,0 when sampled; ABI RCX Motion,RDX matrixOut,XMM2 float time."
+    },
+    {
+      "addr": "0x1401db040",
+      "RVA": "0x1DB040",
+      "Finding": "RAW pose evaluator clamps sample index from(time*sampleRate/60), selects next or loop endpoint, interpolates64-byte joint matrices and writes model+80 output palette.",
+      "Evidence": [
+        "../../native_decompile/0x1401db040.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "Fresh ASM proves fractional weight in XMM3 passed to1DB700, omitted by existing decomp call."
+    },
+    {
+      "addr": "0x1401db470",
+      "RVA": "0x1DB470",
+      "Finding": "RAW root sampler uses resource+44 optional matrix-track offset, same sample/loop selection and fractional interpolation; absent track returns identity and1.",
+      "Evidence": [
+        "../../native_decompile/0x1401db470.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "Resource+36 sample count must be positive; sample buffer must match bounds."
+    },
+    {
+      "addr": "0x1401db700",
+      "RVA": "0x1DB700",
+      "Finding": "Interpolates two matrices; exact zero weight copies first matrix. Nonzero path separates scales, interpolates translation and reconstructs normalized rotation basis.",
+      "Evidence": [
+        "../../native_decompile/0x1401db700.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "Not quaternion slerp; detailed numerical behavior at degeneracy remains untested."
+    },
+    {
+      "addr": "0x1401d30c0",
+      "RVA": "0x1D30C0",
+      "Finding": "Compressed channel evaluator supports constant,linear and tangent-based cubic keys; handles pre/post extrapolation modes including repetition and guards abrupt rotation interpolation near pi.",
+      "Evidence": [
+        "../../native_decompile/0x1401d30c0.c"
+      ],
+      "Limitations": "Native loops assume positive time-span; malformed data is not safe input."
+    },
+    {
+      "addr": "0x1403c61b0",
+      "RVA": "0x3C61B0",
+      "Finding": "Initializes actor MotionController with owner+16,currentMotion+24,triggerData+32,logicalID+40,resolvedID+44,variant+48,flags+52,duration+64,frame+68,blendDuration+72,blendTargetFrame+76,speed+336 default1.",
+      "Evidence": [
+        "../../native_decompile/0x1403c61b0.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "Controller embedded atActor+344/0x158; fields are not independent save values."
+    },
+    {
+      "addr": "0x1403bfd30",
+      "RVA": "0x3BFD30",
+      "Finding": "Main actor update loads global delta717480 into XMM6 and calls3C6740(Actor+344,delta). Actor+292 bit0x400000 skips this call but not later motion maintenance/movement.",
+      "Evidence": [
+        "../../native_decompile/0x1403bfd30.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "Skipping the call can preserve stale root-motion delta; do not expose that bit as safe animation freeze."
+    },
+    {
+      "addr": "0x1403c6740",
+      "RVA": "0x3C6740",
+      "Finding": "Advance clears accumulated root delta, then increments frame by delta*speed, handles blend completion, endpoint/loop transitions,4-entry motion queue and frame-trigger callbacks.",
+      "Evidence": [
+        "../../native_decompile/0x1403c6740.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "Flags+52 bit1 is temporary pending-pose state, cleared elsewhere; not a persistent freeze flag. Speed0 still allows controller/events/AI to act."
+    },
+    {
+      "addr": "0x1403c8a40",
+      "RVA": "0x3C8A40",
+      "Finding": "Motion resource switch resolves BAR type9 motion and type16 trigger entries, cleans old refs/effects/blend state, updates duration and frame/blend fields, and primes triggers.",
+      "Evidence": [
+        "../../native_decompile/0x1403c8a40.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "Assumes valid entries in several paths; arbitrary pointers/IDs are unsafe."
+    },
+    {
+      "addr": "0x1403c65e0",
+      "RVA": "0x3C65E0",
+      "Finding": "Searches four named motion variants, decodes resource pointers and activates3C8A40; manages optional shared reference counter+432. Missing resource clears motion after cleanup.",
+      "Evidence": [
+        "../../native_decompile/0x1403c65e0.c"
+      ],
+      "Limitations": "Needs current actor/model resource set; missing resources have meaningful destructive side effects."
+    },
+    {
+      "addr": "0x1403c6aa0",
+      "RVA": "0x3C6AA0",
+      "Finding": "Pose submission selects normal motion or interpolation snapshots using frame/blendDuration and synchronizes motion attributes attached to bones.",
+      "Evidence": [
+        "../../native_decompile/0x1403c6aa0.c"
+      ],
+      "Limitations": "Depends on actor render object+1968 and loaded skeleton."
+    },
+    {
+      "addr": "0x1403c73c0",
+      "RVA": "0x3C73C0",
+      "Finding": "Processes pending pose/blend setup, allocates model snapshots, resets previous root sample when needed, updates root-motion deltas and linked effects.",
+      "Evidence": [
+        "../../native_decompile/0x1403c73c0.c"
+      ],
+      "Limitations": "Still runs in actor/effect freeze; not a pure read/update-frame helper."
+    },
+    {
+      "addr": "0x1403c8520",
+      "RVA": "0x3C8520",
+      "Finding": "Samples root matrix through virtualslot40, computes delta from previous root sample+236, accumulates+252 translation/yaw delta and normalizes angle.",
+      "Evidence": [
+        "../../native_decompile/0x1403c8520.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "Directly jumping frame may create a large root-motion displacement; frame writes require reset/replay semantics."
+    },
+    {
+      "addr": "0x1403c87c0",
+      "RVA": "0x3C87C0",
+      "Finding": "Sets blend duration/target frame, starts transition frame2 and expands controller AABB to contain new motion bounds.",
+      "Evidence": [
+        "../../native_decompile/0x1403c87c0.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "ABI RCX controller,XMM1 blendDuration,XMM2 targetFrame; current motion must exist."
+    },
+    {
+      "addr": "0x1403c8310",
+      "RVA": "0x3C8310",
+      "Finding": "Appends a motion queue record in a4-slot ring with motionID,blend,startframe and optional callback.",
+      "Evidence": [
+        "../../native_decompile/0x1403c8310.c"
+      ],
+      "Limitations": "No overflow protection shown; not an external arbitrary queue interface."
+    },
+    {
+      "addr": "0x1403c7040",
+      "RVA": "0x3C7040",
+      "Finding": "Frees both controller blend snapshots using current scene heap and clears their pointers.",
+      "Evidence": [
+        "../../native_decompile/0x1403c7040.c"
+      ],
+      "Limitations": "Stale scene heap/model pointers are unsafe."
+    },
+    {
+      "addr": "0x1403c7300",
+      "RVA": "0x3C7300",
+      "Finding": "Releases shared motion refcount, stops8 attached sound handles, marks linked effects for deletion and invokes completion callback.",
+      "Evidence": [
+        "../../native_decompile/0x1403c7300.c"
+      ],
+      "Limitations": "Motion switch/reset is not a harmless visual-only operation."
+    },
+    {
+      "addr": "0x14040e740",
+      "RVA": "0x40E740",
+      "Finding": "Evaluates frame-range motion triggers, invoking handler for active start<=frame<end or endFFFF.",
+      "Evidence": [
+        "../../native_decompile/0x14040e740.c"
+      ],
+      "Limitations": "Holding time can keep active trigger intervals active; animation freeze is not damage immunity."
+    },
+    {
+      "addr": "0x14040e960",
+      "RVA": "0x40E960",
+      "Finding": "Invokes point triggers crossed between old and new frame, with special negative-end mode for exact start.",
+      "Evidence": [
+        "../../native_decompile/0x14040e960.c"
+      ],
+      "Limitations": "Rewind/seek needs defined trigger policy; plain frame assignment can skip or repeat gameplay effects."
+    },
+    {
+      "addr": "0x14042fce0",
+      "RVA": "0x42FCE0",
+      "Finding": "Script command writes float bits argument+8 to decoded actor+680 (controller+336 speed).",
+      "Evidence": [
+        "../../native_decompile/0x14042fce0.c",
+        "motion_deep_evidence.json"
+      ],
+      "Limitations": "Script table755A20 identity/bank still unclassified; no validation in native writer."
+    }
+  ],
+  "trainerContract": {
+    "readouts": {
+      "controller": "current validated playerActor+0x158",
+      "owner": "controller+0x10 must equal current actor",
+      "motionPointer": "controller+0x18; vtable must be Prototype0 base+5B4958 or RAW base+5B4A38; resource atmotion+8",
+      "frame": "float actor+0x19C",
+      "duration": "float actor+0x198",
+      "speed": "float actor+0x2A8",
+      "blendDuration": "float actor+0x1A0",
+      "blendTarget": "float actor+0x1A4",
+      "logicalID": "int actor+0x180",
+      "resolvedID": "int actor+0x184"
+    },
+    "speedProposal": "Per-actor playback rate can use float+0x2A8 with compare-restore lease bound to actor, status backlink, scene heap/scheduler/MapTarget,model+1968,current motion and resource. Proposed policy0..3 finite, not an engine-established limit. Zero holds time in the current motion but does not guarantee actor or AI freeze.",
+    "disallowedClaims": [
+      "Do not call flags+52 bit1 animation freeze; it is pending pose setup.",
+      "Do not expose raw frame assignment or arbitrary motion ID calls without resource/trigger/root-motion policy.",
+      "Do not mutate shared motion resource headers for a per-player effect.",
+      "Actor+292 bit0x400000 skips delta reset along with advance; stale displacement may persist."
+    ],
+    "stillOpen": [
+      "Full special-constraint/IK paths1D3B80/1D60F0",
+      "Animation trigger handler opcode classification",
+      "Native speed script table identity755A20",
+      "Per-class/model actor motion overrides and accessory chains",
+      "Meaningful live animation freeze/speed runtime tests"
+    ]
+  }
+}

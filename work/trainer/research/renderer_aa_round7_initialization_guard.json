@@ -1,0 +1,294 @@
+{
+  "status": "Existing complete IDA evidence rechecked against original bytes; not a new round7 IDA capture",
+  "source_evidence": "render_controls_deep_evidence_0.json",
+  "function": {
+    "addr": "0x14011c150",
+    "pseudocode": {
+      "addr": "0x14011c150",
+      "code": "// Static analysis (SHA256 9002b2de...49ed). Analysis label: kh2_GX_GetDeviceSingleton. Thread-safe initialized singleton at preferred VA 0x1408A0970. Native metadata identifies callers as GXDevice wrappers.\n// Hidden C++ exception states: #wind=1\nvoid *kh2_GX_GetDeviceSingleton()\n{\n  if ( dword_1408AEEF0 <= *(_DWORD *)(*((_QWORD *)NtCurrentTeb()->ThreadLocalStoragePointer + (unsigned int)TlsIndex) /*0x14011c180*/\n                                    + 16LL) )\n    return &unk_1408A0970; /*0x14011c180*/\n  sub_140439F50(&dword_1408AEEF0); /*0x14011c196*/\n  if ( dword_1408AEEF0 != -1 ) /*0x14011c1a2*/\n    return &unk_1408A0970; /*0x14011c182*/\n  sub_14010A270(&unk_1408A0970); /*0x14011c1ae*/\n  sub_1404399B0(sub_140572280); /*0x14011c1ba*/\n  sub_140439EF0(&dword_1408AEEF0); /*0x14011c1c7*/\n  return &unk_1408A0970; /*0x14011c189*/\n}",
+      "line_count": 15,
+      "total_lines": 15,
+      "truncated": false,
+      "cursor": {
+        "done": true
+      },
+      "refs": [
+        {
+          "addr": "0x1408a0970",
+          "name": "unk_1408A0970"
+        },
+        {
+          "addr": "0x1408aeef0",
+          "name": "dword_1408AEEF0"
+        },
+        {
+          "addr": "0x142af9b68",
+          "name": "TlsIndex"
+        },
+        {
+          "addr": "0x140439f50",
+          "name": "sub_140439F50"
+        },
+        {
+          "addr": "0x14010a270",
+          "name": "sub_14010A270"
+        },
+        {
+          "addr": "0x1404399b0",
+          "name": "sub_1404399B0"
+        },
+        {
+          "addr": "0x140572280",
+          "name": "sub_140572280"
+        },
+        {
+          "addr": "0x140439ef0",
+          "name": "sub_140439EF0"
+        }
+      ]
+    },
+    "disassembly": {
+      "addr": "0x14011c150",
+      "asm": {
+        "name": "kh2_GX_GetDeviceSingleton",
+        "start_ea": "0x14011c150",
+        "segment": ".text",
+        "lines": [
+          {
+            "addr": "14011c150",
+            "instruction": "push rbx",
+            "label": "kh2_GX_GetDeviceSingleton"
+          },
+          {
+            "addr": "14011c152",
+            "instruction": "sub rsp, 30h"
+          },
+          {
+            "addr": "14011c156",
+            "instruction": "mov [rsp+38h+var_18], 0FFFFFFFFFFFFFFFEh"
+          },
+          {
+            "addr": "14011c15f",
+            "instruction": "mov ecx, cs:TlsIndex",
+            "refs": [
+              {
+                "addr": "0x142af9b68",
+                "name": "TlsIndex"
+              }
+            ]
+          },
+          {
+            "addr": "14011c165",
+            "instruction": "mov rax, gs:58h"
+          },
+          {
+            "addr": "14011c16e",
+            "instruction": "mov edx, 10h"
+          },
+          {
+            "addr": "14011c173",
+            "instruction": "mov rcx, [rax+rcx*8]"
+          },
+          {
+            "addr": "14011c177",
+            "instruction": "mov eax, [rdx+rcx]"
+          },
+          {
+            "addr": "14011c17a",
+            "instruction": "cmp cs:dword_1408AEEF0, eax",
+            "refs": [
+              {
+                "addr": "0x1408aeef0",
+                "name": "dword_1408AEEF0"
+              }
+            ]
+          },
+          {
+            "addr": "14011c180",
+            "instruction": "jg short loc_14011C18F",
+            "refs": [
+              {
+                "addr": "0x14011c18f",
+                "name": "loc_14011C18F"
+              }
+            ]
+          },
+          {
+            "addr": "14011c182",
+            "instruction": "lea rax, unk_1408A0970",
+            "label": "loc_14011C182",
+            "refs": [
+              {
+                "addr": "0x1408a0970",
+                "name": "unk_1408A0970"
+              }
+            ]
+          },
+          {
+            "addr": "14011c189",
+            "instruction": "add rsp, 30h"
+          },
+          {
+            "addr": "14011c18d",
+            "instruction": "pop rbx"
+          },
+          {
+            "addr": "14011c18e",
+            "instruction": "retn"
+          },
+          {
+            "addr": "14011c18f",
+            "instruction": "lea rcx, dword_1408AEEF0",
+            "label": "loc_14011C18F",
+            "refs": [
+              {
+                "addr": "0x1408aeef0",
+                "name": "dword_1408AEEF0"
+              }
+            ]
+          },
+          {
+            "addr": "14011c196",
+            "instruction": "call sub_140439F50",
+            "refs": [
+              {
+                "addr": "0x140439f50",
+                "name": "sub_140439F50"
+              }
+            ]
+          },
+          {
+            "addr": "14011c19b",
+            "instruction": "cmp cs:dword_1408AEEF0, 0FFFFFFFFh",
+            "refs": [
+              {
+                "addr": "0x1408aeef0",
+                "name": "dword_1408AEEF0"
+              }
+            ]
+          },
+          {
+            "addr": "14011c1a2",
+            "instruction": "jnz short loc_14011C182",
+            "refs": [
+              {
+                "addr": "0x14011c182",
+                "name": "loc_14011C182"
+              }
+            ]
+          },
+          {
+            "addr": "14011c1a4",
+            "instruction": "lea rbx, unk_1408A0970",
+            "refs": [
+              {
+                "addr": "0x1408a0970",
+                "name": "unk_1408A0970"
+              }
+            ]
+          },
+          {
+            "addr": "14011c1ab",
+            "instruction": "mov rcx, rbx"
+          },
+          {
+            "addr": "14011c1ae",
+            "instruction": "call sub_14010A270",
+            "label": "loc_14011C1AE",
+            "refs": [
+              {
+                "addr": "0x14010a270",
+                "name": "sub_14010A270"
+              }
+            ]
+          },
+          {
+            "addr": "14011c1b3",
+            "instruction": "lea rcx, sub_140572280",
+            "refs": [
+              {
+                "addr": "0x140572280",
+                "name": "sub_140572280"
+              }
+            ]
+          },
+          {
+            "addr": "14011c1ba",
+            "instruction": "call sub_1404399B0",
+            "refs": [
+              {
+                "addr": "0x1404399b0",
+                "name": "sub_1404399B0"
+              }
+            ]
+          },
+          {
+            "addr": "14011c1bf",
+            "instruction": "nop"
+          },
+          {
+            "addr": "14011c1c0",
+            "instruction": "lea rcx, dword_1408AEEF0",
+            "refs": [
+              {
+                "addr": "0x1408aeef0",
+                "name": "dword_1408AEEF0"
+              }
+            ]
+          },
+          {
+            "addr": "14011c1c7",
+            "instruction": "call sub_140439EF0",
+            "refs": [
+              {
+                "addr": "0x140439ef0",
+                "name": "sub_140439EF0"
+              }
+            ]
+          },
+          {
+            "addr": "14011c1cc",
+            "instruction": "mov rax, rbx"
+          },
+          {
+            "addr": "14011c1cf",
+            "instruction": "add rsp, 30h"
+          },
+          {
+            "addr": "14011c1d3",
+            "instruction": "pop rbx"
+          },
+          {
+            "addr": "14011c1d4",
+            "instruction": "retn"
+          }
+        ],
+        "stack_frame": [
+          {
+            "name": "var_18",
+            "offset": "0x20",
+            "size": "0x8",
+            "type": "_QWORD"
+          },
+          {
+            "name": "__return_address",
+            "offset": "0x38",
+            "size": "0x8",
+            "type": "_UNKNOWN *"
+          }
+        ],
+        "return_type": "void *",
+        "arguments": []
+      },
+      "instruction_count": 30,
+      "total_instructions": 30,
+      "cursor": {
+        "done": true
+      }
+    }
+  },
+  "original_bytes": "40534883ec3048c7442420feffffff8b0d03da9d0265488b042558000000ba10000000488b0cc88b040a3905702d79007f0d488d05e74778004883c4305bc3488d0d5a2d7900e8b5dd3100833d4e2d7900ff75de488d1dc5477800488bcbe8bde0feff488d0dc6604500e8f1d7310090488d0d292d7900e824dd3100488bc34883c4305bc3",
+  "original_equal": true,
+  "bytes": 133,
+  "Finding": "8AEEF0 participates in one-time singleton construction guarded against thread-local initialization state. It is not a demonstrated renderer generation; equality is conservative additional binding."
+}

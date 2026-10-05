@@ -1,0 +1,288 @@
+[
+  {
+    "Id": "motion.speed",
+    "Category": "Animation",
+    "Name": "Sora Animation Speed",
+    "Description": "Desired rate from 0.1x to 3x. Enable the override to apply it to the current Sora Actor. Animation time also controls movement and attack/effect triggers; this changes gameplay timing. The chosen range is a trainer policy, not a native engine limit.",
+    "Kind": "Number",
+    "CommandId": 1160,
+    "ValueSlot": 160,
+    "CapabilitySlot": 160,
+    "Minimum": 0.1,
+    "Maximum": 3,
+    "DefaultValue": 1,
+    "Step": 0.1,
+    "Unit": "x",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "The rate belongs to one current Sora Actor. Disable restores its original float only while the same Actor, scene, status and native writer observation remain valid. Script changes and uncertain ownership are preserved. No automatic renewal across Actor or Form changes.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3C61B0 / 0x3C6740 / 0x42FCE0; VM bank1/index107 slot0x755A20",
+        "Finding": "Actor+680 is controller speed, initialized to1 and multiplied by delta for frame advance. A narrow synchronous writer observer supersedes the trainer lease even for equal float writes. Mutation and native callback are serialized; original is forwarded exactly once.",
+        "Level": "Full dedicated IDA ASM and independent review; 454 synthetic checks passed; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "motion.override",
+    "Category": "Animation",
+    "Name": "Animation Speed Override",
+    "Description": "Applies the desired rate to current Sora, including Drive Forms, until disabled or ownership is lost. Normal motion changes retain it. Native script speed writes, external changes, Actor/Form/model changes or an unsafe scene end ownership. Roxas and other characters are not supported by this control.",
+    "Kind": "Toggle",
+    "CommandId": 1161,
+    "ValueSlot": 161,
+    "CapabilitySlot": 161,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "The rate belongs to one current Sora Actor. Disable restores its original float only while the same Actor, scene, status and native writer observation remain valid. Script changes and uncertain ownership are preserved. No automatic renewal across Actor or Form changes.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3C61B0 / 0x3C6740 / 0x42FCE0; VM bank1/index107 slot0x755A20",
+        "Finding": "Actor+680 is controller speed, initialized to1 and multiplied by delta for frame advance. A narrow synchronous writer observer supersedes the trainer lease even for equal float writes. Mutation and native callback are serialized; original is forwarded exactly once.",
+        "Level": "Full dedicated IDA ASM and independent review; 454 synthetic checks passed; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "motion.actual_speed",
+    "Category": "Animation",
+    "Name": "Current Animation Rate",
+    "Description": "Actual float rate on the validated current Sora Actor. This may differ from the desired setting after the game takes ownership.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 162,
+    "CapabilitySlot": 162,
+    "Minimum": -1000,
+    "Maximum": 1000,
+    "DefaultValue": 0,
+    "Step": 0.1,
+    "Unit": "x",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "The rate belongs to one current Sora Actor. Disable restores its original float only while the same Actor, scene, status and native writer observation remain valid. Script changes and uncertain ownership are preserved. No automatic renewal across Actor or Form changes.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3C61B0 / 0x3C6740 / 0x42FCE0; VM bank1/index107 slot0x755A20",
+        "Finding": "Actor+680 is controller speed, initialized to1 and multiplied by delta for frame advance. A narrow synchronous writer observer supersedes the trainer lease even for equal float writes. Mutation and native callback are serialized; original is forwarded exactly once.",
+        "Level": "Full dedicated IDA ASM and independent review; 454 synthetic checks passed; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "motion.frame",
+    "Category": "Animation",
+    "Name": "Current Animation Frame",
+    "Description": "Current controller time in the native animation frame timebase. During a blend this describes the active transition timeline; no seek is performed.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 163,
+    "CapabilitySlot": 163,
+    "Minimum": -1000000,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "Step": 0.1,
+    "Unit": "frames",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "The rate belongs to one current Sora Actor. Disable restores its original float only while the same Actor, scene, status and native writer observation remain valid. Script changes and uncertain ownership are preserved. No automatic renewal across Actor or Form changes.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3C61B0 / 0x3C8A40 / 0x1DA660 / 0x1DB440; Actor+344 controller",
+        "Finding": "Controller owner+16, Motion+24, logical/resolved IDs+40/+44, duration+64, frame+68 and blend+72/+76. Recognized motion classes return duration from Prototype header+20 or RAW header+32.",
+        "Level": "Full dedicated IDA ASM and independent review; resource/header guards tested; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "motion.duration",
+    "Category": "Animation",
+    "Name": "Current Motion Duration",
+    "Description": "Controller duration, published only when it agrees with the loaded Prototype or RAW resource header. Native animation time uses a 60-frame timebase.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 164,
+    "CapabilitySlot": 164,
+    "Minimum": 0,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "Step": 0.1,
+    "Unit": "frames",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "The rate belongs to one current Sora Actor. Disable restores its original float only while the same Actor, scene, status and native writer observation remain valid. Script changes and uncertain ownership are preserved. No automatic renewal across Actor or Form changes.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3C61B0 / 0x3C8A40 / 0x1DA660 / 0x1DB440; Actor+344 controller",
+        "Finding": "Controller owner+16, Motion+24, logical/resolved IDs+40/+44, duration+64, frame+68 and blend+72/+76. Recognized motion classes return duration from Prototype header+20 or RAW header+32.",
+        "Level": "Full dedicated IDA ASM and independent review; resource/header guards tested; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "motion.logical_id",
+    "Category": "Animation",
+    "Name": "Logical Motion ID",
+    "Description": "The controller logical motion ID. -1 is native unset/direct-resource state; this is an observation, not a writable animation selector.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 165,
+    "CapabilitySlot": 165,
+    "Minimum": -1,
+    "Maximum": 65535,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "The rate belongs to one current Sora Actor. Disable restores its original float only while the same Actor, scene, status and native writer observation remain valid. Script changes and uncertain ownership are preserved. No automatic renewal across Actor or Form changes.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3C61B0 / 0x3C8A40 / 0x1DA660 / 0x1DB440; Actor+344 controller",
+        "Finding": "Controller owner+16, Motion+24, logical/resolved IDs+40/+44, duration+64, frame+68 and blend+72/+76. Recognized motion classes return duration from Prototype header+20 or RAW header+32.",
+        "Level": "Full dedicated IDA ASM and independent review; resource/header guards tested; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "motion.resolved_id",
+    "Category": "Animation",
+    "Name": "Resolved Motion ID",
+    "Description": "The controller resolved motion ID. -1 is valid for native unset or direct-resource playback.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 166,
+    "CapabilitySlot": 166,
+    "Minimum": -1,
+    "Maximum": 65535,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "The rate belongs to one current Sora Actor. Disable restores its original float only while the same Actor, scene, status and native writer observation remain valid. Script changes and uncertain ownership are preserved. No automatic renewal across Actor or Form changes.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3C61B0 / 0x3C8A40 / 0x1DA660 / 0x1DB440; Actor+344 controller",
+        "Finding": "Controller owner+16, Motion+24, logical/resolved IDs+40/+44, duration+64, frame+68 and blend+72/+76. Recognized motion classes return duration from Prototype header+20 or RAW header+32.",
+        "Level": "Full dedicated IDA ASM and independent review; resource/header guards tested; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "motion.blend_duration",
+    "Category": "Animation",
+    "Name": "Blend Duration",
+    "Description": "Current controller blend duration. Zero indicates that this controller is not using a timed blend.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 167,
+    "CapabilitySlot": 167,
+    "Minimum": 0,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "Step": 0.1,
+    "Unit": "frames",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "The rate belongs to one current Sora Actor. Disable restores its original float only while the same Actor, scene, status and native writer observation remain valid. Script changes and uncertain ownership are preserved. No automatic renewal across Actor or Form changes.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3C61B0 / 0x3C8A40 / 0x1DA660 / 0x1DB440; Actor+344 controller",
+        "Finding": "Controller owner+16, Motion+24, logical/resolved IDs+40/+44, duration+64, frame+68 and blend+72/+76. Recognized motion classes return duration from Prototype header+20 or RAW header+32.",
+        "Level": "Full dedicated IDA ASM and independent review; resource/header guards tested; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "motion.blend_target",
+    "Category": "Animation",
+    "Name": "Blend Target Frame",
+    "Description": "Native target frame used when the current blend finishes. A retained value with zero blend duration is not an active seek.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 168,
+    "CapabilitySlot": 168,
+    "Minimum": -1000000,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "Step": 0.1,
+    "Unit": "frames",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "The rate belongs to one current Sora Actor. Disable restores its original float only while the same Actor, scene, status and native writer observation remain valid. Script changes and uncertain ownership are preserved. No automatic renewal across Actor or Form changes.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3C61B0 / 0x3C8A40 / 0x1DA660 / 0x1DB440; Actor+344 controller",
+        "Finding": "Controller owner+16, Motion+24, logical/resolved IDs+40/+44, duration+64, frame+68 and blend+72/+76. Recognized motion classes return duration from Prototype header+20 or RAW header+32.",
+        "Level": "Full dedicated IDA ASM and independent review; resource/header guards tested; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "motion.format",
+    "Category": "Animation",
+    "Name": "Motion Resource Format",
+    "Description": "0 Prototype (compressed animation); 1 RAW (matrix samples). Published only for the recognized wrapper and matching resource header.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 169,
+    "CapabilitySlot": 169,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "The rate belongs to one current Sora Actor. Disable restores its original float only while the same Actor, scene, status and native writer observation remain valid. Script changes and uncertain ownership are preserved. No automatic renewal across Actor or Form changes.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3C61B0 / 0x3C8A40 / 0x1DA660 / 0x1DB440; Actor+344 controller",
+        "Finding": "Controller owner+16, Motion+24, logical/resolved IDs+40/+44, duration+64, frame+68 and blend+72/+76. Recognized motion classes return duration from Prototype header+20 or RAW header+32.",
+        "Level": "Full dedicated IDA ASM and independent review; resource/header guards tested; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "motion.state",
+    "Category": "Animation",
+    "Name": "Animation Override State",
+    "Description": "0 Off, 1 Active, 2 Disabled, 3 Script changed, 4 External value changed, 5 Actor/scene/model identity changed, 6 Host expired, 7 Native writer hook changed, 8 Resource invalid, 9 Hook unavailable. This records lease state; command rejections are also shown in the command log.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 170,
+    "CapabilitySlot": 170,
+    "Minimum": 0,
+    "Maximum": 9,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "The rate belongs to one current Sora Actor. Disable restores its original float only while the same Actor, scene, status and native writer observation remain valid. Script changes and uncertain ownership are preserved. No automatic renewal across Actor or Form changes.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3C61B0 / 0x3C6740 / 0x42FCE0; VM bank1/index107 slot0x755A20",
+        "Finding": "Actor+680 is controller speed, initialized to1 and multiplied by delta for frame advance. A narrow synchronous writer observer supersedes the trainer lease even for equal float writes. Mutation and native callback are serialized; original is forwarded exactly once.",
+        "Level": "Full dedicated IDA ASM and independent review; 454 synthetic checks passed; no live test."
+      }
+    ]
+  }
+]

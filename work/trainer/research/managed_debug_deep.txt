@@ -1,0 +1,81 @@
+MANAGED DEBUGGER / DEVELOPER UI: REVIEWED TRANCHE — 2026-10-04
+104 actual CIL bodies read and recorded individually in managed_debug_deep.json.
+Six bodyless metadata entries are excluded. These are synthetic CIL addresses,
+never process addresses. Findings use relative evidence paths into work/managed.
+Targeted fresh CIL validation: managed_debug_fresh_cil.json (8 complete bodies).
+Native cross-checks: managed_debug_native_evidence.json (6 complete functions).
+FieldRVA mapping: managed_debug_fieldrvas.json. No UI/game/IDB writes or execution.
+
+MOST USEFUL NEW CONNECTIONS
+Texture association editor:
+Native1A26E0, under converter object byte+2372, invokes CLR bridge579BE0 with a
+temporary PNG path. Actual thunk entry jumps to747C50; alternate entry579BE4
+uses747C48. The CLR fixes these slots up; neither disk token nor IL-RVA is callable.
+CIL31B0 copies path to global s_local_texture(BF2040), starts a WinForms thread,
+and joins it. D040/D950/DA90 show source PNGs and target TM2 previews. Native shared
+structure s_tex_anim(AC7140) has size0x2C4; source selection stores up to ten32-byte
+basenames at+0x184. Native caller resumes only after form close.
+This is an offline asset-association workflow, not an in-game render inspector.
+
+Concrete legacy limitations:
+31B0 passes path as sprintf format; no size/format safety or apartment setup.
+DCC0 does not clear unused trailing selected-name slots, so reducing a previous
+selection can retain old names. It copies basename-length bytes into32-byte slots
+without a31-byte bound. DD90 cancellation zeroes the full shared structure.
+D950 writes intermediate C:/tmp/*.tm2.bmp through TinyTexEntry.BMPDecode.
+DDE0/DE40 ignore the selected-item enumerator's MoveNext result before Current.
+D8B0 creates Graphics/Brush objects without explicit disposal in that body.
+These are static defects/assumptions; no exploitability claim or execution.
+
+Graphics/audio controls are narrower than their names suggest:
+BE00 sets EnableGlow(ABD148), but only native169180 reads it when allocating and
+initializing glare objectABD198, setting that object's byte+8. No current-frame
+lighting/fog control follows. Recreating this allocator-backed object is not a
+safe trainer operation inferred merely from the menu.
+BE40/BEB0 set DesableScd(79CFD0).14ED40 skips audio initialization when set;
+3A64F0 skips ORIGIN audio replacements for BAR types1F/22/30. This is not ordinary
+mute and must not be toggled as a runtime mixer control.
+BF00's drive-prefix substitution calls148660; this build's148660 clears260bytes
+at8BC190 and returnsfalse. The managed substitution branch is therefore inactive.
+
+Window/input lifecycle:
+CIL2380 starts internal BaseSimpleForm. It does not start external-dependentKH2Form.
+C7E0 initializes input and device notifications; C830 initializes GX from HWND/App.
+C300 marshals closure to UI thread; C350 schedules a timer; CF70 closes on that tick.
+CC40 releases clipping and hides-count ownership on deactivation.
+CDD0 has a SteamDeck-specific1x1 center clip; regular mode clips client rectangle.
+CED0 forwards native mouse-active flag even when overlay prevents cursor hiding.
+CF20/CF40 couple GX suspend/resume with conditional audio pause. ForceSuspending
+prevents premature resume during user-close confirmation.
+These functions own the real renderer/window lifecycle; instantiating a second
+developer form would duplicate device initialization/teardown, not add an overlay.
+
+STARTUP / SETTINGS / EMPTY METHODS
+9390 constructs missing external developer controls and may write default mode/
+language files from its constructor. KH2App.iso only stores GUI width/height.
+AF50 reports successful writes based on open success while ignoring write results.
+Disc language callbacksB430..B4A0 write byte0..7 then share conversion dispatcher.
+Several represented UI actions are confirmed single-ret bodies, including cache
+save, texture-animation convert, PS3 disc image, simple_ver, debug setup and logging.
+Empty bodies are real body findings; they are distinct from metadata-only entries.
+
+IMPLEMENTATION PROPOSALS (NOT IMPLEMENTED)
+1. Standalone safe texture-association editor: parse/emit an explicit mapping with
+   up to ten bounded basenames; use local PNG/TM2 previews and user-selected paths.
+   Avoid injecting31B0: it blocks caller thread, shares non-reentrant globals and
+   depends on legacy converter context. Needs native downstream record-format
+   verification before export compatibility can be promised.
+2. Read-only window diagnostic: display HWND/client/framebuffer dimensions,
+   overlay state, mouse-active state and current clipping rectangle. Use UI-thread
+   APIs for managed ownership; no directcallCILaddresses, duplicateGXinit or forced
+   cursor edits from worker thread.
+3. Developer-mode readouts: show EnableGlow as initialization override and
+   DesableScd as resource/audio-init override, not functional trainer toggles.
+
+LIMITS / REMAINING WORK
+This tranche does not claim all439 CIL bodies understood. Large extraction/
+conversion helpers, message localization, texture codecs, CRT/ATL glue and some
+window constructor/WndProc bodies remain outside these104 new per-body findings.
+No private DLL has been loaded, no developer share contacted, no settings or asset
+file written, no game process read or modified by this research tranche.
+

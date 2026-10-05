@@ -1,0 +1,40 @@
+Damage coefficient contract - independent static review
+=======================================================
+Reviewer: native_debug. No source/game/IDB changes or live test.
+Full fresh dedicated ASM: damage_tuning_independent_evidence.json,
+10 functions / 1262 actual instruction lines, paginated in blocks of100;
+every collected instruction count equals total_instructions.
+
+Confirmed:
+- STATUS+424..429 are six unsigned byte element coefficients; +430 is
+  the general received-hit coefficient. Constructors3C0010 and3C1D90
+  initialize all seven to100; equipment3C1190 multiplies them by an
+  item coefficient divided by100 with upward integer rounding.
+- Enemy reconstruction3C2240 reads low bytes from seven16-bit fields
+  EnemyParam+72..84. Native3C2650 scales the selected coefficient against
+  its original16-bit enemy parameter, then stores a byte. VM431200 calls
+  it with three8-byte operands. It is not a universally suitable setter
+  for Player because STATUS+624 is an EnemyParam reference.
+- 3C12F0 multiplies normal damage by general*element coefficients in
+  signed32-bit intermediate arithmetic. The target's STATUS is passed
+  by3CE740/3CEE90; these are received-damage coefficients, not outgoing
+  power multipliers. The byte representation permits0..255.
+- Coefficient product0 additionally sets Hit+24 bit4 and clears Hit+38
+  in both3CE740 and3CEE90. Thus0 is more than a cosmetic numeric zero.
+- Normal save synchronization3C2120 copies HP/MP/timers/Drive fields,
+  not424..430. A one-time edit is runtime state and may be overwritten
+  by equipment, scripts, status rebuild or actor replacement.
+
+Contract caveats:
+- Attack type5/6 takes an earlier3C12F0 arithmetic branch that bypasses
+  the coefficient multiplication. Do not promise an absolute universal
+  damage multiplier or complete invulnerability. Other later modifiers
+  (difficulty, limits, elemental boosts, Anti and HP thresholds) remain.
+- Preserve a freshly validated current Player or manually locked living
+  Enemy identity/status/backlink and pool ownership. Do not reuse across
+  Actor/form/scene changes. Byte writes should be one-shot, no hidden
+  recurring enforcement or changes to the original EnemyParam table.
+- A raw0..255 byte cannot itself overflow storage, but extreme modified
+  attack data may overflow the native signed32-bit damage intermediates.
+  This review does not establish arbitrary modded asset arithmetic.
+- No new blocker to the proposed one-shot runtime contract found.

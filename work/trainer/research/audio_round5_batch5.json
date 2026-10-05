@@ -1,0 +1,399 @@
+{
+  "result": [
+    {
+      "target": "0x140076F20",
+      "addr": "0x140076f20",
+      "name": "sub_140076F20",
+      "analysis": {
+        "size": "0x506",
+        "prototype": null,
+        "decompile": "// Hidden C++ exception states: #wind=5\n__int64 __fastcall sub_140076F20(__int64 a1)\n{\n  __int64 v1; // rdi\n  __int64 v2; // rbx\n  LARGE_INTEGER v3; // rax\n  __int64 v4; // rax\n  LARGE_INTEGER v5; // rsi\n  __int64 *ThreadLocalStoragePointer; // rax\n  __int64 v7; // rcx\n  unsigned int v8; // esi\n  __int64 v9; // rcx\n  LARGE_INTEGER v10; // rax\n  LARGE_INTEGER v11; // rax\n  __int64 v12; // rax\n  LARGE_INTEGER v13; // rax\n  _DWORD *v14; // rbx\n  __int64 v15; // rsi\n  unsigned int v16; // eax\n  __int64 v17; // rax\n  _QWORD *v18; // rcx\n  __int64 v19; // rdx\n  _DWORD *v20; // rcx\n  __int64 v21; // rdx\n  __int64 result; // rax\n  BOOL PerformanceFrequency; // eax\n  LARGE_INTEGER v24; // rdx\n  __int128 v25; // [rsp+38h] [rbp-29h] BYREF\n  const char *v26; // [rsp+48h] [rbp-19h]\n  __int128 v27; // [rsp+50h] [rbp-11h] BYREF\n  const char *v28; // [rsp+60h] [rbp-1h]\n  __int128 v29; // [rsp+68h] [rbp+7h] BYREF\n  const char *v30; // [rsp+78h] [rbp+17h]\n  __int64 v31; // [rsp+80h] [rbp+1Fh]\n  LARGE_INTEGER Frequency[2]; // [rsp+88h] [rbp+27h] BYREF\n  LARGE_INTEGER PerformanceCount; // [rsp+98h] [rbp+37h] BYREF\n\n  v31 = -2; /*0x140076f33*/\n  v1 = a1; /*0x140076f55*/\n  if ( *(int *)(a1 + 60) >= 32 ) /*0x140076f5c*/\n    off_14078A950( /*0x140076f85*/\n      &unk_14061AB10,\n      Class,\n      \"d:\\\\music2soundgit\\\\cdev\\\\sd\\\\cdev\\\\engine\\\\sd\\\\soundsystem.cpp\",\n      328,\n      \"SQEX::CDev::Engine::Sd::SoundSystem::CreateCore\");\n  v2 = 0; /*0x140076f8b*/\n  if ( !qword_142B81DE0 ) /*0x140076f9b*/\n  {\n    Frequency[0].QuadPart = 16; /*0x140076fa1*/\n    Frequency[1].LowPart = 0; /*0x140076fa9*/\n    v25 = *(_OWORD *)&Frequency[0].LowPart; /*0x140076fb0*/\n    v26 = \"CDev.Engine.Sd.SoundSystem\"; /*0x140076fb4*/\n    Frequency[0].QuadPart = (LONGLONG)&v25; /*0x140076fbc*/\n    v3.QuadPart = sub_140069970(104, &v25); /*0x140076fc7*/\n    PerformanceCount = v3; /*0x140076fcc*/\n    if ( v3.QuadPart ) /*0x140076fd3*/\n      v4 = ((__int64 (__fastcall *)(_QWORD, _QWORD))sub_140091250)((LARGE_INTEGER)v3.QuadPart, v1); /*0x140076fdb*/\n    else\n      v4 = 0; /*0x140076fe2*/\n    qword_142B81DE0 = v4; /*0x140076fe5*/\n    v5.QuadPart = 0; /*0x140076ff6*/\n    if ( QueryPerformanceCounter(&PerformanceCount) ) /*0x140076ff0*/\n      v5 = PerformanceCount; /*0x140076ffb*/\n    ThreadLocalStoragePointer = (__int64 *)NtCurrentTeb()->ThreadLocalStoragePointer; /*0x140077005*/\n    a1 = *ThreadLocalStoragePointer; /*0x14007700e*/\n    if ( dword_142B810E4 > *(_DWORD *)(*ThreadLocalStoragePointer + 16) ) /*0x14007701a*/\n    {\n      sub_140439F50(&dword_142B810E4); /*0x14007735e*/\n      if ( dword_142B810E4 == -1 ) /*0x14007736a*/\n      {\n        PerformanceFrequency = QueryPerformanceFrequency(Frequency); /*0x140077374*/\n        v24.QuadPart = 0; /*0x14007737a*/\n        if ( PerformanceFrequency ) /*0x14007737f*/\n          v24 = Frequency[0]; /*0x14007737f*/\n        qword_142B810E8 = v24.QuadPart; /*0x140077384*/\n        sub_140439EF0(&dword_142B810E4); /*0x140077392*/\n      }\n    }\n    qword_142B81E08 = 1000 * v5.QuadPart / (unsigned __int64)qword_142B810E8; /*0x140077030*/\n  }\n  if ( *(_BYTE *)sub_140076BF0(a1) ) /*0x14007703c*/\n    v8 = *(_DWORD *)(sub_140076BF0(v7) + 4048); /*0x140077046*/\n  else\n    v8 = *(_DWORD *)(v1 + 52); /*0x14007704e*/\n  Frequency[0].QuadPart = (LONGLONG)&unk_142B81E02; /*0x140077058*/\n  EnterCriticalSection(&CriticalSection); /*0x140077063*/\n  if ( qword_142B81DE0 ) /*0x14007707b*/\n  {\n    if ( *(void ***)qword_142B81DE0 == &SQEX::CDev::Engine::Sd::Driver::SoundDriver::`vftable' ) /*0x140077083*/\n      *(_DWORD *)(qword_142B81DE0 + 16) = v8; /*0x140077089*/\n    else\n      (*(void (__fastcall **)(__int64, _QWORD))(*(_QWORD *)qword_142B81DE0 + 544LL))(qword_142B81DE0, v8); /*0x14007739e*/\n  }\n  LeaveCriticalSection(&CriticalSection); /*0x140077093*/\n  v9 = qword_142B81DE8; /*0x140077099*/\n  if ( !qword_142B81DE8 ) /*0x1400770a3*/\n  {\n    Frequency[0].QuadPart = 16; /*0x1400770a5*/\n    Frequency[1].LowPart = 0; /*0x1400770ad*/\n    v25 = *(_OWORD *)&Frequency[0].LowPart; /*0x1400770b4*/\n    v26 = \"CDev.Engine.Sd.SoundSystem\"; /*0x1400770b8*/\n    Frequency[0].QuadPart = (LONGLONG)&v25; /*0x1400770c0*/\n    v10.QuadPart = sub_140069970(1440, &v25); /*0x1400770cd*/\n    PerformanceCount = v10; /*0x1400770d2*/\n    if ( v10.QuadPart ) /*0x1400770d9*/\n      v9 = ((__int64 (__fastcall *)(_QWORD, _QWORD, _QWORD, _QWORD))sub_140069E20)( /*0x1400770ee*/\n             (LARGE_INTEGER)v10.QuadPart,\n             *(unsigned int *)(v1 + 36),\n             *(unsigned int *)(v1 + 40),\n             *(unsigned int *)(v1 + 44));\n    else\n      v9 = 0; /*0x1400770f3*/\n    qword_142B81DE8 = v9; /*0x1400770f6*/\n  }\n  if ( !qword_142B81DF0 ) /*0x140077105*/\n  {\n    Frequency[0].QuadPart = 16; /*0x140077107*/\n    Frequency[1].LowPart = 0; /*0x14007710f*/\n    v27 = *(_OWORD *)&Frequency[0].LowPart; /*0x140077116*/\n    v28 = \"CDev.Engine.Sd.SoundSystem\"; /*0x14007711a*/\n    Frequency[0].QuadPart = (LONGLONG)&v27; /*0x140077122*/\n    v11.QuadPart = sub_140069970(104, &v27); /*0x14007712f*/\n    PerformanceCount = v11; /*0x140077134*/\n    if ( v11.QuadPart ) /*0x14007713b*/\n      v12 = ((__int64 (__fastcall *)(_QWORD))sub_1400FB630)((LARGE_INTEGER)v11.QuadPart); /*0x140077140*/\n    else\n      v12 = 0; /*0x140077147*/\n    qword_142B81DF0 = v12; /*0x14007714a*/\n    v9 = qword_142B81DE8; /*0x140077151*/\n  }\n  if ( !qword_142B81DF8 ) /*0x140077160*/\n  {\n    Frequency[0].QuadPart = 16; /*0x140077162*/\n    Frequency[1].LowPart = 0; /*0x14007716a*/\n    v29 = *(_OWORD *)&Frequency[0].LowPart; /*0x140077171*/\n    v30 = \"CDev.Engine.Sd.SoundSystem\"; /*0x140077175*/\n    Frequency[0].QuadPart = (LONGLONG)&v29; /*0x14007717d*/\n    v13.QuadPart = sub_140069970(992, &v29); /*0x14007718a*/\n    PerformanceCount = v13; /*0x14007718f*/\n    if ( v13.QuadPart ) /*0x140077196*/\n      v2 = ((__int64 (__fastcall *)(_QWORD, _QWORD))sub_1400708B0)( /*0x1400771a3*/\n             (LARGE_INTEGER)v13.QuadPart,\n             *(unsigned int *)(v1 + 48));\n    qword_142B81DF8 = v2; /*0x1400771a6*/\n    v9 = qword_142B81DE8; /*0x1400771ad*/\n  }\n  (*(void (__fastcall **)(__int64, __int64))(*(_QWORD *)v9 + 280LL))(v9, qword_142B81DE0); /*0x1400771be*/\n  v14 = (_DWORD *)qword_142B81DE8; /*0x1400771c4*/\n  if ( *(void ***)qword_142B81DE8 == &SQEX::CDev::Engine::Sd::Layout::LayoutManager::`vftable' ) /*0x1400771d8*/\n  {\n    *(_QWORD *)(qword_142B81DE8 + 8) = qword_142B81DF8; /*0x1400771e5*/\n  }\n  else\n  {\n    (*(void (__fastcall **)(__int64, __int64))(*(_QWORD *)qword_142B81DE8 + 296LL))(qword_142B81DE8, qword_142B81DF8); /*0x1400773b3*/\n    v14 = (_DWORD *)qword_142B81DE8; /*0x1400773b9*/\n  }\n  *(_QWORD *)(qword_142B81DF8 + 8) = v14; /*0x1400771f0*/\n  v15 = qword_142B81DE0; /*0x1400771f4*/\n  if ( *(void ***)qword_142B81DE0 == &SQEX::CDev::Engine::Sd::Driver::SoundDriver::`vftable' ) /*0x140077205*/\n  {\n    if ( *(_QWORD *)(qword_142B81DE0 + 8) ) /*0x14007720b*/\n      goto LABEL_39; /*0x140077210*/\n    if ( !v14 ) /*0x140077215*/\n      off_14078A950( /*0x14007723e*/\n        \"pLayout\",\n        Class,\n        \"d:\\\\music2soundgit\\\\cdev\\\\sd\\\\cdev\\\\engine\\\\sd\\\\driver\\\\sounddriver.cpp\",\n        181,\n        \"SQEX::CDev::Engine::Sd::Driver::SoundDriver::CreateDefaultLayoutPage\");\n    v16 = (*(__int64 (__fastcall **)(_DWORD *, _QWORD))(*(_QWORD *)v14 + 312LL))(v14, 0); /*0x14007724c*/\n    v17 = (*(__int64 (__fastcall **)(_DWORD *, _QWORD))(*(_QWORD *)v14 + 320LL))(v14, v16); /*0x140077261*/\n    *(_QWORD *)(v15 + 8) = v17; /*0x140077264*/\n    *(_QWORD *)(v17 + 40) |= 2uLL; /*0x140077268*/\n  }\n  else\n  {\n    (*(void (__fastcall **)(__int64))(*(_QWORD *)qword_142B81DE0 + 8LL))(qword_142B81DE0); /*0x1400773c8*/\n  }\n  v14 = (_DWORD *)qword_142B81DE8; /*0x14007726d*/\n  v15 = qword_142B81DE0; /*0x140077274*/\nLABEL_39:\n  v18 = (_QWORD *)qword_142B81DF0; /*0x14007727b*/\n  if ( *(void ***)qword_142B81DF0 == &SQEX::CDev::Engine::Sd::Whiz::WhizManager::`vftable' ) /*0x14007728f*/\n  {\n    *(_QWORD *)(qword_142B81DF0 + 56) = qword_142B81DF8; /*0x14007729c*/\n  }\n  else\n  {\n    (*(void (__fastcall **)(__int64, __int64))(*(_QWORD *)qword_142B81DF0 + 16LL))(qword_142B81DF0, qword_142B81DF8); /*0x1400773d6*/\n    v15 = qword_142B81DE0; /*0x1400773d9*/\n    v14 = (_DWORD *)qword_142B81DE8; /*0x1400773e0*/\n    v18 = (_QWORD *)qword_142B81DF0; /*0x1400773e7*/\n  }\n  if ( (void **)*v18 == &SQEX::CDev::Engine::Sd::Whiz::WhizManager::`vftable' ) /*0x1400772a6*/\n  {\n    v18[8] = v15; /*0x1400772ac*/\n  }\n  else\n  {\n    (*(void (__fastcall **)(_QWORD *, __int64))(*v18 + 8LL))(v18, v15); /*0x1400773f6*/\n    v14 = (_DWORD *)qword_142B81DE8; /*0x1400773f9*/\n  }\n  if ( *(void ***)v14 == &SQEX::CDev::Engine::Sd::Layout::LayoutManager::`vftable' ) /*0x1400772b6*/\n    v14[17] = 2; /*0x1400772bc*/\n  else\n    (*(void (__fastcall **)(_DWORD *, __int64))(*(_QWORD *)v14 + 56LL))(v14, 2); /*0x14007740d*/\n  (*(void (__fastcall **)(__int64, __int64))(*(_QWORD *)qword_142B81DF8 + 216LL))(qword_142B81DF8, 2); /*0x1400772d2*/\n  v20 = (_DWORD *)qword_142B81DE8; /*0x1400772d8*/\n  if ( *(void ***)qword_142B81DE8 == &SQEX::CDev::Engine::Sd::Layout::LayoutManager::`vftable' ) /*0x1400772e5*/\n  {\n    *(_DWORD *)(qword_142B81DE8 + 80) |= 4u; /*0x1400772eb*/\n  }\n  else\n  {\n    LOBYTE(v19) = 1; /*0x140077415*/\n    (*(void (__fastcall **)(__int64, __int64))(*(_QWORD *)qword_142B81DE8 + 80LL))(qword_142B81DE8, v19); /*0x140077417*/\n    v20 = (_DWORD *)qword_142B81DE8; /*0x14007741a*/\n  }\n  v21 = *(unsigned int *)(v1 + 56); /*0x1400772ef*/\n  if ( *(void ***)v20 == &SQEX::CDev::Engine::Sd::Layout::LayoutManager::`vftable' ) /*0x1400772f8*/\n  {\n    v20[19] = v21; /*0x1400772fa*/\n  }\n  else\n  {\n    (*(void (__fastcall **)(_DWORD *, __int64))(*(_QWORD *)v20 + 112LL))(v20, v21); /*0x14007734b*/\n    v20 = (_DWORD *)qword_142B81DE8; /*0x14007734e*/\n  }\n  if ( *(_BYTE *)(v1 + 709) ) /*0x1400772fd*/\n    v20[20] |= 8u; /*0x140077306*/\n  else\n    v20[20] &= ~8u; /*0x14007730c*/\n  dword_14078D99C = *(_DWORD *)(v1 + 28); /*0x140077313*/\n  result = *(unsigned int *)(v1 + 32); /*0x140077319*/\n  dword_14078DA18 = *(_DWORD *)(v1 + 32); /*0x14007731c*/\n  return result; /*0x140077322*/\n}",
+        "decompile_error": null,
+        "disasm": null,
+        "xrefs": null,
+        "callers": [
+          {
+            "addr": "0x140076e50",
+            "name": "sub_140076E50",
+            "size": "0xc9"
+          },
+          {
+            "addr": "0x140077480",
+            "name": "sub_140077480",
+            "size": "0x72"
+          }
+        ],
+        "caller_count": 2,
+        "callers_truncated": false,
+        "callees": [
+          {
+            "addr": "0x14057b2f0",
+            "name": "__imp_QueryPerformanceCounter",
+            "type": "external"
+          },
+          {
+            "addr": "0x1400708b0",
+            "name": "sub_1400708B0",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140069e20",
+            "name": "sub_140069E20",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140439a60",
+            "name": "__security_check_cookie",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140439f50",
+            "name": "sub_140439F50",
+            "type": "internal"
+          },
+          {
+            "addr": "0x14057b2d0",
+            "name": "__imp_LeaveCriticalSection",
+            "type": "external"
+          },
+          {
+            "addr": "0x140076bf0",
+            "name": "sub_140076BF0",
+            "type": "internal"
+          },
+          {
+            "addr": "0x14057b2d8",
+            "name": "__imp_EnterCriticalSection",
+            "type": "external"
+          },
+          {
+            "addr": "0x14057b2e8",
+            "name": "__imp_QueryPerformanceFrequency",
+            "type": "external"
+          },
+          {
+            "addr": "0x14078a950",
+            "name": "off_14078A950",
+            "type": "external"
+          },
+          {
+            "addr": "0x140439ef0",
+            "name": "sub_140439EF0",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140091250",
+            "name": "sub_140091250",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140069970",
+            "name": "sub_140069970",
+            "type": "internal"
+          },
+          {
+            "addr": "0x1400fb630",
+            "name": "sub_1400FB630",
+            "type": "internal"
+          }
+        ],
+        "callee_count": 14,
+        "callees_truncated": false,
+        "strings": null,
+        "string_ref_count": 0,
+        "strings_truncated": false,
+        "constants": null,
+        "constant_count": 0,
+        "constants_truncated": false,
+        "basic_blocks": null,
+        "basic_block_count": 0,
+        "basic_blocks_truncated": false
+      },
+      "error": null
+    },
+    {
+      "target": "0x140070E20",
+      "addr": "0x140070e20",
+      "name": "sub_140070E20",
+      "analysis": {
+        "size": "0x137",
+        "prototype": null,
+        "decompile": "// Hidden C++ exception states: #wind=1\n__int64 __fastcall sub_140070E20(__int64 a1, char a2)\n{\n  int v4; // ebp\n  __int64 v5; // rsi\n  __int64 v6; // rax\n  void (__fastcall ***v7)(_QWORD, __int64); // rcx\n  __int64 v8; // rcx\n\n  *(_QWORD *)a1 = &SQEX::CDev::Engine::Sd::Layout::ListenerManager::`vftable'; /*0x140070e4f*/\n  *(_BYTE *)(a1 + 816) = 1; /*0x140070e52*/\n  EnterCriticalSection((LPCRITICAL_SECTION)(a1 + 776)); /*0x140070e60*/\n  v4 = 0; /*0x140070e6a*/\n  if ( *(int *)(a1 + 24) > 0 ) /*0x140070e71*/\n  {\n    v5 = 0; /*0x140070e73*/\n    do /*0x140070eaf*/\n    {\n      v6 = *(_QWORD *)(a1 + 768); /*0x140070e80*/\n      v7 = *(void (__fastcall ****)(_QWORD, __int64))(v5 + v6); /*0x140070e87*/\n      if ( v7 ) /*0x140070e8e*/\n      {\n        (**v7)(v7, 1); /*0x140070e98*/\n        v6 = *(_QWORD *)(a1 + 768); /*0x140070e9b*/\n      }\n      *(_QWORD *)(v5 + v6) = 0; /*0x140070ea2*/\n      ++v4; /*0x140070ea6*/\n      v5 += 8; /*0x140070ea8*/\n    }\n    while ( v4 < *(_DWORD *)(a1 + 24) ); /*0x140070eaf*/\n  }\n  *(_DWORD *)(a1 + 24) = 0; /*0x140070eb1*/\n  if ( *(_BYTE *)(a1 + 816) ) /*0x140070eb5*/\n    LeaveCriticalSection((LPCRITICAL_SECTION)(a1 + 776)); /*0x140070ec5*/\n  v8 = *(_QWORD *)(a1 + 768); /*0x140070ecc*/\n  if ( v8 ) /*0x140070ed6*/\n  {\n    sub_140031E80(v8); /*0x140070ed8*/\n    *(_QWORD *)(a1 + 768) = 0; /*0x140070ede*/\n  }\n  *(_DWORD *)(a1 + 960) = 0; /*0x140070ee5*/\n  *(_DWORD *)(a1 + 888) = 0; /*0x140070eec*/\n  DeleteCriticalSection((LPCRITICAL_SECTION)(a1 + 776)); /*0x140070efa*/\n  *(_QWORD *)(a1 + 56) = &SQEX::CDev::Engine::Sd::Driver::DynamicValue::`vftable'; /*0x140070f08*/\n  *(_QWORD *)a1 = &SQEX::CDev::Engine::Sd::Layout::IListenerManager::`vftable'; /*0x140070f13*/\n  if ( (a2 & 1) != 0 ) /*0x140070f1a*/\n  {\n    if ( (a2 & 4) != 0 ) /*0x140070f20*/\n      nullsub_1(a1, 992); /*0x140070f35*/\n    else\n      sub_140031E80(a1); /*0x140070f25*/\n  }\n  return a1; /*0x140070f3e*/\n}",
+        "decompile_error": null,
+        "disasm": null,
+        "xrefs": null,
+        "callers": [],
+        "caller_count": 0,
+        "callers_truncated": false,
+        "callees": [
+          {
+            "addr": "0x14057b2c8",
+            "name": "__imp_DeleteCriticalSection",
+            "type": "external"
+          },
+          {
+            "addr": "0x14057b2d0",
+            "name": "__imp_LeaveCriticalSection",
+            "type": "external"
+          },
+          {
+            "addr": "0x140031e80",
+            "name": "sub_140031E80",
+            "type": "internal"
+          },
+          {
+            "addr": "0x14057b2d8",
+            "name": "__imp_EnterCriticalSection",
+            "type": "external"
+          },
+          {
+            "addr": "0x140031dd0",
+            "name": "nullsub_1",
+            "type": "internal"
+          }
+        ],
+        "callee_count": 5,
+        "callees_truncated": false,
+        "strings": null,
+        "string_ref_count": 0,
+        "strings_truncated": false,
+        "constants": null,
+        "constant_count": 0,
+        "constants_truncated": false,
+        "basic_blocks": null,
+        "basic_block_count": 0,
+        "basic_blocks_truncated": false
+      },
+      "error": null
+    },
+    {
+      "target": "0x140070F10",
+      "addr": "0x140070e20",
+      "name": "sub_140070E20",
+      "analysis": {
+        "size": "0x137",
+        "prototype": null,
+        "decompile": "// Hidden C++ exception states: #wind=1\n__int64 __fastcall sub_140070E20(__int64 a1, char a2)\n{\n  int v4; // ebp\n  __int64 v5; // rsi\n  __int64 v6; // rax\n  void (__fastcall ***v7)(_QWORD, __int64); // rcx\n  __int64 v8; // rcx\n\n  *(_QWORD *)a1 = &SQEX::CDev::Engine::Sd::Layout::ListenerManager::`vftable'; /*0x140070e4f*/\n  *(_BYTE *)(a1 + 816) = 1; /*0x140070e52*/\n  EnterCriticalSection((LPCRITICAL_SECTION)(a1 + 776)); /*0x140070e60*/\n  v4 = 0; /*0x140070e6a*/\n  if ( *(int *)(a1 + 24) > 0 ) /*0x140070e71*/\n  {\n    v5 = 0; /*0x140070e73*/\n    do /*0x140070eaf*/\n    {\n      v6 = *(_QWORD *)(a1 + 768); /*0x140070e80*/\n      v7 = *(void (__fastcall ****)(_QWORD, __int64))(v5 + v6); /*0x140070e87*/\n      if ( v7 ) /*0x140070e8e*/\n      {\n        (**v7)(v7, 1); /*0x140070e98*/\n        v6 = *(_QWORD *)(a1 + 768); /*0x140070e9b*/\n      }\n      *(_QWORD *)(v5 + v6) = 0; /*0x140070ea2*/\n      ++v4; /*0x140070ea6*/\n      v5 += 8; /*0x140070ea8*/\n    }\n    while ( v4 < *(_DWORD *)(a1 + 24) ); /*0x140070eaf*/\n  }\n  *(_DWORD *)(a1 + 24) = 0; /*0x140070eb1*/\n  if ( *(_BYTE *)(a1 + 816) ) /*0x140070eb5*/\n    LeaveCriticalSection((LPCRITICAL_SECTION)(a1 + 776)); /*0x140070ec5*/\n  v8 = *(_QWORD *)(a1 + 768); /*0x140070ecc*/\n  if ( v8 ) /*0x140070ed6*/\n  {\n    sub_140031E80(v8); /*0x140070ed8*/\n    *(_QWORD *)(a1 + 768) = 0; /*0x140070ede*/\n  }\n  *(_DWORD *)(a1 + 960) = 0; /*0x140070ee5*/\n  *(_DWORD *)(a1 + 888) = 0; /*0x140070eec*/\n  DeleteCriticalSection((LPCRITICAL_SECTION)(a1 + 776)); /*0x140070efa*/\n  *(_QWORD *)(a1 + 56) = &SQEX::CDev::Engine::Sd::Driver::DynamicValue::`vftable'; /*0x140070f08*/\n  *(_QWORD *)a1 = &SQEX::CDev::Engine::Sd::Layout::IListenerManager::`vftable'; /*0x140070f13*/\n  if ( (a2 & 1) != 0 ) /*0x140070f1a*/\n  {\n    if ( (a2 & 4) != 0 ) /*0x140070f20*/\n      nullsub_1(a1, 992); /*0x140070f35*/\n    else\n      sub_140031E80(a1); /*0x140070f25*/\n  }\n  return a1; /*0x140070f3e*/\n}",
+        "decompile_error": null,
+        "disasm": null,
+        "xrefs": null,
+        "callers": [],
+        "caller_count": 0,
+        "callers_truncated": false,
+        "callees": [
+          {
+            "addr": "0x14057b2c8",
+            "name": "__imp_DeleteCriticalSection",
+            "type": "external"
+          },
+          {
+            "addr": "0x14057b2d0",
+            "name": "__imp_LeaveCriticalSection",
+            "type": "external"
+          },
+          {
+            "addr": "0x140031e80",
+            "name": "sub_140031E80",
+            "type": "internal"
+          },
+          {
+            "addr": "0x14057b2d8",
+            "name": "__imp_EnterCriticalSection",
+            "type": "external"
+          },
+          {
+            "addr": "0x140031dd0",
+            "name": "nullsub_1",
+            "type": "internal"
+          }
+        ],
+        "callee_count": 5,
+        "callees_truncated": false,
+        "strings": null,
+        "string_ref_count": 0,
+        "strings_truncated": false,
+        "constants": null,
+        "constant_count": 0,
+        "constants_truncated": false,
+        "basic_blocks": null,
+        "basic_block_count": 0,
+        "basic_blocks_truncated": false
+      },
+      "error": null
+    },
+    {
+      "target": "0x140073C20",
+      "addr": "0x140073c20",
+      "name": "sub_140073C20",
+      "analysis": {
+        "size": "0x15",
+        "prototype": null,
+        "decompile": "void __fastcall sub_140073C20(__int64 a1)\n{\n  __int64 v1; // rcx\n\n  v1 = a1 + 776; /*0x140073c20*/\n  if ( *(_BYTE *)(v1 + 40) ) /*0x140073c27*/\n    LeaveCriticalSection((LPCRITICAL_SECTION)v1); /*0x140073c2d*/\n}",
+        "decompile_error": null,
+        "disasm": null,
+        "xrefs": null,
+        "callers": [],
+        "caller_count": 0,
+        "callers_truncated": false,
+        "callees": [],
+        "callee_count": 0,
+        "callees_truncated": false,
+        "strings": null,
+        "string_ref_count": 0,
+        "strings_truncated": false,
+        "constants": null,
+        "constant_count": 0,
+        "constants_truncated": false,
+        "basic_blocks": null,
+        "basic_block_count": 0,
+        "basic_blocks_truncated": false
+      },
+      "error": null
+    },
+    {
+      "target": "0x140075870",
+      "addr": "0x140075870",
+      "name": "sub_140075870",
+      "analysis": {
+        "size": "0x29",
+        "prototype": null,
+        "decompile": "char __fastcall sub_140075870(__int64 a1, _OWORD *a2)\n{\n  *(_BYTE *)(a1 + 132) |= 2u; /*0x140075870*/\n  *(_OWORD *)(a1 + 56) = *a2; /*0x14007587c*/\n  *(_OWORD *)(a1 + 72) = a2[1]; /*0x140075884*/\n  *(_OWORD *)(a1 + 88) = a2[2]; /*0x14007588c*/\n  *(_OWORD *)(a1 + 104) = a2[3]; /*0x140075894*/\n  return 1; /*0x140075898*/\n}",
+        "decompile_error": null,
+        "disasm": null,
+        "xrefs": null,
+        "callers": [],
+        "caller_count": 0,
+        "callers_truncated": false,
+        "callees": [],
+        "callee_count": 0,
+        "callees_truncated": false,
+        "strings": null,
+        "string_ref_count": 0,
+        "strings_truncated": false,
+        "constants": null,
+        "constant_count": 0,
+        "constants_truncated": false,
+        "basic_blocks": null,
+        "basic_block_count": 0,
+        "basic_blocks_truncated": false
+      },
+      "error": null
+    },
+    {
+      "target": "0x1400758A0",
+      "addr": "0x1400758a0",
+      "name": "sub_1400758A0",
+      "analysis": {
+        "size": "0x22",
+        "prototype": null,
+        "decompile": "char __fastcall sub_1400758A0(__int64 a1, _OWORD *a2)\n{\n  *(_OWORD *)(a1 + 56) = *a2; /*0x1400758a5*/\n  *(_OWORD *)(a1 + 72) = a2[1]; /*0x1400758ad*/\n  *(_OWORD *)(a1 + 88) = a2[2]; /*0x1400758b5*/\n  *(_OWORD *)(a1 + 104) = a2[3]; /*0x1400758bd*/\n  return 1; /*0x1400758c1*/\n}",
+        "decompile_error": null,
+        "disasm": null,
+        "xrefs": null,
+        "callers": [],
+        "caller_count": 0,
+        "callers_truncated": false,
+        "callees": [],
+        "callee_count": 0,
+        "callees_truncated": false,
+        "strings": null,
+        "string_ref_count": 0,
+        "strings_truncated": false,
+        "constants": null,
+        "constant_count": 0,
+        "constants_truncated": false,
+        "basic_blocks": null,
+        "basic_block_count": 0,
+        "basic_blocks_truncated": false
+      },
+      "error": null
+    },
+    {
+      "target": "0x140075900",
+      "addr": "0x140075900",
+      "name": "sub_140075900",
+      "analysis": {
+        "size": "0x6",
+        "prototype": null,
+        "decompile": "char __fastcall sub_140075900(__int64 a1, int a2)\n{\n  *(_DWORD *)(a1 + 120) = a2; /*0x140075900*/\n  return 1; /*0x140075905*/\n}",
+        "decompile_error": null,
+        "disasm": null,
+        "xrefs": null,
+        "callers": [],
+        "caller_count": 0,
+        "callers_truncated": false,
+        "callees": [],
+        "callee_count": 0,
+        "callees_truncated": false,
+        "strings": null,
+        "string_ref_count": 0,
+        "strings_truncated": false,
+        "constants": null,
+        "constant_count": 0,
+        "constants_truncated": false,
+        "basic_blocks": null,
+        "basic_block_count": 0,
+        "basic_blocks_truncated": false
+      },
+      "error": null
+    },
+    {
+      "target": "0x140075940",
+      "addr": "0x140075940",
+      "name": "sub_140075940",
+      "analysis": {
+        "size": "0x9",
+        "prototype": null,
+        "decompile": "void __fastcall sub_140075940(__int64 a1, float a2)\n{\n  *(float *)(a1 + 128) = a2; /*0x140075940*/\n}",
+        "decompile_error": null,
+        "disasm": null,
+        "xrefs": null,
+        "callers": [],
+        "caller_count": 0,
+        "callers_truncated": false,
+        "callees": [],
+        "callee_count": 0,
+        "callees_truncated": false,
+        "strings": null,
+        "string_ref_count": 0,
+        "strings_truncated": false,
+        "constants": null,
+        "constant_count": 0,
+        "constants_truncated": false,
+        "basic_blocks": null,
+        "basic_block_count": 0,
+        "basic_blocks_truncated": false
+      },
+      "error": null
+    },
+    {
+      "target": "0x1400759B0",
+      "addr": "0x1400759b0",
+      "name": "sub_1400759B0",
+      "analysis": {
+        "size": "0xa",
+        "prototype": null,
+        "decompile": "char __fastcall sub_1400759B0(__int64 a1)\n{\n  return *(_BYTE *)(a1 + 132) & 1; /*0x1400759b9*/\n}",
+        "decompile_error": null,
+        "disasm": null,
+        "xrefs": null,
+        "callers": [],
+        "caller_count": 0,
+        "callers_truncated": false,
+        "callees": [],
+        "callee_count": 0,
+        "callees_truncated": false,
+        "strings": null,
+        "string_ref_count": 0,
+        "strings_truncated": false,
+        "constants": null,
+        "constant_count": 0,
+        "constants_truncated": false,
+        "basic_blocks": null,
+        "basic_block_count": 0,
+        "basic_blocks_truncated": false
+      },
+      "error": null
+    }
+  ]
+}

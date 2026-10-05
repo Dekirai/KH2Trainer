@@ -1,0 +1,418 @@
+{
+  "Date": "2026-10-04",
+  "Status": "Safe checkpoint at parent's request; research/core catalog saved, no v0.8 release or live validation.",
+  "Scope": "Localized Axa runtime dialogs, language callbacks, ANSI marshalling and native window/shutdown transitions.",
+  "SourceSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "AddressPolicy": "Domain cil addresses are synthetic IDA addresses. Metadata headerRva locates stored IL, never a callable native entry.",
+  "Findings": [
+    {
+      "addr": "0x1a70",
+      "Domain": "cil",
+      "Finding": "Maps native language 0/7 to table0, 4 to2, 6 to3, 3 to4 and 5 to5; all other values select table0 only if native get_RegionNumber returns0, otherwise table1. The verified build returns region1, so the default is English.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0x1ad0",
+      "Domain": "cil",
+      "Finding": "For hook code5, replaces dialog control1/2 text with shared strwOK/strwCancel pointers, then always calls CallNextHookEx using shared gMsgHookHandle. It ignores the two SetDlgItemTextW results.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0x1b00",
+      "Domain": "cil",
+      "Finding": "Selects one of six localized quit texts by language and game-status0/1/2, installs thread-local WH_CBT hook5, then shows OKCancel/question with the second button default. Relabels those buttons Yes/No. Unhooks on normal return. Only status1 plus DialogResult.OK clears ShowEndMessageDisposed and starts the separate progress-form thread; returns the original DialogResult.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0x1be0",
+      "Domain": "cil",
+      "Finding": "Stores true to the shared ShowEndMessageDisposed byte and returns. Native shutdown bridge invokes this method before platform/renderer cleanup; it does not join the progress thread.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0x1bf0",
+      "Domain": "cil",
+      "Finding": "Indexes 32-byte message records at (messageID*6 + language) without checking messageID. Uses optional button text pointers or OK/Cancel defaults. Nonzero record+24 values1 and2 both choose the same two-button confirmation; only DialogResult.OK produces true. Zero chooses informational OK and always returns false. Creates a TopMost owner Form, clears TopMost afterward, and has no explicit owner disposal or finally-based hook cleanup.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0x8620",
+      "Domain": "cil",
+      "Finding": "Starts a new Thread with ParameterizedThreadStart(ShowMessage) and the supplied string. The body neither stores/joins the Thread nor configures apartment state or IsBackground.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0x8640",
+      "Domain": "cil",
+      "Finding": "Creates an autosized progress Form and fill-docked Label from the supplied string; shows it and pumps Application.DoEvents in a tight loop until the shared completion byte becomes true. The initial true case skips its explicit Close branch; no sleep, join, cancellation token or explicit IDisposable cleanup is present.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0x8730",
+      "Domain": "cil",
+      "Finding": "Calls System.Object constructor only; pform remains its default null until ShowMessage assigns it.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0xdf50",
+      "Domain": "cil",
+      "Finding": "Allocates ANSI unmanaged string storage via Marshal.StringToHGlobalAnsi and records the returned IntPtr. This is ANSI marshalling, not UTF8 conversion.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0xdf70",
+      "Domain": "cil",
+      "Finding": "Returns the raw pointer currently stored in ptr through IntPtr.ToPointer; it performs no null, disposal or lifetime check.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0xdf80",
+      "Domain": "cil",
+      "Finding": "Calls Marshal.FreeHGlobal on ptr without clearing ptr or testing a disposed flag. Repeated manual disposal is not made idempotent by this body.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0xdfa0",
+      "Domain": "cil",
+      "Finding": "Calls IDisposable.Dispose virtually on itself. This finalizer helper delegates release to the public dispose path.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0xdfb0",
+      "Domain": "cil",
+      "Finding": "Dispose(true) directly frees ptr. Dispose(false) calls its finalizer helper and invokes Object.Finalize in a finally clause. Neither branch clears ptr or checks ownership before release.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0xdfe0",
+      "Domain": "cil",
+      "Finding": "The parameterless public Dispose calls Dispose(true) and then GC.SuppressFinalize. It does not independently prevent repeated explicit disposal.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0xdff0",
+      "Domain": "cil",
+      "Finding": "Finalize dispatches to Dispose(false). This is a real IL body rather than a bodyless runtime metadata entry.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0x1d10",
+      "Domain": "cil",
+      "Finding": "Forwards directly to BaseSimpleForm.ExitApplication. Its native CLR fixup is MethodDef0x060000AA; the downstream UI-thread Invoke/timer path requests actual game-window closure.",
+      "Evidence": [
+        "managed_tools_round3_exit_cil.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_exit_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0xafb0",
+      "Domain": "cil",
+      "Finding": "Sets the Japanese menu item checked and the other eight unchecked, then calls OutputLanguageType(0). The callee writes one byte to C:/hd28/kh2fmLanguageType.bin and displays a Japanese restart notice after open success. This callback does not translate controls or reload running resources.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0xb030",
+      "Domain": "cil",
+      "Finding": "Sets the United States menu item checked and the other eight unchecked, then calls OutputLanguageType(1). The callee writes one byte to C:/hd28/kh2fmLanguageType.bin and displays a Japanese restart notice after open success. This callback does not translate controls or reload running resources.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0xb0b0",
+      "Domain": "cil",
+      "Finding": "Sets the France menu item checked and the other eight unchecked, then calls OutputLanguageType(4). The callee writes one byte to C:/hd28/kh2fmLanguageType.bin and displays a Japanese restart notice after open success. This callback does not translate controls or reload running resources.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0xb130",
+      "Domain": "cil",
+      "Finding": "Sets the Germany menu item checked and the other eight unchecked, then calls OutputLanguageType(3). The callee writes one byte to C:/hd28/kh2fmLanguageType.bin and displays a Japanese restart notice after open success. This callback does not translate controls or reload running resources.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0xb1b0",
+      "Domain": "cil",
+      "Finding": "Sets the United Kingdom menu item checked and the other eight unchecked, then calls OutputLanguageType(2). The callee writes one byte to C:/hd28/kh2fmLanguageType.bin and displays a Japanese restart notice after open success. This callback does not translate controls or reload running resources.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0xb230",
+      "Domain": "cil",
+      "Finding": "Sets the Spain menu item checked and the other eight unchecked, then calls OutputLanguageType(5). The callee writes one byte to C:/hd28/kh2fmLanguageType.bin and displays a Japanese restart notice after open success. This callback does not translate controls or reload running resources.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0xb2b0",
+      "Domain": "cil",
+      "Finding": "Sets the Italy menu item checked and the other eight unchecked, then calls OutputLanguageType(6). The callee writes one byte to C:/hd28/kh2fmLanguageType.bin and displays a Japanese restart notice after open success. This callback does not translate controls or reload running resources.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0xb330",
+      "Domain": "cil",
+      "Finding": "Sets the Portuguese (Brazil) menu item checked and the other eight unchecked, then calls OutputLanguageType(8). The callee writes one byte to C:/hd28/kh2fmLanguageType.bin and displays a Japanese restart notice after open success. This callback does not translate controls or reload running resources.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0xb3b0",
+      "Domain": "cil",
+      "Finding": "Sets the Spanish (Latin America) menu item checked and the other eight unchecked, then calls OutputLanguageType(9). The callee writes one byte to C:/hd28/kh2fmLanguageType.bin and displays a Japanese restart notice after open success. This callback does not translate controls or reload running resources.",
+      "Evidence": [
+        "managed_tools_round3_evidence.json",
+        "managed_tools_round3_metadata.json",
+        "managed_tools_round3_cil_bytes.json"
+      ],
+      "Limitations": "Synthetic IDA CIL address, never a process address or native RVA. The original stored MethodDef/header/code and EH bytes are preserved. Static evidence only; no UI/game/IDB action or dialog invocation. Referenced native and framework routines impose their own lifecycle prerequisites."
+    },
+    {
+      "addr": "0x140104ec0",
+      "Domain": "native",
+      "Finding": "Reads unsigned DWORD AppInterface+636 through global pointer79CF00 with no null check; this is the game-status selector used by the managed quit prompt.",
+      "Evidence": [
+        "managed_tools_round3_native_evidence.json"
+      ],
+      "Limitations": "Full fresh ASM captured with counted lines and pseudocode; no native execution. Specific behavior only; not a claim that every helper or runtime condition is understood."
+    },
+    {
+      "addr": "0x140104ed0",
+      "Domain": "native",
+      "Finding": "Reads unsigned DWORD AppInterface+628 through global pointer79CF00 with no null check; it does not set or normalize the language.",
+      "Evidence": [
+        "managed_tools_round3_native_evidence.json"
+      ],
+      "Limitations": "Full fresh ASM captured with counted lines and pseudocode; no native execution. Specific behavior only; not a claim that every helper or runtime condition is understood."
+    },
+    {
+      "addr": "0x140104ee0",
+      "Domain": "native",
+      "Finding": "Returns constant1. This makes the fallback in managed result_language choose English in this build.",
+      "Evidence": [
+        "managed_tools_round3_native_evidence.json"
+      ],
+      "Limitations": "Full fresh ASM captured with counted lines and pseudocode; no native execution. Specific behavior only; not a claim that every helper or runtime condition is understood."
+    },
+    {
+      "addr": "0x1401042e0",
+      "Domain": "native",
+      "Finding": "Native message dispatcher: if AppInterface+4752 is nonnegative, returns true without a dialog. Otherwise enumerates processes and may terminate exact-name WaitTitleProject.exe; calls the audio wrapper and sets GX suspension; sends synchronous WM_APP+1 with messageID and a stack int* result, waits if untouched, then clears pause/suspend. ID1 and6 true results invoke managed ExitApplication; ID5 true and ID7 unconditionally store256 to AppInterface+4752. Other IDs have no shutdown action here. No ID range check or timeout.",
+      "Evidence": [
+        "managed_tools_round3_native_evidence.json"
+      ],
+      "Limitations": "Full fresh ASM captured with counted lines and pseudocode; no native execution. Specific behavior only; not a claim that every helper or runtime condition is understood."
+    },
+    {
+      "addr": "0x140105380",
+      "Domain": "native",
+      "Finding": "Starts native cleanup by calling the CLR EndMessageClose bridge, then MediaFoundation shutdown, renderer cleanup and CoUninitialize; releases Steam platform state and allocated path entries. The flag signal is not a progress-thread join.",
+      "Evidence": [
+        "managed_tools_round3_native_evidence.json"
+      ],
+      "Limitations": "Full fresh ASM captured with counted lines and pseudocode; no native execution. Specific behavior only; not a claim that every helper or runtime condition is understood."
+    },
+    {
+      "addr": "0x140127eb0",
+      "Domain": "native",
+      "Finding": "Obtains GX singleton and sets its byte+776 to1, without retaining the previous value.",
+      "Evidence": [
+        "managed_tools_round3_native_evidence.json"
+      ],
+      "Limitations": "Full fresh ASM captured with counted lines and pseudocode; no native execution. Specific behavior only; not a claim that every helper or runtime condition is understood."
+    },
+    {
+      "addr": "0x140125a10",
+      "Domain": "native",
+      "Finding": "Obtains GX singleton and clears byte+776, without checking which caller set the suspension.",
+      "Evidence": [
+        "managed_tools_round3_native_evidence.json"
+      ],
+      "Limitations": "Full fresh ASM captured with counted lines and pseudocode; no native execution. Specific behavior only; not a claim that every helper or runtime condition is understood."
+    },
+    {
+      "addr": "0x140133470",
+      "Domain": "native",
+      "Finding": "Returns the global HWND value at8BBCB8; it does not validate window lifetime.",
+      "Evidence": [
+        "managed_tools_round3_native_evidence.json"
+      ],
+      "Limitations": "Full fresh ASM captured with counted lines and pseudocode; no native execution. Specific behavior only; not a claim that every helper or runtime condition is understood."
+    },
+    {
+      "addr": "0x14013b2d0",
+      "Domain": "native",
+      "Finding": "Two-instruction thunk: clears EDX and tail-jumps to0x140079A60, preserving the incoming CL control. The decompiler expands the chained audio helper; ABI is established from actual ASM, not the apparent pseudo-signature.",
+      "Evidence": [
+        "managed_tools_round3_native_evidence.json"
+      ],
+      "Limitations": "Full fresh ASM captured with counted lines and pseudocode; no native execution. Specific behavior only; not a claim that every helper or runtime condition is understood."
+    },
+    {
+      "addr": "0x140104e00",
+      "Domain": "native",
+      "Finding": "If helper1213B0 returns false, tail-calls the native dispatcher with messageID5; otherwise returns false. Meaning of the guard helper is not newly inferred.",
+      "Evidence": [
+        "managed_tools_round3_native_evidence.json"
+      ],
+      "Limitations": "Full fresh ASM captured with counted lines and pseudocode; no native execution. Specific behavior only; not a claim that every helper or runtime condition is understood."
+    },
+    {
+      "addr": "0x140104e40",
+      "Domain": "native",
+      "Finding": "If helper1213B0 returns false, tail-calls the native dispatcher with messageID7; otherwise preserves its true return. Meaning of the guard helper is not newly inferred.",
+      "Evidence": [
+        "managed_tools_round3_native_evidence.json"
+      ],
+      "Limitations": "Full fresh ASM captured with counted lines and pseudocode; no native execution. Specific behavior only; not a claim that every helper or runtime condition is understood."
+    },
+    {
+      "addr": "0x14014eb70",
+      "Domain": "native",
+      "Finding": "The full MyApp Update body ends by testing AppInterface+4752; nonnegative values return2, otherwise return0. This confirms why the message dispatcher's store256 is an exit request, while the rest of this large body is outside this claim's scope.",
+      "Evidence": [
+        "managed_tools_round3_exit_native.json"
+      ],
+      "Limitations": "Full fresh ASM captured with counted lines and pseudocode; no native execution. Specific behavior only; not a claim that every helper or runtime condition is understood."
+    }
+  ],
+  "ActivationContract": [
+    "No production activation is proposed. Existing BaseSimpleForm and the CLR must already own their UI thread and native AppInterface/window.",
+    "ShowEndMessageBox requires a valid owner and initialized AppInterface getter globals. It mutates shared hook/caption/termination state and may create an unjoined progress thread.",
+    "AnyMessage requires ID0..7 even though its body does not check this. WM_APP+1 requires same-process writable int* LPARAM for the synchronous handler. It is not an external process control protocol.",
+    "The native dispatcher is not a neutral dialog API: it has process termination, pause/suspend and shutdown effects. No Trainer call or Windows message is implemented.",
+    "English dialogue fallback does not translate KH2Form controls or supply missing private developer assemblies. Language menu callbacks persist a restart setting only."
+  ],
+  "Feature": {
+    "Data": "../../../trainer/KH2Trainer/Data/runtime_diagnostics.json",
+    "Core": "../../../trainer/KH2Trainer.Core/BinaryDiagnosticCatalog.cs",
+    "Tests": "../../../trainer/KH2Trainer.Tests/BinaryDiagnosticTests.cs",
+    "Result": "60 isolated checks / 0 failures",
+    "API": "BinaryDiagnosticCatalog.Load(string)/Load(Stream); stream remains caller-owned. Messages/ClosePrompts/Languages/Evidence/FindMessage and ResolveNativeLanguage.",
+    "Pending": "Root UI/package integration and independent feature review. No v0.8 package built."
+  },
+  "OpenReviews": [
+    "GummiExtraFeatures.inl review requested by native_debug, not started.",
+    "ActorMovementFeatures.inl review requested by pe_inventory, not started."
+  ],
+  "Safety": {
+    "GameAccess": false,
+    "UIAccess": false,
+    "IDBWrites": false,
+    "SharedBuildEdits": false,
+    "PreviousReleaseChanges": false
+  }
+}

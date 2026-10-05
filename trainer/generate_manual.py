@@ -1,0 +1,143 @@
+"""Generate the English trainer manual from its actual compiled feature catalog."""
+from pathlib import Path
+from collections import Counter
+from html import escape
+import argparse
+import json
+
+root = Path(__file__).resolve().parent
+parser = argparse.ArgumentParser()
+parser.add_argument('--output', type=Path, required=True)
+args = parser.parse_args()
+features = json.loads((root/'KH2Trainer/Data/features.json').read_text(encoding='utf-8-sig'))
+e = lambda value: escape(str(value), quote=True)
+counts = Counter(f['Kind'] for f in features)
+sections = []
+for category in dict.fromkeys(f['Category'] for f in features):
+    cards = []
+    for f in (x for x in features if x['Category'] == category):
+        controls = []
+        if f['Kind'] in ('Number', 'Toggle', 'Choice'):
+            controls.append(f"<p>Accepted range: <b>{e(f['Minimum'])}–{e(f['Maximum'])} {e(f.get('Unit',''))}</b>.</p>")
+        if f.get('Choices'):
+            controls.append('<p>'+e('; '.join(f"{c['Label']} ({c['Value']})" for c in f['Choices']))+'</p>')
+        arguments = []
+        for a in f.get('Arguments', []):
+            arguments.append(f"<li>{e(a['Name'])}: {e(a['Minimum'])}–{e(a['Maximum'])}" +
+                (f" · {e(a['Catalog'])} selection" if a.get('Catalog') else '')+
+                (': '+e(', '.join(c['Label'] for c in a['Choices'])) if a.get('Choices') else '')+'</li>')
+        if arguments: controls.append('<ul>'+''.join(arguments)+'</ul>')
+        evidence = ''.join(f"<li><code>{e(x['Address'])}</code> — {e(x['Finding'])}<br><small>{e(x['Level'])}</small></li>" for x in f['Evidence'])
+        notes = ('<p class="notice">Changes the loaded game state. Saving in the game can make the change permanent.</p>' if f.get('ChangesProgression') else '')
+        notes += '<p>'+e(f.get('RestoreBehavior',''))+'</p>'
+        cards.append(f"<article data-search='{e(f['Name']+' '+f['Description']+' '+category)}'><h3>{e(f['Name'])}</h3>"
+            f"<span class='badge'>{e(f['Kind'])}</span><span class='badge'>{'Playable scene required' if f.get('RequiresScene',True) else 'Available without a playable scene'}</span>"
+            f"<p>{e(f['Description'])}</p>{''.join(controls)}{notes}<details><summary>Implementation evidence</summary><ul>{evidence}</ul>"
+            f"<small>Feature ID: {e(f['Id'])}; capability slot: {f['CapabilitySlot']}; command: {f['CommandId']}.</small></details></article>")
+    sections.append(f'<section><h2>{e(category)}</h2>'+''.join(cards)+'</section>')
+
+document = '''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KH2 Trainer — User guide</title><style>
+:root{color-scheme:dark;font:16px/1.6 system-ui,Segoe UI,sans-serif;background:#10151e;color:#eef4fa}*{box-sizing:border-box}
+body{max-width:1120px;margin:auto;padding:32px 24px 70px}header{padding:24px 0 32px;border-bottom:1px solid #354459}
+h1{font-size:44px;line-height:1.15;margin:8px 0}h2{margin-top:36px;color:#66e0c2}h3{margin:0 0 12px}a{color:#82e7d0}
+article,.panel{padding:24px;margin:16px 0;border:1px solid #354459;border-radius:12px;background:#1c2533}
+small,.muted{color:#afbdd0}.notice{border-left:3px solid #dab275;padding:10px 16px;background:#322c24}
+.badge{display:inline-block;margin:0 8px 4px 0;padding:2px 9px;border:1px solid #526680;border-radius:20px;font-size:12px}
+code,kbd{font:13px Consolas,monospace;background:#10151e;border-radius:4px;padding:3px 6px;overflow-wrap:anywhere}
+summary{cursor:pointer;color:#a8dbcF}li{margin:6px 0}input{width:100%;padding:13px;background:#121b28;color:white;border:1px solid #667890;border-radius:8px;font:inherit}
+nav{display:flex;gap:20px;flex-wrap:wrap}table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:10px;border-bottom:1px solid #354459}
+[hidden]{display:none!important}@media print{input{display:none}body{color:black;background:white}article,.panel{background:white;break-inside:avoid}h2{color:#176351}}
+</style></head><body><header><div class="muted">KINGDOM HEARTS II FINAL MIX · Steam 1.0.0.2 · x64</div><h1>KH2 Trainer</h1>
+<p>Development build 0.11. This guide describes the implemented controls and their evidence. Live gameplay validation is still pending.</p>
+<nav><a href="#start">Getting started</a><a href="#keys">Shortcuts</a><a href="#saves">Backups and profiles</a><a href="#features">Feature reference</a><a href="#technical">Build and behavior</a></nav></header>
+<section id="start"><h2>Getting started</h2><ol>
+<li>Run <code>KH2_Trainer.exe</code>. The self-contained package includes its .NET runtime, catalogs and native bridge.</li>
+<li>Choose <b>Start game</b> or launch KH2 normally. Load a playable scene, then choose the process and <b>Connect</b>.</li>
+<li>Open a category. Its live value shows the current state; editing the input does not apply anything until you choose <b>Apply</b> or <b>Run action</b>.</li>
+<li>If KH2 stops updating in the background, return focus to the game after submitting an action. Unstarted commands expire after eight seconds.</li>
+<li>Use <b>Disable all effects</b> to release temporary changes, or <b>Disconnect</b> before ending the session.</li></ol>
+<p>One-time audio, display, movement, targeting, loot, Gummi, damage, mission, inventory, ability, stat and EXP changes remain applied. Closing the trainer does not undo those actions.</p>
+<h3>Trigger a Drive Form</h3><ol>
+<li>After updating from an earlier trainer build, close KH2 and restart it before connecting the new EXE.</li>
+<li>In <b>Drive and Forms</b>, choose Valor, Wisdom, Limit, Master, Final or Antiform under <b>Trigger Drive Form</b>.</li>
+<li>Close game menus and press <b>Trigger Drive Form</b>. Return focus to KH2 if it pauses in the background.</li>
+<li>The trainer requests the exact selected form without a Drive cost, party requirement or random Anti/Final roll. Zero Drive bars are supported; the native form timer is initialized separately.</li>
+<li>If Sora is already in any Drive Form, the trainer first requests Revert, waits for base Sora to finish loading, and then requests the selected form. Selecting the same form also starts this sequence.</li>
+<li>Watch the requested form, transition phase and last result readouts. <b>Revert</b> returns to base Sora. <b>Cancel pending switch</b> discards remaining trainer steps; an already running native transition finishes normally.</li></ol>
+<p>Valor, Master and Final require a second Keyblade. Before loading the form, the trainer checks its weapon, model mapping and motion resource. A missing or invalid second weapon is replaced with Sora's current valid main Keyblade. Existing valid form weapons are kept. This fills the form's equipment slot without taking an item from the bag or unlocking the form. The equipment assignment remains after Revert or disconnect and can be included in a later normal game save.</p>
+<p>Commands still require a valid player, stable game state and compatible resources. Scene changes, disconnection and a 30-second timeout stop remaining trainer steps. If neither the equipped form weapon nor Sora's main weapon can supply the required resources, the transition is rejected before loading. Gameplay within the form can still change normal progression.</p>
+<h3>Camera control</h3><p>Enable free camera during normal field-camera play to hold its position, direction and roll. The roll control accepts −180 to 180 degrees. Horizontal FOV and free camera end when the scene, camera owner or controller mode changes. Enable them again after returning to normal gameplay. Returning control to the game lets the native camera produce its next pose.</p>
+<p>With free camera disabled, <b>Recenter</b> and <b>Snap</b> queue a request for the next normal follow-camera update. Requests require the living player to be the camera target and expire after 1.5 seconds if not dispatched. Existing native requests, menus, transitions and script cameras block them. The owner, controller mode, pending request and camera distances are also displayed.</p>
+<h3>Sora movement</h3><p>Set walking speed, running speed, maximum falling speed or base jump height for the current Sora actor, including stable Drive Forms. These settings affect movement parameters independently of animation tempo. High Jump and special actions can choose their own values. A form transition, new actor or script can replace an applied value. Profiles can apply these settings once when you choose Apply; they do not keep applying them after an actor change.</p>
+<h3>Loot and collection</h3><p><b>Draw</b> adds horizontal pickup distance while vertical distance and pickup restrictions still apply. <b>Jackpot</b> adds to the party's orb-quantity factor. <b>Lucky Lucky</b> adds to the party's item-roll factor; the three item slots are separate rolls and high values are not a universal guaranteed-drop switch. These controls replace the current player's derived modifiers, so rebuilding equipment, abilities or status may replace them.</p>
+<h3>Target acquisition and retention</h3><p><b>Target search range scale</b> changes normal acquisition range and recalculates the manual lock-on break distance. Scales above 1 also expand the automatic selector's vertical limits. Use <b>Lock-on break distance</b> afterward to choose a separate retention distance. Native special-target exemptions and scripted rules still apply. These controls do not force a target or create reticle objects.</p>
+<p><b>Reset targeting ranges</b> reads the currently loaded game parameters and restores scale 1 and their break distance. Readouts show the current manual acquisition range and both native defaults. The numeric editor's preset is separate from those defaults. Scripts and scene initialization can replace these one-time runtime edits.</p>
+<h3>Body separation and collision diagnostics</h3><p><b>Disable Sora body separation</b> removes the current Sora actor from normal body separation against other actors. World collision and hit detection have their own rules. The trainer owns only the bit it sets; an existing native override is left alone. Disconnect, Disable all effects or loss of the current actor releases the override where ownership is still valid. Re-enable it after an actor or scene change.</p>
+<p>Collision readouts show the last native result, including floor height, polygon, support normal and side-contact state. They do not issue a new collision query. Contact readouts become unavailable in known paused, frozen or bypassed states; no native per-result frame stamp is known, so treat them as cached diagnostics.</p>
+<p><b>Munny retained</b> controls the player's contribution to the Drive Converter calculation: 100% keeps the normal munny share; 0% converts it to the mapped Drive-orb kinds. The game multiplies contributions from the three party slots. Readouts show normal horizontal pickup radius and the party's resulting orb, item-roll and munny-retention factors. Native flags and world-specific prize rules remain active.</p>
+<h3>Gummi movement and special weapons</h3><p>During active Gummi gameplay, change the current ship's mobility, roll impulse and lock-on charge bonuses. Negative mobility bonuses use the game's loaded scaling parameter; the effective-factor readout shows the result. Roll impulse changes movement, not roll duration. The lock-on bonus shortens resource-defined charging delays down to their native minima.</p>
+<p><b>Add special-weapon charge</b> uses the installed combo weapon's native charge path. Charge converts to stock up to the native cap of nine. It does not install a missing weapon. Stock, charge progress, combo phase, roll time and effective movement factors have readouts. These are one-time runtime changes; rebuilding the ship can replace them.</p>
+<p><b>Clear enemy bullets</b> removes the current native ENEMY_SHOT pool's active bullets. Lasers and other projectile families remain, and enemies can fire again. This direct cleanup does not grant the DRAIN weapon's absorption score. The active enemy-bullet count describes this pool only. The action requires an active mission and a living ship.</p>
+<h3>Gummi editor camera</h3><p>In a stable Gummi editor or ship preview, <b>Reset editor camera</b> starts the game's camera reset. In preview mode, apply a field of view from 20 to 90 degrees. These are one-time requests; subsequent editor input can replace them. The current field of view, target pitch and yaw, transition timer and editor phase are readouts.</p>
+<p>The actions wait for a valid editor, camera, cursor and scheduler state. A transition or input lock blocks a new request. They do not change the ship blueprint and are excluded from profiles.</p>
+<h3>Game messages</h3><p>Use <b>Game Messages</b> while disconnected to look up eight error dialogs and three exit prompts in their six original languages. Search matches every language, and the selected text is shown in English by default. Button captions are displayed as reference text. The page explains each response and offers source details without invoking the game's dialogs.</p>
+<p>The Steam executable still contains legacy Epic Games Launcher wording. Identical message text can lead to different native outcomes; the catalog preserves the separate message IDs and their behavior. Displayed wording is copied exactly from the binary, including its punctuation and spacing.</p>
+<h3>Mission timer and diagnostics</h3><p>During an active mission with an armed or running timer, restart it as a countdown of 1–3599 seconds or restart count-up using its existing configured limit. Both actions can change the current timer direction. The game still decides what happens at expiry; restarting time can therefore affect mission results. Previously played final-three-second warning sounds and cues may stay consumed after a restart.</p>
+<p>Mission ID, phase, timer mode, pause state, counters, gauges and score have readouts. <b>Set Mission Counter</b> and <b>Set Mission Gauge</b> change one of the three configured widgets up to its current maximum. Their native boundary events remain active: reaching zero or maximum may grant rewards, set persistent flags, end the mission or change rooms. The score action accepts 0–9999 for an existing configured score widget. It retains later native score/EXP behavior and does not rewrite reward history. All mission edits are one-time actions, excluded from profiles and without automatic undo.</p>
+<h3>Damage tuning</h3><p>Set seven received-hit factors for the living player or manually locked living enemy: physical, fire, blizzard, thunder, dark, light and general. Each accepts a whole percentage from 0 to 255. The general factor multiplies the selected element factor; 100% is neutral for that factor. Native difficulty, abilities and later modifiers remain in the calculation.</p>
+<p>Healing and direct scripted HP changes use separate paths. Zero also suppresses a native hit response, so these controls are not a universal final-HP multiplier. Equipment, scripts and actor/status rebuilds may overwrite the one-time edits. They do not enter profiles or directly write saves. Base cap/floor readouts describe an earlier calculation stage, not a final HP-damage limit. Extreme modified attack data remains subject to the game's signed integer arithmetic.</p>
+<p>Element names follow the <a href="https://openkh.dev/kh2/file/type/00battle.html#enmp">OpenKh EnemyParam documentation</a>, matched to native STATUS initialization.</p>
+<h3>Display previews</h3><p>Brightness accepts native levels −50 to 50. Color-vision preview takes a mode from 0 to 3 and severity from 1 to 10; mode 0 disables correction. These actions use the game's preview functions and leave its configuration file untouched. <b>Restore loaded display settings</b> reapplies the brightness and color-vision settings already loaded by KH2. Disconnecting leaves a completed preview in place; later game settings can replace it. Brightness may be saved in a trainer profile and is applied once when that profile runs.</p>
+<h3>Window and resolution</h3><p><b>Set windowed resolution</b> queues a windowed request using whole-pixel width from 640 to 7680 and height from 360 to 4320. The game fits the pair to 16:9 and may reduce the result to match the desktop or its framebuffer allocation budget. <b>Maximize game window</b> requests the native maximized mode. Both actions require a stable renderer and wait for an existing resize or retry to finish.</p>
+<p>A successful response means the request was queued. The game applies it on a later render frame. Check the actual dimensions, mode and pending-state readouts afterward. The requested dimensions are the native windowed request values; they do not predict the maximized size. These are one-time actions, excluded from profiles. Later game settings or window changes can replace them.</p>
+<h3>MSAA policy</h3><p>Choose <b>Fixed</b> to request a sample count of 1, 2, 4 or 8, or <b>Maximum</b> to cap the game's adaptive choice. A count of 1 disables multisampling. Both modes respect the renderer's current native limit, including its vendor-specific limit. The game makes the resource change during its normal rendering update; the current sample count may change later.</p>
+<p>The native adaptive calculation still runs and maintains its history. Readouts show the requested count, native capacity, current count, last native proposal and last policy result. <b>Resume native MSAA</b>, disconnect, loss of the trainer heartbeat or <b>Disable all effects</b> resumes the native choice at its next decision. A renderer or thread replacement ends the override and requires a game restart before reinstallation. Requests are excluded from profiles.</p>
+<h3>Renderer diagnostics</h3><p>Inspect the latest completed GPU command span, CPU time in Present, CPU fence wait and render-recording interval. These measure different stages and are not a combined frame time or FPS counter. Timing values become unavailable when their history is empty, too old or busy.</p>
+<p>Additional readouts show the main framebuffer and swapchain dimensions, current MSAA samples, native MSAA capacity, adaptive AA level and occupied entries in three resource pools. Framebuffer heap allocation and its cached budget are shown in MiB; the budget is an internal framebuffer allocation target, not total or free GPU memory. These controls only inspect values and do not change rendering settings.</p>
+<h3>Offline Asset Explorer</h3><p>Open a loose asset to list BAR entries, or open a retail <code>.hed</code> index with its matching <code>.pkg</code> in the same directory. No game connection is required. A text list of exact asset paths, one per line, can resolve package hashes; choose it before opening the index. Unknown names remain visible as hashes.</p>
+<p>Filter by name, hash, tag or type. Select <b>Inspect / open selected</b> to enter a nested BAR or inspect bytes. A package entry opens a choice of original and remastered payloads. <b>Back</b> restores the previous container and selection. The preview shows only the first 4 KiB; export writes the full selected payload. Exporting an unopened package entry selects its original payload.</p>
+<p>Choose a new destination file outside the game installation. Existing files are kept. Exports are published only after completion; cancellation removes the temporary export. Raw remasters use their declared logical length, without the package's alignment padding. Source identities and container metadata are checked again when reopening an entry. Default limits allow 32 MiB of metadata, 512 MiB per decoded package payload and 16 container levels. Runtime-relocated BARs and unsupported storage modes are rejected.</p>
+<h3>Compare asset content</h3><p>Choose a source label, select an asset and use <b>Add selected fingerprint</b>. <b>Add current container</b> records the open container instead of its selected child. Each record contains length, SHA256, legacy MD5 and its exact nested entry location. Equal tags, BAR aliases, package originals and remastered payloads keep separate identities. Give unrelated sources different labels.</p>
+<p><b>Find matching selected content</b> hashes the selected payload and lists records with the same SHA256 and byte length. This finds identical content across names and archives; it does not establish that two differing models or sounds are functionally equivalent. A raw package row selects its original payload. Open it first to choose a remastered payload.</p>
+<p><b>Save new index</b> writes a portable JSON file to a new local path outside game folders. Existing files are kept and cancellation removes the unpublished temporary file. <b>Load index</b> replaces the in-memory list; stored asset locations are descriptive and are never opened automatically. Loaded hashes are observations until you compare them with a freshly read selection. The legacy native source-index cache is not imported because its filename encoding and padding are not established.</p>
+<h3>Mickey rescue</h3><p><b>Rescue-use counter</b> edits the loaded save's counter from 0 to 999. A lower count changes the threshold used by the native rescue roll. The mission permission, game-over type and partner checks still apply. The displayed threshold is conditional; it is not an unconditional rescue chance or a command to spawn Mickey.</p>
+<p>The separate recorded appearances counter remains a readout. Game-over type, phase and the selected-rescue flag provide diagnostics. The counter edit is excluded from profiles and can persist if you save in KH2.</p>
+<h3>Audio mix</h3><p>Master, music, effects and voice controls accept 0–100%. Press Apply to change the live mixer; 0% requests silence without stopping playback. Native pauses and track ducking continue to apply. Later game settings or fades can replace these values.</p>
+<p><b>Apply game audio settings</b> reapplies all four audio levels currently loaded by KH2. These controls do not write the configuration file. Disconnecting or disabling continuous effects leaves these one-time mix changes applied. A busy audio worker can briefly make the controls unavailable; retry the action when the mixer is available.</p>
+<p>The editable live values show mixer targets. Individual bus readouts show the current internal gain stage during a transition. These are percentages of an internal multiplier, not loudness measurements or decibels. Effects has no single target readout when its buses contain different target values.</p>
+<h3>Spatial audio diagnostics</h3><p>Inspect the registered listener count, capacity, peak and enabled count. When the selected listener still belongs to the validated list, its ID, kind, unsigned priority and cached XYZ position are shown. The native selection rule prefers the highest priority, with later listeners winning ties.</p>
+<p>Coordinates come from the last native listener update. They are not a fresh camera-position query. An empty selection, stale pointer or busy audio lock leaves dependent values unavailable, shown as an em dash. A displayed zero is a validated value. These diagnostics do not create, remove, move or disable listeners.</p>
+<h3>Player animation tempo</h3><p>Set the requested rate between 0.1× and 3×, then enable the animation override. It applies to Sora's animation controller, including his Drive Forms. Combat scripts, effects and other game timers have separate update paths.</p>
+<p>The override follows ordinary animation changes on the same player and can affect movement and attack timing driven by the animation. It ends when the player, model, form or scene changes, or when a native script takes over the animation rate. Disabling it restores the original rate only while the trainer can still prove ownership of the same player and value. Off does not guarantee a rate of 1×; check the actual rate readout. The status readout explains why it ended. Frame, duration, motion IDs, blend values and resource format are readouts; they do not seek or replace animations.</p></section>
+<section id="keys"><h2>Keyboard shortcuts</h2><p>Enable <b>Training shortcuts</b> in the Keyboard Shortcuts category. These keys work while the game has focus and the trainer is connected. Key holds do not repeat actions.</p>
+<table><tr><th>Keys</th><th>Action</th></tr><tr><td>Ctrl+F5</td><td>Disable temporary effects and training shortcuts</td></tr>
+<tr><td>Ctrl+F6</td><td>Restore the living player's HP and MP</td></tr><tr><td>Ctrl+F7</td><td>Save a position bookmark</td></tr>
+<tr><td>Ctrl+F8</td><td>Return to the position bookmark, if its original scene/player is still valid</td></tr>
+<tr><td>Ctrl+F9</td><td>Toggle actor/effect freeze; scripts, some timers and hit checks can continue</td></tr>
+<tr><td>Ctrl+F11</td><td>Toggle field simulation pause; shows a captured image while paused</td></tr>
+<tr><td>Ctrl+F12</td><td>Run one field update, capture the new image, then pause again</td></tr>
+<tr><td>F10</td><td>Toggle the native developer desktop; independent of the training-shortcut switch</td></tr></table>
+<p>Hold <b>Right Ctrl</b> to interact with the native developer desktop using the mouse.</p></section>
+<section id="saves"><h2>Backups and profiles</h2><p>Close KH2 before creating or restoring a backup. Choose the actual save folder in <b>Save Manager</b>.
+Backups include nested files and a SHA-256 manifest. Restore verifies the archive first and backs up the current target before replacing files. Additional files outside the archive are retained.
+An empty previous folder is recorded explicitly; its record is not a command to delete files.</p>
+<p>Profiles store eligible numeric settings and toggles. Load a profile, review the inputs, then apply it. Action buttons are excluded. Saved audio levels are applied once when a profile is applied. If one setting fails, earlier successful settings remain applied and the log identifies the stopping point.</p>
+<p>Profiles and backups are stored under <code>%LOCALAPPDATA%\\KH2Trainer</code>.</p></section>
+<section id="technical"><h2>Build and behavior</h2><p>The trainer checks the exact executable and supported local Panacea loader before loading its bridge. A different resident trainer bridge requires a game restart.
+Game functions run on the game's update thread. The original EXE and existing mod files are not patched on disk.</p>
+<p>If the host heartbeat stops for five seconds, effects are released at the next safe game update. A closed or suspended game cannot process restoration until its update loop resumes.
+Already completed progression actions are retained. Camera, collision and flag restoration checks ownership before writing.</p>
+<p>Executable SHA-256: <code>9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed</code>.</p>
+<p>The full automatic IDA inventory is distinct from manual semantic analysis. Pseudocode export, isolated memory tests and a successful build do not prove runtime behavior.</p>
+<p>For source builds, see <code>BUILD.txt</code>. The prior German IDA report is available in the separate analysis bundle.</p></section>
+<section id="features"><h2>Feature reference</h2><p>COUNTS</p><input id="search" aria-label="Search feature reference" placeholder="Search names, categories and descriptions…"></section>
+FEATURE_SECTIONS
+<footer class="muted">Generated from the trainer's actual feature catalog. Every runtime claim remains limited by the evidence shown.</footer>
+<script>document.querySelector('#search').addEventListener('input',e=>{const q=e.target.value.toLowerCase();document.querySelectorAll('article[data-search]').forEach(a=>a.hidden=!a.dataset.search.toLowerCase().includes(q))});</script>
+</body></html>'''
+document = document.replace('COUNTS', e(f"{len(features)} entries: " + ', '.join(f'{n} {kind.lower()}' for kind,n in sorted(counts.items())) + '.'))
+document = document.replace('FEATURE_SECTIONS', ''.join(sections))
+args.output.parent.mkdir(parents=True, exist_ok=True)
+args.output.write_text(document, encoding='utf-8')
+print(f'Generated manual for {len(features)} entries: {args.output}')

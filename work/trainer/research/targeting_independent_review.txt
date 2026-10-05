@@ -1,0 +1,27 @@
+TARGETING INDEPENDENT REVIEW
+
+No blocking code or semantic finding in the reviewed state.
+Read-only product/test/catalog review against saved full native assembly; no build, native calls, process or UI access.
+
+- Outer system BAR allocation magic/kind/rounded size, whole-readable span and self pointer; nested pref and sstm remain inside their owning spans and outside the parent index tables.
+- First matching type2 tag is authoritative, including an invalid first match followed by a valid duplicate. Link-word changes do not skip the first tag. Tests cover outer and inner duplicate failures.
+- Installed pref pointer2AE5768 and system parameter pointer2AE5760 must equal the decoded selected payload/relative offset. Signed sstm offset must be positive and both floats+76/+80 fit the payload.
+- Post-auto_wait full setter assembly:3ABD60 has5 instructions, float XMM0 stored to2A1141C then MULSS with parameter+80 and stored to2A11420.3ABD80 has2 instructions and writes only2A11420. Source matches float32 conversion, multiplication and write order.
+- All write preconditions and writable spans are checked before either global store. Runtime edits affect only these two globals; no lock-context/target/reticle/camera object is created or destroyed.
+- Current Sora forms0..6 use existing ActorMovement/Combat/status-pool/list gates. Writes also require a fresh heartbeat and unpaused game thread. Read-only snapshots allow native field pause and filter invalid scalars independently.
+- Policy ranges are distinguished from native defaults. Reset reads currently loaded native parameters; scale application recalculates break distance while direct break-distance edit preserves scale.
+- Manual consumer3BEA30 uses scale*parameter+76 and target-point radius; native0x400 exemption at scale>=1 is documented. Retention consumer3DD280 uses the separate break-distance global; special native rules remain.
+- Harness covers614 author-reported checks including identity/resource boundaries, first-match duplicates, float32 products, guard failures, exact slots and real read-only globals. No independent rerun was performed.
+
+NOTES
+ReadOnly catalog entries370/371/373 now use read-only/no-restore wording. The earlier shared Applied-once text was corrected by the author; native source and tests are unchanged.
+
+LIMITATIONS
+No live lock-on behavior was tested.
+Finite loaded defaults are bounded by trainer policy and may reject heavily modified resource values.
+Native script writes and scene initialization can later replace the one-time global edits; no automatic restoration is promised.
+
+HASHES
+trainer/Native/TargetingFeatures.inl 5fd55825e33b62804dfe5df930c67aa2df11444552c52d38456dc352e474d272
+work/trainer/tests/TargetingGuardTests.cpp cb18a4cb2654de325938ed53a7cb227dd111262d63330535e24c0ca561bd36a7
+work/trainer/research/targeting_features.json 8d3aaeb323746622f893cf5196938dda208ac8a55091d84cd71a97c4f77f889b

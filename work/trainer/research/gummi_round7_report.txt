@@ -1,0 +1,137 @@
+Gummi round7 - History dispatch and structural snapshot support
+
+Result
+The editor's native Undo/Redo entry phases are now traced through the main
+fiber, cursor mode setup, confirm/delete, cancellation and cursor teardown.
+A new shared read-only validator is implemented in:
+  trainer/Native/GummiHistorySupport.inl
+The existing0.10 package and product integration are unchanged. No History
+command or readout substitute was exposed. Slots439..446 remain reserved.
+
+Native dispatch
+Undo:0x140269B50; Redo:0x140265580. Both receive WORKAREA* inRCX.
+The menu route is26CBB0 phase1 ->26D620. The live cursor route is
+2878E0 ->2846E0 in editor phase6. It accepts modes2,3,4,11,13,17,19,21,
+and mode15 only with at least one null box corner. Modes5/6/7 are transient
+variant/single/group editing. Even selection modes and palette mode23 do not
+accept the native History input. Preview phase4 recognizes the button bits
+but does not execute their History branch.
+
+This corrects the earlier tentative phase1-only proposal. The helpers
+287820/2861D0 mirror the mode predicate but have no direct code caller in the
+fresh static xrefs; the actual path above is independently present in2846E0.
+
+Starting a tool
+26EDB0 saves previous phase12280 and enters phase6.263460/2876D0/283CB0
+initialize cursor selection and ghost/group state, acquire AFD1D8 inputlock,
+and publish transient GM tasks AFCA38/AFCA40 at priorities49000/46001.
+2878E0 completes mode entry, clears its initialization lock and commits
+nextmode2848 into currentmode2840. Capturing a settled tool requires their
+equality; it also requires the native input gates, no help overlay9072,
+no rotation bit2272&2 and no special menu2976&8.
+
+Commit, cancel and finish
+264600 starts a History record synchronously within the confirm/delete
+path, immediately before recording/removing/placing parts. There is no
+proven general persistent transaction-open byte.280760/282AB0/286D20
+instead distinguish and unwind the actual transient cursor states.
+263370 ends the tool and calls282A40. That clears AFCA38/AFCA40 and their
+task users, releases the widget and hides the cursor; it does not clear
+retained mode/selection values. The tasks then retire on their null-user
+branch.26E000 observes cursor-hidden and returns to the saved menu/list/
+palette route. Consequently phase1 must not require cursor mode0 or valid
+obsolete selection pointers.
+
+After native cursor History,287B20 invokes269FB0 to recalculate slicing
+and layer tint/visibility. It does not rebind pointers. Future dispatch
+must account for this real native follow-up instead of inventing a refresh.
+
+Implemented support
+CaptureStable takes two distinct caller-owned Snapshot objects. Each owns
+bounded copies on the trainer process heap. Capture alone is a single
+locally consistent observation; its valid flag is not an atomic snapshot
+or a native-call permission. CaptureStable performs two complete captures
+and compares all captured fields without retries.
+
+Checks cover owner classes/backlinks, the two complete scheduler lists,
+registry/free list, editor fiber and transient task ownership; current
+phase and input state; checked grid sizes, native allocation counts and
+six exact clamped neighbors; complete OBJ/deletion/placed lists; unique
+part task and grid-anchor membership; first-match parameter row identity;
+layer root/index/paint consistency; finite transforms; and all active
+History payloads/window/side values. The selected removal group must bind
+to current owners without duplicate anchors.
+
+The validator also checks connected multicell coverage. Native2600A0
+clears covered cells recursively through same-root neighbors. A detached
+island would survive owner removal; the host BFS detects that condition.
+Task records are copied once before matching parts, avoiding repeated
+VirtualQuery calls across the entire scheduler for every placed part.
+
+Meaningful remaining work before real Undo/Redo
+1. Validate selected additions' actual parameter/object/BAR/MDLX/MSET,
+   texture/bone/variant resource ownership and constructor dependencies.
+2. Simulate float32 placement and sequential removal/reinsertion, including
+   exact occupancy versus transforms and restored task-group compatibility.
+3. Check real allocator gaps and model/task allocations while old removed
+   objects remain deferred. Used-byte counters alone are insufficient.
+4. Check prospective signed costs and cost-HUD resources270/271/272 plus
+   their message/animation sequences, and cursor slicing refresh consumers.
+5. Only then perform a final stable recapture and one native operation,
+   discard all old pointers and avoid retry after partial native failure.
+
+These are concrete native call obligations. The current module provides a
+reusable implemented foundation, not a claim that passing structural data
+makes arbitrary mod resources safe. Snapshot contains process pointers for
+identity and must never be dumped verbatim to a blueprint file or IPC.
+
+Evidence and verification
+37 specific function claims link to complete fresh disassembly, pseudocode
+and original bytes in top-level JSON files. Dedicated disassembly pages
+were joined and counted; outer and per-page cursors/counts were checked.
+4957 actual ASM lines and 23281 code bytes passed comparison with
+original EXE SHA256:
+9002B2DE6A1F91A790BD0673DE125D1CF833F7942BFEC827CDCF6BA64D5849ED
+32 of the37 functions had no prior claim in the recorded audit snapshot.
+This counts scoped findings, not complete function semantics.
+
+Isolated author tests:323 checks,0 failures; MSVC /W4 without warnings.
+Tests cover native tool-mode/corner combinations, start/exit/latch states,
+malformed grids and lists, all neighbor links, coverage islands, parameter
+precedence, history ring wrapping/capacity, stale handles, two-pass drift,
+host/thread gates and whole-fixture proof of no game-memory writes.
+There were no live game, UI, save, IDB-mutation or overall release-build
+operations. Detailed independent reviews, if completed, are separate files.
+
+Primary files
+  work/trainer/research/gummi_round7_contract.json
+  work/trainer/research/gummi_round7_claims.json
+  work/trainer/research/gummi_round7_phase_evidence.json
+  work/trainer/research/gummi_round7_cursor_evidence.json
+  work/trainer/research/gummi_round7_draw_evidence.json
+  work/trainer/research/gummi_round7_xrefs.json
+  work/trainer/research/gummi_round7_verify.py
+  work/trainer/research/gummi_round7_validation.json
+  work/trainer/research/gummi_round7_implementation.json
+  work/trainer/tests/GummiHistoryGuardTests.cpp
+  work/trainer/tests/build_gummi_history_tests.cmd
+
+Additional bounded independent AA source review
+At Root's request, I also read the failure paths in
+  trainer/Native/RendererAaFeatures.inl
+Source fingerprint at this checkpoint: af7adcbaed5a611d18368035bae8b2f6bf83fa1ede469fe19f669fce38dd779c
+The reviewed paths include unpublished versus exposed relay lifetime,
+compare-exchange rollback, ambiguous protection/CAS failures, resident
+pass-through on disable/host/lifetime loss, and Original exactly once
+outside the trainer exception handler. No additional concrete blocker was
+found in this source-only review. I did not independently recapture the
+ASM establishing caller quiescence, execute AA tests, edit AA source or
+perform a live installation. This review does not replace Root's broader
+installation evidence or the separate independent AA review.
+
+Final own-source status
+The Gummi source/test files and research listed in the checkpoint are
+frozen at the recorded hashes. managed_tools did not review GummiHistory
+in this round because its other assigned reviews took priority. Root's
+independent static review is to be stored separately; no completed review
+by managed_tools is claimed.

@@ -1,0 +1,31 @@
+Independent CameraExtra final review — 2026-10-04
+
+Reviewed final source SHA256:
+2C6D52A1D29430E9EAB33143611EDD433FFBC01A523ABD93CC8F9B747C1A9299
+Final tests SHA256:
+6A7744B5254AF28CA85A73655FA9E4022AF866EC098A8F694DE0A5E1F2DFBA00
+
+Both findings below have been corrected and checked in the final source.
+CodeReady now validates all eight getter bytes before queueing and dispatch.
+FollowFrame has no flag writes after Original, preserving subsequent requests.
+No remaining significant issue was identified in this reviewed source.
+
+Two points were reported to the author:
+1. Pin the controller getter164E70, or call the checked pointer-argument setter
+   directly. The draft validates static718C60 but its request wrappers obtain
+   the target through this otherwise unpinned getter. Its complete eight bytes
+   and two assembly instructions are in camera_extra_independent_evidence.json.
+2. Do not infer post-call flag ownership from byte==1 alone. Original can have
+   consumed the request and another writer can set an equal-valued request.
+   The unmodified native consumer already clears the trainer request synchronously.
+
+The remaining queue and callback design agrees with the inspected native phase:
+full scene/actor/controller identity; bounded whole-list validation outside
+iteration; exact compare-exchange hook ownership; current manager+32==task
+plus group1/priority26000; request only immediately before native follow;
+original exactly once even after a caught preparation fault; no native flags
+written while a request remains queued. Roll uses the reviewed World API.
+
+No product edits, build or live test by the reviewer. The author reports604
+checks/0failures and no /W4 warnings. Relevant final fixture cases were read;
+the reviewer did not run a duplicate build. Reports are now frozen.

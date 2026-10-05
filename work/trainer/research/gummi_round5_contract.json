@@ -1,0 +1,186 @@
+{
+  "title": "Gummi editor view tools \u2014 implemented native contract",
+  "status": "Implemented and frozen for v0.10. 756 isolated checks/0 failures; independent static review complete. No live validation.",
+  "features": [
+    {
+      "id": "gummi.editor.view.reset",
+      "kind": "Action",
+      "requires_scene": false,
+      "changes_progression": false,
+      "can_save_in_profile": false,
+      "arguments": [],
+      "entrypoint": "0x140290900",
+      "abi": "void __fastcall(void* currentCamera, int duration); RCX=currentCamera, EDX=10. Ignore incidental return value.",
+      "behavior": "Starts the native20-unit reset transition. Edit mode returns to native default view/focus; preview returns to its entry angles/FOV. Exactly one call after a second full current-owner validation.",
+      "scope": "Native GUMIEDIT or TINYEDIT active phase1 withcamera mode0, orphase4 withcamera mode1.",
+      "slot": 424
+    },
+    {
+      "id": "gummi.editor.preview.fov",
+      "kind": "Number",
+      "requires_scene": false,
+      "changes_progression": false,
+      "can_save_in_profile": false,
+      "arguments": [
+        {
+          "name": "Horizontal FOV (degrees)",
+          "minimum": 20,
+          "maximum": 90,
+          "default_value": 45
+        }
+      ],
+      "entrypoint": "0x14019DDE0",
+      "abi": "void __fastcall(void* projection, float radians, int axis); RCX=camera+16, XMM1=converted float, R8D=0.",
+      "behavior": "A one-time native projection update consumed by the existing camera task. Native input and later resets retain control.",
+      "scope": "Editorphase4/cameramode1, matching the existing native zoom input branch. No forced preview entry.",
+      "slot": 425
+    },
+    {
+      "id": "gummi.editor.phase",
+      "kind": "ReadOnly",
+      "source": "currentEditor+12276, with validated object/task",
+      "slot": 426
+    },
+    {
+      "id": "gummi.editor.camera.fov",
+      "kind": "ReadOnly",
+      "source": "float(currentCamera+84) converted todegrees",
+      "slot": 427
+    },
+    {
+      "id": "gummi.editor.camera.pitch",
+      "kind": "ReadOnly",
+      "source": "float(currentCamera+2448) converted todegrees; target Euler, not interpolated+2496",
+      "slot": 428
+    },
+    {
+      "id": "gummi.editor.camera.yaw",
+      "kind": "ReadOnly",
+      "source": "float(currentCamera+2452) converted todegrees; target Euler",
+      "slot": 429
+    },
+    {
+      "id": "gummi.editor.view.transition",
+      "kind": "ReadOnly",
+      "source": "int(currentCamera+2604), native transition units, not promised milliseconds",
+      "slot": 430
+    }
+  ],
+  "context": {
+    "globals": {
+      "workarea": "QWORD base+0xAFBEF0",
+      "editor": "QWORD base+0xAFC118",
+      "editor_scheduler": "QWORD base+0xAF9F08, identical to current GM module+8/base+0x716CB8",
+      "camera_scheduler": "QWORD base+0x716CB8, same manager as AF9F08; not a separate scheduler",
+      "menu_heap": "QWORD base+0xAFB420",
+      "input_lock": "BYTE base+0xAFD1D8",
+      "named_records": "base+0x73DD90:80*40bytes",
+      "free_indices": "base+0x73EA10:80*4bytes",
+      "free_count": "DWORD base+0x73EB50",
+      "cursor_scheduler": "QWORD base+0xAFA700, separate OBJ3DBASE manager"
+    },
+    "objects": {
+      "workarea": {
+        "size": 1414672,
+        "vtable": "base+0x5B7330"
+      },
+      "editor": {
+        "size": 12336,
+        "vtables": [
+          "base+0x5B78D0",
+          "base+0x5B7920"
+        ]
+      },
+      "camera": {
+        "size": 2624,
+        "vtable": "base+0x5B7D48"
+      },
+      "cursor": {
+        "size": 2992,
+        "vtable": "base+0x5B7AC0"
+      }
+    },
+    "tasks": [
+      {
+        "scheduler": "AF9F08",
+        "callback": "25E190",
+        "cleanup": "25E1A0",
+        "userdata": "workarea",
+        "group_flags": 2,
+        "priority": 43400,
+        "fiber": "null"
+      },
+      {
+        "scheduler": "AF9F08",
+        "callback": "2745A0",
+        "cleanup": "2745B0",
+        "userdata": "editor",
+        "group_flags": "0x80000 (14F8A0 fiber bit added to group0)",
+        "priority": 1000,
+        "fiber": "nonnull native fiber state"
+      },
+      {
+        "scheduler": "716CB8",
+        "callback": "272070",
+        "cleanup": "272090",
+        "userdata": "camera",
+        "group_flags": 0,
+        "priority": 65000,
+        "fiber": "null",
+        "optional_clear_pointer": "task+32 must be0 for this creation path"
+      },
+      {
+        "scheduler": "AFA700",
+        "callback": "24C180",
+        "cleanup": "24C360",
+        "userdata": "cursor",
+        "group_flags": 2,
+        "priority": 20010,
+        "fiber": "null"
+      }
+    ],
+    "task_layout": "152-byte node:callback+0,userdata+24,manager+88,groupflags+96,priority+100,cleanup+104,fiber+112,next+120,previous+128. Scan complete bounded lists with reciprocal links, exact manager and unique matching owner; no current dispatch.",
+    "backlinks": [
+      "workarea+1414552==camera",
+      "workarea+1414576==editor+12016",
+      "current editor activeBYTE+8==1",
+      "camera flags+2352 bit1clear",
+      "existing occupied registry record named 'work area camera' points to this exact camera",
+      "cursor+1344==camera and cursor+2824==camera",
+      "workarea+1414584==editor+1456",
+      "GM module716CB0 is listed, id71, module heap9A8800==AFB420"
+    ],
+    "registry": "Validate freeCount0..80, each freeindex0..79, uniqueness, recordname bounded32-byteNUL, unique occupied match. Never call291DB0, which creates missing entries."
+  },
+  "gates": [
+    "Exact supported EXE identity and full original pins for native entrypoint/direct helpers; check expected vtables and relevant callback slots.",
+    "Established game thread only; live host heartbeat and not disabled. This is a menu context, so gameplayTrainerContext.sceneReady must not be required.",
+    "Validate module/camera manager alias and the separate cursor scheduler and their full current task lists, object spans, editor active phase, registry and backlinks.",
+    "Require input_lock==0, remaining transition+2604<=0 andcamera+2612 bit0x20clear. Do not force-clear locks. Do not usebit0x10 alone as a universal idle predicate: preview updater does not clear it the same way as edit updater.",
+    "For reset, validate finite/bounded Euler target/default/previous fields. Reproduce all focus-helper reads: currentcursor fullspan/vtable, active-state fields, position+1072/+1120,flags+2976, gridfocus/plane and workarea cell/center values. No persistent raw cursor cache.",
+    "For FOV, validate finite positive projectionwidth/height atcamera+92/+96, finite focal/FOV state, radians within native20..90degree constants and finite float arithmetic results.",
+    "Rebuild and compare owner tuple(editor,workarea,camera,both schedulers,four tasks,cursor) immediately before exactly one synchronous call. No stale pointer reads after native call; next snapshot starts fresh."
+  ],
+  "lifetime_and_restore": "All proposed actions are one-time native operations; no lease, hook, background enforcement or automatic undo. Native reset/zoom/editorexit owns future state. Object replacement cancels a prepared action. Profile replay disabled.",
+  "open_questions": [
+    "No live visual validation. Static/native owner and arithmetic contracts plus isolated callout tests are complete; arbitrary concurrent third-party memory mutation is not synchronized.",
+    "Undo/redo and blueprint export remain research-only; no new actions are exposed for those incomplete contracts."
+  ],
+  "evidence": [
+    "work/trainer/research/gummi_round5_deep.json",
+    "work/trainer/research/gummi_round5_evidence.json",
+    "work/trainer/research/gummi_round5_original_bytes.json",
+    "work/trainer/research/gummi_round5_validation.json",
+    "work/trainer/research/gummi_round5_implementation_evidence.json",
+    "work/trainer/research/gummi_round5_implementation_supplement.json",
+    "work/trainer/research/gummi_round5_implementation_constants.json"
+  ],
+  "corrections": [
+    {
+      "before": "AF9F08 and716CB8 described as separate editor/camera schedulers.",
+      "after": "151D30 passes module716CB0 to243A10; the same allocated manager is written at716CB8 andAF9F08. CURSOR uses a separate managerAFA700, created24C380 and consumed24B720.",
+      "evidence": "work/trainer/research/gummi_round5_implementation_evidence.json"
+    }
+  ],
+  "implementation": "work/trainer/research/gummi_round5_implementation.json"
+}

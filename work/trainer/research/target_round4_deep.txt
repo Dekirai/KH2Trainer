@@ -1,0 +1,39 @@
+Target selection, retention and reticle resource analysis
+
+Six targeting entries368..373. Two bounded one-time float edits, a loaded-default reset and three readouts. Stable Sora/context/resource ownership validation. No lock-mode, target, camera or reticle allocation calls.
+
+0x1403aba10 Returns the global float target-search scale at RVA2A1141C.
+0x1403aba20 Returns the global float manual lock-on retention distance at RVA2A11420.
+0x1403abd60 XMM0 float setter stores the target-search scale, multiplies it by loaded system parameter float+80, and stores the product as retention distance. The decompiler omits the float argument; full SSE instructions establish the ABI and float32 order.
+0x1403abd80 XMM0 float setter updates only the retention-distance global; it does not rescale acquisition.
+0x1403abab0 Scene targeting initialization sets scale1 and retention distance from loaded system parameters+80; these runtime globals are reinitialized by scene loading.
+0x1403e9360 Publishes the nested pref BAR and first type2 plyr/fmab/prty/magi/sstm payloads. The signed DWORD at sstm payload+4 is added to that payload to install system parameters, or produces null when zero.
+0x1403f4c30 Loads the system BAR, publishes it at RVA2AE5E50 and passes its first type2 pref payload to3E9360. Targeting parameter ownership therefore follows outer allocation -> pref entry -> nested sstm entry, not a separate nested heap allocation.
+0x14038cf20 Developer setup passes float4 to the scale setter, then separately overrides retention to 4*system parameter+76 +500. This differs from the ordinary setter's scaled parameter+80.
+0x1404308d0 Script trap reads a float argument and tail-calls the target-search-scale setter with XMM0.
+0x1403bea30 Manual acquisition iterates eligible actors and type3 target points. Uses global scale*system parameter+76, skips point bit1, applies distance minus target-point radius and ranks candidates by proximity. Actor flag+1736 bit0x400 bypasses the distance limit when scale>=1.
+0x1403be4b0 Automatic selector uses player parameter+92 for radius, +96/+100 for vertical bounds, and +108/+112 for vertical/facing score. A nonpositive radius skips range/height tests; scale above1 expands vertical bounds. This is why the trainer does not expose a zero multiplier.
+0x1403bd460 Manual target cycling excludes the current actor/point and orders candidates by signed angular direction. XMM3 supplies the direction omitted by some decompiler signatures. It retains manual radius and special-target exemptions.
+0x1403bd750 Alternate target switch uses a supplied direction vector, a dot threshold0.5 and distance eligibility; it is not interchangeable with the ordinary signed-angle switch.
+0x1403be0f0 Resolves a20-byte target reference to its chosen type3 point, then a first-point fallback; when no point exists uses actor position. A distinct encoded alternative field at+8 has its own branch.
+0x1403dd280 Normal targeting update validates scene/input/actor conditions and current target. Manual retention compares distance to the separate global unless the native flag0x400/scale exemption applies, then executes input transitions and reticle updates.
+0x1403dd160 Alternate targeting validation path checks current reference and manual distance without exposing a verified direct trainer entry point.
+0x1403dcd70 Lock context modes0/1/2 implement none/automatic/manual transitions. Input bit0x800 requests lock; high input bits cycle manually. Automatic hold timer at+32 decreases by native frame delta while the target remains eligible.
+0x1403dd650 Lock-mode transition clears previous resources, writes state and validated target reference, plays sound7 for manual mode, updates the camera, target logging, Scan gauge and reticle. It has far broader lifetime requirements than scalar range edits.
+0x1403dccf0 Switches a current target reference and can keep existing UI resources when target kind matches instead of unconditionally rebuilding everything.
+0x1403dd5f0 Copies the20-byte target reference into the lock context and derives the status-gauge subindex from the target point's byte+1.
+0x1403dd510 Clears lock reticle and HP gauge resources, unlocks the camera for manual mode, resets mode and target reference. Camera teardown is part of this operation.
+0x140176a00 Camera unlock may clear an actor flag, update the camera owner byte and recenter controller2. A blind lock-context clear cannot be assumed to affect only targeting.
+0x1403dd440 Creates a target HP gauge only when the active player has the native Scan flag0x80000, target restrictions permit it and the selected target/status subindex is valid.
+0x1403dcbb0 Updates an active target HP gauge only when actor and status subindex match the current lock context.
+0x14017c1e0 Allocates34 reticle objects of2120 bytes plus pool bookkeeping, and creates the shared SpriteImage. The free-index array and free counter belong to this allocation.
+0x14017c570 Reticle allocation decrements the shared free counter and indexes the freelist without an explicit capacity check before invoking17BC60; direct trainer calls require stronger pool ownership guarantees.
+0x14017bee0 Returns a reticle index to the shared free list and increments the free count without an explicit bounds guard.
+0x14017c090 Destroys the34 reticle subobjects and shared allocation and zeros the reticle globals.
+0x14017bc60 Initializes reticle icons and SpriteMessage objects, including special IDs58/60/62/64/66. It is a resource-creating path, not a harmless visibility flag.
+0x14017bf20 Applies reticle state-dependent blinking and child-sprite state.
+0x14017c630 Computes reticle scale by clamping distance*0.00001+0.4 to[0.5,1] and stores it at object+464.
+0x14017c5c0 Propagates the reticle alpha to child sprites.
+0x14017c520 Updates child reticle positions from their owning reticle state.
+
+614 focused synthetic checks, zero failures. Fresh auto_wait readiness, unchanged36451-function inventory and full postwait loader/setter assembly. Live gameplay pending.

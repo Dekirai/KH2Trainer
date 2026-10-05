@@ -1,0 +1,657 @@
+[
+  {
+    "Id": "mission.id",
+    "Category": "Missions",
+    "Name": "Mission ID",
+    "Description": "Numeric ID of the currently loaded native mission. This does not select or start a mission.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 208,
+    "CapabilitySlot": 208,
+    "Minimum": 0,
+    "Maximum": 4294967295,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.phase",
+    "Category": "Missions",
+    "Name": "Mission Phase",
+    "Description": "Native lifecycle phase. Intro and finish sequences are distinct from active mission gameplay.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 209,
+    "CapabilitySlot": 209,
+    "Minimum": 0,
+    "Maximum": 4,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [
+      {
+        "Label": "Starting",
+        "Value": 0
+      },
+      {
+        "Label": "Active",
+        "Value": 1
+      },
+      {
+        "Label": "Finish queued",
+        "Value": 2
+      },
+      {
+        "Label": "Finish presentation",
+        "Value": 3
+      },
+      {
+        "Label": "Awaiting finish dispatch",
+        "Value": 4
+      }
+    ],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.timer.seconds",
+    "Category": "Missions",
+    "Name": "Timer Value",
+    "Description": "Current native remaining or elapsed time, depending on Timer Direction. Engine timebase is 60 ticks per second.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 210,
+    "CapabilitySlot": 210,
+    "Minimum": 0,
+    "Maximum": 35791394.11666667,
+    "DefaultValue": 0,
+    "Step": 0.01,
+    "Unit": "seconds",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.timer.direction",
+    "Category": "Missions",
+    "Name": "Timer Direction",
+    "Description": "Current native clock direction. Both restart actions can change it.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 211,
+    "CapabilitySlot": 211,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [
+      {
+        "Label": "Count-up",
+        "Value": 0
+      },
+      {
+        "Label": "Countdown",
+        "Value": 1
+      }
+    ],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.timer.phase",
+    "Category": "Missions",
+    "Name": "Timer State",
+    "Description": "Stopped clocks remain readable but cannot be restarted through these actions; mission timeout dispatch may already have begun.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 212,
+    "CapabilitySlot": 212,
+    "Minimum": 0,
+    "Maximum": 2,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [
+      {
+        "Label": "Stopped",
+        "Value": 0
+      },
+      {
+        "Label": "Armed",
+        "Value": 1
+      },
+      {
+        "Label": "Running",
+        "Value": 2
+      }
+    ],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.counter1.value",
+    "Category": "Missions",
+    "Name": "Counter 1",
+    "Description": "Current value of native mission counter index0. Meanings differ by mission; boundary changes can dispatch scripts and progression, so this is read-only.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 213,
+    "CapabilitySlot": 213,
+    "Minimum": 0,
+    "Maximum": 2147483647,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.counter1.maximum",
+    "Category": "Missions",
+    "Name": "Counter 1 Maximum",
+    "Description": "Configured native maximum for counter index0. Unregistered constructor objects are excluded.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 214,
+    "CapabilitySlot": 214,
+    "Minimum": 0,
+    "Maximum": 2147483647,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.counter2.value",
+    "Category": "Missions",
+    "Name": "Counter 2",
+    "Description": "Current value of native mission counter index1. Meanings differ by mission; boundary changes can dispatch scripts and progression, so this is read-only.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 215,
+    "CapabilitySlot": 215,
+    "Minimum": 0,
+    "Maximum": 2147483647,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.counter2.maximum",
+    "Category": "Missions",
+    "Name": "Counter 2 Maximum",
+    "Description": "Configured native maximum for counter index1. Unregistered constructor objects are excluded.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 216,
+    "CapabilitySlot": 216,
+    "Minimum": 0,
+    "Maximum": 2147483647,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.counter3.value",
+    "Category": "Missions",
+    "Name": "Counter 3",
+    "Description": "Current value of native mission counter index2. Meanings differ by mission; boundary changes can dispatch scripts and progression, so this is read-only.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 217,
+    "CapabilitySlot": 217,
+    "Minimum": 0,
+    "Maximum": 2147483647,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.counter3.maximum",
+    "Category": "Missions",
+    "Name": "Counter 3 Maximum",
+    "Description": "Configured native maximum for counter index2. Unregistered constructor objects are excluded.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 218,
+    "CapabilitySlot": 218,
+    "Minimum": 0,
+    "Maximum": 2147483647,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.gauge1.value",
+    "Category": "Missions",
+    "Name": "Gauge 1",
+    "Description": "Raw floating-point mission gauge index0, in that mission's own units.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 219,
+    "CapabilitySlot": 219,
+    "Minimum": 0,
+    "Maximum": 2147483647,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.gauge1.maximum",
+    "Category": "Missions",
+    "Name": "Gauge 1 Maximum",
+    "Description": "Configured maximum for native gauge index0. A zero maximum is shown as zero; no percentage division is attempted.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 220,
+    "CapabilitySlot": 220,
+    "Minimum": 0,
+    "Maximum": 2147483647,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.gauge2.value",
+    "Category": "Missions",
+    "Name": "Gauge 2",
+    "Description": "Raw floating-point mission gauge index1, in that mission's own units.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 221,
+    "CapabilitySlot": 221,
+    "Minimum": 0,
+    "Maximum": 2147483647,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.gauge2.maximum",
+    "Category": "Missions",
+    "Name": "Gauge 2 Maximum",
+    "Description": "Configured maximum for native gauge index1. A zero maximum is shown as zero; no percentage division is attempted.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 222,
+    "CapabilitySlot": 222,
+    "Minimum": 0,
+    "Maximum": 2147483647,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.gauge3.value",
+    "Category": "Missions",
+    "Name": "Gauge 3",
+    "Description": "Raw floating-point mission gauge index2, in that mission's own units.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 223,
+    "CapabilitySlot": 223,
+    "Minimum": 0,
+    "Maximum": 2147483647,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.gauge3.maximum",
+    "Category": "Missions",
+    "Name": "Gauge 3 Maximum",
+    "Description": "Configured maximum for native gauge index2. A zero maximum is shown as zero; no percentage division is attempted.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 224,
+    "CapabilitySlot": 224,
+    "Minimum": 0,
+    "Maximum": 2147483647,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.score",
+    "Category": "Missions",
+    "Name": "Mission Score",
+    "Description": "Active native score object, when this mission uses one. Completion can convert this score into EXP.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 225,
+    "CapabilitySlot": 225,
+    "Minimum": 0,
+    "Maximum": 9999,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.timer.countdown",
+    "Category": "Missions",
+    "Name": "Restart as Countdown",
+    "Description": "Restarts the active native mission timer as a countdown, including a currently running count-up. Requires stable unpaused gameplay and a living current player. The 1..3599 second range keeps the normal HUD below one hour. A one-time native restart; disconnect and Disable All do not undo it. Normal timeout events, rewards and mission outcomes still apply. An already-played final-seconds HUD warning may not repeat, because native restart does not reset its display latches.",
+    "Kind": "Action",
+    "CommandId": 1226,
+    "ValueSlot": -1,
+    "CapabilitySlot": 226,
+    "Minimum": 1,
+    "Maximum": 3599,
+    "DefaultValue": 120,
+    "Step": 1,
+    "Unit": "seconds",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "A one-time native restart; disconnect and Disable All do not undo it. Normal timeout events, rewards and mission outcomes still apply. An already-played final-seconds HUD warning may not repeat, because native restart does not reset its display latches.",
+    "Arguments": [
+      {
+        "Name": "Countdown seconds",
+        "Minimum": 1,
+        "Maximum": 3599,
+        "DefaultValue": 120,
+        "Catalog": "",
+        "Choices": []
+      }
+    ],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3FB9A0 -> 0x3FA5D0 -> 0x157140 / 0x157190 / 0x157110",
+        "Finding": "Native argument seconds>0 selects countdown; timer index0 and active widget avoid HUD construction. Exact code and fresh mission identity are checked before one synchronous call.",
+        "Level": "81 native instructions independently reviewed; 1092 isolated checks passed; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.timer.countup",
+    "Category": "Missions",
+    "Name": "Restart as Count-up",
+    "Description": "Restarts the active native mission timer from zero, including a countdown, using its existing configured count-up limit. Zero means no configured limit. Native display caps at 3599.983 seconds; a configured limit above this cap does not dispatch timeout through this clock path. A one-time native restart; disconnect and Disable All do not undo it. Normal timeout events, rewards and mission outcomes still apply. An already-played final-seconds HUD warning may not repeat, because native restart does not reset its display latches.",
+    "Kind": "Action",
+    "CommandId": 1227,
+    "ValueSlot": -1,
+    "CapabilitySlot": 227,
+    "Minimum": 0,
+    "Maximum": 0,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "A one-time native restart; disconnect and Disable All do not undo it. Normal timeout events, rewards and mission outcomes still apply. An already-played final-seconds HUD warning may not repeat, because native restart does not reset its display latches.",
+    "Arguments": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3FB9A0 -> 0x3FA5D0 -> 0x157170 / 0x157190 / 0x157110",
+        "Finding": "Native zero argument selects count-up from Timer+36; the configured value must be nonnegative and fit signed32-bit multiplication by60. The existing limit is not changed.",
+        "Level": "81 native instructions independently reviewed; 1092 isolated checks passed; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.timer.limit",
+    "Category": "Missions",
+    "Name": "Clock Limit",
+    "Description": "Current clock duration/limit in seconds. For count-up, zero means no configured deadline; for countdown, this is the most recently started duration.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 228,
+    "CapabilitySlot": 228,
+    "Minimum": 0,
+    "Maximum": 35791394.11666667,
+    "DefaultValue": 0,
+    "Step": 0.01,
+    "Unit": "seconds",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.timer.paused",
+    "Category": "Missions",
+    "Name": "Clock Paused",
+    "Description": "Whether any native or trainer pause owner currently holds the shared mission clock. Both restart actions preserve these owners by refusing to restart while paused.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 229,
+    "CapabilitySlot": 229,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [
+      {
+        "Label": "No",
+        "Value": 0
+      },
+      {
+        "Label": "Yes",
+        "Value": 1
+      }
+    ],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
+        "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
+        "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  }
+]

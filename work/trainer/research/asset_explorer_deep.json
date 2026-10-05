@@ -1,0 +1,175 @@
+{
+  "scope": "Offline asset explorer Core implementation and format research for v0.7. Existing v0.6 packages and files were not modified.",
+  "status": "Core complete; 105 synthetic checks plus 108 private retail checks pass. Root owns WPF integration and final release verification.",
+  "nativeDatabase": "216b187d",
+  "cilDatabaseConfirmed": "1b9550d6",
+  "addresses": "Native VAs at image base0x140000000; no synthetic CIL addresses or native-call claims.",
+  "Functions": [
+    {
+      "addr": "0x1403A6420",
+      "Domain": "native",
+      "Finding": "BAR type lookup reads count at +4, traverses 16-byte entries from +16, compares a UInt16 type and returns the requested matching entry.",
+      "Evidence": "asset_explorer_deep_evidence.json",
+      "Limitations": "No file bounds or signature validation is provided by this native search helper."
+    },
+    {
+      "addr": "0x1403A6480",
+      "Domain": "native",
+      "Finding": "BAR lookup additionally compares the exact four-byte tag at entry+4 and supports repeated matching entries.",
+      "Evidence": "asset_explorer_deep_evidence.json",
+      "Limitations": "A duplicate tag/type is legal; the browser must preserve ordinal and occurrence."
+    },
+    {
+      "addr": "0x1403A63B0",
+      "Domain": "native",
+      "Finding": "Counts entries by optional type and exact DWORD tag using the same 16-byte layout.",
+      "Evidence": "asset_explorer_deep_evidence.json",
+      "Limitations": "Count is not structural validation."
+    },
+    {
+      "addr": "0x1403A63F0",
+      "Domain": "native",
+      "Finding": "Counts entries matching a UInt16 type, with -1 selecting any type.",
+      "Evidence": "asset_explorer_deep_evidence.json",
+      "Limitations": "No file-bound validation."
+    },
+    {
+      "addr": "0x1403A6840",
+      "Domain": "native",
+      "Finding": "Initial relocation converts disk-relative entry offsets into packed pointers and records the runtime base at header+8. Empty entries become null. Types1/17/20/30/46 recurse; entry+2 bit0 suppresses type-specific fixups.",
+      "Evidence": "asset_explorer_deep_evidence.json",
+      "Limitations": "Offline parsing must use unrelocated file data, not this mutating engine helper. Exact semantics of other entry+2 bits are unproved."
+    },
+    {
+      "addr": "0x1403A6120",
+      "Domain": "native",
+      "Finding": "Relocating an already-loaded BAR adjusts entries by the difference between old decoded base and new container base, then runs selected type-specific relocators.",
+      "Evidence": "asset_explorer_deep_evidence.json",
+      "Limitations": "This is runtime relocation, not a second disk format."
+    },
+    {
+      "addr": "0x1403A62B0",
+      "Domain": "native",
+      "Finding": "Traverses already-relocated entry pointers and recursively resets selected nested/model/motion/audio resources, respecting entry+2 bit0.",
+      "Evidence": "asset_explorer_deep_evidence.json",
+      "Limitations": "Does not justify executing any engine constructor in an offline explorer."
+    },
+    {
+      "addr": "0x14036CA50",
+      "Domain": "native",
+      "Finding": "Developer exporter checks the first three BAR magic bytes and locates each nonempty payload as container plus UInt32 entry offset. Five nested types recur.",
+      "Evidence": "asset_explorer_deep_evidence.json",
+      "Limitations": "Unsafe developer path-writing behavior was only inspected. This routine was never executed."
+    },
+    {
+      "addr": "0x140373060",
+      "Domain": "native",
+      "Finding": "Converter declares header layout4c/3i and entry layout1s/1s/1i/1i/1i; type dispatch distinguishes models, textures, motions, TIM2, events and nested containers. Type2 interpretation depends on path.",
+      "Evidence": "asset_explorer_deep_evidence.json",
+      "Limitations": "Type labels are not full payload validation or a promise of decoding/rendering."
+    },
+    {
+      "addr": "0x140106000",
+      "Domain": "native",
+      "Finding": "Opens matching HED/PKG files; HED count is file length divided by32.",
+      "Evidence": "asset_explorer_deep_package_evidence.json",
+      "Limitations": "Offline implementation must add exact-divisibility, size and span checks omitted by the game."
+    },
+    {
+      "addr": "0x140107240",
+      "Domain": "native",
+      "Finding": "Hashes a relative resource path with MD5, scans32-byte HED records, seeks the stored64-bit offset, reads header16 and remaster records48. It overwrites remaster physical offsets by walking stored lengths.",
+      "Evidence": "asset_explorer_deep_package_evidence.json",
+      "Limitations": "HED hash identifies a filename, not content integrity. Disk remaster offset fields must not be trusted as physical package offsets."
+    },
+    {
+      "addr": "0x140107620",
+      "Domain": "native",
+      "Finding": "Base payload starts after header16 plus48*remasterCount. For raw length>16 and enabled package mode, positive stored length transforms then inflates; -1 transforms without inflation; raw path otherwise reads decoded length.",
+      "Evidence": "asset_explorer_deep_package_evidence.json",
+      "Limitations": "Small payload bypass and the object+292 mode gate differ from a generic compressed-file decoder; only observed retail modes are proposed."
+    },
+    {
+      "addr": "0x140107760",
+      "Domain": "native",
+      "Finding": "Remaster reader uses the recomputed metadata+32 physical offset, raw length+40 and mode+44; raw length>16 permits transform/inflate. No object+292 gate is used here.",
+      "Evidence": "asset_explorer_deep_package_evidence.json",
+      "Limitations": "This round validated remaster metadata spans, not decoded remaster contents."
+    },
+    {
+      "addr": "0x1401062B0",
+      "Domain": "native",
+      "Finding": "Copies the16-byte package header, replaces zero seed bytes with their indexes, derives round keys, and transforms complete16-byte blocks only up to256 bytes.",
+      "Evidence": "asset_explorer_deep_package_evidence.json",
+      "Limitations": "A native global can disable transformation. The offline proposal does not reproduce runtime globals; it supports verified retail disk data."
+    },
+    {
+      "addr": "0x140143CE0",
+      "Domain": "native",
+      "Finding": "Key object receives16 seed bytes, key-word count4, round count10, and initializes its key schedule.",
+      "Evidence": "asset_explorer_deep_transform_evidence.json",
+      "Limitations": "Fixed package invocation only; broader key lengths are not required by the proposed reader."
+    },
+    {
+      "addr": "0x140144280",
+      "Domain": "native",
+      "Finding": "Block transform XORs all11 derived round keys into a16-byte block without AES substitution/mix rounds.",
+      "Evidence": "asset_explorer_deep_transform_evidence.json",
+      "Limitations": "This is an XOR transform using an AES-shaped key schedule, not standard AES decryption."
+    },
+    {
+      "addr": "0x140144350",
+      "Domain": "native",
+      "Finding": "Expands the supplied key with byte rotation/substitution and round constants into the round-key buffer.",
+      "Evidence": "asset_explorer_deep_transform_evidence.json",
+      "Limitations": "The supporting substitution helper/table was separately inspected, but complete new evidence for that tiny helper is not included here."
+    }
+  ],
+  "corpus": "asset_explorer_deep_corpus.json",
+  "retailValidation": "asset_explorer_deep_packages.json",
+  "contract": "asset_explorer_contract.txt",
+  "draftStatus": "../drafts/asset_explorer/STATUS.txt",
+  "limitations": [
+    "Structural BAR validation and descriptive type labels do not fully decode models, textures, scripts or audio.",
+    "Retail payload comparisons are selected real fixtures, not exhaustive decompression of every record.",
+    "Version1 disk BARs with unrelocated base0 and observed package modes -2/-1/positive are supported; unknown modes fail explicitly.",
+    "Package payloads decode into a bounded memory buffer before exposure; prefix preview of a package still validates the selected complete payload.",
+    "No source writes, package rebuilding, script execution, process hooks or native game function calls occur in the Core.",
+    "Identity and metadata guards prevent stale locators; raw payload bytes are not cryptographically authenticated against an adversary who can rewrite content and restore metadata.",
+    "UI render checks and final package integration are owned by Root; this subagent performed no UI/live action."
+  ],
+  "primaryReference": "https://github.com/OpenKH/OpenKh/tree/7a3b945c538d32c6a285128c98aefba093f52ceb/OpenKh.Egs",
+  "source_hashes": {
+    "trainer/KH2Trainer.Core/AssetArchiveReader.cs": "2F933A70D6D99494B5B74D88EDD14BFD3EF2D644F2A5A264CFB876D5E27AA2CA",
+    "trainer/KH2Trainer.Core/AssetExplorerModels.cs": "2E6C3FA4FB455A84278475FCB01A1F257655C8A1134E89F3D79E8B103BA517B3",
+    "trainer/KH2Trainer.Core/AssetPackageCodec.cs": "6D5CC0CF02CC339EB40D277912749257FA4C665B005B4BBE3AF0B03CA60CAC42",
+    "trainer/KH2Trainer.Core/AssetFileAccess.cs": "1982E112F2897704D64C5515084C8BFEAE859436006442BD193C6ADA4766354C",
+    "trainer/KH2Trainer.Tests/AssetExplorerTests.cs": "DAB6529E6C96BEE0034FD00AD3F8F39D5394E5F2C18693B414C16494EA70ACB3",
+    "work/trainer/tests/AssetExplorerHarness/AssetExplorerHarness.csproj": "3D6D72DC8749BB534B45EF21271601EAE77EEC28C8B4A340E57C680446A574A3",
+    "work/trainer/tests/AssetExplorerHarness/Program.cs": "31F65830A7C6ECB9CBCE4521E33B0E24929B0C150754EE5AE19EFAE0A4079506"
+  },
+  "api": "asset_explorer_api.txt",
+  "tests": {
+    "total": 213,
+    "synthetic": 105,
+    "retail_indices": 6,
+    "retail_original_payloads": 23,
+    "retail_remaster_payloads": 79,
+    "failed": 0,
+    "log": "asset_explorer_test_run.txt",
+    "log_sha256": "cfdd6ba4d9abdfd7eb6268f0c2f1271b2adb090d174b57072893d5716a66babc",
+    "notes": [
+      "Real assets were read from the local installation; they are not bundled as fixtures.",
+      "Raw remaster comparisons validate logical bytes and permitted loose alignment padding separately."
+    ]
+  },
+  "implementation_facts": [
+    "Signed negative counts/lengths, overflow and out-of-source spans are rejected before allocations and extraction.",
+    "BAR children carry exact parent metadata digests; HED and package metadata are revalidated before decoding.",
+    "Windows volume/file ID, creation/write times and size are captured and checked under read-only source handles.",
+    "Export keeps existing directories open against replacement, creates a new temporary file, and atomically moves without overwrite.",
+    "Destination checks reject Windows aliases, device/ADS names, reparse paths, protected folders and source game root.",
+    "Zlib decoder enforces exact output length, verified Adler checksum and at most15 padding bytes; cancellation reaches reads, inflate and checksum work.",
+    "Opaque immutable descriptors and bounded owning streams preserve lifetime across nested containers."
+  ]
+}

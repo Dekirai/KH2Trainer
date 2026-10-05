@@ -1,0 +1,69 @@
+{
+  "title": "Independent review: ActorMovementFeatures",
+  "status": "No blocking implementation or catalog finding in the reviewed frozen sources",
+  "scope": "Read-only source, catalog, synthetic-test and saved full native evidence review. No product edits, native calls, game access or parallel build.",
+  "fingerprints": {
+    "trainer/Native/ActorMovementFeatures.inl": "9441612BEC22A25C2FAC2C665911B254D3B66833E8C8ACBFEBBDE843DD903DED",
+    "work/trainer/tests/ActorMovementGuardTests.cpp": "73B61F79E1A8391FE7A2C3A66AA4DD3283C39FC86207229CD2A37D5800265328",
+    "work/trainer/research/actormovement_features.json": "E923A4A015B5BCFE5D83F3E96F57048488AC99AA740E01F1A15D1342E94E0AFC"
+  },
+  "findings": [],
+  "checks": [
+    {
+      "topic": "Command mapping and data types",
+      "result": "Slots344..347 map to float32 Actor+296,+300,+312,+304 and exact command IDs1344..1347. Finite double inputs are bounded before narrowing. No form or motion identifiers are changed."
+    },
+    {
+      "topic": "Native consumers",
+      "result": "Saved full ASM supports the0.8 input threshold and walking/running source fields; selected magnitude reaches3B7AD0 viaXMM1 and native vector scaling. Three jump paths clamp downward displacement by timeStep*Actor+312;422780 also clamps vertical velocity. Jump height getters useActor+304 only when growth/special-state overrides do not replace it."
+    },
+    {
+      "topic": "Actor identity",
+      "result": "Ready binds current global player, exact Sora descriptor/vtable/input callback, charID1 status, backlink and live-list membership, supported stable form0..6 plus matching currentform, and motion-owner backlink."
+    },
+    {
+      "topic": "Status lifetime",
+      "result": "Uses DamageTuning pool validation for80 records of632 bytes, aligned allocation slot, positive refcount, and unique bounded freelist excluding the current status."
+    },
+    {
+      "topic": "Execution and transition boundaries",
+      "result": "Requires game thread and fresh nonzero host heartbeat for writes. Blocks field pause, scene/event/title/menu/room transition, pending Drive context/lock, detached/dead/inactive/attached/incompatible actors. Readouts can remain available in a valid field pause."
+    },
+    {
+      "topic": "Mutation scope",
+      "result": "Exactly one writable float field changes. No native callbacks, retained actor pointers, next-frame replay or restore occur. Single game-thread command does not hand control to engine code between validation and write."
+    },
+    {
+      "topic": "Catalog truthfulness",
+      "result": "Ranges are explicitly trainer policy; High Jump may replace base jump height; fall limit is not described as gravity; running speed is not described as animation speed. One-shot profile application and no automatic restore are disclosed."
+    },
+    {
+      "topic": "Synthetic tests",
+      "result": "Read all guards and fixtures:7 stable forms, all4 fields, boundaries/fractions/invalid values, exact whole-actor byte delta, other actor/status preservation, paused readouts, unavailable ownership, status pool/list cycles, real read-only memory and exact capabilities. Reported914/0 is the author's run; this reviewer did not execute another build."
+    },
+    {
+      "topic": "Evidence completeness",
+      "result": "Checked actual saved ASM line counts against total_instructions for both inputs:16 functions/652 lines and31 functions/1749 lines. The sets overlap and are not claimed as47 unique functions."
+    }
+  ],
+  "evidence": [
+    "work/trainer/research/actor_controls_deep_continuation_evidence.json#/functions/0x1403A8FA0",
+    "work/trainer/research/actor_controls_deep_continuation_evidence.json#/functions/0x1403B7AD0",
+    "work/trainer/research/actor_controls_deep_continuation_evidence.json#/functions/0x14040A440",
+    "work/trainer/research/actor_controls_deep_continuation_evidence.json#/functions/0x1403CB100",
+    "work/trainer/research/actor_controls_deep_continuation_evidence.json#/functions/0x1403CB360",
+    "work/trainer/research/actor_controls_deep_continuation_evidence.json#/functions/0x1403CB500",
+    "work/trainer/research/actor_controls_deep_continuation_evidence.json#/functions/0x140422780",
+    "work/trainer/research/actor_controls_deep_continuation_evidence.json#/functions/0x1403B59B0",
+    "work/trainer/research/actor_controls_deep_continuation_evidence.json#/functions/0x1403B5A40",
+    "work/trainer/research/actor_controls_deep_continuation_evidence.json#/functions/0x140422630",
+    "work/trainer/research/actor_controls_deep_continuation_evidence.json#/functions/0x140404FB0",
+    "work/trainer/research/actor_controls_deep_continuation_evidence.json#/functions/0x140405030"
+  ],
+  "limitations": [
+    "No live movement behavior or arbitrary mod asset/resource combinations were tested.",
+    "The maximum speeds and height are useful finite edit-policy values, not a proof that every special action handles every combination identically.",
+    "Scripts, motion/special actions and actor replacement can select different movement rules or overwrite these values.",
+    "Author narrative/structured claims and implementation report were finalized after this review: actor_controls_deep.json/.txt and actormovement_implementation.json/.txt. Source, tests and catalog fingerprints remain unchanged."
+  ]
+}

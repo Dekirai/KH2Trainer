@@ -1,0 +1,3118 @@
+{
+  "Date": "2026-10-04",
+  "Status": "Read-only static research; no product change or runtime activation.",
+  "SourceSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "Scope": "98 previously unclaimed executable CIL bodies: native-render-host construction plus CLR/default-domain/exit-list/unwind lifetime. Two RVA0 P/Invoke placeholders are separately documented and excluded.",
+  "Counts": {
+    "cilBodies": 98,
+    "fullIlInstructions": 1953,
+    "originalIlBytes": 4669,
+    "exceptionClauses": 24,
+    "directMethodDefCallerEdges": 158
+  },
+  "AddressPolicy": "addr in Findings is synthetic CIL. OriginalHeaderRva identifies stored IL, not callable machine code. Explicit native VAs are labeled in evidence; do not add imagebase to synthetic addresses.",
+  "Findings": [
+    {
+      "addr": "0x3390",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.ThrowNestedModuleLoadException",
+      "MethodDef": "0x60000d8",
+      "OriginalHeaderRva": "0x451040",
+      "CodeBytes": 14,
+      "CodeSha256": "2df93f9fb314cffa7e8d467ea080637d8a635ddfe53a91740ca339ac49d191c6",
+      "Finding": "Constructs ModuleLoadExceptionHandlerException with the fixed initialization/cleanup failure message, original exception and cleanup exception, then throws it.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x39e0",
+          "token": "0x60000fa",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.Cleanup",
+          "ilOffset": 33,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x39e0",
+          "token": "0x60000fa",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.Cleanup",
+          "ilOffset": 43,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This preserves both failures; it does not recover initialization or display a game dialog."
+    },
+    {
+      "addr": "0x33a0",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.ThrowModuleLoadException",
+      "MethodDef": "0x60000d9",
+      "OriginalHeaderRva": "0x4509ec",
+      "CodeBytes": 8,
+      "CodeSha256": "2704264992f006340b3b8274cfd3d6554102c4fd685a7bc3f11d842fe517be74",
+      "Finding": "Constructs and throws ModuleLoadException from the supplied message.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3750",
+          "token": "0x60000f1",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.InitializeNative",
+          "ilOffset": 90,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The final ret is unreachable after throw; no cleanup occurs here."
+    },
+    {
+      "addr": "0x33b0",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.ThrowModuleLoadException_0",
+      "MethodDef": "0x60000da",
+      "OriginalHeaderRva": "0x450a00",
+      "CodeBytes": 9,
+      "CodeSha256": "4250d0834d10dc5a86ea3af8044738b1f2b970342775dc870599156129f0bf12",
+      "Finding": "Constructs and throws ModuleLoadException from the supplied message and inner exception.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3a40",
+          "token": "0x60000fd",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.Initialize",
+          "ilOffset": 66,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3a40",
+          "token": "0x60000fd",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.Initialize",
+          "ilOffset": 91,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. Cleanup is the caller's responsibility."
+    },
+    {
+      "addr": "0x33c0",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.RegisterModuleUninitializer",
+      "MethodDef": "0x60000db",
+      "OriginalHeaderRva": "0x450b1c",
+      "CodeBytes": 12,
+      "CodeSha256": "6bcfe2650db1af86ad5089aaf2bfa61c55b256029a4636812e0a6f6fbb6855f0",
+      "Finding": "Loads the ModuleUninitializer singleton and forwards the supplied EventHandler to AddHandler.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3850",
+          "token": "0x60000f4",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.InitializeUninitializer",
+          "ilOffset": 24,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. No null, duplicate or handler-lifetime validation is added by this wrapper."
+    },
+    {
+      "addr": "0x33d0",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.FromGUID",
+      "MethodDef": "0x60000dc",
+      "OriginalHeaderRva": "0x450b34",
+      "CodeBytes": 68,
+      "CodeSha256": "76c688b95ab4fe141142dc48391552374e731e8874d4c28b014fc9943807a491",
+      "Finding": "Reads the native 16-byte GUID as DWORD, two WORDs and eight bytes and calls System.Guid's component constructor.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3420",
+          "token": "0x60000dd",
+          "name": "::__get_default_appdomain",
+          "ilOffset": 8,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3420",
+          "token": "0x60000dd",
+          "name": "::__get_default_appdomain",
+          "ilOffset": 19,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x34d0",
+          "token": "0x60000e0",
+          "name": "::<CrtImplementationDetails>.DoCallBackInDefaultDomain",
+          "ilOffset": 5,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x34d0",
+          "token": "0x60000e0",
+          "name": "::<CrtImplementationDetails>.DoCallBackInDefaultDomain",
+          "ilOffset": 17,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The supplied native pointer must reference 16 readable bytes; this is not a parser for an arbitrary textual GUID."
+    },
+    {
+      "addr": "0x3420",
+      "Domain": "cil",
+      "Name": "::__get_default_appdomain",
+      "MethodDef": "0x60000dd",
+      "OriginalHeaderRva": "0x450b84",
+      "CodeBytes": 87,
+      "CodeSha256": "93c5880587532d86bce2a2835a244fb009131fe057ebc8147624ec585e5ceb17",
+      "Finding": "Obtains a CLR runtime COM interface using the two original cb2f6722/cb2f6723 GUID records; runtime acquisition exceptions become HRESULTs. On success, calls COM slot+0x68 to retrieve the default-domain IUnknown, releases the host through slot+0x10 and returns the HRESULT.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3490",
+          "token": "0x60000df",
+          "name": "::<CrtImplementationDetails>.GetDefaultDomain",
+          "ilOffset": 5,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The output pointer is a native COM reference. This is runtime-host interop, not a game object or an editor window. The release is explicit after the call, not a general exception-protected wrapper for arbitrary COM implementations."
+    },
+    {
+      "addr": "0x3480",
+      "Domain": "cil",
+      "Name": "::__release_appdomain",
+      "MethodDef": "0x60000de",
+      "OriginalHeaderRva": "0x450c04",
+      "CodeBytes": 15,
+      "CodeSha256": "2aabb85311a31cff2f2397f135041ca5c13babdcd56fb104b1648bdcb25173e2",
+      "Finding": "Calls Release through IUnknown vtable+0x10 and discards the reference-count return.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3490",
+          "token": "0x60000df",
+          "name": "::<CrtImplementationDetails>.GetDefaultDomain",
+          "ilOffset": 38,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The argument must be a valid non-null COM interface; no ownership check or null guard exists."
+    },
+    {
+      "addr": "0x3490",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.GetDefaultDomain",
+      "MethodDef": "0x60000df",
+      "OriginalHeaderRva": "0x450c20",
+      "CodeBytes": 54,
+      "CodeSha256": "5a6a8d60e581ced5791d5c14a842f20943d724879e5c429cf3d87ed398d2f1d7",
+      "Finding": "Calls __get_default_appdomain, throws for a negative HRESULT, converts the returned IUnknown with Marshal.GetObjectForIUnknown and casts to AppDomain. A finally clause releases the native IUnknown after conversion.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x34d0",
+          "token": "0x60000e0",
+          "name": "::<CrtImplementationDetails>.DoCallBackInDefaultDomain",
+          "ilOffset": 39,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The returned managed AppDomain object and the released native reference have different ownership. The fallback null after ThrowExceptionForHR is not a successful domain result."
+    },
+    {
+      "addr": "0x34d0",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.DoCallBackInDefaultDomain",
+      "MethodDef": "0x60000e0",
+      "OriginalHeaderRva": "0x450c80",
+      "CodeBytes": 97,
+      "CodeSha256": "37853363a58b6120de79a898f15e351f8a4562fd41d19dfde5ac2bfddfa10183",
+      "Finding": "Obtains the CLR runtime interface for the 90f1a06c/90f1a06e GUID pair, gets the default AppDomain ID and invokes COM slot+0x40 with domain ID, native callback and cookie. Negative HRESULTs become exceptions; finally releases the COM host.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3680",
+          "token": "0x60000e7",
+          "name": "::<CrtImplementationDetails>.DefaultDomain.Initialize",
+          "ilOffset": 7,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3980",
+          "token": "0x60000f8",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.UninitializeDefaultDomain",
+          "ilOffset": 36,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The callback must be a valid CLR-compatible native thunk. Passing a synthetic IDA CIL address would violate this contract."
+    },
+    {
+      "addr": "0x3540",
+      "Domain": "cil",
+      "Name": "::__scrt_is_safe_for_managed_code",
+      "MethodDef": "0x60000e1",
+      "OriginalHeaderRva": "0x450d38",
+      "CodeBytes": 13,
+      "CodeSha256": "98c9e66d46a55ad80e0af03c2ba9019e6666a741c5290b1ca9d1f72ff03fc6d9",
+      "Finding": "Returns whether the native DllMain-reason value is greater than 1 using an unsigned comparison.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3750",
+          "token": "0x60000f1",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.InitializeNative",
+          "ilOffset": 23,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This is the exact gate used by managed native initialization; it does not establish general thread safety for other engine calls."
+    },
+    {
+      "addr": "0x3550",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.DefaultDomain.DoNothing",
+      "MethodDef": "0x60000e2",
+      "OriginalHeaderRva": "0x450d70",
+      "CodeBytes": 17,
+      "CodeSha256": "67942faffa5047c2b638a34441bbe06a152146573599e530a752cb794afdae03",
+      "Finding": "Boxes Int32.MaxValue, passes it to GC.KeepAlive and returns zero.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. Its useful role is a trivial default-domain callback whose invocation forces the module path; it changes no renderer or game state itself."
+    },
+    {
+      "addr": "0x3570",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.DefaultDomain.HasPerProcess",
+      "MethodDef": "0x60000e3",
+      "OriginalHeaderRva": "0x450d90",
+      "CodeBytes": 71,
+      "CodeSha256": "f0a852b3ca5f214dbb200eacd94d2f4e13c31fb13a3f7f15c82c3be37ea6404e",
+      "Finding": "Caches whether any nonzero QWORD exists in [__xc_mp_a,__xc_mp_z). TriBool2 triggers the scan, -1 records true and 0 records false.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3640",
+          "token": "0x60000e5",
+          "name": "::<CrtImplementationDetails>.DefaultDomain.NeedsInitialization",
+          "ilOffset": 0,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. These QWORD values are later resolved as managed method tokens. This method only checks presence and does not execute or validate them."
+    },
+    {
+      "addr": "0x35c0",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.DefaultDomain.HasNative",
+      "MethodDef": "0x60000e4",
+      "OriginalHeaderRva": "0x450de4",
+      "CodeBytes": 116,
+      "CodeSha256": "d5d6c796370a8dce947ef6e9ff3762d67ceb43c2941ebee7c305b5e218c759d7",
+      "Finding": "Caches whether the native initializer ranges [__xi_a,__xi_z) or [__xc_a,__xc_z) contain a nonzero QWORD, using TriBool2/-1/0.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3640",
+          "token": "0x60000e5",
+          "name": "::<CrtImplementationDetails>.DefaultDomain.NeedsInitialization",
+          "ilOffset": 14,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. It checks presence, not successful initialization, code identity or entry-point safety."
+    },
+    {
+      "addr": "0x3640",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.DefaultDomain.NeedsInitialization",
+      "MethodDef": "0x60000e5",
+      "OriginalHeaderRva": "0x450e64",
+      "CodeBytes": 44,
+      "CodeSha256": "b38c226c8ebede5442512040a412816c6c91b5128cb6c7d6ed5e1fb844d91407",
+      "Finding": "Requests default-domain initialization if per-process initializers exist but have not run, or native initializers exist while native initialization is false and startup state is zero.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3870",
+          "token": "0x60000f5",
+          "name": "::<CrtImplementationDetails>.LanguageSupport._Initialize",
+          "ilOffset": 133,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The native condition includes startup-state gating; this is not simply the inverse of one initialized bit."
+    },
+    {
+      "addr": "0x3670",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.DefaultDomain.NeedsUninitialization",
+      "MethodDef": "0x60000e6",
+      "OriginalHeaderRva": "0x450e9c",
+      "CodeBytes": 6,
+      "CodeSha256": "f86d55e18dc3ba7fdd6786d7d1e2180f4a7ce5ec3551118c8f2f4e707eea897e",
+      "Finding": "Returns the process-level DefaultDomain.Entered flag.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3980",
+          "token": "0x60000f8",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.UninitializeDefaultDomain",
+          "ilOffset": 0,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This tests whether default-domain initialization was entered, not whether every initialization stage succeeded."
+    },
+    {
+      "addr": "0x3680",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.DefaultDomain.Initialize",
+      "MethodDef": "0x60000e7",
+      "OriginalHeaderRva": "0x450eb0",
+      "CodeBytes": 13,
+      "CodeSha256": "97c13e6b064a5a79b46a04e52806ab7f36bdd39667659ebea968edceb6fa78d3",
+      "Finding": "Loads the native __unep thunk for DoNothing and asks DoCallBackInDefaultDomain to invoke it with a null cookie.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3730",
+          "token": "0x60000f0",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.InitializeDefaultAppDomain",
+          "ilOffset": 12,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The original thunk field stores native VA0x140579E20; the CIL body address0x3550 is not interchangeable with it."
+    },
+    {
+      "addr": "0x3690",
+      "Domain": "cil",
+      "Name": "::?A0x6b6762b8.??__E?Initialized@CurrentDomain@<CrtImplementationDetails>@@$$Q2HA@@YMXXZ",
+      "MethodDef": "0x60000e8",
+      "OriginalHeaderRva": "0x2d9e4",
+      "CodeBytes": 7,
+      "CodeSha256": "c53009568c8efe9cef3e3abd4310bea2041b07b81ab868822c00811be284c647",
+      "Finding": "Stores zero into CurrentDomain.Initialized and returns. Its MethodDef is a nonzero entry in the per-AppDomain initializer table.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [
+        {
+          "table": "__xc_ma_a",
+          "slot": 1,
+          "rva": "0x584e80"
+        }
+      ],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This three-instruction body initializes one managed static field; it performs no native reset or cleanup."
+    },
+    {
+      "addr": "0x36a0",
+      "Domain": "cil",
+      "Name": "::?A0x6b6762b8.??__E?Uninitialized@CurrentDomain@<CrtImplementationDetails>@@$$Q2HA@@YMXXZ",
+      "MethodDef": "0x60000e9",
+      "OriginalHeaderRva": "0x2d9f8",
+      "CodeBytes": 7,
+      "CodeSha256": "e5d420f986a8353492a577e5f3c4976918dc6f8e5235d373efaf43de5251bec9",
+      "Finding": "Stores zero into CurrentDomain.Uninitialized and returns. Its MethodDef is a nonzero entry in the per-AppDomain initializer table.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [
+        {
+          "table": "__xc_ma_a",
+          "slot": 2,
+          "rva": "0x584e88"
+        }
+      ],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This three-instruction body initializes one managed static field; it performs no native reset or cleanup."
+    },
+    {
+      "addr": "0x36b0",
+      "Domain": "cil",
+      "Name": "::?A0x6b6762b8.??__E?IsDefaultDomain@CurrentDomain@<CrtImplementationDetails>@@$$Q2_NA@@YMXXZ",
+      "MethodDef": "0x60000ea",
+      "OriginalHeaderRva": "0x2da0c",
+      "CodeBytes": 7,
+      "CodeSha256": "3555ad2394c463dcee6c56394523f64a18bd151923c19e8b302a2b9a6db343bc",
+      "Finding": "Stores zero into CurrentDomain.IsDefaultDomain and returns. Its MethodDef is a nonzero entry in the per-AppDomain initializer table.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [
+        {
+          "table": "__xc_ma_a",
+          "slot": 3,
+          "rva": "0x584e90"
+        }
+      ],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This three-instruction body initializes one managed static field; it performs no native reset or cleanup."
+    },
+    {
+      "addr": "0x36c0",
+      "Domain": "cil",
+      "Name": "::?A0x6b6762b8.??__E?InitializedVtables@CurrentDomain@<CrtImplementationDetails>@@$$Q2W4Progress@2@A@@YMXXZ",
+      "MethodDef": "0x60000eb",
+      "OriginalHeaderRva": "0x2da20",
+      "CodeBytes": 7,
+      "CodeSha256": "37a72ad6b4ec8f25a966604187e646b93751af822ecd073f5fcfff4243ba7749",
+      "Finding": "Stores zero into CurrentDomain.InitializedVtables and returns. Its MethodDef is a nonzero entry in the per-AppDomain initializer table.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [
+        {
+          "table": "__xc_ma_a",
+          "slot": 4,
+          "rva": "0x584e98"
+        }
+      ],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This three-instruction body initializes one managed static field; it performs no native reset or cleanup."
+    },
+    {
+      "addr": "0x36d0",
+      "Domain": "cil",
+      "Name": "::?A0x6b6762b8.??__E?InitializedNative@CurrentDomain@<CrtImplementationDetails>@@$$Q2W4Progress@2@A@@YMXXZ",
+      "MethodDef": "0x60000ec",
+      "OriginalHeaderRva": "0x2da34",
+      "CodeBytes": 7,
+      "CodeSha256": "99d8b9dac592b512c3282a7b184f24bed399ec8f8518e05b2b595ff756430753",
+      "Finding": "Stores zero into CurrentDomain.InitializedNative and returns. Its MethodDef is a nonzero entry in the per-AppDomain initializer table.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [
+        {
+          "table": "__xc_ma_a",
+          "slot": 5,
+          "rva": "0x584ea0"
+        }
+      ],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This three-instruction body initializes one managed static field; it performs no native reset or cleanup."
+    },
+    {
+      "addr": "0x36e0",
+      "Domain": "cil",
+      "Name": "::?A0x6b6762b8.??__E?InitializedPerProcess@CurrentDomain@<CrtImplementationDetails>@@$$Q2W4Progress@2@A@@YMXXZ",
+      "MethodDef": "0x60000ed",
+      "OriginalHeaderRva": "0x2da48",
+      "CodeBytes": 7,
+      "CodeSha256": "57a603c02bb27f133f17ec5ba0fc5b261a5791d4db44997ca995d0d37f2fb922",
+      "Finding": "Stores zero into CurrentDomain.InitializedPerProcess and returns. Its MethodDef is a nonzero entry in the per-AppDomain initializer table.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [
+        {
+          "table": "__xc_ma_a",
+          "slot": 6,
+          "rva": "0x584ea8"
+        }
+      ],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This three-instruction body initializes one managed static field; it performs no native reset or cleanup."
+    },
+    {
+      "addr": "0x36f0",
+      "Domain": "cil",
+      "Name": "::?A0x6b6762b8.??__E?InitializedPerAppDomain@CurrentDomain@<CrtImplementationDetails>@@$$Q2W4Progress@2@A@@YMXXZ",
+      "MethodDef": "0x60000ee",
+      "OriginalHeaderRva": "0x2da5c",
+      "CodeBytes": 7,
+      "CodeSha256": "e76ffee77ca2baa05f9f9374c3fd0c9ed2cd8e2553a43eba81dd5fc49bd435c0",
+      "Finding": "Stores zero into CurrentDomain.InitializedPerAppDomain and returns. Its MethodDef is a nonzero entry in the per-AppDomain initializer table.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [
+        {
+          "table": "__xc_ma_a",
+          "slot": 7,
+          "rva": "0x584eb0"
+        }
+      ],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This three-instruction body initializes one managed static field; it performs no native reset or cleanup."
+    },
+    {
+      "addr": "0x3700",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.LanguageSupport.InitializeVtables",
+      "MethodDef": "0x60000ef",
+      "OriginalHeaderRva": "0x451094",
+      "CodeBytes": 40,
+      "CodeSha256": "4fd7f47a2cc9c448185a4ea8b591981f0a0888f11f0432d0a3cd6337ff494a3b",
+      "Finding": "Sets the GC-rooted failure-stage message, sets vtable progress to1, runs _initterm_m over __xi_vt_a..__xi_vt_z, then records progress2.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3870",
+          "token": "0x60000f5",
+          "name": "::<CrtImplementationDetails>.LanguageSupport._Initialize",
+          "ilOffset": 107,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This binary's stored vtable initializer range contains one zero sentinel and no nonzero tokens. The generic stage machinery is present even though this range has no work."
+    },
+    {
+      "addr": "0x3730",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.LanguageSupport.InitializeDefaultAppDomain",
+      "MethodDef": "0x60000f0",
+      "OriginalHeaderRva": "0x4510c8",
+      "CodeBytes": 18,
+      "CodeSha256": "fafd2dc16e57a15bd5aad1998ee9ea27c4deda753bad0f904cd0f04788cb92f5",
+      "Finding": "Sets the default-AppDomain failure-stage message and calls DefaultDomain.Initialize.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3870",
+          "token": "0x60000f5",
+          "name": "::<CrtImplementationDetails>.LanguageSupport._Initialize",
+          "ilOffset": 169,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The actual cross-domain transition occurs in the callback helper; this body provides stage context only."
+    },
+    {
+      "addr": "0x3750",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.LanguageSupport.InitializeNative",
+      "MethodDef": "0x60000f1",
+      "OriginalHeaderRva": "0x4510e8",
+      "CodeBytes": 129,
+      "CodeSha256": "f403379edcb4de3409e90c874d5365d2d0cb267e7cb9d41f74161bf8d55ef4cc",
+      "Finding": "Sets the native failure-stage message, initializes the security cookie and marks DefaultDomain.InitializedNative. It aborts when managed entry is unsafe or startup is already in-progress. From state0 it sets state1, runs _initterm_e and then _initterm, records state2 and native-from-cctor/progress completion.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3870",
+          "token": "0x60000f5",
+          "name": "::<CrtImplementationDetails>.LanguageSupport._Initialize",
+          "ilOffset": 120,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. A nonzero _initterm_e result throws a module-load exception. InitializedNative is set before the native initializer table completes; that flag alone is not proof of success."
+    },
+    {
+      "addr": "0x37e0",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.LanguageSupport.InitializePerProcess",
+      "MethodDef": "0x60000f2",
+      "OriginalHeaderRva": "0x451178",
+      "CodeBytes": 52,
+      "CodeSha256": "40eaf6acd3561862059afead334261b349c498ae294d6c0d46d40c894f123f77",
+      "Finding": "Sets the per-process failure-stage message and progress1, creates the managed process exit table, executes __xc_mp_a..__xc_mp_z via _initterm_m, then sets progress2 and DefaultDomain.InitializedPerProcess.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3870",
+          "token": "0x60000f5",
+          "name": "::<CrtImplementationDetails>.LanguageSupport._Initialize",
+          "ilOffset": 126,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The return from _initatexit_m is discarded. The original table contains37 nonzero managed tokens, including ATL initialization and scratch-pad initialization entries."
+    },
+    {
+      "addr": "0x3820",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.LanguageSupport.InitializePerAppDomain",
+      "MethodDef": "0x60000f3",
+      "OriginalHeaderRva": "0x4511b8",
+      "CodeBytes": 46,
+      "CodeSha256": "28c1d57587b56845880f0ee347e5b642acc5904328a47c739a49e820a1043add",
+      "Finding": "Sets the per-AppDomain failure-stage message and progress1, calls _initatexit_app_domain, executes __xc_ma_a..__xc_ma_z and records progress2.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3870",
+          "token": "0x60000f5",
+          "name": "::<CrtImplementationDetails>.LanguageSupport._Initialize",
+          "ilOffset": 175,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The exit-table initialization return is discarded; this binary's seven nonzero table entries clear the seven CurrentDomain fields individually."
+    },
+    {
+      "addr": "0x3850",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.LanguageSupport.InitializeUninitializer",
+      "MethodDef": "0x60000f4",
+      "OriginalHeaderRva": "0x4511f4",
+      "CodeBytes": 30,
+      "CodeSha256": "1a02195c40d45228bb740398322ac833e234c1e6e7992a2017d248c634978c7f",
+      "Finding": "Sets the uninitializer failure-stage message, creates an EventHandler for LanguageSupport.DomainUnload and registers it with ModuleUninitializer.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3870",
+          "token": "0x60000f5",
+          "name": "::<CrtImplementationDetails>.LanguageSupport._Initialize",
+          "ilOffset": 187,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. Registration is part of the final initialization stage; this body does not unload anything immediately."
+    },
+    {
+      "addr": "0x3870",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.LanguageSupport._Initialize",
+      "MethodDef": "0x60000f5",
+      "OriginalHeaderRva": "0x451220",
+      "CodeBytes": 193,
+      "CodeSha256": "5c576daefabedea84c3e5eca76c5ed2531cd1be3a1e340799ded411e342d6dc0",
+      "Finding": "Records whether the current AppDomain is default and sets the process Entered flag. It acquires the native startup lock with the current fiber ID, tolerates recursive acquisition by the same ID and retries others after Sleep(1000). Under that lock it initializes vtables and default-domain native/per-process state; another domain can request default-domain initialization after releasing the lock. It then initializes per-domain state, marks the domain initialized and registers its uninitializer.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3a40",
+          "token": "0x60000fd",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.Initialize",
+          "ilOffset": 41,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. Lock release is protected by finally and occurs only for the outer owner. This orchestrates runtime/module startup, not a callable feature toggle; calling it again manually would violate the compiler-owned lifecycle."
+    },
+    {
+      "addr": "0x3940",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.LanguageSupport.UninitializeAppDomain",
+      "MethodDef": "0x60000f6",
+      "OriginalHeaderRva": "0x450ecc",
+      "CodeBytes": 6,
+      "CodeSha256": "f6a46f8cde3e231f0543b1f422d6d420fa09a01ecfd99f443bbce4504166d098",
+      "Finding": "Delegates per-AppDomain teardown to _app_exit_callback.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x39b0",
+          "token": "0x60000f9",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.DomainUnload",
+          "ilOffset": 33,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x39e0",
+          "token": "0x60000fa",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.Cleanup",
+          "ilOffset": 15,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. It does not independently guarantee once-only execution; DomainUnload supplies that guard."
+    },
+    {
+      "addr": "0x3950",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.LanguageSupport._UninitializeDefaultDomain",
+      "MethodDef": "0x60000f7",
+      "OriginalHeaderRva": "0x450ee0",
+      "CodeBytes": 43,
+      "CodeSha256": "ea163d6252742da5745c4680e3d430f548eb339f748dd20172fad1931beecd7e",
+      "Finding": "Runs the process exit callback and clears InitializedPerProcess. If native initialization was performed by the module cctor, calls _cexit, clears native startup state and the ownership flag. Finally clears InitializedNative and returns zero.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3980",
+          "token": "0x60000f8",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.UninitializeDefaultDomain",
+          "ilOffset": 21,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The ownership flag prevents this path from treating all native startup as cctor-owned. Callback exceptions can interrupt later cleanup steps."
+    },
+    {
+      "addr": "0x3980",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.LanguageSupport.UninitializeDefaultDomain",
+      "MethodDef": "0x60000f8",
+      "OriginalHeaderRva": "0x450f18",
+      "CodeBytes": 42,
+      "CodeSha256": "d7437cc6f6cf8ab9844c3017559834beccd0aeaeffdcef11af2636b3371d443b",
+      "Finding": "If the default domain was entered, uninitializes directly when already in that domain; otherwise invokes the native default-domain teardown thunk with a null cookie through DoCallBackInDefaultDomain.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x39b0",
+          "token": "0x60000f9",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.DomainUnload",
+          "ilOffset": 41,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x39e0",
+          "token": "0x60000fa",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.Cleanup",
+          "ilOffset": 23,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The thunk field stores native VA0x140579E90. No action occurs when the Entered flag is false."
+    },
+    {
+      "addr": "0x39b0",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.LanguageSupport.DomainUnload",
+      "MethodDef": "0x60000f9",
+      "OriginalHeaderRva": "0x450f50",
+      "CodeBytes": 47,
+      "CodeSha256": "36d11bf3c8e09f16b1991609818482762b5d21a0e26ea7b0eaedbaba9e421d3a",
+      "Finding": "Skips uninitialized domains and uses Interlocked.Exchange(Uninitialized,1) as an exactly-once gate. The first entrant decrements the shared domain count, tears down the current domain and, when the count becomes zero, uninitializes default-domain/process state.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3850",
+          "token": "0x60000f4",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.InitializeUninitializer",
+          "ilOffset": 13,
+          "opcode": "ldftn"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. If teardown throws, the once flag and decremented count are not rolled back. The guard belongs to this handler, not to ModuleUninitializer's stack enumerator."
+    },
+    {
+      "addr": "0x39e0",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.LanguageSupport.Cleanup",
+      "MethodDef": "0x60000fa",
+      "OriginalHeaderRva": "0x451324",
+      "CodeBytes": 51,
+      "CodeSha256": "9bac5468b377cd3d5797811147701b7641af43312ce6d66485f709138a2a6681",
+      "Finding": "Failure cleanup decrements the shared domain count, runs per-domain teardown and tears down process/default-domain state when last. Cleanup exceptions are wrapped together with the original initialization exception; the non-Exception catch supplies a null secondary exception.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3a40",
+          "token": "0x60000fd",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.Initialize",
+          "ilOffset": 54,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3a40",
+          "token": "0x60000fd",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.Initialize",
+          "ilOffset": 79,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This is the failed-initialization path; callers must only use it after the successful domain-count increment. It is not a retry or rollback of arbitrary engine initialization."
+    },
+    {
+      "addr": "0x3a20",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.LanguageSupport.{ctor}",
+      "MethodDef": "0x60000fb",
+      "OriginalHeaderRva": "0x451398",
+      "CodeBytes": 9,
+      "CodeSha256": "4c29c7f253647d210a82faa742a9e2b99ab5eb4714712e328f86fbbe3b0a7e53",
+      "Finding": "Constructs the gcroot<String> storage at the supplied LanguageSupport address and returns that address.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3ab0",
+          "token": "0x60000fe",
+          "name": "::.cctor",
+          "ilOffset": 2,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. Original ClassLayout gives LanguageSupport8 bytes; the storage contains a GCHandle token, not inline string text."
+    },
+    {
+      "addr": "0x3a30",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.LanguageSupport.{dtor}",
+      "MethodDef": "0x60000fc",
+      "OriginalHeaderRva": "0x4513b0",
+      "CodeBytes": 7,
+      "CodeSha256": "d611279aa108f5d89602968d54c757e052e235480bd4f69915b561c5bfe62367",
+      "Finding": "Invokes the gcroot<String> destructor at the LanguageSupport address.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3ab0",
+          "token": "0x60000fe",
+          "name": "::.cctor",
+          "ilOffset": 17,
+          "opcode": "ldftn"
+        },
+        {
+          "addr": "0x3ab0",
+          "token": "0x60000fe",
+          "name": "::.cctor",
+          "ilOffset": 33,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The object must own a live GCHandle; there is no independent double-free guard here."
+    },
+    {
+      "addr": "0x3a40",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.LanguageSupport.Initialize",
+      "MethodDef": "0x60000fd",
+      "OriginalHeaderRva": "0x4513c4",
+      "CodeBytes": 99,
+      "CodeSha256": "2f1620e68e2bbcc653252fdeea8eb03060669bf0d58b286d91f8f2452f2737b1",
+      "Finding": "Sets the initial failure-stage string and uses a constrained region to increment AllDomains.Count and record that increment. It calls _Initialize; exceptions trigger Cleanup only after the count increment, then become ModuleLoadException carrying the current stage and original exception.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3ab0",
+          "token": "0x60000fe",
+          "name": "::.cctor",
+          "ilOffset": 10,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. An exception raised by Cleanup can replace the ordinary wrapper with the nested-failure exception. This body implements bookkeeping on failure, not a guaranteed successful recovery."
+    },
+    {
+      "addr": "0x3ab0",
+      "Domain": "cil",
+      "Name": "::.cctor",
+      "MethodDef": "0x60000fe",
+      "OriginalHeaderRva": "0x451480",
+      "CodeBytes": 39,
+      "CodeSha256": "b12d5095633198c5feabd45720e7568d1de12df037169fbc3fae9966e9336814",
+      "Finding": "The module cctor constructs a local LanguageSupport, calls its Initialize, and destroys it on success; its unwind clause also destroys it through the C++ unwind helper.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This is the compiler-owned module entry lifecycle. Direct invocation from an arbitrary worker thread is not an activation contract for developer windows."
+    },
+    {
+      "addr": "0x3ae0",
+      "Domain": "cil",
+      "Name": "::gcroot<System::String_^>..PE$AAVString@System@@",
+      "MethodDef": "0x60000ff",
+      "OriginalHeaderRva": "0x450f8c",
+      "CodeBytes": 24,
+      "CodeSha256": "09943bd6dddf89adf2a9cc5bab81bef6b7cf50ea8eb4205027ff4b842a5682af",
+      "Finding": "Converts the stored pointer-sized token into a GCHandle and reads its Target as the rooted string.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3750",
+          "token": "0x60000f1",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.InitializeNative",
+          "ilOffset": 85,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3a40",
+          "token": "0x60000fd",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.Initialize",
+          "ilOffset": 60,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3a40",
+          "token": "0x60000fd",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.Initialize",
+          "ilOffset": 85,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This retrieves a managed reference; it does not expose a stable native string buffer."
+    },
+    {
+      "addr": "0x3b00",
+      "Domain": "cil",
+      "Name": "::gcroot<System::String_^>.=",
+      "MethodDef": "0x6000100",
+      "OriginalHeaderRva": "0x450fb0",
+      "CodeBytes": 26,
+      "CodeSha256": "ee0d1dffe958d8a0b4226babdc4cd022bb2209e2ad4e6366a613a247987fa1aa",
+      "Finding": "Converts the stored token into a GCHandle, replaces Target with the supplied string and returns this.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3700",
+          "token": "0x60000ef",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.InitializeVtables",
+          "ilOffset": 6,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3730",
+          "token": "0x60000f0",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.InitializeDefaultAppDomain",
+          "ilOffset": 6,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3750",
+          "token": "0x60000f1",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.InitializeNative",
+          "ilOffset": 6,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x37e0",
+          "token": "0x60000f2",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.InitializePerProcess",
+          "ilOffset": 6,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3820",
+          "token": "0x60000f3",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.InitializePerAppDomain",
+          "ilOffset": 6,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3850",
+          "token": "0x60000f4",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.InitializeUninitializer",
+          "ilOffset": 6,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3a40",
+          "token": "0x60000fd",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.Initialize",
+          "ilOffset": 13,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. It reuses the existing handle rather than allocating or pinning a new string for every stage change."
+    },
+    {
+      "addr": "0x3b20",
+      "Domain": "cil",
+      "Name": "::gcroot<System::String_^>.{dtor}",
+      "MethodDef": "0x6000101",
+      "OriginalHeaderRva": "0x450fd8",
+      "CodeBytes": 28,
+      "CodeSha256": "838601a9197d7e6cc60bc84f6ac62d8e2229090ad6ae3c6c4fd1d84fe422317a",
+      "Finding": "Reconstructs the GCHandle, calls Free, then writes zero to the stored token.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3a30",
+          "token": "0x60000fc",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.{dtor}",
+          "ilOffset": 1,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. A zero token is the post-destruction state; the body does not test it before Free, so repeated destruction is not supported."
+    },
+    {
+      "addr": "0x3b40",
+      "Domain": "cil",
+      "Name": "::gcroot<System::String_^>.{ctor}",
+      "MethodDef": "0x6000102",
+      "OriginalHeaderRva": "0x451000",
+      "CodeBytes": 23,
+      "CodeSha256": "aad156423fa2bc2095b0f18542f26bf74a6932b7c53323dea2b24dc97ac4af7e",
+      "Finding": "Allocates a GCHandle whose initial Target is null, converts the handle to IntPtr and stores its pointer-sized value in this.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3a20",
+          "token": "0x60000fb",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.{ctor}",
+          "ilOffset": 1,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. No explicit pinned-handle overload is used. The handle preserves reachability, not a native data layout for the string."
+    },
+    {
+      "addr": "0x3b60",
+      "Domain": "cil",
+      "Name": "::___CxxCallUnwindDtor",
+      "MethodDef": "0x6000103",
+      "OriginalHeaderRva": "0x4514f4",
+      "CodeBytes": 26,
+      "CodeSha256": "eebc3c7c140ffd9aae7d3e299a5b01006502d1f9e11600615ee0ba8c9d3bb2b9",
+      "Finding": "Invokes the provided destructor(this) through calli. The exception filter obtains native exception pointers and calls __FrameUnwindFilter; the handler is selected only when that native filter allows it.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x14d0",
+          "token": "0x600007a",
+          "name": "::Axa.tim2_hed_endian",
+          "ilOffset": 78,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x14d0",
+          "token": "0x600007a",
+          "name": "::Axa.tim2_hed_endian",
+          "ilOffset": 101,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x1550",
+          "token": "0x600007b",
+          "name": "::Axa.TinyTexEntry.Tim2Encode",
+          "ilOffset": 350,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x1550",
+          "token": "0x600007b",
+          "name": "::Axa.TinyTexEntry.Tim2Encode",
+          "ilOffset": 373,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x1970",
+          "token": "0x60000a0",
+          "name": "::?A0x1b0a8221.??__E_AtlWinModule@ATL@@YMXXZ",
+          "ilOffset": 106,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x19f0",
+          "token": "0x60000a1",
+          "name": "::?A0x1b0a8221.??__F_AtlWinModule@ATL@@YMXXZ",
+          "ilOffset": 32,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x1d20",
+          "token": "0x60000ab",
+          "name": "::kh2ModelScarcher.{ctor}",
+          "ilOffset": 51,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x1d60",
+          "token": "0x60000ac",
+          "name": "::kh2ModelScarcher.{dtor}",
+          "ilOffset": 187,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x1e30",
+          "token": "0x60000ad",
+          "name": "::kh2MotionScarcher.{ctor}",
+          "ilOffset": 51,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x1e70",
+          "token": "0x60000ae",
+          "name": "::kh2MotionScarcher.{dtor}",
+          "ilOffset": 187,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x1f40",
+          "token": "0x60000af",
+          "name": "::SoundList.{ctor}",
+          "ilOffset": 23,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x1f60",
+          "token": "0x60000b0",
+          "name": "::SoundList.{ctor}_0",
+          "ilOffset": 61,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x2010",
+          "token": "0x60000b3",
+          "name": "::kh2SoundSearcher.{ctor}",
+          "ilOffset": 78,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x2010",
+          "token": "0x60000b3",
+          "name": "::kh2SoundSearcher.{ctor}",
+          "ilOffset": 202,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x2010",
+          "token": "0x60000b3",
+          "name": "::kh2SoundSearcher.{ctor}",
+          "ilOffset": 277,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x2010",
+          "token": "0x60000b3",
+          "name": "::kh2SoundSearcher.{ctor}",
+          "ilOffset": 329,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x2010",
+          "token": "0x60000b3",
+          "name": "::kh2SoundSearcher.{ctor}",
+          "ilOffset": 351,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x2180",
+          "token": "0x60000b4",
+          "name": "::kh2SoundSearcher.{dtor}",
+          "ilOffset": 272,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x2180",
+          "token": "0x60000b4",
+          "name": "::kh2SoundSearcher.{dtor}",
+          "ilOffset": 301,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x28c0",
+          "token": "0x60000c7",
+          "name": "::KH2Form.model_search",
+          "ilOffset": 53,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x28c0",
+          "token": "0x60000c7",
+          "name": "::KH2Form.model_search",
+          "ilOffset": 279,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3ab0",
+          "token": "0x60000fe",
+          "name": "::.cctor",
+          "ilOffset": 25,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x7b0",
+          "token": "0x6000039",
+          "name": "::ATL.CAtlWinModule.{ctor}",
+          "ilOffset": 51,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x7f0",
+          "token": "0x600003a",
+          "name": "::ATL.CAtlWinModule.{dtor}",
+          "ilOffset": 24,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x7f0",
+          "token": "0x600003a",
+          "name": "::ATL.CAtlWinModule.{dtor}",
+          "ilOffset": 53,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x840",
+          "token": "0x600003c",
+          "name": "::ATL._ATL_WIN_MODULE70.{ctor}",
+          "ilOffset": 45,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x880",
+          "token": "0x600003d",
+          "name": "::ATL._ATL_WIN_MODULE70.{dtor}",
+          "ilOffset": 22,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x8a0",
+          "token": "0x600003e",
+          "name": "::?A0x9fa1126c.??__E_AtlWinModule@ATL@@YMXXZ",
+          "ilOffset": 106,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x920",
+          "token": "0x600003f",
+          "name": "::?A0x9fa1126c.??__F_AtlWinModule@ATL@@YMXXZ",
+          "ilOffset": 32,
+          "opcode": "call"
+        },
+        {
+          "addr": "0xb7f0",
+          "token": "0x60001ef",
+          "name": "KH2Form.KH2Form::motion_list_ToolStripMenuItem_Click",
+          "ilOffset": 91,
+          "opcode": "call"
+        },
+        {
+          "addr": "0xb7f0",
+          "token": "0x60001ef",
+          "name": "KH2Form.KH2Form::motion_list_ToolStripMenuItem_Click",
+          "ilOffset": 154,
+          "opcode": "call"
+        },
+        {
+          "addr": "0xb8a0",
+          "token": "0x60001f0",
+          "name": "KH2Form.KH2Form::sound_list_ToolStripMenuItem_Click",
+          "ilOffset": 99,
+          "opcode": "call"
+        },
+        {
+          "addr": "0xbb80",
+          "token": "0x60001f4",
+          "name": "KH2Form.KH2Form::gtf_file_checker",
+          "ilOffset": 328,
+          "opcode": "call"
+        },
+        {
+          "addr": "0xdc0",
+          "token": "0x600006c",
+          "name": "::Axa.TinyTexEntry.{ctor}",
+          "ilOffset": 79,
+          "opcode": "call"
+        },
+        {
+          "addr": "0xdc0",
+          "token": "0x600006c",
+          "name": "::Axa.TinyTexEntry.{ctor}",
+          "ilOffset": 94,
+          "opcode": "call"
+        },
+        {
+          "addr": "0xe40",
+          "token": "0x600006e",
+          "name": "::Axa.TinyTexEntry.{dtor}",
+          "ilOffset": 332,
+          "opcode": "call"
+        },
+        {
+          "addr": "0xe40",
+          "token": "0x600006e",
+          "name": "::Axa.TinyTexEntry.{dtor}",
+          "ilOffset": 354,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This is compiler unwind glue. It neither validates the callback nor proves all exceptions are swallowed; __FrameUnwindFilter governs the exceptional edge."
+    },
+    {
+      "addr": "0x3b80",
+      "Domain": "cil",
+      "Name": "::___CxxCallUnwindDelDtor",
+      "MethodDef": "0x6000104",
+      "OriginalHeaderRva": "0x451538",
+      "CodeBytes": 26,
+      "CodeSha256": "eebc3c7c140ffd9aae7d3e299a5b01006502d1f9e11600615ee0ba8c9d3bb2b9",
+      "Finding": "Invokes the provided deleting-destructor callback(this) through calli. The exception filter obtains native exception pointers and calls __FrameUnwindFilter; the handler is selected only when that native filter allows it.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This is compiler unwind glue. It neither validates the callback nor proves all exceptions are swallowed; __FrameUnwindFilter governs the exceptional edge."
+    },
+    {
+      "addr": "0x3ba0",
+      "Domain": "cil",
+      "Name": "::___CxxCallUnwindVecDtor",
+      "MethodDef": "0x6000105",
+      "OriginalHeaderRva": "0x45157c",
+      "CodeBytes": 30,
+      "CodeSha256": "ae0f6cc08a82b8617a4d97a965af0afdaf5147b40633dcd61c7be8a45b564110",
+      "Finding": "Invokes the provided vector-destructor callback(array,size,count,destructor) through calli. The exception filter obtains native exception pointers and calls __FrameUnwindFilter; the handler is selected only when that native filter allows it.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This is compiler unwind glue. It neither validates the callback nor proves all exceptions are swallowed; __FrameUnwindFilter governs the exceptional edge."
+    },
+    {
+      "addr": "0x3bc0",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.AtExitLock._handle",
+      "MethodDef": "0x6000106",
+      "OriginalHeaderRva": "0x4515c4",
+      "CodeBytes": 33,
+      "CodeSha256": "ae315f31c61970af856345111f2f3fe563b9b974d1843479a9f064a485b49715",
+      "Finding": "Returns null when the global at-exit GCHandle token is zero; otherwise reconstructs and boxes that GCHandle.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3c00",
+          "token": "0x6000108",
+          "name": "::<CrtImplementationDetails>.AtExitLock._lock_Set",
+          "ilOffset": 0,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3c50",
+          "token": "0x6000109",
+          "name": "::<CrtImplementationDetails>.AtExitLock._lock_Get",
+          "ilOffset": 0,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3c70",
+          "token": "0x600010a",
+          "name": "::<CrtImplementationDetails>.AtExitLock._lock_Destruct",
+          "ilOffset": 0,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The result is a boxed handle value used by the other lock helpers, not the Monitor object itself."
+    },
+    {
+      "addr": "0x3bf0",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.AtExitLock._lock_Construct",
+      "MethodDef": "0x6000107",
+      "OriginalHeaderRva": "0x451abc",
+      "CodeBytes": 14,
+      "CodeSha256": "a2691acce64e0bb93128bdcc4689d5168304b8fe5497c24d0b77d142a72a811e",
+      "Finding": "Calls _lock_Set only when the global handle token is zero.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3ca0",
+          "token": "0x600010c",
+          "name": "::<CrtImplementationDetails>.AtExitLock.AddRef",
+          "ilOffset": 12,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. An already constructed handle is left unchanged; this helper adds no interlocked initialization protocol."
+    },
+    {
+      "addr": "0x3c00",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.AtExitLock._lock_Set",
+      "MethodDef": "0x6000108",
+      "OriginalHeaderRva": "0x4515f4",
+      "CodeBytes": 65,
+      "CodeSha256": "b37ad548af53c79cf7f218af6007ba2f933b40a4f68fdb7e1bca9fbccdb39a08",
+      "Finding": "Allocates and stores a GCHandle for the supplied lock object when none exists; otherwise changes the existing handle Target.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3bf0",
+          "token": "0x6000107",
+          "name": "::<CrtImplementationDetails>.AtExitLock._lock_Construct",
+          "ilOffset": 8,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. Target replacement is not itself synchronized here. Compiler startup sequencing and surrounding ownership are required."
+    },
+    {
+      "addr": "0x3c50",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.AtExitLock._lock_Get",
+      "MethodDef": "0x6000109",
+      "OriginalHeaderRva": "0x451644",
+      "CodeBytes": 23,
+      "CodeSha256": "db72d87f5911a63f9181e58981bb28870800a851cdc2269848872282ab677822",
+      "Finding": "Returns the existing lock GCHandle.Target, or null when no handle exists.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3c90",
+          "token": "0x600010b",
+          "name": "::<CrtImplementationDetails>.AtExitLock.IsInitialized",
+          "ilOffset": 0,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3cf0",
+          "token": "0x600010e",
+          "name": "::<CrtImplementationDetails>.AtExitLock.Enter",
+          "ilOffset": 0,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3d00",
+          "token": "0x600010f",
+          "name": "::<CrtImplementationDetails>.AtExitLock.Exit",
+          "ilOffset": 0,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This getter alone does not acquire a monitor or prolong a separate native object lifetime."
+    },
+    {
+      "addr": "0x3c70",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.AtExitLock._lock_Destruct",
+      "MethodDef": "0x600010a",
+      "OriginalHeaderRva": "0x451668",
+      "CodeBytes": 28,
+      "CodeSha256": "7f3333c482a25dee7d8fc2493def07cc3848de2527f98658a110baccc2b6b4ea",
+      "Finding": "If the lock handle exists, frees it and clears the global token.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3cd0",
+          "token": "0x600010d",
+          "name": "::<CrtImplementationDetails>.AtExitLock.RemoveRef",
+          "ilOffset": 19,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The helper does not acquire the monitor before releasing the handle; its callers must provide valid teardown sequencing."
+    },
+    {
+      "addr": "0x3c90",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.AtExitLock.IsInitialized",
+      "MethodDef": "0x600010b",
+      "OriginalHeaderRva": "0x451690",
+      "CodeBytes": 14,
+      "CodeSha256": "9d33a8b4fb64023f33b0cb27b525cc74688118fdfae23a313f3434a96b4f88ac",
+      "Finding": "Returns whether _lock_Get yields a non-null object.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3ca0",
+          "token": "0x600010c",
+          "name": "::<CrtImplementationDetails>.AtExitLock.AddRef",
+          "ilOffset": 0,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3d10",
+          "token": "0x6000110",
+          "name": "::?A0x5f1aee9f.__global_lock",
+          "ilOffset": 2,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3d30",
+          "token": "0x6000111",
+          "name": "::?A0x5f1aee9f.__global_unlock",
+          "ilOffset": 2,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3d50",
+          "token": "0x6000112",
+          "name": "::?A0x5f1aee9f.__alloc_global_lock",
+          "ilOffset": 5,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. A nonzero handle whose Target is null is considered uninitialized."
+    },
+    {
+      "addr": "0x3ca0",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.AtExitLock.AddRef",
+      "MethodDef": "0x600010c",
+      "OriginalHeaderRva": "0x451ad8",
+      "CodeBytes": 36,
+      "CodeSha256": "e373d86e9627ca6f03935dcde220ee2f5a5ae5d00eb57ec606682c4a8c7c8a86",
+      "Finding": "Creates a new Object and lock handle if needed, resets the reference count to zero in that case, then increments the ordinary int32 reference count.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3d50",
+          "token": "0x6000112",
+          "name": "::?A0x5f1aee9f.__alloc_global_lock",
+          "ilOffset": 0,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The increment is not Interlocked and this body does not lock itself. It is lifecycle bookkeeping, not a general concurrent reference-counted primitive."
+    },
+    {
+      "addr": "0x3cd0",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.AtExitLock.RemoveRef",
+      "MethodDef": "0x600010d",
+      "OriginalHeaderRva": "0x4516ac",
+      "CodeBytes": 25,
+      "CodeSha256": "cca0df15f58c12cc866f263d9602f0604a840943ef6054ea2513d59537877f62",
+      "Finding": "Decrements the ordinary int32 lock reference count and destroys the lock handle exactly when the result is zero.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3d60",
+          "token": "0x6000113",
+          "name": "::?A0x5f1aee9f.__dealloc_global_lock",
+          "ilOffset": 0,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. No underflow check or concurrent atomic decrement is present; balanced compiler-managed calls are assumed."
+    },
+    {
+      "addr": "0x3cf0",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.AtExitLock.Enter",
+      "MethodDef": "0x600010e",
+      "OriginalHeaderRva": "0x4516d4",
+      "CodeBytes": 11,
+      "CodeSha256": "be42f756b6c1f1c94f00046780375ee404adac973da032811e8567d2d051bb16",
+      "Finding": "Calls Monitor.Enter on the object returned by _lock_Get.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3d10",
+          "token": "0x6000110",
+          "name": "::?A0x5f1aee9f.__global_lock",
+          "ilOffset": 9,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. A missing/null target can fail; this entry does not first check IsInitialized."
+    },
+    {
+      "addr": "0x3d00",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.AtExitLock.Exit",
+      "MethodDef": "0x600010f",
+      "OriginalHeaderRva": "0x4516ec",
+      "CodeBytes": 11,
+      "CodeSha256": "c6b13f3c55422914073d7a6b1d3c370855c5dc2a92f4d5f6588bc24c68e87a0d",
+      "Finding": "Calls Monitor.Exit on the object returned by _lock_Get.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3d30",
+          "token": "0x6000111",
+          "name": "::?A0x5f1aee9f.__global_unlock",
+          "ilOffset": 9,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The caller must own that monitor on the current thread; this body does not track ownership."
+    },
+    {
+      "addr": "0x3d10",
+      "Domain": "cil",
+      "Name": "::?A0x5f1aee9f.__global_lock",
+      "MethodDef": "0x6000110",
+      "OriginalHeaderRva": "0x451704",
+      "CodeBytes": 18,
+      "CodeSha256": "2ddb73830eeb7124f5a755dc093273def43f27f49952c015aa6c5005deb1fe3d",
+      "Finding": "Returns false if the at-exit lock is uninitialized; otherwise enters it and returns true.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3d70",
+          "token": "0x6000114",
+          "name": "::_atexit_helper",
+          "ilOffset": 9,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The check and Monitor.Enter are separate calls, so safe teardown sequencing remains an external precondition."
+    },
+    {
+      "addr": "0x3d30",
+      "Domain": "cil",
+      "Name": "::?A0x5f1aee9f.__global_unlock",
+      "MethodDef": "0x6000111",
+      "OriginalHeaderRva": "0x451724",
+      "CodeBytes": 18,
+      "CodeSha256": "575d7c565c72c9be968108f277c7c212a1e2f46d33004e5e47a7ad196d3b1bb1",
+      "Finding": "Returns false if the at-exit lock is uninitialized; otherwise exits it and returns true.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3d70",
+          "token": "0x6000114",
+          "name": "::_atexit_helper",
+          "ilOffset": 264,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. It does not validate current-thread ownership before Monitor.Exit."
+    },
+    {
+      "addr": "0x3d50",
+      "Domain": "cil",
+      "Name": "::?A0x5f1aee9f.__alloc_global_lock",
+      "MethodDef": "0x6000112",
+      "OriginalHeaderRva": "0x451b08",
+      "CodeBytes": 11,
+      "CodeSha256": "908f224f4d5513a8d9f56a63989063ee18e115e5e447359c70b6ff403fdf75f0",
+      "Finding": "Adds a lock reference and reports whether the resulting lock object is initialized.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3f40",
+          "token": "0x6000116",
+          "name": "::_initatexit_m",
+          "ilOffset": 1,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3fb0",
+          "token": "0x6000119",
+          "name": "::_initatexit_app_domain",
+          "ilOffset": 0,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. Reference addition may throw while allocating a managed object/handle."
+    },
+    {
+      "addr": "0x3d60",
+      "Domain": "cil",
+      "Name": "::?A0x5f1aee9f.__dealloc_global_lock",
+      "MethodDef": "0x6000113",
+      "OriginalHeaderRva": "0x451744",
+      "CodeBytes": 6,
+      "CodeSha256": "af198cacf019b023caf8d0cdcf705ac484c2a49d8e5102cf743e999601ea204b",
+      "Finding": "Drops one at-exit lock reference by calling RemoveRef.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3e90",
+          "token": "0x6000115",
+          "name": "::_exit_callback",
+          "ilOffset": 156,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3ff0",
+          "token": "0x600011a",
+          "name": "::_app_exit_callback",
+          "ilOffset": 186,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This wrapper adds no extra exception or lifetime handling."
+    },
+    {
+      "addr": "0x3d70",
+      "Domain": "cil",
+      "Name": "::_atexit_helper",
+      "MethodDef": "0x6000114",
+      "OriginalHeaderRva": "0x451758",
+      "CodeBytes": 286,
+      "CodeSha256": "022b5922b40f15b60b1754dad5743079aa4218872258bfa9519075e26b8bb3d7",
+      "Finding": "Registers one encoded callback under the at-exit monitor. It rejects a null supplied value or unavailable lock, decodes begin/end, grows full tables, appends an8-byte slot, advances end and re-encodes the table pointers. Normal growth doubles up to an additional4096 bytes. Its OutOfMemoryException fallback asks ReAllocHGlobal for capacity*8+12 bytes but advertises capacity+4 pointer slots; the outer OOM catch returns-1 and finally releases the monitor.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3f90",
+          "token": "0x6000118",
+          "name": "::_atexit_m",
+          "ilOffset": 21,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x40d0",
+          "token": "0x600011c",
+          "name": "::_atexit_m_appdomain",
+          "ilOffset": 21,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The fallback has a static allocation-size/capacity mismatch on this64-bit build. With capacity32, requested268 bytes are treated as36 slots/288 bytes. Reaching it requires the larger allocation to throw OOM and the smaller allocation to succeed; actual allocator slack and runtime reachability were not tested. Both allocation sizes also narrow through IntPtr(int32)."
+    },
+    {
+      "addr": "0x3e90",
+      "Domain": "cil",
+      "Name": "::_exit_callback",
+      "MethodDef": "0x6000115",
+      "OriginalHeaderRva": "0x4518d0",
+      "CodeBytes": 162,
+      "CodeSha256": "5b9b7a610f388e1542bf4d4a6038d05a379895ac52e815a2565b54758dd6ca97",
+      "Finding": "Decodes the process exit table and executes callbacks from the end. Each slot is changed to encoded-null before calli; changed global begin/end values after a callback cause it to resume from the new end. It frees the table and releases the lock reference after normal completion.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3950",
+          "token": "0x60000f7",
+          "name": "::<CrtImplementationDetails>.LanguageSupport._UninitializeDefaultDomain",
+          "ilOffset": 0,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. There is no finally covering callback execution/free here. A callback exception can prevent table free and lock-reference release; the body does not reset table globals for repeated invocation."
+    },
+    {
+      "addr": "0x3f40",
+      "Domain": "cil",
+      "Name": "::_initatexit_m",
+      "MethodDef": "0x6000116",
+      "OriginalHeaderRva": "0x451b20",
+      "CodeBytes": 58,
+      "CodeSha256": "efbe92e7327f2b59fae3fc1c80b1c90cc372f811adfa3998a22bbafa81783590",
+      "Finding": "Acquires an at-exit lock reference, allocates256 unmanaged bytes and encodes the same pointer into begin/end with capacity32. Returns1 on lock success and0 otherwise.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x37e0",
+          "token": "0x60000f2",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.InitializePerProcess",
+          "ilOffset": 18,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. Allocation failures propagate; the return reports this initialization attempt rather than a validated table of callbacks."
+    },
+    {
+      "addr": "0x3f80",
+      "Domain": "cil",
+      "Name": "::_onexit_m",
+      "MethodDef": "0x6000117",
+      "OriginalHeaderRva": "0x451b68",
+      "CodeBytes": 15,
+      "CodeSha256": "2b0835c59fd85afe3b9f051b74c003cead0c016829a91fa7ca04c90b7d11aa33",
+      "Finding": "Calls _atexit_m and returns the original function pointer unless registration returned-1, in which case it returns null.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The result is a callback pointer/status convention, not an invocation of that function."
+    },
+    {
+      "addr": "0x3f90",
+      "Domain": "cil",
+      "Name": "::_atexit_m",
+      "MethodDef": "0x6000118",
+      "OriginalHeaderRva": "0x451980",
+      "CodeBytes": 27,
+      "CodeSha256": "f5ce22e1d941b16645b3e27a8f24a3136d115e671e21f0bb642addb4524ac3ec",
+      "Finding": "Encodes the supplied callback pointer and forwards it with the process-global capacity/end/begin fields to _atexit_helper.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x1940",
+          "token": "0x600009e",
+          "name": "::?A0x1b0a8221.??__E_AtlComModule@ATL@@YMXXZ",
+          "ilOffset": 17,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x1970",
+          "token": "0x60000a0",
+          "name": "::?A0x1b0a8221.??__E_AtlWinModule@ATL@@YMXXZ",
+          "ilOffset": 118,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x1a50",
+          "token": "0x60000a2",
+          "name": "::?A0x1b0a8221.??__E_AtlReleaseManagedClassFactories@ATL@@YMXXZ",
+          "ilOffset": 6,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3f80",
+          "token": "0x6000117",
+          "name": "::_onexit_m",
+          "ilOffset": 1,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x780",
+          "token": "0x6000037",
+          "name": "::?A0x9fa1126c.??__E_AtlComModule@ATL@@YMXXZ",
+          "ilOffset": 17,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x8a0",
+          "token": "0x600003e",
+          "name": "::?A0x9fa1126c.??__E_AtlWinModule@ATL@@YMXXZ",
+          "ilOffset": 118,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x9a0",
+          "token": "0x6000042",
+          "name": "::?A0x9fa1126c.??__E_AtlReleaseManagedClassFactories@ATL@@YMXXZ",
+          "ilOffset": 6,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. Pointer encoding is supplied by the KERNEL32 P/Invoke declaration, not by an executable local CIL body."
+    },
+    {
+      "addr": "0x3fb0",
+      "Domain": "cil",
+      "Name": "::_initatexit_app_domain",
+      "MethodDef": "0x6000119",
+      "OriginalHeaderRva": "0x451b84",
+      "CodeBytes": 56,
+      "CodeSha256": "b26da8f6ccd72324cfda3cae00636c9f278a1d5b12bda118d55af7265f5f1592",
+      "Finding": "On successful lock-reference acquisition, allocates256 bytes and initializes the per-AppDomain begin/end/capacity32 fields. The body returns1 even if the lock-acquisition result was false.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3820",
+          "token": "0x60000f3",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.InitializePerAppDomain",
+          "ilOffset": 18,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. Therefore its constant success return cannot be used as proof that fields were initialized; allocation exceptions still propagate."
+    },
+    {
+      "addr": "0x3ff0",
+      "Domain": "cil",
+      "Name": "::_app_exit_callback",
+      "MethodDef": "0x600011a",
+      "OriginalHeaderRva": "0x4519a8",
+      "CodeBytes": 193,
+      "CodeSha256": "6e3e42baa2b0b8f00d2004849f4a92ef3155a00e6b7d6134e732bcda19da5c1a",
+      "Finding": "Runs per-AppDomain callbacks backwards, clearing each slot to encoded-null before calli and rereading table pointers after callbacks to handle registration/reallocation. Its finally always frees the decoded table and drops the lock reference once this table-processing path is entered.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3940",
+          "token": "0x60000f6",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.UninitializeAppDomain",
+          "ilOffset": 0,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. Callback exceptions stop the remaining callbacks even though finally frees the table. Table globals are not zeroed; the outer DomainUnload once gate is required."
+    },
+    {
+      "addr": "0x40c0",
+      "Domain": "cil",
+      "Name": "::_onexit_m_appdomain",
+      "MethodDef": "0x600011b",
+      "OriginalHeaderRva": "0x451bc8",
+      "CodeBytes": 15,
+      "CodeSha256": "8430be258393643265d8e37efe263e424433fee25e0dacdff1c0cc37d5168e0f",
+      "Finding": "Calls _atexit_m_appdomain and returns the supplied callback unless registration returns-1, then returns null.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This is the AppDomain version of the pointer/status wrapper; no callback is executed here."
+    },
+    {
+      "addr": "0x40d0",
+      "Domain": "cil",
+      "Name": "::_atexit_m_appdomain",
+      "MethodDef": "0x600011c",
+      "OriginalHeaderRva": "0x451a94",
+      "CodeBytes": 27,
+      "CodeSha256": "5fe33bb7a7d7b1f4b7aef48f6d01a1f4aba5db7598c04817e37b3ee3ff4ec245",
+      "Finding": "Encodes a callback and passes the per-AppDomain capacity/end/begin references to _atexit_helper.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x40c0",
+          "token": "0x600011b",
+          "name": "::_onexit_m_appdomain",
+          "ilOffset": 1,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. It shares the same allocator/fallback behavior as the process-global registration path."
+    },
+    {
+      "addr": "0x4110",
+      "Domain": "cil",
+      "Name": "::__ehvec_dtor",
+      "MethodDef": "0x600011f",
+      "OriginalHeaderRva": "0x451c5c",
+      "CodeBytes": 52,
+      "CodeSha256": "2a11889a280789ad444f9ead8d9beb6c7a9a8d28cf6b82982671290f49d5215f",
+      "Finding": "Starts at array+size*count and invokes destructors backwards, decrementing the remaining count before each call. A finally invokes __ArrayUnwind on the still-undestroyed prefix if the loop did not complete.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x16e0",
+          "token": "0x600007c",
+          "name": "::Axa.CSJointListT<Axa::EntryTex>.__vecDelDtor",
+          "ilOffset": 22,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x1fb0",
+          "token": "0x60000b1",
+          "name": "::SoundList.__vecDelDtor",
+          "ilOffset": 25,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x31f0",
+          "token": "0x60000d2",
+          "name": "::Axa.CSJointListT<SoundList>.__vecDelDtor",
+          "ilOffset": 22,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3240",
+          "token": "0x60000d3",
+          "name": "::Axa.CSJointT<SoundList>.__vecDelDtor",
+          "ilOffset": 22,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3290",
+          "token": "0x60000d4",
+          "name": "::Axa.CSJointListT<findeList>.__vecDelDtor",
+          "ilOffset": 22,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x32e0",
+          "token": "0x60000d5",
+          "name": "::Axa.CSJointListT<KNAList>.__vecDelDtor",
+          "ilOffset": 22,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3330",
+          "token": "0x60000d6",
+          "name": "::Axa.CSJointListT<KNMList>.__vecDelDtor",
+          "ilOffset": 22,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x41a0",
+          "token": "0x6000122",
+          "name": "::__ehvec_dtor_0",
+          "ilOffset": 5,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. Arithmetic and pointers are trusted compiler inputs; there is no bounds or multiplication-overflow validation for externally supplied arrays."
+    },
+    {
+      "addr": "0x4150",
+      "Domain": "cil",
+      "Name": "::?A0x94e83ccb.ArrayUnwindFilter",
+      "MethodDef": "0x6000120",
+      "OriginalHeaderRva": "0x451be4",
+      "CodeBytes": 19,
+      "CodeSha256": "a9a9eecde4ba5c6ea06493c4c53b4957e3bbeac44fbf7f9914a5ff1853f7d528",
+      "Finding": "Reads the native exception code and calls terminate for0xE06D7363, otherwise returns0 to the filter.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x4170",
+          "token": "0x6000121",
+          "name": "::__ArrayUnwind",
+          "ilOffset": 34,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This handles a C++ exception during array unwinding; returning0 does not mean a general exception was handled."
+    },
+    {
+      "addr": "0x4170",
+      "Domain": "cil",
+      "Name": "::__ArrayUnwind",
+      "MethodDef": "0x6000121",
+      "OriginalHeaderRva": "0x451c04",
+      "CodeBytes": 45,
+      "CodeSha256": "3dc8e0ec708012fafbf90edd3a66163a635e61a6646ff8a3abdb4c10a9684301",
+      "Finding": "Destroys a remaining array prefix backwards using the supplied count/stride/destructor. Its filter delegates secondary exceptions to ArrayUnwindFilter.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x4110",
+          "token": "0x600011f",
+          "name": "::__ehvec_dtor",
+          "ilOffset": 45,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The helper is for exceptional cleanup, with compiler-provided valid array state; it is not a safe arbitrary-pointer deletion API."
+    },
+    {
+      "addr": "0x41a0",
+      "Domain": "cil",
+      "Name": "::__ehvec_dtor_0",
+      "MethodDef": "0x6000122",
+      "OriginalHeaderRva": "0x451cb8",
+      "CodeBytes": 11,
+      "CodeSha256": "60b230f8d0c812f7d9cf779de9d4675b1a72c6e56196c5c0e997f951cb1c8328",
+      "Finding": "Sign-extends the int32 element count to int64 and forwards array, stride, count and destructor to __ehvec_dtor.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. Negative counts are not rejected here; normal compiler-generated array counts are the intended inputs."
+    },
+    {
+      "addr": "0x41b0",
+      "Domain": "cil",
+      "Name": "::_initterm_e",
+      "MethodDef": "0x6000123",
+      "OriginalHeaderRva": "0x451cd0",
+      "CodeBytes": 34,
+      "CodeSha256": "cc0908206ecb415050038468e3c590c336f5ec39b37e5aa652c20401401418c6",
+      "Finding": "Scans a native QWORD function-pointer range, skips null entries and calls each as a cdecl int() initializer until one returns nonzero, which it returns; returns0 after successful completion.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3750",
+          "token": "0x60000f1",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.InitializeNative",
+          "ilOffset": 77,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The original __xi range has3 nonzero entries. This function trusts both range and pointers and does not roll back previously run initializers."
+    },
+    {
+      "addr": "0x41e0",
+      "Domain": "cil",
+      "Name": "::_initterm",
+      "MethodDef": "0x6000124",
+      "OriginalHeaderRva": "0x451d00",
+      "CodeBytes": 27,
+      "CodeSha256": "a2e4b30d997368ad38bed2177b4fcec03f83ecb5144285ceffc285d93e42bfc0",
+      "Finding": "Scans a native QWORD function-pointer range, skips nulls and calls each cdecl void() initializer in ascending order.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3750",
+          "token": "0x60000f1",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.InitializeNative",
+          "ilOffset": 105,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The original __xc range has4653 nonzero entries; this report records those pointer values without claiming the full semantics of every target."
+    },
+    {
+      "addr": "0x4200",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.ThisModule.Handle",
+      "MethodDef": "0x6000125",
+      "OriginalHeaderRva": "0x451d28",
+      "CodeBytes": 21,
+      "CodeSha256": "af239287096984977ff256a92a3eab4139205e4455d8752e429ce24d41020cdc",
+      "Finding": "Obtains this managed type's Module via its RuntimeTypeHandle and returns the ModuleHandle.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x4250",
+          "token": "0x6000127",
+          "name": "::<CrtImplementationDetails>.ThisModule.ResolveMethod<void_const_*___clrcall(void)>",
+          "ilOffset": 0,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This supplies the metadata-resolution context, not a Win32 module base or native HMODULE."
+    },
+    {
+      "addr": "0x4220",
+      "Domain": "cil",
+      "Name": "::_initterm_m",
+      "MethodDef": "0x6000126",
+      "OriginalHeaderRva": "0x451d78",
+      "CodeBytes": 33,
+      "CodeSha256": "81dfbafd051dacf61722d8adc00b39cebb66f13c3eeeaa7d52b17226dbbb937a",
+      "Finding": "Scans QWORD slots in a managed initializer range, skips zero, resolves each nonzero value with ThisModule.ResolveMethod and invokes the result through a managed calli, discarding the pointer-sized return.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3700",
+          "token": "0x60000ef",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.InitializeVtables",
+          "ilOffset": 28,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x37e0",
+          "token": "0x60000f2",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.InitializePerProcess",
+          "ilOffset": 34,
+          "opcode": "call"
+        },
+        {
+          "addr": "0x3820",
+          "token": "0x60000f3",
+          "name": "::<CrtImplementationDetails>.LanguageSupport.InitializePerAppDomain",
+          "ilOffset": 34,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The slots are method tokens stored in8-byte cells. Treating them as preexisting native function pointers would misinterpret the format."
+    },
+    {
+      "addr": "0x4250",
+      "Domain": "cil",
+      "Name": "::<CrtImplementationDetails>.ThisModule.ResolveMethod<void_const_*___clrcall(void)>",
+      "MethodDef": "0x6000127",
+      "OriginalHeaderRva": "0x451d4c",
+      "CodeBytes": 32,
+      "CodeSha256": "4d59d379f9dffa7bfc6fe5230a6cf9281d7e1d9ab9f97ef584bfc6322479b3e2",
+      "Finding": "Truncates the supplied slot value to int32, resolves it with ModuleHandle.ResolveMethodHandle and returns RuntimeMethodHandle.GetFunctionPointer().ToPointer().",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x4220",
+          "token": "0x6000126",
+          "name": "::_initterm_m",
+          "ilOffset": 11,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. It does not validate the token table/rid before asking the CLR; resolution may throw and the returned pointer is runtime-specific."
+    },
+    {
+      "addr": "0xc010",
+      "Domain": "cil",
+      "Name": "AxaFormBase.BaseSimpleForm::.ctor",
+      "MethodDef": "0x6000205",
+      "OriginalHeaderRva": "0x38ab38",
+      "CodeBytes": 570,
+      "CodeSha256": "2bf7b33c38b96f3a034e38d03800b841e2297f3f0b75ed65365b16fc1c5d90f8",
+      "Finding": "Constructs the native-render-host Form, retains the supplied AppInterface pointer, initializes its state, runs32 no-op FVECTOR2 constructors and requests up to32 resolutions. It selects the second vector when the returned count is at least1, otherwise the first. It constructs child controls, installs14 lifecycle/input/timer event handlers, records the singleton, uses the supplied title, sets opacity0, loads icon resource101 and creates the window handle. A fault clause disposes the base Form if construction fails.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json",
+        "managed_tools_round5_native_resolution.json",
+        "managed_tools_round5_native_enumerate_asm.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0xc2e0",
+          "token": "0x6000209",
+          "name": "AxaFormBase.BaseSimpleForm::createInstance",
+          "ilOffset": 9,
+          "opcode": "newobj"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The local-array header does not request InitLocals. Fresh native evidence shows the vector constructor writes nothing and resolution enumeration normally returns the number written. If only one vector is written, the selected second vector is uninitialized along this path. The fallback enumerator can return1 after writing multiple vectors, so returned1 alone is insufficient to demonstrate the fault. No asset editor widgets or model/animation payload loading occur here."
+    },
+    {
+      "addr": "0xc640",
+      "Domain": "cil",
+      "Name": "AxaFormBase.BaseSimpleForm::InitializeComponent",
+      "MethodDef": "0x600020d",
+      "OriginalHeaderRva": "0x389c38",
+      "CodeBytes": 405,
+      "CodeSha256": "51808c9d36442f46a0530e4bfcacc97a06171ccf010eea0c4c04b524a661743a",
+      "Finding": "Creates a component container and Timer, then a200x50 red panel anchored top/right and a blue fill-docked mouse panel, wiring their mouse handlers. Sets ClientSize from initialSize, a black background and20-pixel padding, adds both panels and resumes layout without a layout pass.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0xc010",
+          "token": "0x6000205",
+          "name": "AxaFormBase.BaseSimpleForm::.ctor",
+          "ilOffset": 199,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This is a window/render-surface skeleton. The body does not set Timer.Enabled or Interval, load textures, create animation controls, or implement a standalone preview editor."
+    },
+    {
+      "addr": "0xfb50",
+      "Domain": "cil",
+      "Name": "<CrtImplementationDetails>.Exception::.ctor",
+      "MethodDef": "0x6000244",
+      "OriginalHeaderRva": "0x45085c",
+      "CodeBytes": 9,
+      "CodeSha256": "9d2562ac03f898e81c3fe0a9f82d2b41ed3d0283122cba7846c50b71aa0b150b",
+      "Finding": "Initializes CrtImplementationDetails.Exception by forwarding SerializationInfo and StreamingContext directly to the corresponding System.Exception constructor.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. No engine cleanup, UI, retry or custom field processing occurs in this constructor."
+    },
+    {
+      "addr": "0xfb60",
+      "Domain": "cil",
+      "Name": "<CrtImplementationDetails>.Exception::.ctor_0",
+      "MethodDef": "0x6000245",
+      "OriginalHeaderRva": "0x450844",
+      "CodeBytes": 9,
+      "CodeSha256": "27af9523386b5a89d21b1e23bbe0bf2ecb15f9007ad4b07f1531e13835296be9",
+      "Finding": "Initializes CrtImplementationDetails.Exception by forwarding message and inner exception directly to the corresponding System.Exception constructor.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. No engine cleanup, UI, retry or custom field processing occurs in this constructor."
+    },
+    {
+      "addr": "0xfb70",
+      "Domain": "cil",
+      "Name": "<CrtImplementationDetails>.Exception::.ctor_1",
+      "MethodDef": "0x6000246",
+      "OriginalHeaderRva": "0x450830",
+      "CodeBytes": 8,
+      "CodeSha256": "5939889caf8e56a7926e0632fe906de316d4cb668f18d846925b8e40f943bf78",
+      "Finding": "Initializes CrtImplementationDetails.Exception by forwarding message directly to the corresponding System.Exception constructor.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. No engine cleanup, UI, retry or custom field processing occurs in this constructor."
+    },
+    {
+      "addr": "0xfb90",
+      "Domain": "cil",
+      "Name": "<CrtImplementationDetails>.ModuleLoadException::.ctor",
+      "MethodDef": "0x6000247",
+      "OriginalHeaderRva": "0x4508a0",
+      "CodeBytes": 9,
+      "CodeSha256": "9d2562ac03f898e81c3fe0a9f82d2b41ed3d0283122cba7846c50b71aa0b150b",
+      "Finding": "Initializes ModuleLoadException by forwarding SerializationInfo and StreamingContext directly to the corresponding System.Exception constructor.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0xfbd0",
+          "token": "0x600024a",
+          "name": "<CrtImplementationDetails>.ModuleLoadExceptionHandlerException::.ctor",
+          "ilOffset": 3,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. No engine cleanup, UI, retry or custom field processing occurs in this constructor."
+    },
+    {
+      "addr": "0xfba0",
+      "Domain": "cil",
+      "Name": "<CrtImplementationDetails>.ModuleLoadException::.ctor_0",
+      "MethodDef": "0x6000248",
+      "OriginalHeaderRva": "0x450888",
+      "CodeBytes": 9,
+      "CodeSha256": "27af9523386b5a89d21b1e23bbe0bf2ecb15f9007ad4b07f1531e13835296be9",
+      "Finding": "Initializes ModuleLoadException by forwarding message and inner exception directly to the corresponding System.Exception constructor.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x33b0",
+          "token": "0x60000da",
+          "name": "::<CrtImplementationDetails>.ThrowModuleLoadException_0",
+          "ilOffset": 2,
+          "opcode": "newobj"
+        },
+        {
+          "addr": "0xfc00",
+          "token": "0x600024b",
+          "name": "<CrtImplementationDetails>.ModuleLoadExceptionHandlerException::.ctor_0",
+          "ilOffset": 3,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. No engine cleanup, UI, retry or custom field processing occurs in this constructor."
+    },
+    {
+      "addr": "0xfbb0",
+      "Domain": "cil",
+      "Name": "<CrtImplementationDetails>.ModuleLoadException::.ctor_1",
+      "MethodDef": "0x6000249",
+      "OriginalHeaderRva": "0x450874",
+      "CodeBytes": 8,
+      "CodeSha256": "5939889caf8e56a7926e0632fe906de316d4cb668f18d846925b8e40f943bf78",
+      "Finding": "Initializes ModuleLoadException by forwarding message directly to the corresponding System.Exception constructor.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x33a0",
+          "token": "0x60000d9",
+          "name": "::<CrtImplementationDetails>.ThrowModuleLoadException",
+          "ilOffset": 1,
+          "opcode": "newobj"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. No engine cleanup, UI, retry or custom field processing occurs in this constructor."
+    },
+    {
+      "addr": "0xfbd0",
+      "Domain": "cil",
+      "Name": "<CrtImplementationDetails>.ModuleLoadExceptionHandlerException::.ctor",
+      "MethodDef": "0x600024a",
+      "OriginalHeaderRva": "0x4509b4",
+      "CodeBytes": 41,
+      "CodeSha256": "ac41870f56b7c814295983f13b112e3ce49139b929861aca59353f3126667be8",
+      "Finding": "Initializes the module-load exception from serialization data, retrieves the NestedException key as System.Exception and stores it through the property setter.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. It preserves the secondary exception for diagnostic serialization; absent or incompatible serialized data can throw."
+    },
+    {
+      "addr": "0xfc00",
+      "Domain": "cil",
+      "Name": "<CrtImplementationDetails>.ModuleLoadExceptionHandlerException::.ctor_0",
+      "MethodDef": "0x600024b",
+      "OriginalHeaderRva": "0x451024",
+      "CodeBytes": 16,
+      "CodeSha256": "a9af9198e1947ca4aeeb189560804450ab2516de2f734a5fd407ea3ca2be540c",
+      "Finding": "Calls the ModuleLoadException(message,inner) constructor and stores the separately supplied nested exception.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x3390",
+          "token": "0x60000d8",
+          "name": "::<CrtImplementationDetails>.ThrowNestedModuleLoadException",
+          "ilOffset": 7,
+          "opcode": "newobj"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The two exception references represent original initialization failure and secondary cleanup failure; neither is executed or handled by this constructor."
+    },
+    {
+      "addr": "0xfc10",
+      "Domain": "cil",
+      "Name": "<CrtImplementationDetails>.ModuleLoadExceptionHandlerException::get_NestedException",
+      "MethodDef": "0x600024c",
+      "OriginalHeaderRva": "0x4508b8",
+      "CodeBytes": 7,
+      "CodeSha256": "674414575da7773c3389beb801ff189662d1edafff2fd1e49917384c44fbb8ab",
+      "Finding": "Returns the backing field holding the nested cleanup exception.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0xfc30",
+          "token": "0x600024e",
+          "name": "<CrtImplementationDetails>.ModuleLoadExceptionHandlerException::ToString",
+          "ilOffset": 29,
+          "opcode": "call"
+        },
+        {
+          "addr": "0xfc30",
+          "token": "0x600024e",
+          "name": "<CrtImplementationDetails>.ModuleLoadExceptionHandlerException::ToString",
+          "ilOffset": 37,
+          "opcode": "call"
+        },
+        {
+          "addr": "0xfcd0",
+          "token": "0x600024f",
+          "name": "<CrtImplementationDetails>.ModuleLoadExceptionHandlerException::GetObjectData",
+          "ilOffset": 15,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. A null result is allowed and carries no independent success/failure state."
+    },
+    {
+      "addr": "0xfc20",
+      "Domain": "cil",
+      "Name": "<CrtImplementationDetails>.ModuleLoadExceptionHandlerException::set_NestedException",
+      "MethodDef": "0x600024d",
+      "OriginalHeaderRva": "0x4508cc",
+      "CodeBytes": 8,
+      "CodeSha256": "1eb25c9c41c654c9e56b6d55401c81b5a901e330c74995195623d0aa00e43d04",
+      "Finding": "Stores the supplied value in the nested-exception backing field.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0xfbd0",
+          "token": "0x600024a",
+          "name": "<CrtImplementationDetails>.ModuleLoadExceptionHandlerException::.ctor",
+          "ilOffset": 35,
+          "opcode": "call"
+        },
+        {
+          "addr": "0xfc00",
+          "token": "0x600024b",
+          "name": "<CrtImplementationDetails>.ModuleLoadExceptionHandlerException::.ctor_0",
+          "ilOffset": 10,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This is an ordinary managed reference assignment with no cleanup or validation."
+    },
+    {
+      "addr": "0xfc30",
+      "Domain": "cil",
+      "Name": "<CrtImplementationDetails>.ModuleLoadExceptionHandlerException::ToString",
+      "MethodDef": "0x600024e",
+      "OriginalHeaderRva": "0x4508e0",
+      "CodeBytes": 151,
+      "CodeSha256": "efaf922697cf440ca52fd201b05fee5af682828ec361520eb2fc7cc44677ad9f",
+      "Finding": "Formats type, message, InnerException.ToString and NestedException.ToString using the embedded four-argument template with separate primary and nested sections; null fields become empty strings.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. This prepares diagnostic text only. It does not show a dialog, log to a file or restore module state."
+    },
+    {
+      "addr": "0xfcd0",
+      "Domain": "cil",
+      "Name": "<CrtImplementationDetails>.ModuleLoadExceptionHandlerException::GetObjectData",
+      "MethodDef": "0x600024f",
+      "OriginalHeaderRva": "0x450984",
+      "CodeBytes": 36,
+      "CodeSha256": "231856aad14f98a0683f50ef2b467252280dded4a2f7f08b7aacda08ba7a2911",
+      "Finding": "Calls base Exception.GetObjectData, then adds NestedException with the declared System.Exception type to SerializationInfo.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The code serializes a managed diagnostic field; it defines no game-save or portable asset format."
+    },
+    {
+      "addr": "0xfd10",
+      "Domain": "cil",
+      "Name": "<CrtImplementationDetails>.ModuleUninitializer::AddHandler",
+      "MethodDef": "0x6000250",
+      "OriginalHeaderRva": "0x450a18",
+      "CodeBytes": 54,
+      "CodeSha256": "9a60c62fe8078e40c1e87a7acb4acd27735a92b3e39c01266e2f0ad53b95bbe1",
+      "Finding": "In a constrained region, enters the static monitor, prepares the supplied delegate and pushes it onto the inherited Stack; finally releases the monitor when acquired.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0x33c0",
+          "token": "0x60000db",
+          "name": "::<CrtImplementationDetails>.RegisterModuleUninitializer",
+          "ilOffset": 6,
+          "opcode": "call"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. Duplicates are not removed. Preparing a delegate is not executing it, and callers retain responsibility for handler validity."
+    },
+    {
+      "addr": "0xfd50",
+      "Domain": "cil",
+      "Name": "<CrtImplementationDetails>.ModuleUninitializer::.cctor",
+      "MethodDef": "0x6000251",
+      "OriginalHeaderRva": "0x4514d0",
+      "CodeBytes": 21,
+      "CodeSha256": "b44426536fd074aa5e6e57c769d1e98a42c98c733bcd0db83683881728bf0383",
+      "Finding": "Creates the shared monitor object and then a ModuleUninitializer singleton.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. Singleton construction registers events; this type initializer does not run cleanup handlers immediately."
+    },
+    {
+      "addr": "0xfd70",
+      "Domain": "cil",
+      "Name": "<CrtImplementationDetails>.ModuleUninitializer::.ctor",
+      "MethodDef": "0x6000252",
+      "OriginalHeaderRva": "0x45105c",
+      "CodeBytes": 42,
+      "CodeSha256": "f93c0b8b88029ee06ca7c638f4f54a1e4305ab6b70a3b8c9ef62cac1bb6d3fc7",
+      "Finding": "Constructs the Stack base and subscribes the same SingletonDomainUnload instance method to both CurrentDomain.DomainUnload and CurrentDomain.ProcessExit.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0xfd50",
+          "token": "0x6000251",
+          "name": "<CrtImplementationDetails>.ModuleUninitializer::.cctor",
+          "ilOffset": 10,
+          "opcode": "newobj"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. Both events can reach the same stack. This class itself provides no once flag, so handlers such as LanguageSupport.DomainUnload must guard repeated teardown."
+    },
+    {
+      "addr": "0xfda0",
+      "Domain": "cil",
+      "Name": "<CrtImplementationDetails>.ModuleUninitializer::SingletonDomainUnload",
+      "MethodDef": "0x6000253",
+      "OriginalHeaderRva": "0x450a78",
+      "CodeBytes": 97,
+      "CodeSha256": "dc12ea266a412434620da874297afb5c00d1b63b0025620e8a50d121f0fd4c26",
+      "Finding": "Holds the static monitor while enumerating the handler Stack and invoking each EventHandler with the event source/args. Nested finally clauses dispose an IDisposable enumerator and release the monitor.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [
+        {
+          "addr": "0xfd70",
+          "token": "0x6000252",
+          "name": "<CrtImplementationDetails>.ModuleUninitializer::.ctor",
+          "ilOffset": 7,
+          "opcode": "ldftn"
+        }
+      ],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. It enumerates rather than pops/clears the stack. No per-handler catch permits continuing after a failing handler; Stack enumeration supplies reverse registration order."
+    },
+    {
+      "addr": "0xfe20",
+      "Domain": "cil",
+      "Name": "<CrtImplementationDetails>.OpenMPWithMultipleAppdomainsException::.ctor",
+      "MethodDef": "0x6000254",
+      "OriginalHeaderRva": "0x450d20",
+      "CodeBytes": 9,
+      "CodeSha256": "9d2562ac03f898e81c3fe0a9f82d2b41ed3d0283122cba7846c50b71aa0b150b",
+      "Finding": "Forwards SerializationInfo and StreamingContext to System.Exception's deserialization constructor for the OpenMP-specific exception type.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. The body does not itself detect multiple AppDomains or enforce an OpenMP restriction."
+    },
+    {
+      "addr": "0xfe30",
+      "Domain": "cil",
+      "Name": "<CrtImplementationDetails>.OpenMPWithMultipleAppdomainsException::.ctor_0",
+      "MethodDef": "0x6000255",
+      "OriginalHeaderRva": "0x450d0c",
+      "CodeBytes": 7,
+      "CodeSha256": "4afd8fbbc3b32a2ae21127a39a5f02d2e853a7023af6ebae46ff796f749af081",
+      "Finding": "Calls the parameterless System.Exception constructor for the OpenMP-specific exception type.",
+      "Evidence": [
+        "managed_tools_round5_evidence.json",
+        "managed_tools_round5_metadata.json",
+        "managed_tools_round5_cil_bytes.json",
+        "managed_tools_round5_verification.json"
+      ],
+      "DirectCallers": [],
+      "InitializerTableReferences": [],
+      "Limitations": "Synthetic CIL address, not a native RVA or process-call address. There is no custom text or OpenMP state check in this body; the type name alone is not evidence of an active engine restriction."
+    }
+  ],
+  "BodylessImportsEvidence": "managed_tools_round5_bodyless_imports.json",
+  "MainResults": [
+    "No additional model, motion or texture editor was found in the two remaining GUI construction bodies.",
+    "The constructor can read an unwritten second resolution vector when only one eligible mode was actually written.",
+    "The64-bit OOM reallocation fallback grows by12 bytes but advertises4 extra pointer slots.",
+    "The CLR bootstrap traverses managed-token tables and native-pointer tables using distinct call conventions; process and AppDomain teardown are separate.",
+    "The per-domain unload handler is once-guarded, while the event stack is retained and registered for both DomainUnload and ProcessExit."
+  ],
+  "Use": "Useful for mixed-mode loader diagnosis, safe offline metadata inspection and understanding why direct construction/unload of the old developer UI is not an isolated asset-preview operation.",
+  "Limitations": [
+    "No runtime reachability, allocation-failure reproduction, display-mode manipulation or game/UI execution was attempted.",
+    "Native initializer pointer inventory is not a semantic claim for4653 individual targets.",
+    "Caller data includes exact direct MethodDef operands and stored initializer-table references; dynamic/native callers are not exhaustive.",
+    "No new trainer button is justified by these bodies alone. An offline startup/lifetime map is a possible later tooling feature, not an implemented product change."
+  ]
+}

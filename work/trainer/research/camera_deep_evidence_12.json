@@ -1,0 +1,168 @@
+{
+  "scope": "Fresh complete IDA pseudocode and dedicated full assembly; read-only camera research",
+  "functions": [
+    {
+      "addr": "0x14013FCC0",
+      "code": {
+        "addr": "0x14013FCC0",
+        "code": "// local variable allocation has failed, the output may be wrong!\n__m128 *__fastcall sub_14013FCC0(__m128 *a1, double a2)\n{\n  *a1 = _mm_mul_ps(_mm_shuffle_ps(*(__m128 *)&a2, *(__m128 *)&a2, 0), *a1); /*0x14013fcd0*/\n  return a1; /*0x14013fcd3*/\n}",
+        "line_count": 6,
+        "total_lines": 6,
+        "truncated": false,
+        "cursor": {
+          "done": true
+        }
+      },
+      "assembly": {
+        "addr": "0x14013FCC0",
+        "asm": {
+          "name": "sub_14013FCC0",
+          "start_ea": "0x14013fcc0",
+          "segment": ".text",
+          "lines": [
+            {
+              "addr": "14013fcc0",
+              "instruction": "movups xmm0, xmmword ptr [rcx]",
+              "label": "sub_14013FCC0"
+            },
+            {
+              "addr": "14013fcc3",
+              "instruction": "mov rax, rcx"
+            },
+            {
+              "addr": "14013fcc6",
+              "instruction": "movaps xmm2, xmm1"
+            },
+            {
+              "addr": "14013fcc9",
+              "instruction": "shufps xmm2, xmm2, 0"
+            },
+            {
+              "addr": "14013fccd",
+              "instruction": "mulps xmm2, xmm0"
+            },
+            {
+              "addr": "14013fcd0",
+              "instruction": "movups xmmword ptr [rcx], xmm2"
+            },
+            {
+              "addr": "14013fcd3",
+              "instruction": "retn"
+            }
+          ],
+          "stack_frame": [
+            {
+              "name": "__return_address",
+              "offset": "0x0",
+              "size": "0x8",
+              "type": "_UNKNOWN *"
+            }
+          ],
+          "return_type": "__m128 *",
+          "arguments": [
+            {
+              "name": "arg0",
+              "type": "__m128 *"
+            },
+            {
+              "name": "arg1",
+              "type": "double"
+            }
+          ]
+        },
+        "instruction_count": 7,
+        "total_instructions": 7,
+        "cursor": {
+          "done": true
+        }
+      }
+    },
+    {
+      "addr": "0x140140F50",
+      "code": {
+        "addr": "0x140140F50",
+        "code": "float __fastcall sub_140140F50(float *a1)\n{\n  return sqrtf((float)((float)(*a1 * *a1) + (float)(a1[1] * a1[1])) + (float)(a1[2] * a1[2]));\n}",
+        "line_count": 4,
+        "total_lines": 4,
+        "truncated": false,
+        "cursor": {
+          "done": true
+        },
+        "refs": [
+          {
+            "addr": "0x140471b7a",
+            "name": "sqrtf"
+          }
+        ]
+      },
+      "assembly": {
+        "addr": "0x140140F50",
+        "asm": {
+          "name": "sub_140140F50",
+          "start_ea": "0x140140f50",
+          "segment": ".text",
+          "lines": [
+            {
+              "addr": "140140f50",
+              "instruction": "movss xmm1, dword ptr [rcx+4]",
+              "label": "sub_140140F50"
+            },
+            {
+              "addr": "140140f55",
+              "instruction": "movss xmm0, dword ptr [rcx]"
+            },
+            {
+              "addr": "140140f59",
+              "instruction": "movss xmm2, dword ptr [rcx+8]"
+            },
+            {
+              "addr": "140140f5e",
+              "instruction": "mulss xmm0, xmm0"
+            },
+            {
+              "addr": "140140f62",
+              "instruction": "mulss xmm1, xmm1"
+            },
+            {
+              "addr": "140140f66",
+              "instruction": "mulss xmm2, xmm2"
+            },
+            {
+              "addr": "140140f6a",
+              "instruction": "addss xmm0, xmm1"
+            },
+            {
+              "addr": "140140f6e",
+              "instruction": "addss xmm0, xmm2; X",
+              "comments": [
+                "X"
+              ]
+            },
+            {
+              "addr": "140140f72",
+              "instruction": "jmp sqrtf",
+              "refs": [
+                {
+                  "addr": "0x140471b7a",
+                  "name": "sqrtf"
+                }
+              ]
+            }
+          ],
+          "return_type": "float",
+          "arguments": [
+            {
+              "name": "arg0",
+              "type": "float *"
+            }
+          ]
+        },
+        "instruction_count": 9,
+        "total_instructions": 9,
+        "cursor": {
+          "done": true
+        }
+      }
+    }
+  ]
+}

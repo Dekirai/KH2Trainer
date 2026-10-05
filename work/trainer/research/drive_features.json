@@ -1,0 +1,203 @@
+[
+  {
+    "Id": "drive.trigger",
+    "Category": "Drive and Forms",
+    "Name": "Trigger Drive Form",
+    "Description": "Selects any of the six forms without Drive cost, required party members or an unlock requirement. Already transformed Sora first Reverts, then enters the chosen form. For Valor, Master and Final, a missing or invalid second Keyblade is replaced with Sora's current valid main Keyblade before loading. Existing valid form weapons are kept. This equipment assignment can be included in a normal game save; form unlocks and bag counts are unchanged. Requires living Sora and valid resources in a stable playable scene.",
+    "Kind": "Action",
+    "CommandId": 1122,
+    "ValueSlot": -1,
+    "CapabilitySlot": 122,
+    "Minimum": 1,
+    "Maximum": 6,
+    "DefaultValue": 1,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": true,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Native transitions already running finish normally. Cancel, disconnect, disable-all or timeout drops subsequent trainer steps. A filled second-Keyblade slot remains after Revert or disconnect and can persist through a normal save. No unlock, bag-count or direct save-file changes.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3C3FE0 / 0x3E0CC0 / 0x3EF8B0 / 0x3EF910 / 0x3A7A40 / 0x3D7600",
+        "Finding": "Native form acquisition initializes the second Keyblade for forms 1,4,5. The direct transition bypassed this initialization, so empty form slots skipped weapon loading and construction. Later animation paths dereference that weapon without a null check. Preflight now validates and fills missing equipment before the loader starts.",
+        "Level": "Native defect path verified in complete IDA assembly; regression fixtures cover equipment preparation. User reported Final Form crash; corrected build has not been tested live."
+      },
+      {
+        "Address": "RVA 0x40CE60 -> 0x40CAA0 -> 0x40D000 / cleanup 0x40CF20",
+        "Finding": "Direct Actor*/int native form transition allocates and owns its asynchronous context, resources, replacement Actor and transferred status. Revert-to-form waits for native context cleanup, a fresh base Actor, transition lock release and empty suspended-party list.",
+        "Level": "Full dedicated IDA assembly verified; synthetic lifecycle and guard tests passed; no live test in this release."
+      },
+      {
+        "Address": "RVA 0x3C17C0 / 0x405030 / 0x400B20",
+        "Finding": "Timer derives from form level or Anti parameters, independently of Drive bars. Anti uses message29 override and message50255. Partner removal iterates only existing actors; the suspended-party array must be empty before a new form.",
+        "Level": "Full dedicated IDA assembly verified."
+      }
+    ],
+    "Arguments": [
+      {
+        "Name": "Requested form",
+        "Minimum": 1,
+        "Maximum": 6,
+        "DefaultValue": 1,
+        "Catalog": "",
+        "Choices": [
+          {
+            "Label": "Valor Form",
+            "Value": 1
+          },
+          {
+            "Label": "Wisdom Form",
+            "Value": 2
+          },
+          {
+            "Label": "Limit Form",
+            "Value": 3
+          },
+          {
+            "Label": "Master Form",
+            "Value": 4
+          },
+          {
+            "Label": "Final Form",
+            "Value": 5
+          },
+          {
+            "Label": "Antiform",
+            "Value": 6
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "Id": "drive.revert",
+    "Category": "Drive and Forms",
+    "Name": "Revert Drive Form",
+    "Description": "Queues native Revert from any of the six Drive Forms, including Antiform. Ignores normal command availability restrictions while preserving stable-scene, actor, status and resource guards. Revert does nothing if Sora is already in base form.",
+    "Kind": "Action",
+    "CommandId": 1123,
+    "ValueSlot": -1,
+    "CapabilitySlot": 123,
+    "Minimum": 0,
+    "Maximum": 0,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Native transitions already running finish normally. Cancel, disconnect, disable-all or timeout drops only subsequent trainer steps; no form-ID edits, artificial rollback or save call.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x40CE60 -> 0x40CAA0 -> 0x40D000 / cleanup 0x40CF20",
+        "Finding": "Direct Actor*/int native form transition allocates and owns its asynchronous context, resources, replacement Actor and transferred status. Revert-to-form waits for native context cleanup, a fresh base Actor, transition lock release and empty suspended-party list.",
+        "Level": "Full dedicated IDA assembly verified; synthetic lifecycle and guard tests passed; no live test in this release."
+      }
+    ]
+  },
+  {
+    "Id": "drive.requested",
+    "Category": "Drive and Forms",
+    "Name": "Requested Drive Form",
+    "Description": "Target of the active or most recently queued switch. Base Sora is 0; forms 1–6 are Valor, Wisdom, Limit, Master, Final and Antiform. This is the requested target, not the current Actor form.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 124,
+    "CapabilitySlot": 124,
+    "Minimum": 0,
+    "Maximum": 6,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Native transitions already running finish normally. Cancel, disconnect, disable-all or timeout drops only subsequent trainer steps; no form-ID edits, artificial rollback or save call.",
+    "Evidence": [
+      {
+        "Address": "DriveFeatures.inl Queue / DriveHandle / DriveTick / DriveReset",
+        "Finding": "Trainer-owned queue metadata only. Scene, host heartbeat and native-context ownership checks prevent a stale second step. Cancel never frees an engine task.",
+        "Level": "Synthetic lifecycle tests passed; full native ownership path verified in IDA."
+      }
+    ]
+  },
+  {
+    "Id": "drive.phase",
+    "Category": "Drive and Forms",
+    "Name": "Drive switch phase",
+    "Description": "0 Idle; 1 Waiting for base Sora; 2 Waiting for selected form; 3 Waiting for Revert. A queue times out after 30 seconds overall.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 125,
+    "CapabilitySlot": 125,
+    "Minimum": 0,
+    "Maximum": 3,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Native transitions already running finish normally. Cancel, disconnect, disable-all or timeout drops only subsequent trainer steps; no form-ID edits, artificial rollback or save call.",
+    "Evidence": [
+      {
+        "Address": "DriveFeatures.inl Queue / DriveHandle / DriveTick / DriveReset",
+        "Finding": "Trainer-owned queue metadata only. Scene, host heartbeat and native-context ownership checks prevent a stale second step. Cancel never frees an engine task.",
+        "Level": "Synthetic lifecycle tests passed; full native ownership path verified in IDA."
+      }
+    ]
+  },
+  {
+    "Id": "drive.cancel",
+    "Category": "Drive and Forms",
+    "Name": "Cancel Pending Drive Switch",
+    "Description": "Drops pending trainer steps. A native form transition already running is left to finish normally. In particular, cancelling during Revert prevents the subsequent selected-form request.",
+    "Kind": "Action",
+    "CommandId": 1126,
+    "ValueSlot": -1,
+    "CapabilitySlot": 126,
+    "Minimum": 0,
+    "Maximum": 0,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Native transitions already running finish normally. Cancel, disconnect, disable-all or timeout drops only subsequent trainer steps; no form-ID edits, artificial rollback or save call.",
+    "Evidence": [
+      {
+        "Address": "DriveFeatures.inl Queue / DriveHandle / DriveTick / DriveReset",
+        "Finding": "Trainer-owned queue metadata only. Scene, host heartbeat and native-context ownership checks prevent a stale second step. Cancel never frees an engine task.",
+        "Level": "Synthetic lifecycle tests passed; full native ownership path verified in IDA."
+      }
+    ]
+  },
+  {
+    "Id": "drive.result",
+    "Category": "Drive and Forms",
+    "Name": "Last switch result",
+    "Description": "Last switch result: 0 None, 1 Queued, 2 Completed, 3 Cancelled, 4 Scene changed, 5 Host expired, 6 Timed out, 7 Safety rejected, 8 Native queue failed. Requests rejected before changing the queue are reported in the command log.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 127,
+    "CapabilitySlot": 127,
+    "Minimum": 0,
+    "Maximum": 8,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Native transitions already running finish normally. Cancel, disconnect, disable-all or timeout drops only subsequent trainer steps; no form-ID edits, artificial rollback or save call.",
+    "Evidence": [
+      {
+        "Address": "DriveFeatures.inl Queue / DriveHandle / DriveTick / DriveReset",
+        "Finding": "Trainer-owned queue metadata only. Scene, host heartbeat and native-context ownership checks prevent a stale second step. Cancel never frees an engine task.",
+        "Level": "Synthetic lifecycle tests passed; full native ownership path verified in IDA."
+      }
+    ]
+  }
+]

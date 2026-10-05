@@ -1,0 +1,131 @@
+{
+  "date": "2026-10-04",
+  "reviewer": "managed_tools (independent of implementation author)",
+  "scope": "Static review of frozen MotionFeatures.inl and MotionGuardTests.cpp, native ABI/lifecycle validation, complete function evidence and source fingerprints. No product edits, build, game execution, UI actions or IDB writes by reviewer.",
+  "verdict": "No remaining significant defect identified in the frozen reviewed scope. Concrete ownership, transition and callback concurrency findings are resolved. Runtime integration remains unverified by this review.",
+  "source": {
+    "path": "trainer/Native/MotionFeatures.inl",
+    "sha256": "FA8CF241EE29E215DE28CA5D0DBC9CCF322837A4D7FE47493EB2836ADF3A3B17"
+  },
+  "tests": {
+    "path": "work/trainer/tests/MotionGuardTests.cpp",
+    "sha256": "AB69F3A633735388BCC803A2F5DCCA89BA35FFAFD34EDD54AFFA4456E9B1592B"
+  },
+  "testAttribution": {
+    "author": "native_debug",
+    "reportedChecks": 454,
+    "reportedFailures": 0,
+    "reportedCompilerWarnings": 0,
+    "reviewerRanTests": false,
+    "reviewerInspectedTestSource": true,
+    "liveValidation": false
+  },
+  "nativeEvidence": {
+    "functionCount": 26,
+    "asmInstructionCount": 3468,
+    "actualStoredAsmLineCountsEqualInstructionCountsAndTotals": true,
+    "wholePseudocodeBodies": true,
+    "claimFile": "motion_independent_claims.json",
+    "evidenceFiles": [
+      "motion_independent_complete_evidence.json",
+      "motion_independent_readout_evidence.json"
+    ],
+    "completenessFile": "motion_independent_completeness.json",
+    "writerSearchFile": "motion_independent_writer_scan.json"
+  },
+  "confirmedContract": [
+    "Speed is float Actor+680 (embedded controller Actor+344, member+336). Native motion advancement uses delta*speed; ordinary motion changes retain this actor field.",
+    "Enable and explicit rate change write once; Tick observes ownership and validity rather than continuously forcing the speed. Supported desired range is policy 0.1..3, not an engine safety proof.",
+    "Lease binds the current living Sora actor, status/backlink, controller owner, form, scene/room, heap, both schedulers, model, model resource and resource vtable. Normal motion changes on the same model can retain the lease.",
+    "Native VM writer 0x14042FCE0 synchronously consumes an 8-byte operand array through RCX, double-decodes operand0 to Actor, and copies the float at args+8 into Actor+680. Bank1/index107 is the 16-byte table entry at RVA0x755A20.",
+    "Callback slot changes use exact native-to-own and own-to-native CAS. Original callback is immutable, bridge is pinned, and already-dispatched callbacks forward exactly once after removal.",
+    "A private exclusive SRW lock serializes callback observation plus Original with Start, rate-update and Stop field mutations. The wrapper marks ownership before native write even for the same float or expired host, and finally releases the lock when exceptions propagate.",
+    "Restore requires a freshly resolved current/listed Actor in a stable scene, matching identities, fresh table/owned slot, no observed script ownership and exact last-written bits. Lost actor/form/scene or callback/bank ownership abandons restoration.",
+    "Model or motion-resource invalidity can compare-restore only on the same valid current actor because speed belongs to Actor. Restore does not follow an old retained actor pointer.",
+    "Readouts use validated current Motion/resource data without invoking pose/evaluation mutators. No seek, arbitrary motion-ID write or zero-speed freeze was introduced."
+  ],
+  "resolvedFindings": [
+    {
+      "id": "MOTION-R1",
+      "problem": "Restore originally lacked full ScenePhase checks and could run while transition globals still referred to the old scene.",
+      "resolution": "CurrentOwner now requires stable ScenePhase; unready/reset contexts do not restore."
+    },
+    {
+      "id": "MOTION-R2",
+      "problem": "Clearing observedActor before restore could hide a concurrent same-float script write and overwrite native ownership.",
+      "resolution": "Observation plus native Original and all trainer field mutations share one SRW lock; observation is cleared after the restore decision."
+    },
+    {
+      "id": "MOTION-R3",
+      "problem": "Callback/bank loss could still restore through direct Reset or HostExpired paths before MotionTick.",
+      "resolution": "Stop checks TableReady and OwnSlot under the lock on every restoration path. Direct Reset and expiry cases have dedicated tests."
+    },
+    {
+      "id": "MOTION-R4",
+      "problem": "Pre-lock host/table validation could become stale while Start or rate update waited for a callback.",
+      "resolution": "Start and rate update revalidate host, table, owned slot and relevant actor/value state inside the mutation lock."
+    },
+    {
+      "id": "MOTION-R5",
+      "problem": "Model resource pointer equality alone did not notice a changed resource vtable.",
+      "resolution": "The resource vtable is included in lease identity and covered by a synthetic ownership test."
+    }
+  ],
+  "reviewedTests": [
+    "Prototype and RAW readouts, normal motion changes, explicit enable/update/disable, repeat-enable baseline preservation and field pause.",
+    "Same-value and different-value script writes; unrelated actor writer; same-value writer before direct reset or host expiry.",
+    "Concurrent writer-versus-reset ordering using thread events; exactly one native call; exception propagation and lock release.",
+    "Slot/bank/code/metadata changes, foreign hook preservation, failed protection/pinning/CAS paths, resident forwarder after removal and retry.",
+    "Direct Reset and HostExpired after lost bank/slot with no restoration, including paths before normal Tick.",
+    "Wrong thread, stale/unready scene, room/heap/scheduler/form/actor/status/owner changes, model/resource/vtable changes and resource invalidity.",
+    "Invalid ranges/nonfinite values, malformed headers or lists, unreadable/unwritable data and read-only snapshot/capability paths."
+  ],
+  "limitations": [
+    "No independent build or live game test was run in this review; author-reported synthetic results are attributed explicitly.",
+    "Scoped direct-writer searches do not prove absence of computed aliases, whole-object copies, arbitrary external mod writes or future code changes.",
+    "The SRW lock serializes this wrapper and trainer mutations. It cannot serialize unknown direct writers that do not use the wrapper.",
+    "Identical raw writes outside the observed VM callback and identity ABA changes between observations may be undetectable.",
+    "The exact native callback body has no observed recursive callback path. Reentrancy introduced by unrelated runtime code changes is outside the validated build contract.",
+    "Animation speed also affects root motion and trigger timing, so the option changes gameplay behavior, not only visual playback.",
+    "Synthetic memory fixtures exercise the intended guards and actual Windows SRW/CAS/protection operations but do not establish all live actor-lifetime assumptions."
+  ],
+  "artifactHashes": [
+    {
+      "path": "trainer/Native/MotionFeatures.inl",
+      "sha256": "FA8CF241EE29E215DE28CA5D0DBC9CCF322837A4D7FE47493EB2836ADF3A3B17"
+    },
+    {
+      "path": "work/trainer/tests/MotionGuardTests.cpp",
+      "sha256": "AB69F3A633735388BCC803A2F5DCCA89BA35FFAFD34EDD54AFFA4456E9B1592B"
+    },
+    {
+      "path": "work/trainer/research/motion_independent_review.txt",
+      "sha256": "5CB8BE7E00EF6D86B337B48A14C10AEE4F32AAAB5767205B0CE7C81B13FA5843"
+    },
+    {
+      "path": "work/trainer/research/motion_independent_claims.json",
+      "sha256": "2CD2A42026CB584D49E2E9E0F754994CF6B72F02A0C48500B1B44FA735FD5240"
+    },
+    {
+      "path": "work/trainer/research/motion_independent_complete_evidence.json",
+      "sha256": "3C0B7629E9B0D781B42D86D5424F45874D08CF9F7E372F89D35E774F739D26DE"
+    },
+    {
+      "path": "work/trainer/research/motion_independent_readout_evidence.json",
+      "sha256": "48C4C015CCE7DB259440ECFF8DF51C080085B769705B43A8E4F70C2556CD7453"
+    },
+    {
+      "path": "work/trainer/research/motion_independent_writer_scan.json",
+      "sha256": "843913A3CF9449357E8C7936D4AF6B32F8AB8ED860ADA2F3B87727A5B1333138"
+    },
+    {
+      "path": "work/trainer/research/motion_independent_completeness.json",
+      "sha256": "1B84D298467538D8DD8996E954B04199D6160D59E31FDD11910716EA2FDDF723"
+    },
+    {
+      "path": "work/trainer/research/motion_vm_independent_evidence.json",
+      "sha256": "D40C95BA28CD6851E5A6A74FDD25524B97EB0B2DE3132678CCFC189393B27904"
+    }
+  ]
+}
+

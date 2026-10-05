@@ -1,0 +1,258 @@
+[
+  {
+    "addr": "0x1402265E0",
+    "pc": {
+      "addr": "0x1402265E0",
+      "code": "void __fastcall sub_1402265E0(__int64 a1, float a2)\n{\n  float v2; // xmm1_4\n  float v3; // xmm0_4\n\n  if ( a2 <= 0.0 ) /*0x1402265e6*/\n    a2 = 1.0; /*0x1402265e8*/\n  v2 = a2 + *(float *)(a1 + 8); /*0x1402265f0*/\n  v3 = (float)*(int *)(a1 + 12); /*0x1402265fa*/\n  *(_DWORD *)(a1 + 80) = 1; /*0x1402265fd*/\n  *(float *)(a1 + 8) = fminf(v2, v3); /*0x140226608*/\n}",
+      "line_count": 12,
+      "total_lines": 12,
+      "truncated": false,
+      "cursor": {
+        "done": true
+      }
+    },
+    "asm": {
+      "addr": "0x1402265E0",
+      "asm": {
+        "name": "sub_1402265E0",
+        "start_ea": "0x1402265e0",
+        "segment": ".text",
+        "lines": [
+          {
+            "addr": "1402265e0",
+            "instruction": "xorps xmm0, xmm0",
+            "label": "sub_1402265E0"
+          },
+          {
+            "addr": "1402265e3",
+            "instruction": "comiss xmm0, xmm1"
+          },
+          {
+            "addr": "1402265e6",
+            "instruction": "jb short loc_1402265F0",
+            "refs": [
+              {
+                "addr": "0x1402265f0",
+                "name": "loc_1402265F0"
+              }
+            ]
+          },
+          {
+            "addr": "1402265e8",
+            "instruction": "movss xmm1, cs:flt_140623A80",
+            "refs": [
+              {
+                "addr": "0x140623a80",
+                "name": "flt_140623A80"
+              }
+            ]
+          },
+          {
+            "addr": "1402265f0",
+            "instruction": "addss xmm1, dword ptr [rcx+8]",
+            "label": "loc_1402265F0"
+          },
+          {
+            "addr": "1402265f5",
+            "instruction": "movd xmm0, dword ptr [rcx+0Ch]"
+          },
+          {
+            "addr": "1402265fa",
+            "instruction": "cvtdq2ps xmm0, xmm0"
+          },
+          {
+            "addr": "1402265fd",
+            "instruction": "mov dword ptr [rcx+50h], 1"
+          },
+          {
+            "addr": "140226604",
+            "instruction": "minss xmm1, xmm0"
+          },
+          {
+            "addr": "140226608",
+            "instruction": "movss dword ptr [rcx+8], xmm1"
+          },
+          {
+            "addr": "14022660d",
+            "instruction": "retn"
+          }
+        ],
+        "stack_frame": [
+          {
+            "name": "__return_address",
+            "offset": "0x0",
+            "size": "0x8",
+            "type": "_UNKNOWN *"
+          }
+        ],
+        "return_type": "void",
+        "arguments": [
+          {
+            "name": "arg0",
+            "type": "__int64"
+          },
+          {
+            "name": "arg1",
+            "type": "float"
+          }
+        ]
+      },
+      "instruction_count": 11,
+      "total_instructions": 11,
+      "cursor": {
+        "done": true
+      }
+    }
+  },
+  {
+    "addr": "0x140207A50",
+    "pc": {
+      "addr": "0x140207A50",
+      "code": "__int64 __fastcall sub_140207A50(int a1)\n{\n  unsigned int v1; // ecx\n  __int64 result; // rax\n\n  if ( !byte_14072B134 ) /*0x140207a57*/\n  {\n    v1 = dword_14072B130 + a1; /*0x140207a59*/\n    dword_14072B130 = v1; /*0x140207a5f*/\n    if ( v1 > 0x5F5E0F6 ) /*0x140207a6b*/\n    {\n      dword_14072B130 = v1 % 0xA + 99999990; /*0x140207a84*/\n      return 10 * (v1 / 0xA); /*0x140207a7a*/\n    }\n  }\n  return result; /*0x140207a8a*/\n}",
+      "line_count": 17,
+      "total_lines": 17,
+      "truncated": false,
+      "cursor": {
+        "done": true
+      },
+      "refs": [
+        {
+          "addr": "0x14072b130",
+          "name": "dword_14072B130"
+        },
+        {
+          "addr": "0x14072b134",
+          "name": "byte_14072B134"
+        }
+      ]
+    },
+    "asm": {
+      "addr": "0x140207A50",
+      "asm": {
+        "name": "sub_140207A50",
+        "start_ea": "0x140207a50",
+        "segment": ".text",
+        "lines": [
+          {
+            "addr": "140207a50",
+            "instruction": "cmp cs:byte_14072B134, 0",
+            "label": "sub_140207A50",
+            "refs": [
+              {
+                "addr": "0x14072b134",
+                "name": "byte_14072B134"
+              }
+            ]
+          },
+          {
+            "addr": "140207a57",
+            "instruction": "jnz short locret_140207A8A",
+            "refs": [
+              {
+                "addr": "0x140207a8a",
+                "name": "locret_140207A8A"
+              }
+            ]
+          },
+          {
+            "addr": "140207a59",
+            "instruction": "add ecx, cs:dword_14072B130",
+            "refs": [
+              {
+                "addr": "0x14072b130",
+                "name": "dword_14072B130"
+              }
+            ]
+          },
+          {
+            "addr": "140207a5f",
+            "instruction": "mov cs:dword_14072B130, ecx",
+            "refs": [
+              {
+                "addr": "0x14072b130",
+                "name": "dword_14072B130"
+              }
+            ]
+          },
+          {
+            "addr": "140207a65",
+            "instruction": "cmp ecx, 5F5E0F6h"
+          },
+          {
+            "addr": "140207a6b",
+            "instruction": "jbe short locret_140207A8A",
+            "refs": [
+              {
+                "addr": "0x140207a8a",
+                "name": "locret_140207A8A"
+              }
+            ]
+          },
+          {
+            "addr": "140207a6d",
+            "instruction": "mov eax, 0CCCCCCCDh"
+          },
+          {
+            "addr": "140207a72",
+            "instruction": "mul ecx"
+          },
+          {
+            "addr": "140207a74",
+            "instruction": "shr edx, 3"
+          },
+          {
+            "addr": "140207a77",
+            "instruction": "lea eax, [rdx+rdx*4]"
+          },
+          {
+            "addr": "140207a7a",
+            "instruction": "add eax, eax"
+          },
+          {
+            "addr": "140207a7c",
+            "instruction": "sub ecx, eax"
+          },
+          {
+            "addr": "140207a7e",
+            "instruction": "add ecx, 5F5E0F6h"
+          },
+          {
+            "addr": "140207a84",
+            "instruction": "mov cs:dword_14072B130, ecx",
+            "refs": [
+              {
+                "addr": "0x14072b130",
+                "name": "dword_14072B130"
+              }
+            ]
+          },
+          {
+            "addr": "140207a8a",
+            "instruction": "retn",
+            "label": "locret_140207A8A"
+          }
+        ],
+        "stack_frame": [
+          {
+            "name": "__return_address",
+            "offset": "0x0",
+            "size": "0x8",
+            "type": "_UNKNOWN *"
+          }
+        ],
+        "return_type": "__int64",
+        "arguments": [
+          {
+            "name": "arg0",
+            "type": "int"
+          }
+        ]
+      },
+      "instruction_count": 15,
+      "total_instructions": 15,
+      "cursor": {
+        "done": true
+      }
+    }
+  }
+]

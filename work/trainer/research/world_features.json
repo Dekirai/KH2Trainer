@@ -1,0 +1,1159 @@
+[
+  {
+    "Id": "time.multiplier",
+    "Category": "Time",
+    "Name": "Time multiplier",
+    "Description": "Scales the native simulation delta after the timing task. Integer frame waits keep their native behavior. Applies only in stable gameplay; 1 restores normal timing.",
+    "Kind": "Number",
+    "CommandId": 1048,
+    "ValueSlot": 48,
+    "CapabilitySlot": 48,
+    "Minimum": 0.1,
+    "Maximum": 3,
+    "DefaultValue": 1,
+    "Step": 0.1,
+    "Unit": "x",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": true,
+    "RestoreBehavior": "Reset to 1 on disable-all or host disconnect; native timing scalar remains untouched.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x1548E0; 0x717480 / 0x717488",
+        "Finding": "Task recomputes a fresh delta and its inverse each frame. Trainer scales the fresh delta, caps it at 6 and recomputes the inverse.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "camera.fov",
+    "Category": "Camera",
+    "Name": "Horizontal FOV",
+    "Description": "Sets and enables the horizontal field of view override in the normal single-camera field renderer.",
+    "Kind": "Number",
+    "CommandId": 1049,
+    "ValueSlot": 49,
+    "CapabilitySlot": 49,
+    "Minimum": 30,
+    "Maximum": 120,
+    "DefaultValue": 70,
+    "Step": 1,
+    "Unit": "degrees",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": true,
+    "RestoreBehavior": "Released when disabled or when the scene heap, scheduler, full room target, native camera owner or controller mode changes. Re-enable in normal follow-camera gameplay.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x19DDE0 / 0x19CBA0",
+        "Finding": "Float radians are passed in XMM1, projection pointer in RCX and horizontal selector 0 in R8D before matrix reconstruction.",
+        "Level": "Static IDA verified; runtime validation pending"
+      },
+      {
+        "Address": "RVA 0xAC1528 / 0x718CA8; WorldFeatures.inl",
+        "Finding": "Only owner 0 and normal controller mode 0 are accepted. Both FOV and held camera bind scheduler, scene heap and the full ten-byte map target. Native ownership changes release the override before render writes.",
+        "Level": "Fresh complete static ASM and independent source review; synthetic renderer-boundary tests; live validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "camera.fov_enabled",
+    "Category": "Camera",
+    "Name": "Override field of view",
+    "Description": "Enables the chosen horizontal FOV for the current normal follow camera. A scene or native camera mode change disables the override.",
+    "Kind": "Toggle",
+    "CommandId": 1050,
+    "ValueSlot": 50,
+    "CapabilitySlot": 50,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": true,
+    "RestoreBehavior": "Released when disabled or when the scene heap, scheduler, full room target, native camera owner or controller mode changes. Re-enable in normal follow-camera gameplay.",
+    "Evidence": [
+      {
+        "Address": "RVA 0xAC183C / 0x19DDD0 / 0x19DDE0",
+        "Finding": "Only normal single-camera mode and active bank 0 are modified.",
+        "Level": "Static IDA verified; runtime validation pending"
+      },
+      {
+        "Address": "RVA 0xAC1528 / 0x718CA8; WorldFeatures.inl",
+        "Finding": "Only owner 0 and normal controller mode 0 are accepted. Both FOV and held camera bind scheduler, scene heap and the full ten-byte map target. Native ownership changes release the override before render writes.",
+        "Level": "Fresh complete static ASM and independent source review; synthetic renderer-boundary tests; live validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "camera.free",
+    "Category": "Camera",
+    "Name": "Free camera",
+    "Description": "Holds the current normal follow-camera pose, including roll. Position, yaw, pitch, movement and roll controls are available while held. Scene or native camera mode changes end the override.",
+    "Kind": "Toggle",
+    "CommandId": 1051,
+    "ValueSlot": 51,
+    "CapabilitySlot": 51,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Released when disabled or when the scene heap, scheduler, full room target, native camera owner or controller mode changes. Re-enable in normal follow-camera gameplay.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x19CBA0 / 0x19D340",
+        "Finding": "Validated camera vectors are applied before the native camera task rebuilds matrices and submits rendering.",
+        "Level": "Static IDA verified; runtime validation pending"
+      },
+      {
+        "Address": "RVA 0xAC1528 / 0x718CA8; WorldFeatures.inl",
+        "Finding": "Only owner 0 and normal controller mode 0 are accepted. Both FOV and held camera bind scheduler, scene heap and the full ten-byte map target. Native ownership changes release the override before render writes.",
+        "Level": "Fresh complete static ASM and independent source review; synthetic renderer-boundary tests; live validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "camera.eye_x",
+    "Category": "Camera",
+    "Name": "Camera X",
+    "Description": "Moves the held camera and its target together along this world axis. Requires free camera.",
+    "Kind": "Number",
+    "CommandId": 1052,
+    "ValueSlot": 52,
+    "CapabilitySlot": 52,
+    "Minimum": -1000000,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "units",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Native camera resumes when free camera is disabled.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x19CBA0 / 0x19D340",
+        "Finding": "Validated camera vectors are applied before the native camera task rebuilds matrices and submits rendering.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "camera.eye_y",
+    "Category": "Camera",
+    "Name": "Camera Y",
+    "Description": "Moves the held camera and its target together along this world axis. Requires free camera.",
+    "Kind": "Number",
+    "CommandId": 1053,
+    "ValueSlot": 53,
+    "CapabilitySlot": 53,
+    "Minimum": -1000000,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "units",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Native camera resumes when free camera is disabled.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x19CBA0 / 0x19D340",
+        "Finding": "Validated camera vectors are applied before the native camera task rebuilds matrices and submits rendering.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "camera.eye_z",
+    "Category": "Camera",
+    "Name": "Camera Z",
+    "Description": "Moves the held camera and its target together along this world axis. Requires free camera.",
+    "Kind": "Number",
+    "CommandId": 1054,
+    "ValueSlot": 54,
+    "CapabilitySlot": 54,
+    "Minimum": -1000000,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "units",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Native camera resumes when free camera is disabled.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x19CBA0 / 0x19D340",
+        "Finding": "Validated camera vectors are applied before the native camera task rebuilds matrices and submits rendering.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "camera.yaw",
+    "Category": "Camera",
+    "Name": "Camera yaw",
+    "Description": "Rotates the held camera around its eye position while preserving target distance.",
+    "Kind": "Number",
+    "CommandId": 1055,
+    "ValueSlot": 55,
+    "CapabilitySlot": 55,
+    "Minimum": -180,
+    "Maximum": 180,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "degrees",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Native camera resumes when free camera is disabled.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x19CBA0 / 0x19D340",
+        "Finding": "Validated camera vectors are applied before the native camera task rebuilds matrices and submits rendering.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "camera.pitch",
+    "Category": "Camera",
+    "Name": "Camera pitch",
+    "Description": "Tilts the held camera while preserving target distance. Invalid alignment with the up vector is rejected.",
+    "Kind": "Number",
+    "CommandId": 1056,
+    "ValueSlot": 56,
+    "CapabilitySlot": 56,
+    "Minimum": -85,
+    "Maximum": 85,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "degrees",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Native camera resumes when free camera is disabled.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x19CBA0 / 0x19D340",
+        "Finding": "Validated camera vectors are applied before the native camera task rebuilds matrices and submits rendering.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "render.hide_captions",
+    "Category": "Display",
+    "Name": "Hide captions",
+    "Description": "Suppresses caption creation in the verified native caption paths. A caption already created may remain until its normal end.",
+    "Kind": "Toggle",
+    "CommandId": 1057,
+    "ValueSlot": 57,
+    "CapabilitySlot": 57,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": true,
+    "RestoreBehavior": "Restores the previous bit on disable-all or disconnect if no other writer changed it.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x749804 mask 0x04000000; 0x2CFFA0 / 0x2D0100",
+        "Finding": "Both caption paths return early when bit 26 is set.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "render.word_bounds",
+    "Category": "Display",
+    "Name": "Text layout guides",
+    "Description": "Enables the native word-layout guide path.",
+    "Kind": "Toggle",
+    "CommandId": 1058,
+    "ValueSlot": 58,
+    "CapabilitySlot": 58,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": true,
+    "RestoreBehavior": "Restores the previous bit on disable-all or disconnect if no other writer changed it.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x749804 mask 0x08000000; 0x14E020 / 0x14E6D0",
+        "Finding": "Bit 27 invokes the text-layout debug drawing path.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "render.offscreen_check",
+    "Category": "Display",
+    "Name": "Offscreen check viewport",
+    "Description": "Uses the original developer viewport scale of 0.6; disabling selects its normal scale of 1.0.",
+    "Kind": "Toggle",
+    "CommandId": 1059,
+    "ValueSlot": 59,
+    "CapabilitySlot": 59,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Restores the previous bit on disable-all or disconnect if no other writer changed it.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x749838 mask 1; 0x14EB70 / 0x127130",
+        "Finding": "App update detects a changed flag and applies the developer viewport scale.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "world.reload_room",
+    "Category": "World",
+    "Name": "Reload current room",
+    "Description": "Reloads the current room with its current entrance and spawn sets. This does not restore health, inventory or mission progress.",
+    "Kind": "Action",
+    "CommandId": 1060,
+    "ValueSlot": -1,
+    "CapabilitySlot": 60,
+    "Minimum": 0,
+    "Maximum": 0,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": true,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "A one-shot scene transition; no automatic undo.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x434CF0 / 0x152990 / 0x152A90",
+        "Finding": "Native wrapper copies a 10-byte target and queues the existing room transition; destination is checked against live area table at [0x2A10558].",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "world.travel",
+    "Category": "World",
+    "Name": "Travel to room",
+    "Description": "Uses the native developer map jump. Room bounds are checked against loaded data; entrance and spawn availability depend on game content. Spawn set -1 uses saved defaults.",
+    "Kind": "Action",
+    "CommandId": 1061,
+    "ValueSlot": -1,
+    "CapabilitySlot": 61,
+    "Minimum": 0,
+    "Maximum": 0,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": true,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "A one-shot scene transition that can affect the next save; no automatic undo.",
+    "Arguments": [
+      {
+        "Name": "World",
+        "Minimum": 0,
+        "Maximum": 18,
+        "DefaultValue": 2,
+        "Choices": [
+          {
+            "Label": "0 — zz",
+            "Value": 0
+          },
+          {
+            "Label": "1 — es",
+            "Value": 1
+          },
+          {
+            "Label": "2 — tt",
+            "Value": 2
+          },
+          {
+            "Label": "3 — di",
+            "Value": 3
+          },
+          {
+            "Label": "4 — hb",
+            "Value": 4
+          },
+          {
+            "Label": "5 — bb",
+            "Value": 5
+          },
+          {
+            "Label": "6 — he",
+            "Value": 6
+          },
+          {
+            "Label": "7 — al",
+            "Value": 7
+          },
+          {
+            "Label": "8 — mu",
+            "Value": 8
+          },
+          {
+            "Label": "9 — po",
+            "Value": 9
+          },
+          {
+            "Label": "10 — lk",
+            "Value": 10
+          },
+          {
+            "Label": "11 — lm",
+            "Value": 11
+          },
+          {
+            "Label": "12 — dc",
+            "Value": 12
+          },
+          {
+            "Label": "13 — wi",
+            "Value": 13
+          },
+          {
+            "Label": "14 — nm",
+            "Value": 14
+          },
+          {
+            "Label": "15 — wm",
+            "Value": 15
+          },
+          {
+            "Label": "16 — ca",
+            "Value": 16
+          },
+          {
+            "Label": "17 — tr",
+            "Value": 17
+          },
+          {
+            "Label": "18 — eh",
+            "Value": 18
+          }
+        ]
+      },
+      {
+        "Name": "Room",
+        "Minimum": 0,
+        "Maximum": 63,
+        "DefaultValue": 0
+      },
+      {
+        "Name": "Entrance",
+        "Minimum": 0,
+        "Maximum": 255,
+        "DefaultValue": 0
+      },
+      {
+        "Name": "Map spawn set",
+        "Minimum": -1,
+        "Maximum": 50,
+        "DefaultValue": -1
+      },
+      {
+        "Name": "Battle spawn set",
+        "Minimum": -1,
+        "Maximum": 50,
+        "DefaultValue": -1
+      },
+      {
+        "Name": "Event spawn set",
+        "Minimum": -1,
+        "Maximum": 50,
+        "DefaultValue": -1
+      }
+    ],
+    "Evidence": [
+      {
+        "Address": "RVA 0x434CF0 / 0x152990 / 0x152A90",
+        "Finding": "Native wrapper copies a 10-byte target and queues the existing room transition; destination is checked against live area table at [0x2A10558].",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "world.party_0",
+    "Category": "World",
+    "Name": "World party slot 1",
+    "Description": "Changes this world's saved party preset. Reload the room to apply it to spawned party members.",
+    "Kind": "Choice",
+    "CommandId": 1062,
+    "ValueSlot": 62,
+    "CapabilitySlot": 62,
+    "Minimum": 0,
+    "Maximum": 18,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": true,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Persistent one-shot SaveData edit; disable-all does not undo it.",
+    "Choices": [
+      {
+        "Label": "Sora",
+        "Value": 0
+      },
+      {
+        "Label": "Donald",
+        "Value": 1
+      },
+      {
+        "Label": "Goofy",
+        "Value": 2
+      },
+      {
+        "Label": "World ally",
+        "Value": 3
+      },
+      {
+        "Label": "No entry",
+        "Value": 18
+      }
+    ],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3E2E20 / 0x3E38C0; 0x9ACDE4 + 4*world",
+        "Finding": "Native getter selects four bytes per world; native setter writes the selected slot with member & 0x9F.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "world.party_1",
+    "Category": "World",
+    "Name": "World party slot 2",
+    "Description": "Changes this world's saved party preset. Reload the room to apply it to spawned party members.",
+    "Kind": "Choice",
+    "CommandId": 1063,
+    "ValueSlot": 63,
+    "CapabilitySlot": 63,
+    "Minimum": 0,
+    "Maximum": 18,
+    "DefaultValue": 1,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": true,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Persistent one-shot SaveData edit; disable-all does not undo it.",
+    "Choices": [
+      {
+        "Label": "Sora",
+        "Value": 0
+      },
+      {
+        "Label": "Donald",
+        "Value": 1
+      },
+      {
+        "Label": "Goofy",
+        "Value": 2
+      },
+      {
+        "Label": "World ally",
+        "Value": 3
+      },
+      {
+        "Label": "No entry",
+        "Value": 18
+      }
+    ],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3E2E20 / 0x3E38C0; 0x9ACDE4 + 4*world",
+        "Finding": "Native getter selects four bytes per world; native setter writes the selected slot with member & 0x9F.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "world.party_2",
+    "Category": "World",
+    "Name": "World party slot 3",
+    "Description": "Changes this world's saved party preset. Reload the room to apply it to spawned party members.",
+    "Kind": "Choice",
+    "CommandId": 1064,
+    "ValueSlot": 64,
+    "CapabilitySlot": 64,
+    "Minimum": 0,
+    "Maximum": 18,
+    "DefaultValue": 2,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": true,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Persistent one-shot SaveData edit; disable-all does not undo it.",
+    "Choices": [
+      {
+        "Label": "Sora",
+        "Value": 0
+      },
+      {
+        "Label": "Donald",
+        "Value": 1
+      },
+      {
+        "Label": "Goofy",
+        "Value": 2
+      },
+      {
+        "Label": "World ally",
+        "Value": 3
+      },
+      {
+        "Label": "No entry",
+        "Value": 18
+      }
+    ],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3E2E20 / 0x3E38C0; 0x9ACDE4 + 4*world",
+        "Finding": "Native getter selects four bytes per world; native setter writes the selected slot with member & 0x9F.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "world.party_3",
+    "Category": "World",
+    "Name": "World party slot 4",
+    "Description": "Changes this world's saved party preset. Reload the room to apply it to spawned party members.",
+    "Kind": "Choice",
+    "CommandId": 1065,
+    "ValueSlot": 65,
+    "CapabilitySlot": 65,
+    "Minimum": 0,
+    "Maximum": 18,
+    "DefaultValue": 3,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": true,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Persistent one-shot SaveData edit; disable-all does not undo it.",
+    "Choices": [
+      {
+        "Label": "Sora",
+        "Value": 0
+      },
+      {
+        "Label": "Donald",
+        "Value": 1
+      },
+      {
+        "Label": "Goofy",
+        "Value": 2
+      },
+      {
+        "Label": "World ally",
+        "Value": 3
+      },
+      {
+        "Label": "No entry",
+        "Value": 18
+      }
+    ],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3E2E20 / 0x3E38C0; 0x9ACDE4 + 4*world",
+        "Finding": "Native getter selects four bytes per world; native setter writes the selected slot with member & 0x9F.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "world.current_world",
+    "Category": "World",
+    "Name": "World ID",
+    "Description": "Current loaded location from the native map target.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 66,
+    "CapabilitySlot": 66,
+    "Minimum": 0,
+    "Maximum": 18,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "",
+    "Evidence": [
+      {
+        "Address": "RVA 0x717008 + 0",
+        "Finding": "Current MapTarget10 contains world, area and entrance as consecutive bytes.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "world.current_room",
+    "Category": "World",
+    "Name": "Room ID",
+    "Description": "Current loaded location from the native map target.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 67,
+    "CapabilitySlot": 67,
+    "Minimum": 0,
+    "Maximum": 63,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "",
+    "Evidence": [
+      {
+        "Address": "RVA 0x717008 + 1",
+        "Finding": "Current MapTarget10 contains world, area and entrance as consecutive bytes.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "world.current_entrance",
+    "Category": "World",
+    "Name": "Entrance ID",
+    "Description": "Current loaded location from the native map target.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 68,
+    "CapabilitySlot": 68,
+    "Minimum": 0,
+    "Maximum": 255,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "",
+    "Evidence": [
+      {
+        "Address": "RVA 0x717008 + 2",
+        "Finding": "Current MapTarget10 contains world, area and entrance as consecutive bytes.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "time.pause_menu",
+    "Category": "Time",
+    "Name": "Open pause menu",
+    "Description": "Requests the game's native pause menu, including its contextual pause screen when present. Respects native pause restrictions.",
+    "Kind": "Action",
+    "CommandId": 1069,
+    "ValueSlot": -1,
+    "CapabilitySlot": 69,
+    "Minimum": 0,
+    "Maximum": 0,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Close the pause menu normally.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x1572B0 / 0x3AD540 / 0x2E4C20 / 0x2E4950",
+        "Finding": "Replicates verified native pause gates and contextual menu selection without setting the module pause state directly.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "time.native_scalar",
+    "Category": "Time",
+    "Name": "Native time scalar",
+    "Description": "The engine's own timing scalar, before the trainer multiplier.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 70,
+    "CapabilitySlot": 70,
+    "Minimum": 0,
+    "Maximum": 100,
+    "DefaultValue": 1,
+    "Step": 1,
+    "Unit": "x",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "",
+    "Evidence": [
+      {
+        "Address": "RVA 0x717424; 0x1548E0",
+        "Finding": "Engine timing task multiplies the raw delta by this float.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "time.effective_delta",
+    "Category": "Time",
+    "Name": "Effective simulation delta",
+    "Description": "The most recently computed simulation delta.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 71,
+    "CapabilitySlot": 71,
+    "Minimum": 0,
+    "Maximum": 6,
+    "DefaultValue": 1,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "",
+    "Evidence": [
+      {
+        "Address": "RVA 0x717480; 0x1548E0",
+        "Finding": "Effective delta is consumed by animation, physics and floating-time waits.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "camera.current_fov",
+    "Category": "Camera",
+    "Name": "Current horizontal FOV",
+    "Description": "Current field-camera projection angle.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 72,
+    "CapabilitySlot": 72,
+    "Minimum": 0,
+    "Maximum": 180,
+    "DefaultValue": 70,
+    "Step": 1,
+    "Unit": "degrees",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "",
+    "Evidence": [
+      {
+        "Address": "RVA 0xAC1840 + 68",
+        "Finding": "Bank 0 stores horizontal FOV in radians; snapshot converts to degrees.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "camera.move",
+    "Category": "Camera",
+    "Name": "Move free camera",
+    "Description": "Moves the held camera in its local right, up and forward directions. Requires free camera.",
+    "Kind": "Action",
+    "CommandId": 1073,
+    "ValueSlot": -1,
+    "CapabilitySlot": 73,
+    "Minimum": 0,
+    "Maximum": 0,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Native camera resumes when free camera is disabled.",
+    "Arguments": [
+      {
+        "Name": "Right",
+        "Minimum": -10000,
+        "Maximum": 10000,
+        "DefaultValue": 0
+      },
+      {
+        "Name": "Up",
+        "Minimum": -10000,
+        "Maximum": 10000,
+        "DefaultValue": 0
+      },
+      {
+        "Name": "Forward",
+        "Minimum": -10000,
+        "Maximum": 10000,
+        "DefaultValue": 0
+      }
+    ],
+    "Evidence": [
+      {
+        "Address": "RVA 0x19CBA0 / 0x19D340",
+        "Finding": "Validated camera vectors are applied before the native camera task rebuilds matrices and submits rendering.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "camera.restore",
+    "Category": "Camera",
+    "Name": "Restore normal camera",
+    "Description": "Disables free camera and FOV override.",
+    "Kind": "Action",
+    "CommandId": 1074,
+    "ValueSlot": -1,
+    "CapabilitySlot": 74,
+    "Minimum": 0,
+    "Maximum": 0,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Returns control to the native camera producer.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x165700 / 0x19CBA0",
+        "Finding": "Removing trainer pre-render overrides leaves the normal camera producer and matrix task in control.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "world.current_map_set",
+    "Category": "World",
+    "Name": "Map spawn set",
+    "Description": "Current native spawn-set selection.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 75,
+    "CapabilitySlot": 75,
+    "Minimum": -1,
+    "Maximum": 32767,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "",
+    "Evidence": [
+      {
+        "Address": "RVA 0x717008 + 4",
+        "Finding": "MapTarget10 stores this selection as a signed 16-bit field.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "world.current_battle_set",
+    "Category": "World",
+    "Name": "Battle spawn set",
+    "Description": "Current native spawn-set selection.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 76,
+    "CapabilitySlot": 76,
+    "Minimum": -1,
+    "Maximum": 32767,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "",
+    "Evidence": [
+      {
+        "Address": "RVA 0x717008 + 6",
+        "Finding": "MapTarget10 stores this selection as a signed 16-bit field.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "world.current_event_set",
+    "Category": "World",
+    "Name": "Event spawn set",
+    "Description": "Current native spawn-set selection.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 77,
+    "CapabilitySlot": 77,
+    "Minimum": -1,
+    "Maximum": 32767,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "",
+    "Evidence": [
+      {
+        "Address": "RVA 0x717008 + 8",
+        "Finding": "MapTarget10 stores this selection as a signed 16-bit field.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "world.reset_effects",
+    "Category": "World",
+    "Name": "Disable world and camera effects",
+    "Description": "Disables trainer timing, field pause, actor/effect freeze and camera overrides and restores owned display flags. One-shot room and party changes remain.",
+    "Kind": "Action",
+    "CommandId": 1078,
+    "ValueSlot": -1,
+    "CapabilitySlot": 78,
+    "Minimum": 0,
+    "Maximum": 0,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Does not undo progression edits or room transitions.",
+    "Evidence": [
+      {
+        "Address": "Trainer WorldReset; native task RVAs 0x1548E0 / 0x19CBA0",
+        "Finding": "Restores only owned task callbacks in freshly validated scheduler lists and compare-restores owned flag bits.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "time.actor_effect_freeze",
+    "Category": "Time",
+    "Name": "Freeze actors and effects",
+    "Description": "Uses the native actor/effect freeze while rendering continues. Scripts, mission timers, hit processing and some effects can continue. Ends when the scene changes or native code takes control.",
+    "Kind": "Toggle",
+    "CommandId": 1079,
+    "ValueSlot": 79,
+    "CapabilitySlot": 79,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Releases the trainer-owned bit in the same scene on disable, menu/transition or disconnect. A pre-existing native freeze is rejected; newer scenes retain their own state.",
+    "Choices": [],
+    "Arguments": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x2A11400 mask 0x20; 0x3BFD30 / 0x3ABDB0 / 0x3ABDA0",
+        "Finding": "Actor update skips main behavior, animation and movement while preserving pose/render maintenance. Several effect consumers honor the same bit; it does not stop every subsystem.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Id": "practice.native_retry",
+    "Category": "Practice",
+    "Name": "Retry native checkpoint",
+    "Description": "Reloads the game's native checkpoint and rolls inventory, experience, abilities and other saved progress back to that snapshot. The checkpoint may be in an earlier room. This does not capture or rewind an arbitrary combat state.",
+    "Kind": "Action",
+    "CommandId": 1115,
+    "ValueSlot": -1,
+    "CapabilitySlot": 115,
+    "Minimum": 0,
+    "Maximum": 0,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": true,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "One-shot native rollback. Disable-all does not undo it. No save file is written; a later normal save can persist the restored state.",
+    "Choices": [],
+    "Arguments": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x2A0C540 / 0x29FB580; 0x151000 / 0x152990 / 0x152A90 / 0x3A0580",
+        "Finding": "Validated native checkpoint buffers and matching saved location feed the existing menu transition. Its restore flag delays SaveData rollback until after scene teardown.",
+        "Level": "Static IDA verified; runtime validation pending"
+      }
+    ]
+  },
+  {
+    "Category": "Practice",
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "Choices": [],
+    "Arguments": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x1532E0 / 0x1567A0 / 0x150310 / 0x153430 / 0x1548E0; 0xABB854",
+        "Finding": "Outer captured-frame drawing survives field module state2. Capture precedes frame finalization. A separate owner bit pauses the native mission clock; a step permits one complete field dispatch and timing update.",
+        "Level": "Static IDA verified; synthetic guards tested; live validation pending"
+      }
+    ],
+    "Id": "practice.field_pause",
+    "Name": "Pause field simulation",
+    "Description": "Pauses the complete field scheduler and mission clock while showing a captured game image. Audio, play-time counters and outer UI continue. Free camera cannot move within the frozen image. Pause takes effect after the next complete update.",
+    "Kind": "Toggle",
+    "CommandId": 1116,
+    "ValueSlot": 116,
+    "CapabilitySlot": 116,
+    "RestoreBehavior": "Releases the trainer's field/capture state and timer owner bit on disable, disconnect or transition. Native menu/event takeover is preserved."
+  },
+  {
+    "Category": "Practice",
+    "Minimum": 0,
+    "Maximum": 0,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "Choices": [],
+    "Arguments": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x1532E0 / 0x1567A0 / 0x150310 / 0x153430 / 0x1548E0; 0xABB854",
+        "Finding": "Outer captured-frame drawing survives field module state2. Capture precedes frame finalization. A separate owner bit pauses the native mission clock; a step permits one complete field dispatch and timing update.",
+        "Level": "Static IDA verified; synthetic guards tested; live validation pending"
+      }
+    ],
+    "Id": "practice.field_step",
+    "Name": "Advance one field update",
+    "Description": "While trainer field pause is active, runs one complete field update and its native timing update, captures the new image, then pauses again. Uses the current native delta; this is not a promise of one fixed real-time frame.",
+    "Kind": "Action",
+    "CommandId": 1117,
+    "ValueSlot": -1,
+    "CapabilitySlot": 117,
+    "RestoreBehavior": "Automatically returns to trainer pause. A scene transition or native menu/event takes control instead."
+  }
+]

@@ -1,0 +1,23 @@
+Independent offline asset explorer Core source review
+No blocking issue found in the reviewed four-file Core implementation. A suspected short-path alias problem was tested and disproved on the target .NET8/Windows environment.
+Read-only product source review plus a separate fixture-only executable that includes the exact four product source files. No game/retail files were written and no UI or live game access occurred.
+
+Source hashes:
+trainer/KH2Trainer.Core/AssetArchiveReader.cs: 2F933A70D6D99494B5B74D88EDD14BFD3EF2D644F2A5A264CFB876D5E27AA2CA
+trainer/KH2Trainer.Core/AssetExplorerModels.cs: 2E6C3FA4FB455A84278475FCB01A1F257655C8A1134E89F3D79E8B103BA517B3
+trainer/KH2Trainer.Core/AssetPackageCodec.cs: 6D5CC0CF02CC339EB40D277912749257FA4C665B005B4BBE3AF0B03CA60CAC42
+trainer/KH2Trainer.Core/AssetFileAccess.cs: 1982E112F2897704D64C5515084C8BFEAE859436006442BD193C6ADA4766354C
+
+Verified:
+Bounds: HED rows use64-bit offsets and subtraction-based RequireSpan. Metadata/table counts are checked before allocation/index multiplication. Package decoded/stored sizes and depth are bounded; decoded output must exactly match its declared length, and zlib checksum/padding are checked. BAR nonempty spans cannot overlap metadata; aliases with identical spans are preserved.
+Source identity: Reopen compares handle-derived volume/file-index, creation/write time and length. Open handles deny writes/deletes. HED, inspected package metadata and ancestor BAR tables are fingerprinted before trusting saved locators.
+Asynchronous ownership: Every successful returned AssetSliceStream owns its parent. Parent metadata failures dispose the already-open parent; package decode awaits/disposes file/slice/transform/inflater before returning an independent MemoryStream. Cancellation is passed through reads/copies; export owns its source until publication. Nested wrappers can dispose the same FileStream more than once, which is benign for these concrete streams.
+Export: Export validates user spelling and normalized path, rejects device/ADS/reserved/trailing aliases and reparse directories, holds directory handles against rename/delete, creates a unique new temporary file and uses File.Move(overwrite:false). Existing output and source aliases are therefore not overwritten; cancellation removes the operation temporary file.
+Short Windows path probe: The probe creates only fixture files under work/trainer/review/asset_alias_probe. It opens a source under an explicit protected fake game directory and tries exporting to the same directory through its actual8.3alias. .NET8 Path.GetFullPath expanded every existing parent to its long form even though the destination did not exist. Export rejected the request before output creation. This disproved the reviewer initial suspicion.
+
+Limits:
+This review did not rerun the author full synthetic/retail suite or independently rederive the proprietary prefix transform. It inspected the implementation and existing contract for coherence.
+The descriptor is a file/metadata identity, not a digest of every asset byte. Same-file payload modifications followed by deliberate timestamp restoration are not all detectable; metadata relocation changes are checked by metadata hashes.
+No claim is made about hostile filesystem namespace changes through separately created drive mappings or remote aliases. The tested8.3alias and regular path normalization are covered.
+Streams are designed for sequential awaited use. Concurrent reads/seeks on one returned stream are not synchronized.
+Directory locks prevent parent replacement, while atomic no-overwrite publication protects existing output. This review does not claim resistance to a separate adversarial process specifically replacing the random temporary filename after its write handle closes.

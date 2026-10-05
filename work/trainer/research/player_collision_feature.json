@@ -1,0 +1,30 @@
+{
+  "Id": "combat.movementcollision",
+  "Category": "Combat Practice",
+  "Name": "Bypass Movement Collision",
+  "Description": "Use the game's collision-bypass flags for this unattached player and scene. It does not grant flight or invulnerability. Native collision overrides are never replaced.",
+  "Kind": "Toggle",
+  "CommandId": 1046,
+  "ValueSlot": 46,
+  "CapabilitySlot": 46,
+  "Minimum": 0,
+  "Maximum": 1,
+  "DefaultValue": 0,
+  "Step": 1,
+  "RequiresScene": true,
+  "ChangesProgression": false,
+  "CanSaveInProfile": false,
+  "RestoreBehavior": "Clear only the two owned bits when the same actor/status/scheduler/room and null override pointer still match. Scene or actor replacement automatically disables the trainer toggle. Foreign changes are preserved; old actor memory is never touched.",
+  "Evidence": [
+    {
+      "Address": "0x3CBFC0 / 0x3CC3B0",
+      "Finding": "Four-instruction setters OR/AND Actor+0x124 mask0x40 and+0x8C8 mask0x1000; Actor+0x908 override pointer. VM53E840 calls Enable(actor,null).",
+      "Level": "Fresh decompile and full setter/clearer assembly verified; synthetic restoration tests passed."
+    },
+    {
+      "Address": "0x3B89A0 / 0x3B9090",
+      "Finding": "Actor+0x124 bit0x40 selects movement path that bypasses the collision resolver; +0x8C8 bit0x1000 also affects spatial partition checks.",
+      "Level": "Native branch inspected. Live movement behavior not yet tested."
+    }
+  ]
+}

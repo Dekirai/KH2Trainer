@@ -1,0 +1,271 @@
+[
+  {
+    "Id": "gummi.mobility_bonus",
+    "Category": "Gummi controls",
+    "Name": "Movement bonus",
+    "Description": "Set the current ship's raw movement bonus. Zero gives the normal factor. Positive values raise lateral speed and acceleration; negative values use the loaded handling scale. Bank-angle smoothing also changes.",
+    "Kind": "Number",
+    "CommandId": 1320,
+    "ValueSlot": 320,
+    "CapabilitySlot": 320,
+    "Minimum": -100,
+    "Maximum": 200,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "bonus units",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Applied once to the current ship. Native loadout rebuilding or ship replacement may overwrite it. Disconnecting does not undo the change; profiles cannot replay it.",
+    "Evidence": [
+      {
+        "Address": "0x140225DE0 / 0x140226120 / 0x1401FFE80 / 0x1401FD930",
+        "Finding": "Native int delta adder changes state+36. Its consumer clamps the resulting movement factor to0.1..3; negative raw values are multiplied by systemparam0+16 first.",
+        "Level": "Complete native IDA assembly, resource and lifecycle checks, and isolated fake-memory/callout tests. No live Gummi validation."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.roll_bonus",
+    "Category": "Gummi controls",
+    "Name": "Roll impulse bonus",
+    "Description": "Set the current ship's raw roll impulse bonus. Zero gives factor1; -100 gives0; 200 gives3. This changes the roll impulse, while normal roll timing and invulnerability remain active.",
+    "Kind": "Number",
+    "CommandId": 1321,
+    "ValueSlot": 321,
+    "CapabilitySlot": 321,
+    "Minimum": -100,
+    "Maximum": 200,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "bonus units",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Applied once to the current ship. Native loadout rebuilding or ship replacement may overwrite it. Disconnecting does not undo the change; profiles cannot replay it.",
+    "Evidence": [
+      {
+        "Address": "0x140225CD0 / 0x140225F10 / 0x1401FE860",
+        "Finding": "Native int delta adder changes state+40. Getter returns clamp(1+bonus/100,0,3), consumed by native roll movement.",
+        "Level": "Complete native IDA assembly, resource and lifecycle checks, and isolated fake-memory/callout tests. No live Gummi validation."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.lockon_bonus",
+    "Category": "Gummi controls",
+    "Name": "Lock-on bonus",
+    "Description": "Set the current ship's lock-on bonus. Higher values reduce future target-acquisition delays, subject to each category's native minimum. Already-running timers are not restarted.",
+    "Kind": "Number",
+    "CommandId": 1322,
+    "ValueSlot": 322,
+    "CapabilitySlot": 322,
+    "Minimum": 0,
+    "Maximum": 1000,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "bonus units",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Applied once to the current ship. Native loadout rebuilding or ship replacement may overwrite it. Disconnecting does not undo the change; profiles cannot replay it.",
+    "Evidence": [
+      {
+        "Address": "0x140225DB0 / 0x1402260E0 / 0x1401F8C60",
+        "Finding": "Native delta adder changes state+44; future timer reloads use max(row+16,row+8-bonus*row+12) for enabled categories.",
+        "Level": "Complete native IDA assembly, resource and lifecycle checks, and isolated fake-memory/callout tests. No live Gummi validation."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.add_special_charge",
+    "Category": "Gummi controls",
+    "Name": "Add special-weapon charge",
+    "Description": "Add charge to the installed special-weapon combo. The ship's native charge bonus applies. Every100 resulting points adds a stock unit, up to9; normal activation and consumption remain active.",
+    "Kind": "Action",
+    "CommandId": 1323,
+    "ValueSlot": -1,
+    "CapabilitySlot": 323,
+    "Minimum": 1,
+    "Maximum": 900,
+    "DefaultValue": 100,
+    "Step": 1,
+    "Unit": "base points",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Applied once to the current ship. Native loadout rebuilding or ship replacement may overwrite it. Disconnecting does not undo the change; profiles cannot replay it.",
+    "Evidence": [
+      {
+        "Address": "0x140230BD0 / 0x140230D20 / 0x1402260F0",
+        "Finding": "Native comboRCX/pointsEDX call applies 1+state52/100, truncates the gain and converts it to stock/progress, retaining the native full latch and combo phase.",
+        "Level": "Complete native IDA assembly, resource and lifecycle checks, and isolated fake-memory/callout tests. No live Gummi validation."
+      }
+    ],
+    "Arguments": [
+      {
+        "Name": "Base charge points",
+        "Minimum": 1,
+        "Maximum": 900,
+        "DefaultValue": 100,
+        "Choices": []
+      }
+    ]
+  },
+  {
+    "Id": "gummi.special_stock",
+    "Category": "Gummi controls",
+    "Name": "Special-weapon stock",
+    "Description": "Read the currently installed special-weapon combo's available stock.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 324,
+    "CapabilitySlot": 324,
+    "Minimum": 0,
+    "Maximum": 9,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "charges",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only. Unavailable when the current Gummi module or ship ownership cannot be validated.",
+    "Evidence": [
+      {
+        "Address": "0x140231130 / 0x140230D20",
+        "Finding": "Authoritative combo+60; native activation consumes stock.",
+        "Level": "Complete native IDA assembly, resource and lifecycle checks, and isolated fake-memory/callout tests. No live Gummi validation."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.special_progress",
+    "Category": "Gummi controls",
+    "Name": "Special-weapon charge progress",
+    "Description": "Read native charge progress from0 to100. At maximum stock, the native full latch retains100 until the next activation.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 325,
+    "CapabilitySlot": 325,
+    "Minimum": 0,
+    "Maximum": 100,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "points",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only. Unavailable when the current Gummi module or ship ownership cannot be validated.",
+    "Evidence": [
+      {
+        "Address": "0x140231110 / 0x140230BD0 / 0x140230D20",
+        "Finding": "Authoritative combo+56, exposed in whole points rather than the native fraction getter.",
+        "Level": "Complete native IDA assembly, resource and lifecycle checks, and isolated fake-memory/callout tests. No live Gummi validation."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.special_phase",
+    "Category": "Gummi controls",
+    "Name": "Special-weapon phase",
+    "Description": "Read the native combo phase:0 ready,1 delay before the next stage,2 fire a stage,3 continuation window,4 companion finish,5 recovery.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 326,
+    "CapabilitySlot": 326,
+    "Minimum": 0,
+    "Maximum": 5,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "phase",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only. Unavailable when the current Gummi module or ship ownership cannot be validated.",
+    "Evidence": [
+      {
+        "Address": "0x140230D20",
+        "Finding": "Native state machine stored at the current player's inline combo+0; trainer preserves it.",
+        "Level": "Complete native IDA assembly, resource and lifecycle checks, and isolated fake-memory/callout tests. No live Gummi validation."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.roll_remaining",
+    "Category": "Gummi controls",
+    "Name": "Roll time remaining",
+    "Description": "Read the native roll countdown. The unit is an engine tick, not a confirmed millisecond or rendered-frame count.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 327,
+    "CapabilitySlot": 327,
+    "Minimum": 0,
+    "Maximum": 3.4028234663852886e+38,
+    "DefaultValue": 0,
+    "Step": 0.1,
+    "Unit": "engine ticks",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only. Unavailable when the current Gummi module or ship ownership cannot be validated.",
+    "Evidence": [
+      {
+        "Address": "0x1401FFE80 / 0x1401FE860",
+        "Finding": "Finite player+1512 countdown, reduced by the native timestep; negative values are displayed as0.",
+        "Level": "Complete native IDA assembly, resource and lifecycle checks, and isolated fake-memory/callout tests. No live Gummi validation."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.movement_factor",
+    "Category": "Gummi controls",
+    "Name": "Effective movement factor",
+    "Description": "Read the current movement factor after native negative-bonus scaling and the0.1..3 clamp. This applies to the verified movement and handling paths.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 328,
+    "CapabilitySlot": 328,
+    "Minimum": 0.1,
+    "Maximum": 3,
+    "DefaultValue": 1,
+    "Step": 0.01,
+    "Unit": "x",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only. Unavailable when the current Gummi module or ship ownership cannot be validated.",
+    "Evidence": [
+      {
+        "Address": "0x140226120 / 0x1401FFE80",
+        "Finding": "Mirrors clamp(1+scaledBonus/100,0.1,3) using the currently loaded systemparam0 row.",
+        "Level": "Complete native IDA assembly, resource and lifecycle checks, and isolated fake-memory/callout tests. No live Gummi validation."
+      }
+    ]
+  },
+  {
+    "Id": "gummi.roll_factor",
+    "Category": "Gummi controls",
+    "Name": "Effective roll impulse factor",
+    "Description": "Read the current roll impulse factor after the native0..3 clamp.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 329,
+    "CapabilitySlot": 329,
+    "Minimum": 0,
+    "Maximum": 3,
+    "DefaultValue": 1,
+    "Step": 0.01,
+    "Unit": "x",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only. Unavailable when the current Gummi module or ship ownership cannot be validated.",
+    "Evidence": [
+      {
+        "Address": "0x140225F10 / 0x1401FE860",
+        "Finding": "Mirrors clamp(1+signed state40/100,0,3).",
+        "Level": "Complete native IDA assembly, resource and lifecycle checks, and isolated fake-memory/callout tests. No live Gummi validation."
+      }
+    ]
+  }
+]

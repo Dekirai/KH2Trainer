@@ -1,0 +1,31 @@
+Independent AudioFeatures review
+No substantial source defect found in the reviewed version under the documented native post-update lifetime contract.
+Source SHA256: a2e56de2e4e672f3402c20053ba30340e90c0c70e2312b11c7853cca1296fa26
+Bridge SHA256: 78412efa74ffe2283854fc605977b17f6e4fb6b26238b980c4acbba15a4cdd85
+Independent source/ABI/lifetime review of the root draft; no native build, synthetic harness run, product modification or live game operation performed by this reviewer.
+
+Line 30: ThreadReady enforces the recorded engine thread, fresh host heartbeat, supported image base and enabled bridge. Existing OnFrame rejects original Update returns other than0 before TrainerFrame. This is the lifetime condition proved by121D90.
+Line 39: Driver readiness uses BYTE+52, matching091250. Master child pointer+336 and DWORD count+344 match08D720. Exact native driver/factory and supported master identities are checked.
+Line 61: ID0 selects master; IDs1..count select list[id-1], matching07FAD0. Bus identity, ID, first DynamicValue stage and setter identity are checked before use. Finite/range checks are conservative, not assumptions that all audible gain is0..1.
+Line 104: Slots144/145 target IDs0/1. Effects targets the selected bus2/3 plus4..8; voice targets the complementary bus and applies0.9 only for unswapped softened routing. Saved settings reset reads all four ushort levels at offsets20/22/24/26, including the actual master setting.
+Line 125: All target buses are preflighted before any gain setter; all temporary controllers are constructed and checked before the first setter. SameGraph rejects root changes. Set uses RCX controller, XMM1 float gain and R8D duration1. Temporary destruction is in finally. A later setter failure is correctly reported as possibly partially applied rather than falsely rolled back.
+Line 150: Action input must be finite0..100. TryEnterCriticalSection returns a retry message if busy; LeaveCriticalSection is guaranteed in finally. No direct config, pause or gain-field writes are made by this module.
+Line 168: All bus stage reads and snapshot copies occur under the same global Sound CS used by identified native interpolation paths. Individual invalid buses remain unpublished. Group target readout is published only when the selected Effects buses agree.
+
+All seven embedded signatures match the original SHA-bound executable.
+
+Recommended isolated checks:
+- Busy CS and wrong thread/stale heartbeat must yield zero native setter calls.
+- Invalid final target bus must reject a multi-bus operation before any setter.
+- Invalid final constructed controller or changed graph must yield zero setters while destroying all constructed controllers.
+- Exercise all swapped/softened combinations and all four loaded settings, with master different from100 percent.
+- Gain0 still calls the duration1 setter; never pause/stop or duration0.
+- Verify ID0 master plus IDs1..8 and exact once-per-target calls for all plans.
+- Failure after a successful earlier setter must report possible partial application and always release global CS.
+- Snapshot must not publish an invalid bus or an Effects target when group targets differ.
+
+Limits:
+- No live listening/game verification and no independent audio harness run were performed here; root owns build/test integration.
+- Music/Effects/Voice labels describe the analyzed routing groups. Direct English localization labels for those settings fields were not recovered.
+- An unsupported external mod invoking private audio reset/teardown from another thread is outside the proven call-site contract.
+- Source hash binds this review; later edits require a delta check.

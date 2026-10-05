@@ -1,0 +1,248 @@
+[
+  {
+    "Id": "window.resolution",
+    "Category": "Window and Resolution",
+    "Name": "Set windowed resolution",
+    "Description": "Queue a normal window with whole-pixel dimensions. The native setter fits the rectangle to 16:9; desktop and renderer heap limits can reduce the actual size. Wait for an existing resize before issuing another request.",
+    "Kind": "Action",
+    "CommandId": 1431,
+    "ValueSlot": -1,
+    "CapabilitySlot": 431,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Completed requests remain applied after disconnect. Later game settings or window changes can replace them.",
+    "Evidence": [
+      {
+        "Address": "0x140124FE0 / 0x140119E90 / 0x140123020 / 0x140117FD0",
+        "Finding": "Mode 0 copies two float32 dimensions under GX+31432 with native float32 fit and integer truncation. The normal render frame later performs fence/rebuild/window work.",
+        "Level": "Full native ASM, exact original PE bytes and isolated original-body/lifecycle tests. Live graphics validation is pending."
+      }
+    ],
+    "Arguments": [
+      {
+        "Name": "Width (whole pixels)",
+        "Minimum": 640,
+        "Maximum": 7680,
+        "DefaultValue": 1920
+      },
+      {
+        "Name": "Height (whole pixels)",
+        "Minimum": 360,
+        "Maximum": 4320,
+        "DefaultValue": 1080
+      }
+    ]
+  },
+  {
+    "Id": "window.maximize",
+    "Category": "Window and Resolution",
+    "Name": "Maximize game window",
+    "Description": "Queue native maximized window mode. This exits exclusive fullscreen through the normal game resize path; it does not select or enumerate a new fullscreen mode.",
+    "Kind": "Action",
+    "CommandId": 1432,
+    "ValueSlot": -1,
+    "CapabilitySlot": 432,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Completed requests remain applied after disconnect. Later game settings or window changes can replace them.",
+    "Evidence": [
+      {
+        "Address": "0x140124FE0 / 0x140119E90 / 0x140123020 / 0x140117FD0",
+        "Finding": "Mode 2 of 124FE0 leaves the request dimensions unchanged, sets native mode 2/fullscreen false, and marks a change by comparison.123020 later uses ShowWindow(3).",
+        "Level": "Full native ASM, exact original PE bytes and isolated original-body/lifecycle tests. Live graphics validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "window.actual_width",
+    "Category": "Window and Resolution",
+    "Name": "Actual render width",
+    "Description": "Current native render width after any completed resource resize; the command acknowledgement alone does not establish this result.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 433,
+    "CapabilitySlot": 433,
+    "Minimum": 1,
+    "Maximum": 16384,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "px",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only snapshot. No effect is applied or restored. All six fields are omitted if the renderer/window lease, synchronization or native state is invalid.",
+    "Evidence": [
+      {
+        "Address": "0x140124FE0 / 0x140119E90 / 0x140123020 / 0x140117FD0",
+        "Finding": "GX+8/+12 are copied under the presentation mutex. Bounds 1..16384 are an explicit diagnostic policy.",
+        "Level": "Full native ASM, exact original PE bytes and isolated original-body/lifecycle tests. Live graphics validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "window.actual_height",
+    "Category": "Window and Resolution",
+    "Name": "Actual render height",
+    "Description": "Current native render height after any completed resource resize; desktop/heap limits can make it smaller than the requested rectangle.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 434,
+    "CapabilitySlot": 434,
+    "Minimum": 1,
+    "Maximum": 16384,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "px",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only snapshot. No effect is applied or restored. All six fields are omitted if the renderer/window lease, synchronization or native state is invalid.",
+    "Evidence": [
+      {
+        "Address": "0x140124FE0 / 0x140119E90 / 0x140123020 / 0x140117FD0",
+        "Finding": "GX+8/+12 are copied under the presentation mutex. Bounds 1..16384 are an explicit diagnostic policy.",
+        "Level": "Full native ASM, exact original PE bytes and isolated original-body/lifecycle tests. Live graphics validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "window.native_mode",
+    "Category": "Window and Resolution",
+    "Name": "Native active window mode",
+    "Description": "Mode 0 windowed, 1 exclusive fullscreen, 2 maximized. This is the consumed native mode field, not a separate OS-window or successful fullscreen-transition probe.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 435,
+    "CapabilitySlot": 435,
+    "Minimum": 0,
+    "Maximum": 2,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only snapshot. No effect is applied or restored. All six fields are omitted if the renderer/window lease, synchronization or native state is invalid.",
+    "Evidence": [
+      {
+        "Address": "0x140124FE0 / 0x140119E90 / 0x140123020 / 0x140117FD0",
+        "Finding": "119E90 copies request mode +1028 to active1048; later native window/resource work may still fail or be superseded. Only integer 0..2 is published.",
+        "Level": "Full native ASM, exact original PE bytes and isolated original-body/lifecycle tests. Live graphics validation is pending."
+      }
+    ],
+    "Choices": [
+      {
+        "Label": "Windowed",
+        "Value": 0
+      },
+      {
+        "Label": "Exclusive fullscreen",
+        "Value": 1
+      },
+      {
+        "Label": "Maximized",
+        "Value": 2
+      }
+    ]
+  },
+  {
+    "Id": "window.pending",
+    "Category": "Window and Resolution",
+    "Name": "Window change pending or blocked",
+    "Description": "1 means a pending/active dirty request, positive native retry, resource transition, or native size-handler suppression.0 means these fields are idle; it does not prove that a particular prior request completed successfully.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 436,
+    "CapabilitySlot": 436,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only snapshot. No effect is applied or restored. All six fields are omitted if the renderer/window lease, synchronization or native state is invalid.",
+    "Evidence": [
+      {
+        "Address": "0x140124FE0 / 0x140119E90 / 0x140123020 / 0x140117FD0",
+        "Finding": "Under resize CS reads +1024,1044,1040,1072 and1064. Invalid flags/countdown/modes/dimensions suppress the full six-value snapshot. A busy CS is unavailable, not idle.",
+        "Level": "Full native ASM, exact original PE bytes and isolated original-body/lifecycle tests. Live graphics validation is pending."
+      }
+    ],
+    "Choices": [
+      {
+        "Label": "Idle",
+        "Value": 0
+      },
+      {
+        "Label": "Pending or blocked",
+        "Value": 1
+      }
+    ]
+  },
+  {
+    "Id": "window.requested_width",
+    "Category": "Window and Resolution",
+    "Name": "Stored request width",
+    "Description": "Last stored native request width after 16:9 fitting. Maximization preserves this field, so it is not the maximized client width.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 437,
+    "CapabilitySlot": 437,
+    "Minimum": 1,
+    "Maximum": 16384,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "px",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only snapshot. No effect is applied or restored. All six fields are omitted if the renderer/window lease, synchronization or native state is invalid.",
+    "Evidence": [
+      {
+        "Address": "0x140124FE0 / 0x140119E90 / 0x140123020 / 0x140117FD0",
+        "Finding": "GX+1032/+1036 are read under resize CS. Native mode 0 writes the fitted integer pair; mode 2 preserves it.",
+        "Level": "Full native ASM, exact original PE bytes and isolated original-body/lifecycle tests. Live graphics validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "window.requested_height",
+    "Category": "Window and Resolution",
+    "Name": "Stored request height",
+    "Description": "Last stored native request height after 16:9 fitting. A later native request can replace it; no trainer ownership token exists.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 438,
+    "CapabilitySlot": 438,
+    "Minimum": 1,
+    "Maximum": 16384,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "px",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only snapshot. No effect is applied or restored. All six fields are omitted if the renderer/window lease, synchronization or native state is invalid.",
+    "Evidence": [
+      {
+        "Address": "0x140124FE0 / 0x140119E90 / 0x140123020 / 0x140117FD0",
+        "Finding": "GX+1032/+1036 are read under resize CS. Native mode 0 writes the fitted integer pair; mode 2 preserves it.",
+        "Level": "Full native ASM, exact original PE bytes and isolated original-body/lifecycle tests. Live graphics validation is pending."
+      }
+    ]
+  }
+]

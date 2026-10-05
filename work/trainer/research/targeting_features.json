@@ -1,0 +1,158 @@
+[
+  {
+    "Id": "targeting.search_scale",
+    "Category": "Targeting",
+    "Name": "Target search range scale",
+    "Description": "Scales normal target acquisition. Increasing it above 1 also expands the automatic selector's vertical limits. Applying it recalculates the break distance from the loaded default. Some native target categories bypass distance tests at scales of 1 or more.",
+    "Kind": "Number",
+    "CommandId": 1368,
+    "ValueSlot": 368,
+    "CapabilitySlot": 368,
+    "Minimum": 0.05,
+    "Maximum": 10,
+    "DefaultValue": 1,
+    "Step": 0.05,
+    "Unit": "x",
+    "RequiresScene": true,
+    "CanSaveInProfile": false,
+    "ChangesProgression": false,
+    "RestoreBehavior": "Applied once. Scripts or scene initialization can replace these runtime values. Reset targeting ranges reads current native defaults; disconnect leaves one-time edits applied.",
+    "Evidence": [
+      {
+        "Address": "0x1403ABD60 / 0x1403ABD80 / 0x1403BEA30 / 0x1403DD280",
+        "Finding": "The native scale setter stores a float and recalculates retention distance using system parameters+80. Acquisition reads parameters+76; retention is a separate global float. The trainer reproduces these scalar writes after resource and actor validation.",
+        "Level": "Complete native ASM, original setter bytes and synthetic ownership/bounds tests. No live gameplay validation. Edit bounds are trainer policy."
+      }
+    ]
+  },
+  {
+    "Id": "targeting.break_distance",
+    "Category": "Targeting",
+    "Name": "Lock-on break distance",
+    "Description": "Distance beyond which normal manual lock-on is released. Special targets and scripts can use other rules. The editor preset 2000 is not the current native default; use Reset targeting ranges to restore that default.",
+    "Kind": "Number",
+    "CommandId": 1369,
+    "ValueSlot": 369,
+    "CapabilitySlot": 369,
+    "Minimum": 1,
+    "Maximum": 100000,
+    "DefaultValue": 2000,
+    "Step": 50,
+    "Unit": "native units",
+    "RequiresScene": true,
+    "CanSaveInProfile": false,
+    "ChangesProgression": false,
+    "RestoreBehavior": "Applied once. Scripts or scene initialization can replace these runtime values. Reset targeting ranges reads current native defaults; disconnect leaves one-time edits applied.",
+    "Evidence": [
+      {
+        "Address": "0x1403ABD60 / 0x1403ABD80 / 0x1403BEA30 / 0x1403DD280",
+        "Finding": "The native scale setter stores a float and recalculates retention distance using system parameters+80. Acquisition reads parameters+76; retention is a separate global float. The trainer reproduces these scalar writes after resource and actor validation.",
+        "Level": "Complete native ASM, original setter bytes and synthetic ownership/bounds tests. No live gameplay validation. Edit bounds are trainer policy."
+      }
+    ]
+  },
+  {
+    "Id": "targeting.manual_range",
+    "Category": "Targeting",
+    "Name": "Current manual acquisition range",
+    "Description": "Current search scale multiplied by the loaded manual acquisition radius. Target-point radius and native target exemptions also affect eligibility.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 370,
+    "CapabilitySlot": 370,
+    "Minimum": 0,
+    "Maximum": 0,
+    "DefaultValue": 0,
+    "Step": 0,
+    "Unit": "native units",
+    "RequiresScene": true,
+    "CanSaveInProfile": false,
+    "ChangesProgression": false,
+    "RestoreBehavior": "Read-only diagnostics from the currently loaded parameters and runtime globals. No restore is needed.",
+    "Evidence": [
+      {
+        "Address": "0x1403ABD60 / 0x1403ABD80 / 0x1403BEA30 / 0x1403DD280",
+        "Finding": "The native scale setter stores a float and recalculates retention distance using system parameters+80. Acquisition reads parameters+76; retention is a separate global float. The trainer reproduces these scalar writes after resource and actor validation.",
+        "Level": "Complete native ASM, original setter bytes and synthetic ownership/bounds tests. No live gameplay validation. Edit bounds are trainer policy."
+      }
+    ]
+  },
+  {
+    "Id": "targeting.default_manual_range",
+    "Category": "Targeting",
+    "Name": "Default manual acquisition range",
+    "Description": "Unscaled acquisition distance from the currently loaded system parameters.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 371,
+    "CapabilitySlot": 371,
+    "Minimum": 0,
+    "Maximum": 0,
+    "DefaultValue": 0,
+    "Step": 0,
+    "Unit": "native units",
+    "RequiresScene": true,
+    "CanSaveInProfile": false,
+    "ChangesProgression": false,
+    "RestoreBehavior": "Read-only diagnostics from the currently loaded parameters and runtime globals. No restore is needed.",
+    "Evidence": [
+      {
+        "Address": "0x1403ABD60 / 0x1403ABD80 / 0x1403BEA30 / 0x1403DD280",
+        "Finding": "The native scale setter stores a float and recalculates retention distance using system parameters+80. Acquisition reads parameters+76; retention is a separate global float. The trainer reproduces these scalar writes after resource and actor validation.",
+        "Level": "Complete native ASM, original setter bytes and synthetic ownership/bounds tests. No live gameplay validation. Edit bounds are trainer policy."
+      }
+    ]
+  },
+  {
+    "Id": "targeting.reset",
+    "Category": "Targeting",
+    "Name": "Reset targeting ranges",
+    "Description": "Set search scale to 1 and break distance to its currently loaded native default. The next normal game update handles target selection.",
+    "Kind": "Action",
+    "CommandId": 1372,
+    "ValueSlot": -1,
+    "CapabilitySlot": 372,
+    "Minimum": 0,
+    "Maximum": 0,
+    "DefaultValue": 0,
+    "Step": 0,
+    "Unit": "",
+    "RequiresScene": true,
+    "CanSaveInProfile": false,
+    "ChangesProgression": false,
+    "RestoreBehavior": "Applied once. Scripts or scene initialization can replace these runtime values. Reset targeting ranges reads current native defaults; disconnect leaves one-time edits applied.",
+    "Evidence": [
+      {
+        "Address": "0x1403ABD60 / 0x1403ABD80 / 0x1403BEA30 / 0x1403DD280",
+        "Finding": "The native scale setter stores a float and recalculates retention distance using system parameters+80. Acquisition reads parameters+76; retention is a separate global float. The trainer reproduces these scalar writes after resource and actor validation.",
+        "Level": "Complete native ASM, original setter bytes and synthetic ownership/bounds tests. No live gameplay validation. Edit bounds are trainer policy."
+      }
+    ]
+  },
+  {
+    "Id": "targeting.default_break_distance",
+    "Category": "Targeting",
+    "Name": "Default lock-on break distance",
+    "Description": "Unscaled retention distance from the currently loaded system parameters.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 373,
+    "CapabilitySlot": 373,
+    "Minimum": 0,
+    "Maximum": 0,
+    "DefaultValue": 0,
+    "Step": 0,
+    "Unit": "native units",
+    "RequiresScene": true,
+    "CanSaveInProfile": false,
+    "ChangesProgression": false,
+    "RestoreBehavior": "Read-only diagnostics from the currently loaded parameters and runtime globals. No restore is needed.",
+    "Evidence": [
+      {
+        "Address": "0x1403ABD60 / 0x1403ABD80 / 0x1403BEA30 / 0x1403DD280",
+        "Finding": "The native scale setter stores a float and recalculates retention distance using system parameters+80. Acquisition reads parameters+76; retention is a separate global float. The trainer reproduces these scalar writes after resource and actor validation.",
+        "Level": "Complete native ASM, original setter bytes and synthetic ownership/bounds tests. No live gameplay validation. Edit bounds are trainer policy."
+      }
+    ]
+  }
+]

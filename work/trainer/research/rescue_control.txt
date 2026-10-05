@@ -1,0 +1,45 @@
+Mickey rescue counter and diagnostics
+====================================
+
+The catalog defines eight slots, 176 through 183, in Mickey Rescue.
+Only slot176 is editable: command1176 sets an integer from0 to999.
+It changes progression and is excluded from profiles. All other slots are read-only.
+
+The two saved words have different meanings:
+- RVA0x9AD660: rescue-use counter, the exponent used by native selection.
+- RVA0x9AD662: the separate MICKEY APPEAR statistic shown by the debug screen.
+The edit changes only the first two bytes and preserves the statistic.
+
+The derived readout is100 * max(powf(decay,count),minimum). Decay and minimum
+are loaded float parameters at+216/+220. This is a conditional roll threshold.
+Native game-over type, mission permission, party conditions and strict random
+comparison still decide whether rescue is selected. A100% threshold does not
+guarantee Mickey appears. The trainer neither rolls the RNG nor spawns an actor.
+
+Read-only diagnostics show the mission resource's rescue permission bit0x200,
+game-over object presence, native type0..3, phase0..8 and selected byte0..1.
+The selected flag describes the native sequence; it does not prove that a
+Mickey actor is already active. Missing or malformed values are omitted.
+
+Mutation requires a fresh nonzero heartbeat, game thread, valid loaded SaveData,
+stable active field, no transition/menu/cutscene/game-over, and a fresh living
+Sora actor/status pair with matching backlink. Both the existing and requested
+counts must be0..999 and the two-byte destination must be writable.
+
+This is a one-time loaded-save edit. Disable all and disconnect leave it applied.
+A subsequent in-game save can preserve it. No native save routine is called.
+
+Source reviewed: trainer/Native/RescueFeatures.inl
+SHA2562057F35AA06B0ABFBF2568C3297F287AA0BCEA16915AE0BD6E01D6332B20DA29
+Tests reviewed: work/trainer/tests/PlayerBridgeTests.cpp
+SHA256891DB78CC3624257B63A78F10D041E0AF869975C85122FAA16F14D1FA7BD3194
+Evidence: retry_gameover_evidence.json and rescue_independent_review.json.
+
+The current synthetic fixture covers IPC and snapshots, bounds, invalid input,
+full-save byte sentinels, independent appearance/RNG preservation, scene and
+identity refusals, read-only memory, threshold floor, malformed resources and
+stale-value suppression. The reviewer did not build or execute tests; the old
+player_bridge_results.txt predates these additions. Use the root release log
+for final test execution. Root reports178checks/0failures after adding four
+Mission/Camera IPC and capability checks; RescueTests are unchanged. No live
+or UI validation is claimed.

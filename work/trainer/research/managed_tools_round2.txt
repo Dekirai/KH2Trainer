@@ -1,0 +1,175 @@
+MANAGED DEVELOPER TOOLS — SECOND CONNECTED TRANCHE
+================================================
+2026-10-04. Static, read-only research. No game/UI access, network-share access,
+product edits, asset conversion, IDB changes or private developer DLL loading.
+Source SHA-256: 9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed
+
+Scope and evidence
+------------------
+29 previously open CIL bodies were read in full: resource searches/exporters,
+the disc reconstruction dispatcher and TinyTexEntry texture conversion helpers.
+They contain 2593 IL instructions. Related native boundaries comprise 17 complete
+functions and 1737 ASM instructions. Saved actual line counts equal the reported
+instruction counts and totals. All 29 CIL code byte sequences were read freshly
+from IDA and matched by SHA-256 against their original PE MethodDef bodies.
+
+CIL addresses such as 0x1550 are synthetic IDA addresses. They are NEVER native
+RVAs or callable process addresses. managed_tools_round2_metadata.json supplies
+MethodDef tokens, original on-disk method-header RVAs, code hashes and FieldRVA
+constants. Native addresses below are full image-base VAs. Per-body claims and
+their limitations are in managed_tools_round2.json.
+
+1. Model, motion and sound source matching
+-----------------------------------------
+CIL 0x28C0, 0x29F0 and 0x2B00 connect the menu callbacks to native search objects.
+They are offline asset-matching/export workflows, not actor or resource browsers
+attached to the running game. Their source and destination paths include the
+legacy //kh2/proj/interdata and //caelum/proj/KH2-CharExport / KH2-Sound shares.
+
+The native match is specific: compute a 16-byte MD5 digest and compare both the
+digest and byte length against a source-file list.
+
+- 0x140564230 indexes .knm files into 0xA8 nodes. 0x140564580 matches non-linked,
+  nonempty BAR type4 payloads and returns a mutable source-path result buffer.
+- 0x140563ED0 indexes .kna files, or loads kh2_motion_list.bin. 0x140564750 matches
+  BAR type9 payloads. More than one matching payload can replace the result.
+- 0x140564EB0 indexes .seb/.vsb/.vag. 0x1405649F0 recurses through BAR types
+  1/0x11/0x14/0x1E/0x2E and matches types0x22/0x30 and 0x1F with SeBlock signature.
+  Result nodes retain entry index, four-character BAR name and source path;
+  nested archive context is flattened by the current list.
+
+A concrete cache defect was confirmed with full native ASM at 0x140563ED0.
+The cache iteration count is file length / 0xA8, but every iteration reads the
+same original RSI+16/+24/+32/+36 fields. Only the loop counter advances. A cache
+with multiple records therefore repeatedly constructs copies of its first
+record. This is not an inferred decompiler indexing issue.
+
+The managed sound-export layer also explains language substitutions:
+ordinary voice paths replace a found fr/gr/it/sp substring with us; .a.fm files
+or input folders containing limit/fm instead substitute us with jp. Matching
+uses simple case-sensitive substrings, not validated path components. The
+little and big destination copies receive the same original source bytes in
+this body; those labels do not establish an endian conversion here.
+
+Modding use: a bounded offline BAR cross-reference tool can report source matches,
+missing payloads and nested archive paths using local user-selected folders.
+MD5+length is useful for this legacy equality lookup, not proof of provenance.
+Directly calling the old searchers would introduce mutable lists, a native file
+manager, modified input masks, fixed paths and unchecked file data.
+
+2. Texture-animation bundles and sound replacement manifests
+-------------------------------------------------------------
+CIL 0xB4C0 scans exact texanm.txt filenames recursively. For each %source marker
+it takes the following line through .tm2, copies that texture and emits a text
+sidecar via 0x2820. The sidecar stores width-height from the first TIM2 picture.
+It finally copies the descriptor too. Export destinations assume a fixed
+ten-character source prefix and a fixed developer share.
+
+The body allocates exactly the descriptor's file length and does not append a
+NUL before using strstr/strchr. Required newline/.tm2 markers and the 32-byte
+basename destination are unchecked. The useful format/workflow evidence should
+be carried into a new parser, not exposed through a direct injected call.
+
+CIL 0xBA80 has a different purpose: existing .scd names in the target tree act as
+a manifest. It takes the basename before the first dot, finds
+<copy_path>/<basename><chosen extension>, and copies it to the corresponding
+target directory. The selected extension can identify a companion texture/audio
+file. Source lookup is flat, so identical basenames in separate target folders
+resolve to the same source file. Existing destination files may be overwritten.
+
+CIL 0x2EA0 recursively loads map files and passes a map/-relative name to the
+already documented telop_pac. 0x3120 applies telop_pac_cut to immediate files
+without recursion. These wrappers assume trusted folders and file contents.
+
+Modding use: a standalone dependency checker can identify missing references,
+show dimensions and export a bundle to an explicit local destination. It should
+use bounded parsing, safe basenames and preserve nested archive identities.
+
+3. What the texture codecs really implement
+-------------------------------------------
+TinyTexEntry is an owned converter object: TexCommon plus its EntryTex list,
+AxaBaseName at+0x30, root path at+0x840 and output flags at+0x944/+0x945.
+CIL 0xFB0 and 0x1060 write EntryTex data+0x68 for size+0x78 only when+0x945 is
+enabled. The generated path uses global Axa.local_name_buff, so ownership and
+reentrancy matter even before file output. The constructor treats replace_folder
+as a sprintf format. The destructor scans Substitution PNG names but applies no
+replacement in that scan body, then releases owned texture entries and members.
+
+The actual conversion path is:
+  CIL Tim2Encode 0x1550
+  -> native parameter builder 0x140147F10
+  -> CLR bridge 0x140579710 / fixup 0x140713D38
+  -> CIL _encodeImage 0x1440
+  -> native EncodePNG 0x140147D80 / common normalizer 0x14014BB10
+  -> PNG callback 0x14014B640
+  -> managed naming, optional save, notification and EntryTex cleanup.
+
+The on-disk CLR fixup contains token 0x06000078, not a function pointer.
+The native parameter builder's metadata declares a void return; the decompiler
+return value must not be treated as a status result. Dimensions are packed into
+12-bit fields. The encode path requires valid constructed objects and CLR state.
+
+Tim2Encode uses only the first picture, chooses a picture-header offset of
+0x10 or0x80 from file byte5, and derives image/palette from the header sizes.
+Image types2..7 map to internal formats1/0/20/19/20/19; types6/7 request native
+unswizzling. Optional palette iteration uses64-byte or1024-byte palette banks
+and derives a different naming key for each bank. It does not validate general
+file bounds or iterate arbitrary picture counts.
+
+The native common normalizer handles real32-bit data, RGB24 conversion, indexed
+palettes and selected swizzled representations. RGB24 expands to four bytes
+with alpha0x80. Some format20 input is temporarily nibble-swapped, then restored.
+PNG expands indexed colors and uses8-bit RGBA output; a separate TGA callback
+is real too. Full palette/color-region helper semantics remain outside this
+tranche, so arbitrary round-trip fidelity is not claimed.
+
+Several impressive-looking method names are stubs:
+- CIL _PNGDecodeGTF 0x1140 is a single ret.
+- PNGDecodeDXT 0x1150 returns null.
+- PNGDecodeGTF 0x10B0 creates output folders and derives a temporary basename,
+  then returns null without decoding pixels.
+
+4. The BMP preview is deliberately narrow legacy code
+------------------------------------------------------
+0x1350 loads the first TIM2 picture and invokes 0x1250. The latter writes a
+bottom-up32-bit BMP at c:\tmp\<filename>.bmp. Format0 reads direct RGBA pixels;
+19/27 use byte palette indices; every other nonzero format takes packed nibbles,
+with the high nibble used for even x. setBmpRgb swaps red/blue and preserves alpha.
+
+There is no dedicated RGB24 branch in this preview, even though its caller can
+map a TIM2 type to internal format1. It also omits the native unswizzle path,
+magic/length checks, file-open checks and required-separator validation.
+CreateBMPHed initializes a54-byte header but leaves padding/tail memory untouched.
+These bodies are evidence for limited developer previews, not a safe universal
+TIM2 reader.
+
+5. Disc reconstruction entrypoint
+---------------------------------
+CIL 0xABC0 allocates a0x15000-byte global index buffer, reads the language-selected
+KH2.IDX using the entire reported length, loads configured subindices, invokes
+AllFileMake on C:/KH_BAK/data and then processes addtable entries. AllFileMake
+derives named resources from the existing local tree and calls MakeFile; its
+first argument is an output-path buffer, not an uninitialized input filename.
+
+The dispatcher does not bound the index read by the fixed allocation and does
+not abort the workflow after every missing/read-failed index. It frees buffers
+without clearing their global pointers and finally displays completion.
+This is another offline developer workflow requiring a safe rewrite rather than
+a trainer button.
+
+Files and remaining limits
+--------------------------
+managed_tools_round2.json: per-body CIL and native claims, proposed offline uses.
+managed_tools_round2_evidence.json: resource/export CIL bodies.
+managed_tools_round2_codec_evidence.json: codec and dispatcher CIL bodies.
+managed_tools_round2_native_evidence.json: complete native PC and ASM.
+managed_tools_round2_metadata.json: original MethodDef headers and FieldRVAs.
+managed_tools_round2_cil_bytes.json: fresh synthetic-address code bytes.
+managed_tools_round2_edges.json: CIL xrefs and native CLR fixup bytes.
+capture_managed_round2_metadata.py: repeatable read-only original-PE extraction.
+
+No new live trainer control is supported by these findings. No claim is made
+that all developer tools, all branches of linked native helpers, or every
+remaining CIL method are understood. Static unchecked operations and the cache
+defect have not been exercised and are not exploitability claims.
+

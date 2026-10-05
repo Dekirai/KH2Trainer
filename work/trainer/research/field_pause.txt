@@ -1,0 +1,83 @@
+FIELD SIMULATION PAUSE AND STEP — 2026-10-04
+
+Implemented slots116/117 (commands1116/1117) in WorldFeatures.inl.
+Catalog: world_features.json. Synthetic tests: WorldGuardTests.cpp.
+Fresh read-only IDA evidence: field_pause_evidence.json (13 functions).
+
+SEMANTICS
+This pauses the complete field scheduler, including its actor/controller/BDX
+fibers, simulation tasks and field rendering. The outer scheduler still draws
+the captured game image and presents frames. Mission clock updates are masked.
+Audio, outer UI and general/per-world SaveData play-time counters continue.
+This is distinct from slot79, which freezes only actors and selected effects.
+The frozen world cannot be viewed from a moving free camera. Step runs one
+complete field dispatch plus its timing update, then captures and pauses again.
+It is not a fixed-duration, deterministic emulation-frame promise; native delta,
+controller input and integer fiber waits retain their existing semantics.
+
+PROVEN SCHEDULER ORDER
+1532E0 registers outer direct callback1567A0, group0, priority100000.
+1567A0 draws normal background state and, if byteABADE0==1, calls1533B0(216).
+1533B0 blits texture[9BAA08] through116CA0, then126CA0(0,0).
+Field module716860 has group1 and priority130000. Constructor1505A0 registers
+its150310 fiber via14F8A0, which ORs group0x80000. Task group is0x80001.
+150310 invokes inner field scheduler[716868] only when state716884==1; state2
+skips that entire dispatch and yields using150060(task,0).
+Timing1548E0 is outer group0 priority800000. Its first11A4F0/11A510 call ends
+the current renderer frame; later calls update timing/input and frame delta.
+The trainer therefore captures immediately BEFORE invoking original1548E0.
+Normal native pause1515E0 at priority330000 also captures after field rendering
+and before timing/frame finalization. No capture is called from the IPC callback.
+
+CAPTURE AND TIMER OWNERSHIP
+153430 has no arguments; ignored integral return. It creates/recreates the
+native capture texture when9BAA50 is set and copies the frame through116420.
+The trainer rejects a missing existing texture when the recreate flag is clear,
+then verifies a readable resulting texture pointer before owning state2.
+The native capture cache remains managed by the engine, as on normal menu pause.
+No texture pointer is retained or freed by the trainer.
+
+Native157130 and157110 OR/clear an opaque DWORD mask atABB854; consumers
+1570F0 and1571B0 stop when any bit is set. Enumerated native owners use
+1/2/4/8/16. Trainer owner bit0x40000000 preserves every native bit. Acquisition
+requires the entire mask initially zero. Later native owners are not cleared.
+Same-bit writes by an independent mod cannot be distinguished.
+General play time increments in1574E0 regardless of this timer mask, including
+per-world time while field module state is nonzero. No play-time fields change.
+
+STATE MACHINE
+Enable validates scene and native tasks, then queues Requested without touching
+capture or module state. At the next TimingFrame entry, after a complete field
+update, it captures and changes ABADE0 to1,716884 to2, timer owner bit to1.
+Held frames reuse the same capture; there is no repeated copy or field dispatch.
+Step requires Held, matching scene and untouched owned state. It changes716884
+to1,ABADE0 to0 and clears only the trainer timer bit. At the following timing
+entry, it captures and changes state back to2. After original timing runs once,
+it restores the trainer timer bit. Additional step requests while pending fail.
+
+GATES AND RESTORE
+Acquisition requires stable scene, normal single camera, no menu/event/transition,
+no existing native capture mode/timer owner, and no title/reset flowABAC58/59.
+Scene lease binds outer scheduler, field scheduler, scene heap and all10 bytes
+of MapTarget. Fresh outer list traversal validates owner/backlinks/tail, priority
+ordering and at most2048 nodes. It requires exactly one native direct draw task,
+one matching field fiber with module pointer716860, started continuation and
+zero integer/float wait, plus the known direct timing task. No fiber state is
+modified. Only the existing timing callback wrapper is installed.
+Every callback checks game-thread identity, failure flag and a nonzero host
+heartbeat at most5000ms old. Wrong-thread callbacks perform no game writes,
+including restoration. Lost-host/failure restoration runs on the game thread.
+Disable, disconnect or same-scene pending transition releases owned state2,
+capture flag and trainer timer bit. Native menu/event takeover keeps its state2
+and capture mode, while removing only the trainer timer owner. New scene state
+and modules already closing are preserved. No pause is forced after native
+takeover. A lingering timing wrapper remains passive until normal reset unhooks.
+
+VALIDATION AND LIMITS
+MSVC x64 /W4:80 total world checks,0 failures,no warnings.27 new pause/guard checks
+cover missing/sleeping tasks, native owners, deferred capture, one-step gating,
+duplicate requests, timer ordering, cancel-before-capture, native takeover,
+transitions, new scenes, lost host, capture failure, reset and capabilities.
+All memory and capture/native retry callouts are synthetic. No game process or
+UI was accessed. Runtime capture correctness, actual step count, renderer/mod
+interaction and audio behavior still require an explicitly authorized live test.

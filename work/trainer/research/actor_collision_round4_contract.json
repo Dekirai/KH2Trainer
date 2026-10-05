@@ -1,0 +1,1019 @@
+{
+  "title": "Actor collision and lifetime, round4: proven controls and last-result diagnostics",
+  "date": "2026-10-04",
+  "image_base": "0x140000000",
+  "executable_sha256": "9002B2DE6A1F91A790BD0673DE125D1CF833F7942BFEC827CDCF6BA64D5849ED",
+  "scope": "Read-only native IDA research followed by an isolated trainer module; no IDB mutation, executable patch, game process or GUI action.",
+  "coverage": {
+    "captured_functions": 75,
+    "complete_asm_instructions": 5832,
+    "specific_claim_functions": 73,
+    "previously_without_specific_claim": 65,
+    "note": "Capture completeness and a specific semantic finding are distinct. These claims do not establish every branch or all callers."
+  },
+  "claims": [
+    {
+      "addr": "0x14016fec0",
+      "Finding": "Runs dynamic/static lateral resolution, then dynamic/static floor resolution; resets lateral bit4 and the borrowed dynamic-owner pointer before choosing a contact.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x14016fec0.c"
+      ],
+      "Limitations": "RCX points to the mutable 136-byte request/result block. Not a pure query.",
+      "assembly_instructions": 55,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1401752e0",
+      "Finding": "Lateral resolver divides travel by block+32 radius, steps the sweep, writes corrected position+48 and sets result+116 bit4 on obstruction/correction.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1401752e0.c"
+      ],
+      "Limitations": "Mutates collider scratch and request/result. A nonpositive or nonfinite radius is unsafe for a new call.",
+      "assembly_instructions": 355,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x140172840",
+      "Finding": "Builds the vertical segment, probes the mesh, writes floor Y at block+104 and clears invalid-height bit2 on hit; failure sets bit2 before support classification.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x140172840.c"
+      ],
+      "Limitations": "The function also writes shared collider filters. Do not call from a snapshot getter.",
+      "assembly_instructions": 91,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x140172640",
+      "Finding": "Stores selected polygon WORD+96, uses FFFF as unavailable, and sets/clears no-accepted-support bit1 after tolerance/extent and polygon classification.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x140172640.c"
+      ],
+      "Limitations": "Bit1 alone does not prove grounded state; initialized polygon and height cache are required.",
+      "assembly_instructions": 128,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x140163750",
+      "Finding": "Iterates dynamic floor colliders, skips disabled/self nodes, chooses the native floor result and stores a borrowed node at block+120.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x140163750.c"
+      ],
+      "Limitations": "The borrowed node can be freed at map teardown and must not be retained or followed from an old snapshot.",
+      "assembly_instructions": 107,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1401638f0",
+      "Finding": "Iterates dynamic wall colliders; node flag2 excludes the node and flag1 excludes its lateral pass; owner-ID equality excludes self geometry.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1401638f0.c"
+      ],
+      "Limitations": "These node flags differ from Actor+288 body-separation flags.",
+      "assembly_instructions": 54,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x140170c10",
+      "Finding": "Builds the Actor support cache from the selected polygon and either the recorded dynamic collider or static map collider; FFFF receives a fallback normal.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x140170c10.c"
+      ],
+      "Limitations": "Fallback is not measured ground. Cached normal is copied only after native cache/polygon checks.",
+      "assembly_instructions": 140,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x140170b00",
+      "Finding": "Builds a temporary request around a position, probes/selects support information, and invokes the support-cache builder.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x140170b00.c"
+      ],
+      "Limitations": "Presence of a surface cache alone does not prove that the Actor's movement resolver ran this frame.",
+      "assembly_instructions": 50,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403ba940",
+      "Finding": "World-collision gate is Actor+2488 bit1 set, Actor+288 bit1 clear, and no decoded attachment at Actor+1696.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1403ba940.c"
+      ],
+      "Limitations": "Here 'bit1' in the mask means numeric mask0x1. Gate alone does not prove a completed collision evaluation.",
+      "assembly_instructions": 14,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403ba970",
+      "Finding": "Body-separation gate requires Actor+288 mask2 clear, Actor+2488 mask0x1000 clear, and a nonnull body buffer+2560 with positive count.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1403ba970.c"
+      ],
+      "Limitations": "This is separate from world collision and damage/hurt-shape eligibility.",
+      "assembly_instructions": 17,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403b5e00",
+      "Finding": "Returns mass10000 when Actor+400 mask2 is set; otherwise reads the object's model record float+80.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1403b5e00.c"
+      ],
+      "Limitations": "Mass is used by separation weighting, not a general physics-engine mass contract.",
+      "assembly_instructions": 13,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403ba7d0",
+      "Finding": "Determines whether separation treats an Actor as immovable using zero mass, Actor+288 mask4, action flags, attachment and stop conditions.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1403ba7d0.c"
+      ],
+      "Limitations": "Changing mass or this result is not implemented; several independent native owners exist.",
+      "assembly_instructions": 37,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x14040a9e0",
+      "Finding": "Counts collision-source records of the requested type and allocates24+40*N bytes; header count starts0, owner is+8 and type is+16.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x14040a9e0.c"
+      ],
+      "Limitations": "Allocation capacity is implied by the source table, not stored explicitly in the buffer header.",
+      "assembly_instructions": 27,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x14040b140",
+      "Finding": "Rebuilds a buffer by zeroing its count and converting active source records into40-byte shapes only when the owner pose-available mask0x400 is set.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x14040b140.c"
+      ],
+      "Limitations": "Direct edits to shape positions/dimensions are overwritten by native pose rebuilding.",
+      "assembly_instructions": 36,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x14040ad70",
+      "Finding": "Finds overlapping shape pairs, derives horizontal correction, weights movable Actors by mass and modifies shape centers plus pending Actor correction.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x14040ad70.c"
+      ],
+      "Limitations": "Not a pure overlap test. Return value is not a useful stable boolean contract.",
+      "assembly_instructions": 177,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x14040b0b0",
+      "Finding": "Tailcalls the scene-heap release wrapper for the shape-buffer allocation.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x14040b0b0.c"
+      ],
+      "Limitations": "The caller's pointer is not automatically cleared; readable freed memory is not lifetime proof.",
+      "assembly_instructions": 1,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403c9b30",
+      "Finding": "Counts20-byte collision-source entries starting at resource+64 whose type byte+4 equals the requested type.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1403c9b30.c"
+      ],
+      "Limitations": "Header count and loaded resource extent are prerequisites; malformed resources are outside the native routine's safety contract.",
+      "assembly_instructions": 15,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403c9bc0",
+      "Finding": "Iterates source entries selected by a bitmask over their type byte, rather than treating17 as a literal type number.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1403c9bc0.c"
+      ],
+      "Limitations": "Mask17 selects bits0/4; names for those categories have not been established.",
+      "assembly_instructions": 18,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403c9c00",
+      "Finding": "Converts a source entry into a40-byte shape: type+0, radius+4, height+8, source pointer+16 and transformed center Vec4+24; bone/pose gating can zero dimensions.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1403c9c00.c"
+      ],
+      "Limitations": "These are collision proxies, not an asserted final damage hitbox layout for every actor.",
+      "assembly_instructions": 72,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403b3200",
+      "Finding": "Initializes the Actor world block at+1744, invalid floor state at+1860, polygonFFFF, null dynamic owner; loads collision resource+2744 and allocates body+2560/hurt+1600 buffers.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1403b3200.c"
+      ],
+      "Limitations": "A constructor state with flags2 must not be interpreted as grounded. Static claim covers these initialization paths only.",
+      "assembly_instructions": 483,
+      "previous_audit_tier": 3,
+      "previous_audit_status": "konkrete_statische_aussage_belegt"
+    },
+    {
+      "addr": "0x1403b3d60",
+      "Finding": "Releases both Actor body/hurt shape collections during cleanup.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1403b3d60.c"
+      ],
+      "Limitations": "No general generation counter or post-free pointer clearing was identified here.",
+      "assembly_instructions": 40,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403b2b80",
+      "Finding": "Performs Actor cleanup including shape-buffer release and Actor allocation release.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1403b2b80.c"
+      ],
+      "Limitations": "A retained Actor pointer can remain readable after this function; live-list/status ownership is required.",
+      "assembly_instructions": 45,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403b6310",
+      "Finding": "Rebinds a collision resource, updates world dimensions and creates new body/hurt buffers without first releasing the old buffers in this body.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1403b6310.c"
+      ],
+      "Limitations": "No direct runtime caller was found in the examined index. Do not repurpose as a trainer refresh API.",
+      "assembly_instructions": 58,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403b9090",
+      "Finding": "Runs body-to-body separation via3BA970/40AD70 independently of the world-collision gate and resolver; copies the refreshed support-cache result flags.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1403b9090.c"
+      ],
+      "Limitations": "This distinguishes the proposed body-only bit from the existing complete movement-collision bypass.",
+      "assembly_instructions": 575,
+      "previous_audit_tier": 2,
+      "previous_audit_status": "konkrete_statische_aussage_belegt"
+    },
+    {
+      "addr": "0x1403b8720",
+      "Finding": "Returns cached floor Y when valid; on an invalid cache it invokes3F3DD0 and writes the Actor cache, possibly clearing the invalid-height bit.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1403b8720.c"
+      ],
+      "Limitations": "Not a side-effect-free getter; the trainer reads the guarded cache directly.",
+      "assembly_instructions": 44,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403b87e0",
+      "Finding": "Returns an action-dependent Actor+256 value for selected descriptors, otherwise shares the mutating floor-cache refresh behavior.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1403b87e0.c"
+      ],
+      "Limitations": "Not a universal current-ground getter and not called by diagnostics.",
+      "assembly_instructions": 55,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403ba750",
+      "Finding": "Writes start/displacement into the live Actor collision block and runs the resolver before returning a result bit.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1403ba750.c"
+      ],
+      "Limitations": "Cannot be used as a harmless 'can move there' test; it changes the live block and shared filters.",
+      "assembly_instructions": 23,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403b9d20",
+      "Finding": "Probes the ground under an Actor and uses the position-setting path when a hit is accepted.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1403b9d20.c"
+      ],
+      "Limitations": "Potential snap-to-floor API needs separate caller, action and transition validation; no trainer call is implemented.",
+      "assembly_instructions": 28,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403b9ce0",
+      "Finding": "Sets Actor+1876 dynamic-platform/snap tolerance from the decoded platform-parent context and a native constant.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1403b9ce0.c"
+      ],
+      "Limitations": "The tolerance is context-owned and not exposed as a persistent trainer override.",
+      "assembly_instructions": 16,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1401639b0",
+      "Finding": "Pops a24-byte node from the dynamic-collider pool, constructs its248-byte collider and links the node into the global list.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1401639b0.c"
+      ],
+      "Limitations": "The native allocator assumes available pool capacity; it is not a checked mod allocation API.",
+      "assembly_instructions": 53,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x140163a90",
+      "Finding": "Unlinks a dynamic collider node, releases its collider pointer+8 and returns its index to the free stack.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x140163a90.c"
+      ],
+      "Limitations": "Requires a known current linked node. Never pass a cached or guessed node.",
+      "assembly_instructions": 57,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x140163b90",
+      "Finding": "Iterates dynamic nodes while skipping flag2-disabled nodes.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x140163b90.c"
+      ],
+      "Limitations": "Packed next links and list lifetime still require independent validation.",
+      "assembly_instructions": 17,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x14016ffa0",
+      "Finding": "Creates map collision wrappers of248 bytes and binds the loaded map collision/environment resources, including static rootABD448.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x14016ffa0.c"
+      ],
+      "Limitations": "Wrappers are scene-owned; their existence is not permanent process lifetime.",
+      "assembly_instructions": 188,
+      "previous_audit_tier": 3,
+      "previous_audit_status": "konkrete_statische_aussage_belegt"
+    },
+    {
+      "addr": "0x140170340",
+      "Finding": "Releases and nulls the map collider wrapper globals and associated map root during teardown.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x140170340.c"
+      ],
+      "Limitations": "Snapshots require a current playable scene and fresh root validation.",
+      "assembly_instructions": 61,
+      "previous_audit_tier": 3,
+      "previous_audit_status": "konkrete_statische_aussage_belegt"
+    },
+    {
+      "addr": "0x1401722f0",
+      "Finding": "Binds a248-byte collider wrapper to resource tables: polygon+24, vertex+32, attribute+40, normal+48, counts+72..84, matrices+100/+164 and scratch flags.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1401722f0.c"
+      ],
+      "Limitations": "Raw header offsets/counts are trusted by native code; this is not a safe arbitrary external-mesh parser.",
+      "assembly_instructions": 217,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403c94c0",
+      "Finding": "Dispatches shape intersection: type1 cylinders, type3 spheres, and supported type0 ellipsoid combinations, with strict overlap comparisons.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1403c94c0.c"
+      ],
+      "Limitations": "Unsupported type combinations return false; tangency is not overlap and zero dimensions can divide by zero.",
+      "assembly_instructions": 125,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403c90b0",
+      "Finding": "Derives horizontal separation for supported type0/3 pairs with a native skin allowance of5.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_evidence.json",
+        "work/native_decompile/0x1403c90b0.c"
+      ],
+      "Limitations": "Does not resolve arbitrary shapes or vertical penetration; unsupported pairs leave correction unchanged.",
+      "assembly_instructions": 116,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403ccb90",
+      "Finding": "Updates pose/transforms and rebuilds the body-shape buffer+2560 through40B140.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_lifecycle_evidence.json",
+        "work/native_decompile/0x1403ccb90.c"
+      ],
+      "Limitations": "Body shape data follows pose lifetime and may be computed on the native motion workers.",
+      "assembly_instructions": 354,
+      "previous_audit_tier": 1,
+      "previous_audit_status": "gezielt_untersucht_semantik_weiter_offen"
+    },
+    {
+      "addr": "0x1403bfab0",
+      "Finding": "Performs Actor motion work and rebuilds the hurt-shape buffer+1600 after body/pose processing.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_lifecycle_evidence.json",
+        "work/native_decompile/0x1403bfab0.c"
+      ],
+      "Limitations": "This worker entry must finish before an external observer assumes stable shape data.",
+      "assembly_instructions": 27,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403beec0",
+      "Finding": "Queues batches of Actor motion jobs via12FDB0 and waits via130130 before returning; then clears the active work flag.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_lifecycle_evidence.json",
+        "work/native_decompile/0x1403beec0.c"
+      ],
+      "Limitations": "Trainer snapshot placement after the original native update relies on this normal completion path, not arbitrary worker sampling.",
+      "assembly_instructions": 235,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403bf5e0",
+      "Finding": "Runs the Actor update phase including3BFD30 and invokes the motion/pose batch processing before post-update processing.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_lifecycle_evidence.json",
+        "work/native_decompile/0x1403bf5e0.c"
+      ],
+      "Limitations": "A frame may still skip collision for native stop/action states.",
+      "assembly_instructions": 120,
+      "previous_audit_tier": 1,
+      "previous_audit_status": "gezielt_untersucht_semantik_weiter_offen"
+    },
+    {
+      "addr": "0x1403bf810",
+      "Finding": "Registers the field Actor-update task and its cleanup and creates the subordinate Actor scheduler with the3BF5E0 callback.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_lifecycle_evidence.json",
+        "work/native_decompile/0x1403bf810.c"
+      ],
+      "Limitations": "Task/scene lifetime is required; merely finding an Actor address is insufficient.",
+      "assembly_instructions": 29,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403b4f10",
+      "Finding": "Iterates collision-source entries and skips entries whose group is disabled by3BA550.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_lifecycle_evidence.json",
+        "work/native_decompile/0x1403b4f10.c"
+      ],
+      "Limitations": "Native enabled-shape count can vary with action and group masks within one Actor lifetime.",
+      "assembly_instructions": 33,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403c9780",
+      "Finding": "Implements the supported mixed ellipsoid/cylinder overlap calculation using radial cross sections.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_lifecycle_evidence.json",
+        "work/native_decompile/0x1403c9780.c"
+      ],
+      "Limitations": "No broad physics-engine interpretation beyond the examined proxy pair is claimed.",
+      "assembly_instructions": 63,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403c9890",
+      "Finding": "Tests normalized ellipsoid-style squared separation against1 for supported shape pairs.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_lifecycle_evidence.json",
+        "work/native_decompile/0x1403c9890.c"
+      ],
+      "Limitations": "Nonzero dimensions are required; the routine is unsuitable for arbitrary malformed input.",
+      "assembly_instructions": 42,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x14040ac20",
+      "Finding": "Builds shape bounds but uses MINSS for subsequent upper bounds as well as lower bounds; full ASM confirms upper X/Y/Z can shrink.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_lifecycle_evidence.json",
+        "work/native_decompile/0x14040ac20.c"
+      ],
+      "Limitations": "This is a literal static anomaly. Visible gameplay impact is not proven; the normal model-bounds path differs.",
+      "assembly_instructions": 79,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x140163c20",
+      "Finding": "Allocates2248 bytes for the dynamic-node pool, initializes80 nodes/free indices and clears dynamic list head/tail.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_lifecycle_evidence.json",
+        "work/native_decompile/0x140163c20.c"
+      ],
+      "Limitations": "80 is the pool allocator capacity, not proof that every possible list node must belong to this pool.",
+      "assembly_instructions": 108,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x140163bd0",
+      "Finding": "Clears numeric flag1 on a dynamic node.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_lifecycle_evidence.json",
+        "work/native_decompile/0x140163bd0.c"
+      ],
+      "Limitations": "This is a lateral-pass flag operation, not node destruction.",
+      "assembly_instructions": 2,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x140164120",
+      "Finding": "Constructs/appends a dynamic node provided by the caller instead of allocating it from the80-node pool.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_lifecycle_evidence.json",
+        "work/native_decompile/0x140164120.c"
+      ],
+      "Limitations": "No direct code caller was found in the inspected index. External-node reachability remains unproven.",
+      "assembly_instructions": 45,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403f3dd0",
+      "Finding": "Ground probe receives startRCX, outputRDX, rangeXMM2, biasXMM3 and a stack mask; writes a fallback output on failure and returns a hit boolean.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_lifecycle_evidence.json",
+        "work/native_decompile/0x1403f3dd0.c"
+      ],
+      "Limitations": "Calls shared collider-query machinery and is not used by trainer readouts.",
+      "assembly_instructions": 56,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x140173500",
+      "Finding": "Fetches a plane normal through the polygon's normal index, transforms and normalizes it for a nonidentity collider.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_lifecycle_evidence.json",
+        "work/native_decompile/0x140173500.c"
+      ],
+      "Limitations": "Requires valid polygon/normal indices and loaded tables; trainer copies the native cache instead of following these tables.",
+      "assembly_instructions": 48,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x140152430",
+      "Finding": "Allocates through the current scene heap's virtual allocation slot.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_lifecycle_evidence.json",
+        "work/native_decompile/0x140152430.c"
+      ],
+      "Limitations": "Shape collections belong to scene heap9BA920; no cross-scene ownership is implied.",
+      "assembly_instructions": 5,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x140152570",
+      "Finding": "Releases through the current scene heap's virtual release slot.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_lifecycle_evidence.json",
+        "work/native_decompile/0x140152570.c"
+      ],
+      "Limitations": "Calling it after heap replacement with an old allocation is unsafe.",
+      "assembly_instructions": 4,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x140563940",
+      "Finding": "Clears Actor+288 numeric mask2 on the Actor passed in RDX.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_lifecycle_evidence.json",
+        "work/native_decompile/0x140563940.c"
+      ],
+      "Limitations": "Only descriptor/data references were found; do not infer a publicly callable generic toggle contract.",
+      "assembly_instructions": 2,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x140563950",
+      "Finding": "Sets Actor+288 mask2 but also clears movement vectors and requests native motion/action0xA1.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_lifecycle_evidence.json",
+        "work/native_decompile/0x140563950.c"
+      ],
+      "Limitations": "Not called as a trainer separation setter because its other side effects are substantial.",
+      "assembly_instructions": 23,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x140163be0",
+      "Finding": "Frees the dynamic-node pool and nulls its pool pointer while leaving dynamic list head/tail uncleared in this body.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_boundaries_evidence.json",
+        "work/native_decompile/0x140163be0.c"
+      ],
+      "Limitations": "Nonnull list roots can be stale after teardown; never dereference a cached dynamic contact from readability alone.",
+      "assembly_instructions": 9,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1401579d0",
+      "Finding": "Performs map/scene subsystem teardown, including dynamic-pool release before later asset unloads.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_boundaries_evidence.json",
+        "work/native_decompile/0x1401579d0.c"
+      ],
+      "Limitations": "Confirms transition-time lifetime loss; a scene-ready/heap/scheduler lease must be revalidated.",
+      "assembly_instructions": 59,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403bfd30",
+      "Finding": "Skips normal collision/update work for native stopped/frozen or special action paths while other maintenance can continue.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_boundaries_evidence.json",
+        "work/native_decompile/0x1403bfd30.c"
+      ],
+      "Limitations": "Cached contact data has no proven per-frame freshness token; diagnostics are explicitly last-evaluated results.",
+      "assembly_instructions": 186,
+      "previous_audit_tier": 3,
+      "previous_audit_status": "konkrete_statische_aussage_belegt"
+    },
+    {
+      "addr": "0x1403ba550",
+      "Finding": "Resolves collision-group enable/disable through Actor action/group bitsets then collision-resource defaults.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_boundaries_evidence.json",
+        "work/native_decompile/0x1403ba550.c"
+      ],
+      "Limitations": "Do not assign friendly names to undocumented group indices or indiscriminately enable all shapes.",
+      "assembly_instructions": 48,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403c9b80",
+      "Finding": "Iterates20-byte source entries by exact type, with22 as a wildcard selector.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_boundaries_evidence.json",
+        "work/native_decompile/0x1403c9b80.c"
+      ],
+      "Limitations": "The separate3C9BC0 iterator uses type masks and must not be conflated with this API.",
+      "assembly_instructions": 20,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403f7df0",
+      "Finding": "Prize processing uses the same3BA970 body gate on prize actors in its attraction/pickup path.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_boundaries_evidence.json",
+        "work/native_decompile/0x1403f7df0.c"
+      ],
+      "Limitations": "Global application of the separation bit could affect prizes; the new feature changes only the validated current Sora.",
+      "assembly_instructions": 70,
+      "previous_audit_tier": 3,
+      "previous_audit_status": "konkrete_statische_aussage_belegt"
+    },
+    {
+      "addr": "0x1403f8400",
+      "Finding": "Another prize update path checks the native body-separation gate before attraction/pickup processing.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_boundaries_evidence.json",
+        "work/native_decompile/0x1403f8400.c"
+      ],
+      "Limitations": "No universal 'noclip all actors' control is proposed.",
+      "assembly_instructions": 70,
+      "previous_audit_tier": 3,
+      "previous_audit_status": "konkrete_statische_aussage_belegt"
+    },
+    {
+      "addr": "0x1403cbfe0",
+      "Finding": "Uses transformed model bounds normally; the40AC20 multi-shape bounds fallback is used when model+2696 is absent and a body buffer exists.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_boundaries_evidence.json",
+        "work/native_decompile/0x1403cbfe0.c"
+      ],
+      "Limitations": "The MINSS anomaly is limited to this fallback, not asserted for all rendered actors.",
+      "assembly_instructions": 173,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403b7e40",
+      "Finding": "A separate movement/separation pass iterates other actors and honors3BA970 on the relevant body buffers.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_boundaries_evidence.json",
+        "work/native_decompile/0x1403b7e40.c"
+      ],
+      "Limitations": "The mask2 control affects these verified separation consumers, not hit detection.",
+      "assembly_instructions": 53,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x140130030",
+      "Finding": "Motion worker removes queued callback/context/index triples under its mutex, invokes each callback, then signals its completion semaphore only after the queue is empty.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_thread_evidence.json",
+        "work/native_decompile/0x140130030.c"
+      ],
+      "Limitations": "A static ordering guarantee for this native worker loop; arbitrary mods can change scheduling.",
+      "assembly_instructions": 68,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x140130130",
+      "Finding": "Waits on and releases all six worker completion semaphores at112-byte stride before returning.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_thread_evidence.json",
+        "work/native_decompile/0x140130130.c"
+      ],
+      "Limitations": "Together with130030 this establishes the normal post-motion completion barrier.",
+      "assembly_instructions": 17,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x14012fdb0",
+      "Finding": "Acquires all worker completion semaphores, distributes24-byte job triples across six workers under queue mutexes, then wakes every worker.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_thread_evidence.json",
+        "work/native_decompile/0x14012fdb0.c"
+      ],
+      "Limitations": "The input callback ABI is contextRCX/indexEDX, confirmed by the worker callsite.",
+      "assembly_instructions": 105,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1400fdd90",
+      "Finding": "Increments waiter count, calls WaitForSingleObject(handle+8,INFINITE), then decrements waiter count.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_thread_evidence.json",
+        "work/native_decompile/0x1400fdd90.c"
+      ],
+      "Limitations": "Used as the completion wait primitive; no timeout/error recovery beyond native behavior is inferred.",
+      "assembly_instructions": 11,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1400fdc90",
+      "Finding": "Tailcalls ReleaseSemaphore(handle+8,1,null).",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_thread_evidence.json",
+        "work/native_decompile/0x1400fdc90.c"
+      ],
+      "Limitations": "A synchronization primitive, not a lifetime allocator.",
+      "assembly_instructions": 4,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403bf4e0",
+      "Finding": "Reads Actor pointer from context array at indexEDX and tailcalls3BFAB0 with Actor in RCX.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_thread_evidence.json",
+        "work/native_decompile/0x1403bf4e0.c"
+      ],
+      "Limitations": "Confirms the motion-worker callback ABI and Actor argument ownership.",
+      "assembly_instructions": 4,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x1403baad0",
+      "Finding": "Native stop predicate checks timed stop+1612, category-dependent stop, Actor+288 mask0x400 and global stop context38EE40.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_thread_evidence.json",
+        "work/native_decompile/0x1403baad0.c"
+      ],
+      "Limitations": "The implemented cache filter excludes these known stop branches conservatively; no complete frame-freshness claim.",
+      "assembly_instructions": 26,
+      "previous_audit_tier": 3,
+      "previous_audit_status": "konkrete_statische_aussage_belegt"
+    },
+    {
+      "addr": "0x14040a910",
+      "Finding": "Returns numeric flag1 from the timed-state byte pointed to by RCX.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_thread_evidence.json",
+        "work/native_decompile/0x14040a910.c"
+      ],
+      "Limitations": "Used at Actor+1612 by the stop predicate.",
+      "assembly_instructions": 3,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    },
+    {
+      "addr": "0x14038ee40",
+      "Finding": "Returns true if global stop contextBF2AC8 has any nonzero QWORD among four lanes at+80..104.",
+      "Evidence": [
+        "work/trainer/research/actor_collision_round4_thread_evidence.json",
+        "work/native_decompile/0x14038ee40.c"
+      ],
+      "Limitations": "The readout checks these lanes without calling the native routine; unknown/unreadable context suppresses contact interpretation.",
+      "assembly_instructions": 15,
+      "previous_audit_tier": 0,
+      "previous_audit_status": "semantik_offen"
+    }
+  ],
+  "actor_block": {
+    "start_offset": 1744,
+    "size": 136,
+    "fields": {
+      "0": "start Vec4",
+      "16": "requested displacement Vec4",
+      "32": "horizontal sweep radius float",
+      "36": "vertical extent float",
+      "40": "second radius initialized from same source",
+      "48": "corrected result position Vec4",
+      "96": "uint16 selected polygon, FFFF unavailable",
+      "98": "two additional uint16 IDs reset to FFFF; semantics open",
+      "104": "cached floor Y float",
+      "108": "vertical center/foot offset float",
+      "112": "uint32 request flags, category=(flags>>3)&15",
+      "116": "uint32 results: mask1 no accepted support, mask2 invalid height cache, mask4 lateral hit",
+      "120": "borrowed dynamic collider node pointer or null",
+      "128": "owner exclusion ID",
+      "132": "dynamic platform/snap tolerance float"
+    }
+  },
+  "shape_buffer": {
+    "actor_body_offset": 2560,
+    "actor_hurt_offset": 1600,
+    "source_resource_offset": 2744,
+    "header_size": 24,
+    "stride": 40,
+    "header": "int count at0; Actor*owner at8; uint type at16",
+    "shape": "uint type0; float radius4; float height8; source record pointer16; Vec4 transformed center24",
+    "lifetime": "Scene-heap allocation; native pose workers rebuild contents. Cleanup releases buffers without making all old pointers non-readable."
+  },
+  "features": {
+    "slots": [
+      376,
+      377,
+      378,
+      379,
+      380,
+      381,
+      382,
+      383,
+      384,
+      385,
+      386,
+      387,
+      388,
+      389,
+      390,
+      391
+    ],
+    "module": "trainer/Native/CollisionFeatures.inl",
+    "catalog": "work/trainer/research/collision_features.json",
+    "include_after": "ActorMovementFeatures.inl",
+    "api": [
+      "CollisionHandle(context,slot,args,result)",
+      "CollisionTick(context)",
+      "CollisionReset(context)",
+      "CollisionSnapshot(context)",
+      "CollisionCapabilities()"
+    ],
+    "tick_placement": "On game thread after original application update and native Actor/motion barrier, before publishing snapshot. Common heartbeat/reset must invoke CollisionReset."
+  },
+  "ownership": {
+    "acquire": "Stable living Sora form0..6, validated current Actor/status allocation/list/backlinks and nonempty body buffer; native bit2 and alternate gate0x1000 must initially be clear. CAS adds exactly bit2.",
+    "lease": "Actor, allocated status, current form, gameplay scheduler, scene heap and all10 map target bytes; no borrowed collider node retained.",
+    "restore": "CAS clears only owned bit2 while identity remains valid. Host expiry, explicit disable, death or bridge disable can release it without requiring positive HP or a fresh host. Replaced/freed/transitioning identities are abandoned without old-pointer writes. A restore CAS conflict relinquishes ownership without retrying against a changed flags word; bit2 can remain set until a native reset. No unconditional restoration guarantee is made.",
+    "native_ownership": "If native code clears the bit, ownership is dropped and the bit is not reapplied. Preexisting native bit2 is never acquired.",
+    "limitation": "Exact same-address Actor/status reuse with identical checked identity, or native clear-and-set between observations, has no proven generation token. This same-value ABA cannot be distinguished by a retained lease. The feature is bounded to the current native scene and should not be described as a universal noclip mode."
+  },
+  "diagnostics": {
+    "semantics": "Read-only last native results. No collision solver, floor probe, shape update or native getter is called.",
+    "known_suppression": "No contact interpretation during native field pause, movement-collision bypass, Actor/global/timed stop, unresolved category-stop branch, missing static map collider or unready player. Invalid-cache flag/sentinel/nonfinite Y suppress contact/normal fields.",
+    "normal": "Copy the native cached normal, require a selected polygon and an approximately unit finite vector. The borrowed dynamic node is only tested for null, not dereferenced.",
+    "limits": "No per-result frame/generation stamp is proven. Other native action paths can skip collision; surviving finite cache values remain last-evaluated values, not a new test of current geometry. The shape capacity bound4096 is trainer policy."
+  },
+  "new_research_leads": [
+    {
+      "name": "Model-less Actor bounds anomaly",
+      "evidence": "40AC20 uses MINSS for later upper bounds;3CBFE0 reaches it only in a model-less body-buffer fallback.",
+      "use": "Offline proxy/bounds overlay or targeted runtime diagnostics could compare computed bounds against the shape union.",
+      "limit": "No live or visible bug demonstrated; no engine patch proposed."
+    },
+    {
+      "name": "Collision proxy overlay",
+      "evidence": "Type0 ellipsoid,1 cylinder,3 sphere; source bone/group and world-space centers are now mapped.",
+      "use": "Render a copied after-barrier snapshot in an external diagnostic view.",
+      "limit": "Would require a new bounded shape-copy schema and independent validation of every source/mesh ownership path; not implemented."
+    },
+    {
+      "name": "Dynamic floor contacts",
+      "evidence": "Dynamic contact pointer records a node whose pool can be freed while list roots remain nonzero.",
+      "use": "Map current platform ownership for scene diagnostics only after revalidating the fresh list and map lifetime.",
+      "limit": "Current module intentionally avoids following the pointer."
+    },
+    {
+      "name": "Native snap-to-ground",
+      "evidence": "3B9D20 probes and changes Actor position.",
+      "use": "Potential future one-shot action.",
+      "limit": "Action/controller ownership and map transition behavior remain open; not called."
+    }
+  ],
+  "validation": {
+    "test_file": "work/trainer/tests/CollisionGuardTests.cpp",
+    "build": "work/trainer/tests/build_collision_tests.cmd",
+    "checks": 595,
+    "failures": 0,
+    "compiler": "MSVC x64 /std:c++17 /O2 /W4 /MT, no warnings",
+    "live_game": "Not performed",
+    "test_scope": [
+      "Exact one-bit mutation and masked restoration",
+      "All seven stable Sora forms",
+      "Existing native flag preservation and native-clear relinquish",
+      "Actor/status/pool/list/backlink/scene/form/heap/scheduler identity",
+      "Acquire/release CAS races",
+      "Read-only actor page",
+      "Heartbeat/bridge-disable/death restoration",
+      "All16 snapshot slots, raw flags and sentinel, invalid scalar/vector isolation",
+      "Known pause/stop/freeze/bypass suppression",
+      "No probe/engine call in product module"
+    ]
+  },
+  "hashes": {
+    "trainer/Native/CollisionFeatures.inl": "625778734787d426b18752b7d3b54e3baede48dfade827318dd396a348136166",
+    "work/trainer/tests/CollisionGuardTests.cpp": "c3430a7c100896c19e28eae64bdfb9bfae5cc8a91a71f561fc76d0329bda8440",
+    "work/trainer/tests/build_collision_tests.cmd": "51b9ad72b8b68a37f14c5c8ba260e76e0a56dc0ac50bc98d767591419e4672a7",
+    "work/trainer/research/collision_features.json": "a609819cba1a42939588f6740015a2fa205aae51be076641eb9a8d1bf84b613e"
+  }
+}

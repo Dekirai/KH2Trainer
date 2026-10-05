@@ -1,0 +1,35 @@
+Spatial audio implementation — independent review
+=================================================
+Result: no blocking issue found in the reviewed frozen module, catalog or tests.
+Reviewer: pe_inventory. No files belonging to another agent were edited; no build or live action was performed.
+
+Checked behavior
+- Lock order and cleanup: Capture enters global Sound CS first, then the captured manager CS+776. Both ranges must be writable. Nested finally releases inner then outer on early return and SEH, including an inner-release exception. IPC dependent fields publish only after capture returns. A failed acquisition is not released.
+- Lifetime: Uses existing Audio ThreadReady plus driver/master/list graph checks. Manager/layout ranges, exact vtables, reciprocal backlinks and byte816 are checked before manager lock entry and rechecked after entry/copy. Existing Bridge OnFrame calls TrainerFrame only after originalUpdate returned0 and verifies the active app and recorded engine thread. Byte816 is correctly not treated as a generation token.
+- Full membership before selected: Capacity/count/peak and the full capacity array are bounded. Every counted member is validated for range, exact vtable/kind, nonzero ID, owner backlink and uniqueness. Selected+120 is compared as an address only; member fields are taken from the validated copy. Delete-ID/Delete-All ASM leaves selected unchanged, so this guard addresses a real stale-pointer case.
+- Selection semantics: Enabled bit0, uint32 ID and priority, maximum unsigned priority, and later member on ties match the full native072070 path (CMP followed by JA skips only a strictly smaller candidate). Zero priority is valid. All three exact kinds and full-width IDs remain representable in double.
+- Invalid versus zero and cache meaning: 408 is an intentional valid readiness0 on failure; dependent values are omitted. Empty or no-active lists retain valid structural zeros. Active fields are published together only for the current validated winner and finite cached position/matrices. Position is manager cache from the last native update; it is not recomputed from a newer listener matrix. Unknown manager+148 is ignored. Common snapshot validity reset prevents old values surviving into a new frame.
+- Scope and fault handling: No listener/audio game function, controller getter, callback, allocation, settings mutation or persistent effect is introduced. Ordinary Reset is unnecessary. Exceptions propagate through the existing Bridge failure path after cleanup; the module does not promise recovery from a broken native lock.
+
+Validation
+Author reports1774 checks,0 failures,/W4 without warnings. This reviewer inspected the test source and fingerprints, but did not rerun the tests.
+Five selected complete ASM bodies were read: 0x140070e20 (78 instructions), 0x140071640 (63 instructions), 0x140071740 (43 instructions), 0x140072070 (354 instructions), 0x140077fc0 (288 instructions).
+The earlier full88-body contract review remains a separate artifact; this review does not claim to reread all88 bodies.
+
+Limits
+- Native normal application Init/Update/Shutdown ordering is essential; foreign-thread private teardown or corrupt external writes are outside this static contract.
+- Pointer identity is not a generation token, and the cached transform lacks a frame timestamp.
+- If LeaveCriticalSection raises before releasing a broken native lock, finally still attempts the outer release, but recovery is not guaranteed. Existing Bridge fault handling stops retries and continues exception propagation.
+- The bounded duplicate scan is O(n^2) at1024 entries and uses about24KiB of stack while locks are held. No live audio latency or performance measurement was performed.
+- No audible-output or speaker-channel claim is made.
+
+Reviewed file hashes
+trainer/Native/SpatialAudioFeatures.inl dfd1d90328dbb9cd2eb1f184e24685fa688c2a015692ff3d037924a74a9596aa
+work/trainer/tests/SpatialAudioGuardTests.cpp d54be54db563aec570ac4075ee8164ddaf075a82a78211f07b0926ef2640e374
+work/trainer/tests/build_spatial_audio_tests.cmd 8307fbfc8b3eed861f34607d0973ccd29d824285e5ac16df9d98dece3de00f92
+work/trainer/research/spatial_audio_features.json 1456d21fba1c822858423b7318bdf98192e074658ab2c013ad85737a0105a7b8
+trainer/Native/AudioFeatures.inl a2e56de2e4e672f3402c20053ba30340e90c0c70e2312b11c7853cca1296fa26
+work/trainer/research/audio_round5_deep.json 8490e94200fb7235db8e0a53848165cf2dc5ac3a4fa26c27c5ed342bbd1912a1
+work/trainer/research/audio_round5_full_asm.json 581dca5e7fc99d6fdffc09e4a534c3cc9c74187d584912ab2dc4b9498704c948
+work/trainer/research/audio_lifecycle.txt cceb5babdf20e48ec2a78bd463e9634cd69c163db5f1480fb249cb930a381e62
+work/trainer/research/audio_round5_implementation.json ff55376ff6df913b50a75765fae98c28e8b35b87cd32fb984b2d6c3a77a8ab5f

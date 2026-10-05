@@ -1,0 +1,438 @@
+{
+  "title": "Actor stop, YS enemy initialization and VM update boundaries, round6",
+  "status": "research only; release0.10 unchanged",
+  "target_sha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "scope": "51 complete native bodies,2191 instruction rows,8511 PE bytes including30 switch-data/alignment bytes. Three32-slot VTABLE prefixes are byte-verified, only selected slots are analyzed.",
+  "claims": [
+    {
+      "addr": "0x1403baa80",
+      "Finding": "Returns whether Actor+288 has either mask0x10000000 or0x80000; this early gate precedes the normal actor-update path.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403baad0",
+      "Finding": "Returns stopped if the Actor+1612 aggregate bit0 is set, or category byte+1736 lacks0x44 while global2A24EDC equals1, or Actor+288 bit0x400 is set, or38EE40 finds a live context. ASM confirms all four gates.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403ba530",
+      "Finding": "Calls3B5B20 and compares its EAX result with101. The old pseudocode's uninitialized local is a decompiler artifact; ASM carries the returned character discriminator directly.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x14040a770",
+      "Finding": "Scans four stop entries for the first matching DWORD ID; if absent returns without changing aggregate. If found it clears that ID and rebuilds the WORD mask using3EED10 for every remaining nonzero ID, with no null-result guard.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x14040a830",
+      "Finding": "For each of four nonzero stop IDs, decrements only a strictly positive float duration by frame delta717480. Expired entries have their ID cleared and the aggregate rebuilt from all remaining IDs. Zero/negative durations remain indefinite; invalid table lookup still lacks a guard.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403eed00",
+      "Finding": "bsearch comparator treats RCX itself as the integer stop ID and subtracts the unsigned WORD at the candidate row; RCX is not a pointer to a key object.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403eed10",
+      "Finding": "Uses global2AE59D8 as the stop table, rows at+8, signed DWORD count at+4, stride4, and comparator3EED00. It directly dereferences the global and does not validate row count or lookup success.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403d9130",
+      "Finding": "When its second byte argument is0 and global actor-freeze0x20 is clear, context+84 bit0 applies enemy stop ID1 with duration0 through3DBAA0 and changes ownership flags to bit1. Later, bit1 with3AC220 false removes ID1 globally through3B42D0. This proves ID1 is already owned by native gameplay and must not be repurposed as a trainer-private token.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403b4320",
+      "Finding": "Iterates actors, uses category0 for Actor+1736 bit0x80 or else object row BYTE+4, tests caller EDX bitmask, skips Actor+2488 bit4, and calls40A920 at Actor+1612 with requested ID and zero duration. It does not provide stop-slot capacity checks.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x14039fa90",
+      "Finding": "Draws seven value labels from749A50 then28 toggle labels from749A90, with11-unit vertical spacing. 'stop enemy' is toggle index8; this rendering routine provides no gameplay reader.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x14039f8f0",
+      "Finding": "Allocates a0xA8 selector, constructs it using BYTE at749811 and labels749A38/callback39F2D0, then attaches it to the parent widget.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x14040a910",
+      "Finding": "Reads only the low BYTE of the aggregate stop WORD and returns bit0.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403dbaa0",
+      "Finding": "Iterates3BF4F0 over actors and applies the caller's ID only when Actor+1736 bit0x10 is set. ASM explicitly zeros XMM2 before3B6730, so this wrapper always requests indefinite duration0.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403b6730",
+      "Finding": "Checks Actor+2488 bit4; if clear, passes Actor+1612 inRCX, ID inEDX and duration inXMM2 to40A920 by tail jump.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x14040a920",
+      "Finding": "Chooses an existing matching stop ID or the last empty one among four slots; writes duration atslot+4 and ID atslot+0, then rebuilds aggregate. With four different nonzero IDs it writes through a null slot pointer; a missing stop-table row also causes an unchecked WORD dereference.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403bfd30",
+      "Finding": "The descriptor+8 callback runs only while Actor+2488 bit0x80 is clear, before stop-timer expiration and the stop gate. The gate suppresses ordinary descriptor+16/+24/+40, motion-clock3C6740 and later work, but invokes3C73C0 for character types other than101. It still publishes eligible actors to the postprocessing list. This is not a blanket freeze of every actor-related callback.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403db430",
+      "Finding": "YS::ENEMY descriptor slot+8 moves actorRDX toRCX and tail-jumps4117D0.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403db440",
+      "Finding": "YS::ENEMY slot+16 conditionally decrements Actor+3400 by frame delta when3CA250(Actor+912) is true and Actor+1212 bit4 is clear, clamps negative results to0, then tail-jumps3D3730.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403db4b0",
+      "Finding": "YS::ENEMY slot+24 is a return-only no-op in this build.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403db4d0",
+      "Finding": "YS::ENEMY slot+40 forwards actorRDX to3DAD10.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1404113d0",
+      "Finding": "YS::ENEMYBASE slot+8 calls3BE2B0(Actor+3064,2,Actor), then3DACB0; this is the same preparation sequence as4117D0.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x140411400",
+      "Finding": "YS::ENEMYBASE slot+16 forwards actorRDX to3D3730.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x140411410",
+      "Finding": "YS::ENEMYBASE slot+24 is a return-only no-op.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x14041a530",
+      "Finding": "YS::ENEMYOBJ slot+8 forwards actorRDX to4117D0.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x14041a540",
+      "Finding": "YS::ENEMYOBJ slot+16 forwards actorRDX to3D3730.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x14041a550",
+      "Finding": "YS::ENEMYOBJ slot+24 is a return-only no-op.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1404117d0",
+      "Finding": "Prepares Actor+3064 through3BE2B0 with mode2 and the actor, then runs3DACB0. It is reached by both ENEMY and ENEMYOBJ slot+8.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403dacb0",
+      "Finding": "Tests3C7F90 and3C7DE0 on Actor+344 and conditionally calls3C86A0 with mode0, then tails into3B44D0. The latter installs the actor BDX VM and marks initialization complete.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403d3730",
+      "Finding": "Checks the encoded auxiliary pointer at Actor+3380, releases it through2BE8A0 if2BE780 is false and encodes null back into the field, then forwards to3B4980.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403be2b0",
+      "Finding": "Selects target setup modes0..6. Mode2, used by the enemy slot+8 initialization, calls3BEE60 with the current player2A105D0 and0. All paths store the requested mode at block+12. The function span includes2-byte alignment and seven DWORD jump-table RVAs after its return; these are data, not instructions.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403dad10",
+      "Finding": "Updates the encoded auxiliary object at Actor+2996 if present, copies Actor position through3B5B40, applies3CE630 to two12-byte records at Actor+3040/+3052, then calls3B4780.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403de250",
+      "Finding": "Returns the DWORD stored at global2A24EDC; the actor stop predicate specifically compares it with1.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x14038ee40",
+      "Finding": "Returns false when globalBF2AC8 is null; otherwise scans four QWORDs at context+80 and returns true on the first nonzero entry.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403b5b20",
+      "Finding": "Decodes Actor's packed object-row pointer at+8 and returns the unsigned WORD at row+76.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403b44d0",
+      "Finding": "Unless Actor+1736 bit0x20 is set, finds BAR entry type3 in Actor+2336, allocates a YSVM at Actor+1456 when its packed payload is nonnull, supplies the encoded actor argument, and starts event1. It then copies pose fields and sets Actor+2488 bit0x80. Thus descriptor+8 is initialization rather than an unconditional per-frame AI update.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403b4980",
+      "Finding": "Updates Actor+288 motion flags from Actor+396, clears movement inputs+16/+24, manages a timer at+2964 and validates an attachment; the Actor+288 bit0x10 branch computes camera-relative displacement at+1680 and marks+1976 bit0x80. It does not directly call YSVM_UpdateTree.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403e1790",
+      "Finding": "Looks up a BDX event, clears VM+56, and starts41B320 for a positive entry. Missing/nonpositive entry decrements the owner's active counter+1464 when present and marksVM+56 bit2 complete.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403c6740",
+      "Finding": "Advances the motion state at Actor+344 using the float duration argument and speed at motion+336, handles animation end/queued motion transitions and callbacks, then updates motion consumers. It is a motion clock, not the actor BDX VM interpreter.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403bf5e0",
+      "Finding": "Runs actor updates in dependency-sensitive passes, invokes3BEEC0 after passes, and performs postprocessing3CC3D0 on actors marked processed. The dispatcher has no trainer-style bounded list validation; suppressing one subpath is not proof all motion/postprocessing ceases.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403e1620",
+      "Finding": "Walks the global root VM list2A25090, destroys and frees each context, clears head/tail, and selects scheduler9BA888 as allocator owner. This is global teardown, not a safe actor AI pause or reset.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403c73c0",
+      "Finding": "Performs pose/motion synchronization and attached sound/effect list maintenance on the motion object. In the actor-stop path this function can still execute; it calls3BAAD0 for existing sound handles and chooses1DF020 versus position update1DEEE0 accordingly.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403b4420",
+      "Finding": "If Actor+1456 has a VM, runs YSVM_UpdateTree with root0 and, when not complete, calls3CA550 on Actor+912; returns whether Actor+1464 active counter is0.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403b4460",
+      "Finding": "Runs Actor+1456 VM when present and calls3CA550(Actor+912) while that VM remains incomplete. The body has no direct actor-stop predicate and has multiple native callers.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403b4f80",
+      "Finding": "Equivalent actor VM/action update wrapper to3B4460; its observed caller is1B15F0.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403e1c80",
+      "Finding": "Executes an unfinished VM context, then recursively updates child contexts. Completed children are unlinked, destroyed and freed; return true requires parent-complete bit2 and no children. It has no direct per-actor stop check; reachability depends on its callers.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403e2000",
+      "Finding": "Constructs a temporary VM context using the parent's BDX/owner fields, marks flag1, saves active VM globals, executes the requested positive entry through41B320 and3E1C80, restores those globals, and destroys the temporary context. This is synchronous execution, not a pause primitive.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403c55f0",
+      "Finding": "Skips its global effect-script list when2A11400 bit0x20 is set; otherwise runs each packed VM and unlinks/frees completed entries, with a3A1EE0 call for positive entry timer. A per-actor stop ID does not appear in this routine's gate.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403da720",
+      "Finding": "Calls3B4420 on its actorRDX, then checks auxiliary pointers and updates/tests the encoded object at Actor+2996 before returning completion. It is a real actor-VM caller beyond the main motion clock.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403dac30",
+      "Finding": "ActorRCX variant of the3DA720 completion sequence: update VM via3B4420, gate paired pointers+128/+152, then process the packed auxiliary object+2996.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403db580",
+      "Finding": "YS::ENEMY descriptor slot+120 forwards actorRDX to3BFA40; this slot is a predicate used by the normal actor-update path, not the per-frame VM interpreter itself.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    },
+    {
+      "addr": "0x1403ab6f0",
+      "Finding": "Recomputes global2A11400 bit0x10000 from nearby eligible actors/player state and maintains battle-state timers2A11410/+14 and state2A11404; its native caller3BF5E0 runs it before iterating actors. Actor-local stop cannot by itself suppress this global update.",
+      "Evidence": [
+        "work/trainer/research/actor_ai_round6_complete_evidence.json"
+      ],
+      "Limitations": "Specific static behavior; no gameplay execution or universal enemy coverage is claimed."
+    }
+  ],
+  "findings": [
+    "Actor+344 is motion state; actor BDX context is the QWORD at+1456. Do not equate the animation clock with AI.",
+    "Descriptor+8 is normally one-time initialization: it runs until Actor+2488 bit0x80 is set. Three YS enemy-family prefixes and their preparation callbacks confirm the branch meaning.",
+    "Four native stop IDs share an aggregate mask. Duration0 is indefinite. ID1 is already used by native gameplay; removal by ID cannot prove trainer ownership.",
+    "Existing extracted baseline00battle.bin has15 sorted stop rows and only masks1,3,7. The loaded table and modifications must be checked separately.",
+    "Stop mask bit0 suppresses core actor update, while motion pose/attached effects and outer dispatcher work can continue. VM has multiple direct and synchronous callers.",
+    "The developer menu's 'stop enemy' label is a UI label, not sufficient proof its configuration bit has a gameplay consumer."
+  ],
+  "potential_controls": [
+    {
+      "idea": "Selected enemy stop with a native stop row",
+      "status": "not implemented",
+      "remaining": "Fresh actor/status/scene membership lease; all four IDs must map to valid rows and a free slot must exist; native ID ownership conflicts unresolved. Must preserve unrelated stop entries and timers. No invented stop ID or blanket removal."
+    },
+    {
+      "idea": "Selected enemy AI pause",
+      "status": "not implemented",
+      "remaining": "Need exact caller/descriptor routes for ordinary enemy and boss VM execution, immediate-event paths, and action handlers; animation freeze alone is insufficient."
+    }
+  ],
+  "validation": "work/trainer/research/actor_ai_round6_validation.json",
+  "pending_raw": "actor_ai_round6_followup.json contains two freshly decompiled followups without completeASM; these have no new semantic claims here."
+}

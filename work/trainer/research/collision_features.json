@@ -1,0 +1,402 @@
+[
+  {
+    "Id": "collision.body_separation",
+    "Category": "Collision diagnostics",
+    "Name": "Disable Sora body separation",
+    "Description": "Owned override for the current Sora actor. Sora stops participating in body-to-body separation; world collision and hit detection keep their own rules. Native preexisting overrides are not acquired.",
+    "Kind": "Toggle",
+    "CommandId": 1376,
+    "ValueSlot": 376,
+    "CapabilitySlot": 376,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": true,
+    "RestoreBehavior": "The owned bit is released on disable or stale heartbeat only while the same allocated actor/status, form, map, scheduler and heap remain valid. Identity loss abandons the old actor without writes. Profile application explicitly enables the override once; no automatic reapplication after actor/scene changes. Native same-value flag reuse cannot be distinguished without a generation token. If a concurrent writer changes the flags during restore, the compare-and-swap conflict relinquishes ownership; the separation bit may remain set until a native reset. Restore is not guaranteed after lost identity or ownership.",
+    "Evidence": [
+      {
+        "Address": "0x1403BA970 / 0x1403B9090",
+        "Finding": "Actor+288 bit2 excludes the actor from both sides of body separation.",
+        "Level": "Complete native IDA assembly and synthetic memory tests; no live-game validation."
+      }
+    ]
+  },
+  {
+    "Id": "collision.world_enabled",
+    "Category": "Collision diagnostics",
+    "Name": "World collision enabled",
+    "Description": "Native world-collision gate for this actor. This is a gate, not proof that the resolver ran this frame.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 377,
+    "CapabilitySlot": 377,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only last native cache. No refresh, restore, save change or profile action. Known paused/stopped/bypassed contexts suppress interpreted contact values, but no per-result frame generation is known.",
+    "Evidence": [
+      {
+        "Address": "0x1403BA940",
+        "Finding": "Actor+2488 bit1, Actor+288 bit0 and attachment determine the world gate.",
+        "Level": "Complete native IDA assembly and synthetic memory tests; no live-game validation."
+      }
+    ]
+  },
+  {
+    "Id": "collision.body_enabled",
+    "Category": "Collision diagnostics",
+    "Name": "Actor body separation enabled",
+    "Description": "Current native body-separation gate and nonempty validated body buffer. Damage uses separate shapes and flags.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 378,
+    "CapabilitySlot": 378,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only last native cache. No refresh, restore, save change or profile action. Known paused/stopped/bypassed contexts suppress interpreted contact values, but no per-result frame generation is known.",
+    "Evidence": [
+      {
+        "Address": "0x1403BA970",
+        "Finding": "Bit2, actor+2488 mask0x1000 and a positive body-shape count control separation.",
+        "Level": "Complete native IDA assembly and synthetic memory tests; no live-game validation."
+      }
+    ]
+  },
+  {
+    "Id": "collision.result_flags",
+    "Category": "Collision diagnostics",
+    "Name": "Last collision result flags",
+    "Description": "Raw last native result: bit0 means no accepted support, bit1 means unavailable floor-height cache, bit2 records a lateral collision. Initial flags2 do not mean grounded.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 379,
+    "CapabilitySlot": 379,
+    "Minimum": 0,
+    "Maximum": 4294967295,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only last native cache. No refresh, restore, save change or profile action. Known paused/stopped/bypassed contexts suppress interpreted contact values, but no per-result frame generation is known.",
+    "Evidence": [
+      {
+        "Address": "0x140172640 / 0x140172840 / 0x1401752E0",
+        "Finding": "Actor+1860 copies collision-block+116 result bits.",
+        "Level": "Complete native IDA assembly and synthetic memory tests; no live-game validation."
+      }
+    ]
+  },
+  {
+    "Id": "collision.polygon",
+    "Category": "Collision diagnostics",
+    "Name": "Last support polygon ID",
+    "Description": "Last selected polygon identifier. Hidden for the FFFF sentinel or an invalid floor cache. This does not resolve the polygon or refresh collision.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 380,
+    "CapabilitySlot": 380,
+    "Minimum": 0,
+    "Maximum": 65534,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only last native cache. No refresh, restore, save change or profile action. Known paused/stopped/bypassed contexts suppress interpreted contact values, but no per-result frame generation is known.",
+    "Evidence": [
+      {
+        "Address": "0x140172640",
+        "Finding": "Actor+1840 stores the selected polygon WORD; FFFF is unavailable.",
+        "Level": "Complete native IDA assembly and synthetic memory tests; no live-game validation."
+      }
+    ]
+  },
+  {
+    "Id": "collision.ground_y",
+    "Category": "Collision diagnostics",
+    "Name": "Cached floor Y",
+    "Description": "Last finite floor height while the native cache-valid bit is clear. No ground probe is called.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 381,
+    "CapabilitySlot": 381,
+    "Minimum": -10000000,
+    "Maximum": 10000000,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only last native cache. No refresh, restore, save change or profile action. Known paused/stopped/bypassed contexts suppress interpreted contact values, but no per-result frame generation is known.",
+    "Evidence": [
+      {
+        "Address": "0x140172840 / 0x1403B8720",
+        "Finding": "Actor+1848 is cached floor Y, guarded by Actor+1860 bit1.",
+        "Level": "Complete native IDA assembly and synthetic memory tests; no live-game validation."
+      }
+    ]
+  },
+  {
+    "Id": "collision.supported",
+    "Category": "Collision diagnostics",
+    "Name": "Last accepted support contact",
+    "Description": "Last result accepted support and has a polygon plus valid height cache. Hidden for known stop, pause and bypass states; no per-result frame stamp is available.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 382,
+    "CapabilitySlot": 382,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only last native cache. No refresh, restore, save change or profile action. Known paused/stopped/bypassed contexts suppress interpreted contact values, but no per-result frame generation is known.",
+    "Evidence": [
+      {
+        "Address": "0x140172640",
+        "Finding": "Result bit0 clear means accepted support only when the polygon/cache are initialized.",
+        "Level": "Complete native IDA assembly and synthetic memory tests; no live-game validation."
+      }
+    ]
+  },
+  {
+    "Id": "collision.lateral",
+    "Category": "Collision diagnostics",
+    "Name": "Last lateral collision",
+    "Description": "Last native lateral-resolution collision bit. It is not a fresh wall probe.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 383,
+    "CapabilitySlot": 383,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only last native cache. No refresh, restore, save change or profile action. Known paused/stopped/bypassed contexts suppress interpreted contact values, but no per-result frame generation is known.",
+    "Evidence": [
+      {
+        "Address": "0x14016FEC0 / 0x1401752E0",
+        "Finding": "The resolver clears result bit2 then the lateral path sets it on obstruction/correction.",
+        "Level": "Complete native IDA assembly and synthetic memory tests; no live-game validation."
+      }
+    ]
+  },
+  {
+    "Id": "collision.radius",
+    "Category": "Collision diagnostics",
+    "Name": "World sweep radius",
+    "Description": "Current world sweep radius from the loaded collision record. Finite malformed values remain visible for diagnosis.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 384,
+    "CapabilitySlot": 384,
+    "Minimum": -32768,
+    "Maximum": 32767,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only last native cache. No refresh, restore, save change or profile action. Known paused/stopped/bypassed contexts suppress interpreted contact values, but no per-result frame generation is known.",
+    "Evidence": [
+      {
+        "Address": "0x1403B3200 / 0x1401752E0",
+        "Finding": "Actor+1776 is collision-block+32; the lateral solver divides travel by this radius.",
+        "Level": "Complete native IDA assembly and synthetic memory tests; no live-game validation."
+      }
+    ]
+  },
+  {
+    "Id": "collision.extent",
+    "Category": "Collision diagnostics",
+    "Name": "World vertical extent",
+    "Description": "Current vertical collision extent from the loaded collision record. This is separate from the body-shape buffer.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 385,
+    "CapabilitySlot": 385,
+    "Minimum": -32768,
+    "Maximum": 32767,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only last native cache. No refresh, restore, save change or profile action. Known paused/stopped/bypassed contexts suppress interpreted contact values, but no per-result frame generation is known.",
+    "Evidence": [
+      {
+        "Address": "0x1403B3200 / 0x140172640",
+        "Finding": "Actor+1780 is collision-block+36 and participates in support limits.",
+        "Level": "Complete native IDA assembly and synthetic memory tests; no live-game validation."
+      }
+    ]
+  },
+  {
+    "Id": "collision.foot_offset",
+    "Category": "Collision diagnostics",
+    "Name": "World vertical offset",
+    "Description": "Current collision center/foot offset used by the floor segment.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 386,
+    "CapabilitySlot": 386,
+    "Minimum": -32768,
+    "Maximum": 32767,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only last native cache. No refresh, restore, save change or profile action. Known paused/stopped/bypassed contexts suppress interpreted contact values, but no per-result frame generation is known.",
+    "Evidence": [
+      {
+        "Address": "0x1403B3200 / 0x140172840",
+        "Finding": "Actor+1852 is collision-block+108.",
+        "Level": "Complete native IDA assembly and synthetic memory tests; no live-game validation."
+      }
+    ]
+  },
+  {
+    "Id": "collision.normal_x",
+    "Category": "Collision diagnostics",
+    "Name": "Cached support normal X",
+    "Description": "Last transformed support normal component. Shown only with a selected polygon, valid height cache and a finite approximately unit vector.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 387,
+    "CapabilitySlot": 387,
+    "Minimum": -1,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only last native cache. No refresh, restore, save change or profile action. Known paused/stopped/bypassed contexts suppress interpreted contact values, but no per-result frame generation is known.",
+    "Evidence": [
+      {
+        "Address": "0x140170C10 / 0x140173500",
+        "Finding": "Actor+1880 starts the cached plane normal.",
+        "Level": "Complete native IDA assembly and synthetic memory tests; no live-game validation."
+      }
+    ]
+  },
+  {
+    "Id": "collision.normal_y",
+    "Category": "Collision diagnostics",
+    "Name": "Cached support normal Y",
+    "Description": "Last transformed support normal Y; follows the native normal orientation rather than assuming positive-up.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 388,
+    "CapabilitySlot": 388,
+    "Minimum": -1,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only last native cache. No refresh, restore, save change or profile action. Known paused/stopped/bypassed contexts suppress interpreted contact values, but no per-result frame generation is known.",
+    "Evidence": [
+      {
+        "Address": "0x140170C10 / 0x140173500",
+        "Finding": "Actor+1884 stores the native plane normal Y.",
+        "Level": "Complete native IDA assembly and synthetic memory tests; no live-game validation."
+      }
+    ]
+  },
+  {
+    "Id": "collision.normal_z",
+    "Category": "Collision diagnostics",
+    "Name": "Cached support normal Z",
+    "Description": "Last transformed support normal Z. No borrowed mesh or dynamic-node pointer is followed.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 389,
+    "CapabilitySlot": 389,
+    "Minimum": -1,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only last native cache. No refresh, restore, save change or profile action. Known paused/stopped/bypassed contexts suppress interpreted contact values, but no per-result frame generation is known.",
+    "Evidence": [
+      {
+        "Address": "0x140170C10 / 0x140173500",
+        "Finding": "Actor+1888 stores the native plane normal Z.",
+        "Level": "Complete native IDA assembly and synthetic memory tests; no live-game validation."
+      }
+    ]
+  },
+  {
+    "Id": "collision.dynamic_contact",
+    "Category": "Collision diagnostics",
+    "Name": "Last contact used dynamic geometry",
+    "Description": "Whether the last valid contact records a dynamic collider node. The pointer is tested for zero and never dereferenced or retained.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 390,
+    "CapabilitySlot": 390,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only last native cache. No refresh, restore, save change or profile action. Known paused/stopped/bypassed contexts suppress interpreted contact values, but no per-result frame generation is known.",
+    "Evidence": [
+      {
+        "Address": "0x140163750 / 0x14016FEC0",
+        "Finding": "Collision-block+120 is a borrowed dynamic-collider owner node, otherwise zero.",
+        "Level": "Complete native IDA assembly and synthetic memory tests; no live-game validation."
+      }
+    ]
+  },
+  {
+    "Id": "collision.query_category",
+    "Category": "Collision diagnostics",
+    "Name": "Collision query category",
+    "Description": "Raw native request category. Individual category names have not been established.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 391,
+    "CapabilitySlot": 391,
+    "Minimum": 0,
+    "Maximum": 15,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only last native cache. No refresh, restore, save change or profile action. Known paused/stopped/bypassed contexts suppress interpreted contact values, but no per-result frame generation is known.",
+    "Evidence": [
+      {
+        "Address": "0x1401752E0",
+        "Finding": "The native solver extracts collision-block flags+112 bits3..6.",
+        "Level": "Complete native IDA assembly and synthetic memory tests; no live-game validation."
+      }
+    ]
+  }
+]

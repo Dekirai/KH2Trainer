@@ -1,0 +1,11 @@
+Independent Loot review
+======================
+No significant source or semantic defect found in LootFeatures.inl SHA256 CA0099B3275CA217048A88866D91A1CACD0226F241FAA6931AA41DC7A2ECDB07.
+
+Verified against complete native ASM: exact float fields520/568/572/580, Draw120+bonus+STATUS452, player/ally0/ally1 order, per-operation float32 addition/multiplication, native no-positive-HP requirement for ally contributions, pool alignment/free-list/refcount/backlinks and current-thread/scene/host/writability gates. Edits are one-time and write exactly4 bytes. No save/inventory fields or engine calls are involved.
+
+Catalog defaults0/0/0/100 match4016B0. The description correctly keeps rates, contributions, rounding and native collection restrictions separate. Explicit radius overrides, vertical gates and special form rules still matter. Profile inclusion is disabled. STATUS rebuilds can replace the edits and there is no automatic restore.
+
+At Root's request the reviewer added seven targeted assertions for nonbinary float rounding, a third party member, its zero-HP inclusion and its status backlink. Base1+0.1f+0.2f must round per native operation to1.3000000715255737; a double accumulator rounded only at the end differs. Retention0.7f*0.9f*0.3f must produce0.18900001049041748 before multiplication by100 for display. Existing .25/.5 fixtures could not expose this regression. Current production casts were already correct.
+
+Author previously reported213 passing isolated checks. Updated test source SHA256 is4E6038FCB916E0E7407C5AE876F66E9F7170878BBF258A5EF89EB1797860F695. Central rerun is pending; reviewer performed no parallel build or live actions. Hashes, reviewed dependencies and evidence paths are recorded in the JSON companion.

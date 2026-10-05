@@ -1,0 +1,41 @@
+Combat practice features — static analysis and isolated tests
+
+Implemented12 features: current enemy HP/maxHP, revenge value/threshold, targeting
+mode, one-shot HP refill/nonlethal setter, revenge reset/setter, player HP damage
+guard, suppressed-callback count and last suppressed delta. Slots98..108 plus110.
+
+Player+3528 points to native lock structure RVA2A11208 (3A7A40). 3DCD70/3DD650
+distinguish auto target1 and manual lock2. Mutations require manual lock and living
+enemy. Complete bounded actor chain head2A171C8/packednext2704, status pointer and
+backlink are checked. No enemy pointer survives into another frame. Dead, queued
+deletion, alternate-reference, character-save, corrupt-list, non-enemy cases reject.
+
+Revenge is explicitly identified by40DD70 event1C: enemycategory0x10 and current
+float3400>=thresholdfloat3404 dispatch3CAC50(actor+912,"revenge"). 3DBB90 adds
+attackparameterbyte42;3DBBF0 conditionally decays by frame delta717480. 3DB840
+defaults threshold100; scriptsetter431E30 can override. Only current RV is changed.
+No queued revenge event is cancelled; enemy-specific script state remains native.
+
+Damage guard intercepts exact player controller74A518/vtable5C4A80/slot5C4B68,
+original3A75F0. Hitdamage3D3BA0 dispatches through3D3790 to this five-argument
+callback, then3D5E50/3D2EB0/3C0860 apply HP. Negative mainHP deltas for the freshly
+validated player return currentHP before subtraction. Other actors/bars/healing
+and invalid/expired contexts forward unchanged. Hitstun/status/scriptdirectwrites
+and scripted death are separate. UI correctly calls this Block player HP damage.
+
+Installation CAS-replaces only original callback; cleanup CAS-restores only own
+wrapper. Foreign hooks remain untouched. Game-thread, host heartbeat, scene phase,
+current player/status/backlink, exact controller/vtable, scheduler/heap/all10room
+bytes are checked. Loss disables the policy. No player HP floor, save field or
+2A23960 mirror is modified. The bridge's pinned-DLL lifetime is required.
+
+97 synthetic checks passed under MSVC /W4 without warnings: ABI forwarding,
+INT_MIN magnitude, zero/future/stale host, game thread, scene/player/status change,
+room/heap identity, dead actors, hook competition, corrupt list and command bounds.
+The target HP setter respects the native minimum-HP floor used by boss scripts;
+it never changes that floor. Same-scene field pause retains the damage-guard
+policy so a resumed step remains protected, with native menu takeover excluded.
+Target readouts remain available during field pause; target mutations require
+normal gameplay state1.
+No live game test. combat.json contains contracts; combat_evidence.json holds61
+fresh native outputs including core ABI assembly and controller/vtable bytes.

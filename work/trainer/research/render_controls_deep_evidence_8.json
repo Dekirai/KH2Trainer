@@ -1,0 +1,1183 @@
+{
+  "database": "1fc84ea8",
+  "target_sha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "mode": "read-only fresh complete IDA pseudocode and dedicated full ASM",
+  "functions": [
+    {
+      "addr": "0x140438cc0",
+      "pseudocode": {
+        "addr": "0x140438cc0",
+        "code": "void __fastcall sub_140438CC0(__int64 a1, int a2, int a3)\n{\n  _DWORD *v6; // rbx\n  _OWORD v7[3]; // [rsp+20h] [rbp-48h] BYREF\n  __int128 v8; // [rsp+50h] [rbp-18h] BYREF\n\n  sub_140142280(v7); /*0x140438cdc*/\n  sub_140142280(v7); /*0x140438ce6*/\n  sub_1401AA7D0(v7, a1 + 32); /*0x140438cf4*/\n  sub_1401A8E60(&v8, a1); /*0x140438d01*/\n  *((float *)&v8 + 1) = *((float *)&v8 + 1) - *(float *)(a1 + 108); /*0x140438d1b*/\n  if ( (dword_140716884 & 0xFFFFFFFD) != 0 || (dword_140716C34 & 0xFFFFFFFD) != 0 ) /*0x140438d2d*/\n  {\n    v6 = (_DWORD *)sub_14041F8D0(88); /*0x140438d3d*/\n    if ( v6 ) /*0x140438d43*/\n    {\n      *(_QWORD *)v6 = &unk_140759190; /*0x140438d50*/\n      *(_OWORD *)(v6 + 2) = v7[0]; /*0x140438d58*/\n      *(_OWORD *)(v6 + 6) = v7[1]; /*0x140438d61*/\n      *(_OWORD *)(v6 + 10) = v7[2]; /*0x140438d6a*/\n      *(_OWORD *)(v6 + 14) = v8; /*0x140438d73*/\n      v6[18] = a2; /*0x140438d77*/\n      v6[19] = a3; /*0x140438d7a*/\n      if ( qword_142AF9AD0 ) /*0x140438d85*/\n      {\n        *(_DWORD *)(qword_142AF9AD0 + 80) = kh2_Ptr32_EncodeNullable(v6); /*0x140438dbe*/\n        v6[20] = kh2_Ptr32_EncodeNullable(nullptr); /*0x140438dc8*/\n        qword_142AF9AD0 = (__int64)v6; /*0x140438dcb*/\n      }\n      else\n      {\n        qword_142AF9AD0 = (__int64)v6; /*0x140438d89*/\n        qword_142AF9AC8 = (__int64)v6; /*0x140438d90*/\n        v6[20] = kh2_Ptr32_EncodeNullable(nullptr); /*0x140438d9c*/\n      }\n    }\n  }\n}",
+        "line_count": 38,
+        "total_lines": 38,
+        "truncated": false,
+        "cursor": {
+          "done": true
+        },
+        "refs": [
+          {
+            "addr": "0x140142280",
+            "name": "sub_140142280"
+          },
+          {
+            "addr": "0x1401aa7d0",
+            "name": "sub_1401AA7D0"
+          },
+          {
+            "addr": "0x1401a8e60",
+            "name": "sub_1401A8E60"
+          },
+          {
+            "addr": "0x14041f8d0",
+            "name": "sub_14041F8D0"
+          },
+          {
+            "addr": "0x140759190",
+            "name": "unk_140759190"
+          },
+          {
+            "addr": "0x142af9ad0",
+            "name": "qword_142AF9AD0"
+          },
+          {
+            "addr": "0x1404ad240",
+            "name": "kh2_Ptr32_EncodeNullable"
+          },
+          {
+            "addr": "0x142af9ac8",
+            "name": "qword_142AF9AC8"
+          },
+          {
+            "addr": "0x140716884",
+            "name": "dword_140716884"
+          },
+          {
+            "addr": "0x140716c34",
+            "name": "dword_140716C34"
+          }
+        ]
+      },
+      "disassembly": {
+        "addr": "0x140438cc0",
+        "asm": {
+          "name": "sub_140438CC0",
+          "start_ea": "0x140438cc0",
+          "segment": ".text",
+          "lines": [
+            {
+              "addr": "140438cc0",
+              "instruction": "mov [rsp+arg_0], rbx",
+              "label": "sub_140438CC0"
+            },
+            {
+              "addr": "140438cc5",
+              "instruction": "mov [rsp+arg_8], rsi"
+            },
+            {
+              "addr": "140438cca",
+              "instruction": "push rdi"
+            },
+            {
+              "addr": "140438ccb",
+              "instruction": "sub rsp, 60h"
+            },
+            {
+              "addr": "140438ccf",
+              "instruction": "mov rbx, rcx"
+            },
+            {
+              "addr": "140438cd2",
+              "instruction": "mov edi, r8d"
+            },
+            {
+              "addr": "140438cd5",
+              "instruction": "lea rcx, [rsp+68h+var_48]"
+            },
+            {
+              "addr": "140438cda",
+              "instruction": "mov esi, edx"
+            },
+            {
+              "addr": "140438cdc",
+              "instruction": "call sub_140142280",
+              "refs": [
+                {
+                  "addr": "0x140142280",
+                  "name": "sub_140142280"
+                }
+              ]
+            },
+            {
+              "addr": "140438ce1",
+              "instruction": "lea rcx, [rsp+68h+var_48]"
+            },
+            {
+              "addr": "140438ce6",
+              "instruction": "call sub_140142280",
+              "refs": [
+                {
+                  "addr": "0x140142280",
+                  "name": "sub_140142280"
+                }
+              ]
+            },
+            {
+              "addr": "140438ceb",
+              "instruction": "lea rdx, [rbx+20h]"
+            },
+            {
+              "addr": "140438cef",
+              "instruction": "lea rcx, [rsp+68h+var_48]"
+            },
+            {
+              "addr": "140438cf4",
+              "instruction": "call sub_1401AA7D0",
+              "refs": [
+                {
+                  "addr": "0x1401aa7d0",
+                  "name": "sub_1401AA7D0"
+                }
+              ]
+            },
+            {
+              "addr": "140438cf9",
+              "instruction": "mov rdx, rbx"
+            },
+            {
+              "addr": "140438cfc",
+              "instruction": "lea rcx, [rsp+68h+var_18]"
+            },
+            {
+              "addr": "140438d01",
+              "instruction": "call sub_1401A8E60",
+              "refs": [
+                {
+                  "addr": "0x1401a8e60",
+                  "name": "sub_1401A8E60"
+                }
+              ]
+            },
+            {
+              "addr": "140438d06",
+              "instruction": "test cs:dword_140716884, 0FFFFFFFDh",
+              "refs": [
+                {
+                  "addr": "0x140716884",
+                  "name": "dword_140716884"
+                }
+              ]
+            },
+            {
+              "addr": "140438d10",
+              "instruction": "movss xmm0, dword ptr [rsp+68h+var_18+4]"
+            },
+            {
+              "addr": "140438d16",
+              "instruction": "subss xmm0, dword ptr [rbx+6Ch]"
+            },
+            {
+              "addr": "140438d1b",
+              "instruction": "movss dword ptr [rsp+68h+var_18+4], xmm0"
+            },
+            {
+              "addr": "140438d21",
+              "instruction": "jnz short loc_140438D33",
+              "refs": [
+                {
+                  "addr": "0x140438d33",
+                  "name": "loc_140438D33"
+                }
+              ]
+            },
+            {
+              "addr": "140438d23",
+              "instruction": "test cs:dword_140716C34, 0FFFFFFFDh",
+              "refs": [
+                {
+                  "addr": "0x140716c34",
+                  "name": "dword_140716C34"
+                }
+              ]
+            },
+            {
+              "addr": "140438d2d",
+              "instruction": "jz loc_140438DD2",
+              "refs": [
+                {
+                  "addr": "0x140438dd2",
+                  "name": "loc_140438DD2"
+                }
+              ]
+            },
+            {
+              "addr": "140438d33",
+              "instruction": "mov ecx, 58h ; 'X'",
+              "label": "loc_140438D33"
+            },
+            {
+              "addr": "140438d38",
+              "instruction": "call sub_14041F8D0",
+              "refs": [
+                {
+                  "addr": "0x14041f8d0",
+                  "name": "sub_14041F8D0"
+                }
+              ]
+            },
+            {
+              "addr": "140438d3d",
+              "instruction": "mov rbx, rax"
+            },
+            {
+              "addr": "140438d40",
+              "instruction": "test rax, rax"
+            },
+            {
+              "addr": "140438d43",
+              "instruction": "jz loc_140438DD2",
+              "refs": [
+                {
+                  "addr": "0x140438dd2",
+                  "name": "loc_140438DD2"
+                }
+              ]
+            },
+            {
+              "addr": "140438d49",
+              "instruction": "lea rax, unk_140759190",
+              "refs": [
+                {
+                  "addr": "0x140759190",
+                  "name": "unk_140759190"
+                }
+              ]
+            },
+            {
+              "addr": "140438d50",
+              "instruction": "mov [rbx], rax"
+            },
+            {
+              "addr": "140438d53",
+              "instruction": "movaps xmm0, [rsp+68h+var_48]"
+            },
+            {
+              "addr": "140438d58",
+              "instruction": "movups xmmword ptr [rbx+8], xmm0"
+            },
+            {
+              "addr": "140438d5c",
+              "instruction": "movaps xmm1, [rsp+68h+var_38]"
+            },
+            {
+              "addr": "140438d61",
+              "instruction": "movups xmmword ptr [rbx+18h], xmm1"
+            },
+            {
+              "addr": "140438d65",
+              "instruction": "movaps xmm0, [rsp+68h+var_28]"
+            },
+            {
+              "addr": "140438d6a",
+              "instruction": "movups xmmword ptr [rbx+28h], xmm0"
+            },
+            {
+              "addr": "140438d6e",
+              "instruction": "movaps xmm1, [rsp+68h+var_18]"
+            },
+            {
+              "addr": "140438d73",
+              "instruction": "movups xmmword ptr [rbx+38h], xmm1"
+            },
+            {
+              "addr": "140438d77",
+              "instruction": "mov [rbx+48h], esi"
+            },
+            {
+              "addr": "140438d7a",
+              "instruction": "mov [rbx+4Ch], edi"
+            },
+            {
+              "addr": "140438d7d",
+              "instruction": "cmp cs:qword_142AF9AD0, 0",
+              "refs": [
+                {
+                  "addr": "0x142af9ad0",
+                  "name": "qword_142AF9AD0"
+                }
+              ]
+            },
+            {
+              "addr": "140438d85",
+              "instruction": "jnz short loc_140438DAF",
+              "refs": [
+                {
+                  "addr": "0x140438daf",
+                  "name": "loc_140438DAF"
+                }
+              ]
+            },
+            {
+              "addr": "140438d87",
+              "instruction": "xor ecx, ecx; pointer",
+              "comments": [
+                "pointer"
+              ]
+            },
+            {
+              "addr": "140438d89",
+              "instruction": "mov cs:qword_142AF9AD0, rbx",
+              "refs": [
+                {
+                  "addr": "0x142af9ad0",
+                  "name": "qword_142AF9AD0"
+                }
+              ]
+            },
+            {
+              "addr": "140438d90",
+              "instruction": "mov cs:qword_142AF9AC8, rbx",
+              "refs": [
+                {
+                  "addr": "0x142af9ac8",
+                  "name": "qword_142AF9AC8"
+                }
+              ]
+            },
+            {
+              "addr": "140438d97",
+              "instruction": "call kh2_Ptr32_EncodeNullable",
+              "refs": [
+                {
+                  "addr": "0x1404ad240",
+                  "name": "kh2_Ptr32_EncodeNullable"
+                }
+              ]
+            },
+            {
+              "addr": "140438d9c",
+              "instruction": "mov [rbx+50h], eax"
+            },
+            {
+              "addr": "140438d9f",
+              "instruction": "mov rbx, [rsp+68h+arg_0]"
+            },
+            {
+              "addr": "140438da4",
+              "instruction": "mov rsi, [rsp+68h+arg_8]"
+            },
+            {
+              "addr": "140438da9",
+              "instruction": "add rsp, 60h"
+            },
+            {
+              "addr": "140438dad",
+              "instruction": "pop rdi"
+            },
+            {
+              "addr": "140438dae",
+              "instruction": "retn"
+            },
+            {
+              "addr": "140438daf",
+              "instruction": "mov rcx, rbx; pointer",
+              "label": "loc_140438DAF",
+              "comments": [
+                "pointer"
+              ]
+            },
+            {
+              "addr": "140438db2",
+              "instruction": "call kh2_Ptr32_EncodeNullable",
+              "refs": [
+                {
+                  "addr": "0x1404ad240",
+                  "name": "kh2_Ptr32_EncodeNullable"
+                }
+              ]
+            },
+            {
+              "addr": "140438db7",
+              "instruction": "mov rcx, cs:qword_142AF9AD0",
+              "refs": [
+                {
+                  "addr": "0x142af9ad0",
+                  "name": "qword_142AF9AD0"
+                }
+              ]
+            },
+            {
+              "addr": "140438dbe",
+              "instruction": "mov [rcx+50h], eax"
+            },
+            {
+              "addr": "140438dc1",
+              "instruction": "xor ecx, ecx; pointer",
+              "comments": [
+                "pointer"
+              ]
+            },
+            {
+              "addr": "140438dc3",
+              "instruction": "call kh2_Ptr32_EncodeNullable",
+              "refs": [
+                {
+                  "addr": "0x1404ad240",
+                  "name": "kh2_Ptr32_EncodeNullable"
+                }
+              ]
+            },
+            {
+              "addr": "140438dc8",
+              "instruction": "mov [rbx+50h], eax"
+            },
+            {
+              "addr": "140438dcb",
+              "instruction": "mov cs:qword_142AF9AD0, rbx",
+              "refs": [
+                {
+                  "addr": "0x142af9ad0",
+                  "name": "qword_142AF9AD0"
+                }
+              ]
+            },
+            {
+              "addr": "140438dd2",
+              "instruction": "mov rbx, [rsp+68h+arg_0]",
+              "label": "loc_140438DD2"
+            },
+            {
+              "addr": "140438dd7",
+              "instruction": "mov rsi, [rsp+68h+arg_8]"
+            },
+            {
+              "addr": "140438ddc",
+              "instruction": "add rsp, 60h"
+            },
+            {
+              "addr": "140438de0",
+              "instruction": "pop rdi"
+            },
+            {
+              "addr": "140438de1",
+              "instruction": "retn"
+            }
+          ],
+          "stack_frame": [
+            {
+              "name": "var_48",
+              "offset": "0x20",
+              "size": "0x10",
+              "type": "_OWORD"
+            },
+            {
+              "name": "var_38",
+              "offset": "0x30",
+              "size": "0x10",
+              "type": "_OWORD"
+            },
+            {
+              "name": "var_28",
+              "offset": "0x40",
+              "size": "0x10",
+              "type": "_OWORD"
+            },
+            {
+              "name": "var_18",
+              "offset": "0x50",
+              "size": "0x10",
+              "type": "_OWORD"
+            },
+            {
+              "name": "__return_address",
+              "offset": "0x68",
+              "size": "0x8",
+              "type": "_UNKNOWN *"
+            },
+            {
+              "name": "arg_0",
+              "offset": "0x70",
+              "size": "0x8",
+              "type": "_QWORD"
+            },
+            {
+              "name": "arg_8",
+              "offset": "0x78",
+              "size": "0x8",
+              "type": "_QWORD"
+            }
+          ],
+          "return_type": "void",
+          "arguments": [
+            {
+              "name": "arg0",
+              "type": "__int64"
+            },
+            {
+              "name": "arg1",
+              "type": "int"
+            },
+            {
+              "name": "arg2",
+              "type": "int"
+            }
+          ]
+        },
+        "instruction_count": 66,
+        "total_instructions": 66,
+        "cursor": {
+          "done": true
+        }
+      }
+    },
+    {
+      "addr": "0x140438f30",
+      "pseudocode": {
+        "addr": "0x140438f30",
+        "code": "void sub_140438F30()\n{\n  _DWORD *v0; // rbx\n  __int64 v1; // rdi\n  __int64 v2; // rsi\n  void *v3; // rax\n  int v4; // ecx\n  void *v5; // rax\n  __int64 v6; // rax\n\n  v0 = (_DWORD *)qword_142AF9AC8; /*0x140438f3a*/\n  v1 = qword_142AF9AC8; /*0x140438f41*/\n  if ( qword_142AF9AC8 ) /*0x140438f47*/\n  {\n    while ( 1 ) /*0x140438f55*/\n    {\n      if ( v1 ) /*0x140438f55*/\n      {\n        v3 = kh2_Ptr32_DecodeNullable(*(_DWORD *)(v1 + 80)); /*0x140438f5f*/\n        v0 = (_DWORD *)qword_142AF9AC8; /*0x140438f64*/\n        v2 = (__int64)v3; /*0x140438f6b*/\n      }\n      else\n      {\n        v2 = (__int64)v0; /*0x140438f57*/\n      }\n      v4 = *(_DWORD *)(v1 + 76); /*0x140438f6e*/\n      if ( v4 <= 0 ) /*0x140438f73*/\n      {\n        if ( *(_BYTE *)(*(_QWORD *)v1 + 32LL) ) /*0x140438f82*/\n        {\n          j_j_free(*(void **)v1); /*0x140438f8d*/\n          v0 = (_DWORD *)qword_142AF9AC8; /*0x140438f92*/\n        }\n        if ( (_DWORD *)v1 == v0 ) /*0x140438f9c*/\n        {\n          qword_142AF9AC8 = (__int64)kh2_Ptr32_DecodeNullable(*(_DWORD *)(v1 + 80)); /*0x140438fa6*/\n          v0 = nullptr; /*0x140438fad*/\n        }\n        else\n        {\n          for ( ; kh2_Ptr32_DecodeNullable(v0[20]) != (void *)v1; v0 = kh2_Ptr32_DecodeNullable(v0[20]) ) /*0x140438fbc*/\n            ; /*0x140438fc8*/\n          v5 = kh2_Ptr32_DecodeNullable(*(_DWORD *)(v1 + 80)); /*0x140438fdb*/\n          v0[20] = kh2_Ptr32_EncodeNullable(v5); /*0x140438fe8*/\n        }\n        v6 = qword_142AF9AD0; /*0x140438feb*/\n        if ( v1 == qword_142AF9AD0 ) /*0x140438ff5*/\n          v6 = (__int64)v0; /*0x140438ff5*/\n        qword_142AF9AD0 = v6; /*0x140438ffb*/\n        *(_DWORD *)(v1 + 80) = kh2_Ptr32_EncodeNullable(nullptr); /*0x14043900a*/\n        sub_14041F8F0(v1); /*0x14043900d*/\n      }\n      else\n      {\n        *(_DWORD *)(v1 + 76) = v4 - 1; /*0x140438f77*/\n      }\n      v1 = v2; /*0x140439012*/\n      if ( !v2 ) /*0x140439018*/\n        break; /*0x140439018*/\n      v0 = (_DWORD *)qword_142AF9AC8; /*0x14043901a*/\n    }\n  }\n}",
+        "line_count": 64,
+        "total_lines": 64,
+        "truncated": false,
+        "cursor": {
+          "done": true
+        },
+        "refs": [
+          {
+            "addr": "0x142af9ac8",
+            "name": "qword_142AF9AC8"
+          },
+          {
+            "addr": "0x1404ad270",
+            "name": "kh2_Ptr32_DecodeNullable"
+          },
+          {
+            "addr": "0x1404390a0",
+            "name": "j_j_free"
+          },
+          {
+            "addr": "0x1404ad240",
+            "name": "kh2_Ptr32_EncodeNullable"
+          },
+          {
+            "addr": "0x142af9ad0",
+            "name": "qword_142AF9AD0"
+          },
+          {
+            "addr": "0x14041f8f0",
+            "name": "sub_14041F8F0"
+          }
+        ]
+      },
+      "disassembly": {
+        "addr": "0x140438f30",
+        "asm": {
+          "name": "sub_140438F30",
+          "start_ea": "0x140438f30",
+          "segment": ".text",
+          "lines": [
+            {
+              "addr": "140438f30",
+              "instruction": "mov [rsp+arg_8], rbx",
+              "label": "sub_140438F30"
+            },
+            {
+              "addr": "140438f35",
+              "instruction": "push rdi"
+            },
+            {
+              "addr": "140438f36",
+              "instruction": "sub rsp, 20h"
+            },
+            {
+              "addr": "140438f3a",
+              "instruction": "mov rbx, cs:qword_142AF9AC8",
+              "refs": [
+                {
+                  "addr": "0x142af9ac8",
+                  "name": "qword_142AF9AC8"
+                }
+              ]
+            },
+            {
+              "addr": "140438f41",
+              "instruction": "mov rdi, rbx"
+            },
+            {
+              "addr": "140438f44",
+              "instruction": "test rbx, rbx"
+            },
+            {
+              "addr": "140438f47",
+              "instruction": "jz loc_14043902B",
+              "refs": [
+                {
+                  "addr": "0x14043902b",
+                  "name": "loc_14043902B"
+                }
+              ]
+            },
+            {
+              "addr": "140438f4d",
+              "instruction": "mov [rsp+28h+arg_0], rsi",
+              "label": "loc_140438F4D"
+            },
+            {
+              "addr": "140438f52",
+              "instruction": "test rdi, rdi",
+              "label": "loc_140438F52"
+            },
+            {
+              "addr": "140438f55",
+              "instruction": "jnz short loc_140438F5C",
+              "refs": [
+                {
+                  "addr": "0x140438f5c",
+                  "name": "loc_140438F5C"
+                }
+              ]
+            },
+            {
+              "addr": "140438f57",
+              "instruction": "mov rsi, rbx"
+            },
+            {
+              "addr": "140438f5a",
+              "instruction": "jmp short loc_140438F6E",
+              "refs": [
+                {
+                  "addr": "0x140438f6e",
+                  "name": "loc_140438F6E"
+                }
+              ]
+            },
+            {
+              "addr": "140438f5c",
+              "instruction": "mov ecx, [rdi+50h]; encoded",
+              "label": "loc_140438F5C",
+              "comments": [
+                "encoded"
+              ]
+            },
+            {
+              "addr": "140438f5f",
+              "instruction": "call kh2_Ptr32_DecodeNullable",
+              "refs": [
+                {
+                  "addr": "0x1404ad270",
+                  "name": "kh2_Ptr32_DecodeNullable"
+                }
+              ]
+            },
+            {
+              "addr": "140438f64",
+              "instruction": "mov rbx, cs:qword_142AF9AC8",
+              "refs": [
+                {
+                  "addr": "0x142af9ac8",
+                  "name": "qword_142AF9AC8"
+                }
+              ]
+            },
+            {
+              "addr": "140438f6b",
+              "instruction": "mov rsi, rax"
+            },
+            {
+              "addr": "140438f6e",
+              "instruction": "mov ecx, [rdi+4Ch]",
+              "label": "loc_140438F6E"
+            },
+            {
+              "addr": "140438f71",
+              "instruction": "test ecx, ecx"
+            },
+            {
+              "addr": "140438f73",
+              "instruction": "jle short loc_140438F7F",
+              "refs": [
+                {
+                  "addr": "0x140438f7f",
+                  "name": "loc_140438F7F"
+                }
+              ]
+            },
+            {
+              "addr": "140438f75",
+              "instruction": "dec ecx"
+            },
+            {
+              "addr": "140438f77",
+              "instruction": "mov [rdi+4Ch], ecx"
+            },
+            {
+              "addr": "140438f7a",
+              "instruction": "jmp loc_140439012",
+              "refs": [
+                {
+                  "addr": "0x140439012",
+                  "name": "loc_140439012"
+                }
+              ]
+            },
+            {
+              "addr": "140438f7f",
+              "instruction": "mov rcx, [rdi]; Block",
+              "label": "loc_140438F7F",
+              "comments": [
+                "Block"
+              ]
+            },
+            {
+              "addr": "140438f82",
+              "instruction": "cmp byte ptr [rcx+20h], 0"
+            },
+            {
+              "addr": "140438f86",
+              "instruction": "jz short loc_140438F99",
+              "refs": [
+                {
+                  "addr": "0x140438f99",
+                  "name": "loc_140438F99"
+                }
+              ]
+            },
+            {
+              "addr": "140438f88",
+              "instruction": "mov edx, 28h ; '('"
+            },
+            {
+              "addr": "140438f8d",
+              "instruction": "call j_j_free",
+              "refs": [
+                {
+                  "addr": "0x1404390a0",
+                  "name": "j_j_free"
+                }
+              ]
+            },
+            {
+              "addr": "140438f92",
+              "instruction": "mov rbx, cs:qword_142AF9AC8",
+              "refs": [
+                {
+                  "addr": "0x142af9ac8",
+                  "name": "qword_142AF9AC8"
+                }
+              ]
+            },
+            {
+              "addr": "140438f99",
+              "instruction": "cmp rdi, rbx",
+              "label": "loc_140438F99"
+            },
+            {
+              "addr": "140438f9c",
+              "instruction": "jnz short loc_140438FB1",
+              "refs": [
+                {
+                  "addr": "0x140438fb1",
+                  "name": "loc_140438FB1"
+                }
+              ]
+            },
+            {
+              "addr": "140438f9e",
+              "instruction": "mov ecx, [rdi+50h]; encoded",
+              "comments": [
+                "encoded"
+              ]
+            },
+            {
+              "addr": "140438fa1",
+              "instruction": "call kh2_Ptr32_DecodeNullable",
+              "refs": [
+                {
+                  "addr": "0x1404ad270",
+                  "name": "kh2_Ptr32_DecodeNullable"
+                }
+              ]
+            },
+            {
+              "addr": "140438fa6",
+              "instruction": "mov cs:qword_142AF9AC8, rax",
+              "refs": [
+                {
+                  "addr": "0x142af9ac8",
+                  "name": "qword_142AF9AC8"
+                }
+              ]
+            },
+            {
+              "addr": "140438fad",
+              "instruction": "xor ebx, ebx"
+            },
+            {
+              "addr": "140438faf",
+              "instruction": "jmp short loc_140438FEB",
+              "refs": [
+                {
+                  "addr": "0x140438feb",
+                  "name": "loc_140438FEB"
+                }
+              ]
+            },
+            {
+              "addr": "140438fb1",
+              "instruction": "mov ecx, [rbx+50h]; encoded",
+              "label": "loc_140438FB1",
+              "comments": [
+                "encoded"
+              ]
+            },
+            {
+              "addr": "140438fb4",
+              "instruction": "call kh2_Ptr32_DecodeNullable",
+              "refs": [
+                {
+                  "addr": "0x1404ad270",
+                  "name": "kh2_Ptr32_DecodeNullable"
+                }
+              ]
+            },
+            {
+              "addr": "140438fb9",
+              "instruction": "cmp rax, rdi"
+            },
+            {
+              "addr": "140438fbc",
+              "instruction": "jz short loc_140438FD8",
+              "refs": [
+                {
+                  "addr": "0x140438fd8",
+                  "name": "loc_140438FD8"
+                }
+              ]
+            },
+            {
+              "addr": "140438fbe",
+              "instruction": "xchg ax, ax"
+            },
+            {
+              "addr": "140438fc0",
+              "instruction": "mov ecx, [rbx+50h]; encoded",
+              "label": "loc_140438FC0",
+              "comments": [
+                "encoded"
+              ]
+            },
+            {
+              "addr": "140438fc3",
+              "instruction": "call kh2_Ptr32_DecodeNullable",
+              "refs": [
+                {
+                  "addr": "0x1404ad270",
+                  "name": "kh2_Ptr32_DecodeNullable"
+                }
+              ]
+            },
+            {
+              "addr": "140438fc8",
+              "instruction": "mov rbx, rax"
+            },
+            {
+              "addr": "140438fcb",
+              "instruction": "mov ecx, [rax+50h]; encoded",
+              "comments": [
+                "encoded"
+              ]
+            },
+            {
+              "addr": "140438fce",
+              "instruction": "call kh2_Ptr32_DecodeNullable",
+              "refs": [
+                {
+                  "addr": "0x1404ad270",
+                  "name": "kh2_Ptr32_DecodeNullable"
+                }
+              ]
+            },
+            {
+              "addr": "140438fd3",
+              "instruction": "cmp rax, rdi"
+            },
+            {
+              "addr": "140438fd6",
+              "instruction": "jnz short loc_140438FC0",
+              "refs": [
+                {
+                  "addr": "0x140438fc0",
+                  "name": "loc_140438FC0"
+                }
+              ]
+            },
+            {
+              "addr": "140438fd8",
+              "instruction": "mov ecx, [rdi+50h]; encoded",
+              "label": "loc_140438FD8",
+              "comments": [
+                "encoded"
+              ]
+            },
+            {
+              "addr": "140438fdb",
+              "instruction": "call kh2_Ptr32_DecodeNullable",
+              "refs": [
+                {
+                  "addr": "0x1404ad270",
+                  "name": "kh2_Ptr32_DecodeNullable"
+                }
+              ]
+            },
+            {
+              "addr": "140438fe0",
+              "instruction": "mov rcx, rax; pointer",
+              "comments": [
+                "pointer"
+              ]
+            },
+            {
+              "addr": "140438fe3",
+              "instruction": "call kh2_Ptr32_EncodeNullable",
+              "refs": [
+                {
+                  "addr": "0x1404ad240",
+                  "name": "kh2_Ptr32_EncodeNullable"
+                }
+              ]
+            },
+            {
+              "addr": "140438fe8",
+              "instruction": "mov [rbx+50h], eax"
+            },
+            {
+              "addr": "140438feb",
+              "instruction": "mov rax, cs:qword_142AF9AD0",
+              "label": "loc_140438FEB",
+              "refs": [
+                {
+                  "addr": "0x142af9ad0",
+                  "name": "qword_142AF9AD0"
+                }
+              ]
+            },
+            {
+              "addr": "140438ff2",
+              "instruction": "cmp rdi, rax"
+            },
+            {
+              "addr": "140438ff5",
+              "instruction": "cmovz rax, rbx"
+            },
+            {
+              "addr": "140438ff9",
+              "instruction": "xor ecx, ecx; pointer",
+              "comments": [
+                "pointer"
+              ]
+            },
+            {
+              "addr": "140438ffb",
+              "instruction": "mov cs:qword_142AF9AD0, rax",
+              "refs": [
+                {
+                  "addr": "0x142af9ad0",
+                  "name": "qword_142AF9AD0"
+                }
+              ]
+            },
+            {
+              "addr": "140439002",
+              "instruction": "call kh2_Ptr32_EncodeNullable",
+              "refs": [
+                {
+                  "addr": "0x1404ad240",
+                  "name": "kh2_Ptr32_EncodeNullable"
+                }
+              ]
+            },
+            {
+              "addr": "140439007",
+              "instruction": "mov rcx, rdi"
+            },
+            {
+              "addr": "14043900a",
+              "instruction": "mov [rdi+50h], eax"
+            },
+            {
+              "addr": "14043900d",
+              "instruction": "call sub_14041F8F0",
+              "refs": [
+                {
+                  "addr": "0x14041f8f0",
+                  "name": "sub_14041F8F0"
+                }
+              ]
+            },
+            {
+              "addr": "140439012",
+              "instruction": "mov rdi, rsi",
+              "label": "loc_140439012"
+            },
+            {
+              "addr": "140439015",
+              "instruction": "test rsi, rsi"
+            },
+            {
+              "addr": "140439018",
+              "instruction": "jz short loc_140439026",
+              "refs": [
+                {
+                  "addr": "0x140439026",
+                  "name": "loc_140439026"
+                }
+              ]
+            },
+            {
+              "addr": "14043901a",
+              "instruction": "mov rbx, cs:qword_142AF9AC8",
+              "refs": [
+                {
+                  "addr": "0x142af9ac8",
+                  "name": "qword_142AF9AC8"
+                }
+              ]
+            },
+            {
+              "addr": "140439021",
+              "instruction": "jmp loc_140438F52",
+              "refs": [
+                {
+                  "addr": "0x140438f52",
+                  "name": "loc_140438F52"
+                }
+              ]
+            },
+            {
+              "addr": "140439026",
+              "instruction": "mov rsi, [rsp+28h+arg_0]",
+              "label": "loc_140439026"
+            },
+            {
+              "addr": "14043902b",
+              "instruction": "mov rbx, [rsp+28h+arg_8]",
+              "label": "loc_14043902B"
+            },
+            {
+              "addr": "140439030",
+              "instruction": "add rsp, 20h"
+            },
+            {
+              "addr": "140439034",
+              "instruction": "pop rdi"
+            },
+            {
+              "addr": "140439035",
+              "instruction": "retn"
+            }
+          ],
+          "stack_frame": [
+            {
+              "name": "__return_address",
+              "offset": "0x28",
+              "size": "0x8",
+              "type": "_UNKNOWN *"
+            },
+            {
+              "name": "arg_0",
+              "offset": "0x30",
+              "size": "0x8",
+              "type": "_QWORD"
+            },
+            {
+              "name": "arg_8",
+              "offset": "0x38",
+              "size": "0x8",
+              "type": "_QWORD"
+            }
+          ],
+          "return_type": "void",
+          "arguments": []
+        },
+        "instruction_count": 71,
+        "total_instructions": 71,
+        "cursor": {
+          "done": true
+        }
+      }
+    },
+    {
+      "addr": "0x140439040",
+      "pseudocode": {
+        "addr": "0x140439040",
+        "code": "__int64 sub_140439040()\n{\n  return sub_1401506B0(0, 89999, sub_140438F30);\n}",
+        "line_count": 4,
+        "total_lines": 4,
+        "truncated": false,
+        "cursor": {
+          "done": true
+        },
+        "refs": [
+          {
+            "addr": "0x1401506b0",
+            "name": "sub_1401506B0"
+          },
+          {
+            "addr": "0x140438f30",
+            "name": "sub_140438F30"
+          }
+        ]
+      },
+      "disassembly": {
+        "addr": "0x140439040",
+        "asm": {
+          "name": "sub_140439040",
+          "start_ea": "0x140439040",
+          "segment": ".text",
+          "lines": [
+            {
+              "addr": "140439040",
+              "instruction": "lea r8, sub_140438F30",
+              "label": "sub_140439040",
+              "refs": [
+                {
+                  "addr": "0x140438f30",
+                  "name": "sub_140438F30"
+                }
+              ]
+            },
+            {
+              "addr": "140439047",
+              "instruction": "mov edx, 15F8Fh"
+            },
+            {
+              "addr": "14043904c",
+              "instruction": "xor ecx, ecx"
+            },
+            {
+              "addr": "14043904e",
+              "instruction": "jmp sub_1401506B0",
+              "refs": [
+                {
+                  "addr": "0x1401506b0",
+                  "name": "sub_1401506B0"
+                }
+              ]
+            }
+          ],
+          "stack_frame": [
+            {
+              "name": "__return_address",
+              "offset": "0x0",
+              "size": "0x8",
+              "type": "_UNKNOWN *"
+            }
+          ]
+        },
+        "instruction_count": 4,
+        "total_instructions": 4,
+        "cursor": {
+          "done": true
+        }
+      }
+    }
+  ]
+}

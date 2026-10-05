@@ -1,0 +1,163 @@
+Renderer round6: resolution requests and bounded MSAA policy
+=========================================================
+Status: static feature contract for review, not implementation or live validation.
+Frozen trainer0.10 is unchanged. No EXE/IDB patch, native invocation or process access.
+Original SHA256:9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed.
+Fresh private IDA session c070546e.63 complete ASM/pseudocode bodies,9640 instructions;
+42411 captured function bytes plus selected data match the original EXE.
+
+1. Resolution / display-mode request: implementation feasible
+-----------------------------------------------------------
+Native entry RVA124FE0: void __fastcall(void* gx,const float* dimensions,int mode).
+RCX=gx,RDX=pointer to two float32 dimensions,R8D=mode. It consumes/copies dimensions
+synchronously, retains no caller buffer, and queues a request under GX+31432 native CS.
+No GPU operation or COM call occurs inside its mode0 or mode2 branches.
+Modes:0 ordinary window,1 exclusive fullscreen,2 maximized window. Settings mode0/1/other
+map to native1/2/0 via506C90,506D10 and505D00 ->124FB0 ->124FE0.
+The pointer-taking native entry avoids constructing the GX singleton through124FB0.
+
+Windowed dimensions use native float32 arithmetic, then truncate toward zero:
+if width*9 < height*16: width'=width,height'=width*9/16;
+else width'=height*16/9,height'=height. This is a16:9 fit, not arbitrary aspect support.
+Mode2 ignores the supplied dimensions and maximizes the existing native window.
+Mode1 enumerates at most32 accepted native monitor modes, selects an exact integer
+size or the first returned mode, updates fullscreen dimensions1088/1092, then queues.
+Do not present a request acknowledgement as proof that the requested size was achieved.
+
+Recommended first bounded controls:
+- Apply windowed resolution with explicit width/height (or16:9 presets).
+- Maximize game window through mode2.
+- Restore loaded screen mode/size by an explicit action, subject to the mode1 dependency.
+Input policy for implementation: positive finite exact integer dimensions; bounded presets
+such as1280x720/1600x900/1920x1080, optionally larger sizes only within the current desktop
+and product bounds. These bounds are product policy, not the native integer ABI limits.
+The normal native path clamps windowed sizes against its cached primary-screen metrics
+and may reduce resulting dimensions again to fit the framebuffer heap budget.
+
+Execution contract:
+- Run only in the verified active application-thread callback, fresh host heartbeat,
+  matching current App and initialized GX epoch/vtable/device/thread handles. Reuse the
+  complete Display lifetime contract, including App+4752<0, GX+808==0 and shared fault latch.
+- Acquire the trusted native presentation mutex GX+30848; revalidate the full lease.
+  Existing native128470 establishes outer mutex -> resize CS+31432 lock order.
+- Reject an already pending resize/retry or current transition unless an explicit
+  replace-pending policy is designed. Pending dirty1024/active dirty1044 and countdown1040
+  are transient request state; capture them with resize CS, release that inspection lock,
+  then call the native setter exactly once. The setter acquires/releases its own CS.
+- Use a private immutable two-float stack buffer. Pin setter/constants and native lock
+  dependencies. Do not call117FD0/119E90/114D30/129560 directly or edit request fields.
+- Native C++ cleanup normally releases its CS. An unexpected native fault must disable
+  further renderer operations and require restart; do not claim recovery of an unknown
+  native recursive-lock state. Outer mutex is released once via captured unlock/finally;
+  an uncertain outer unlock latches the shared Display fault state.
+- The setter has no success result. Report 'queued', then observe actual mode1046/1048,
+  dimensions8/12 and pending bits on later valid snapshots. No native generation token
+  identifies ownership; later native requests/settings may supersede this one.
+- No save/config write, automatic reapply or disconnect restoration. Explicit profile
+  application can queue a fresh request if desired; automatic reconnect application is
+  inappropriate for window-mode changes without a separate user preference.
+
+Native consumption and lifetime:
+119E90 copies20 bytes pending1024..1043 to active1044..1063 under CS and clears pending.
+It then exits that CS, suspends interpolation scheduling through22984, signals/waits the
+main queue fence129560, releases old attachments119890, enters resize state1072=2,
+calls123020 and117FD0, clears state1072, updates scale/viewport metadata and resets AA0.
+117FD0 negotiates heap/capability through1119B0/124B50, handles window sizing and native
+swapchain mode/ResizeBuffers operations, rebuilds main/resolve/depth/SRV resources and
+previous-frame texture. Native GPU-resource failures are not transactionally rolled back.
+The presentation worker can Present outside the outer mutex; the native frame path owns
+that synchronization, so holding the mutex is not authority to call resize COM methods.
+
+Fullscreen dependency / native edge case:
+11C970 gathers modes >=800x600, optionally16:9, sorts/deduplicates, and copies float pairs.
+If no output is produced it recursively retries with filter0, even when filter was already0.
+Thus no accepted display modes (or maxCount0) can recurse without an evident base case.
+Do not implement an unconditional mode1 button merely because the wrapper is native.
+It needs successful current-monitor enumeration and an accepted mode immediately before
+the call, with a documented monitor-disconnect race; stronger support could replace only
+the pure enumeration dependency after independently proving equivalent ordering/filtering.
+Windowed/mode2 controls do not call11C970. The actual resize still inherits native driver,
+allocation, window callback and device-loss behavior; no static analysis proves it infallible.
+
+2. Actual AA policy: semantically feasible, verified hook still required
+--------------------------------------------------------------------
+There is no proven public 'MSAA on/off' setter.114D30 changes resource identities and
+has no lock, fence, exponent validation or failure rollback. Raw calls/field freezing are rejected.
+GX+1224 is adapter-description VendorId==0x1002, not an AA preference; native max becomes0
+for that flag. GX+1108 is the negotiated sample capability and participates in heap layout.
+
+Specific interception point: call at RVA11A14F, original bytes E8 2C 9A FF FF,
+target113B80, return address11A154, inside119E90's normal non-resize branch.
+ABI: int32 result inEAX; RCX=GX+30568 history; EDX=frame interval; XMM2=float budget;
+R9D=current exponent; arg5 min at caller[RSP+20h],arg6 max at caller[RSP+28h].
+At callee entry those stack arguments are+28h/+30h. Preserve normal Win64 stack/alignment,
+nonvolatile integer/SIMD registers, return flow and the caller's stack arguments.
+Native direct xrefs show this is113B80's only caller.
+
+Policy wrapper design (not installed):
+1. Always call the untouched113B80 exactly once with identical arguments; preserve history.
+2. With no fresh enabled policy, return its result unchanged.
+3. Only for exact caller/state/GX lease, active application thread, no replay22944, no resize,
+   expected min0 and max0..3 matching current capability/vendor-derived bound, apply policy.
+4. Fixed samples1/2/4/8 correspond to exponent0/1/2/3. Return min(requested,max), or reject
+   unavailable choices in the UI and return original when a requested choice is no longer valid.
+   An 'up toN samples' policy returns min(original,requested,max), retaining native reductions.
+   The UI must distinguish fixed within native capability from a guaranteedGPU setting.
+5. Do not write1108,1224,30556,30560,30564 or attachment sample counts. The native caller
+   compares returned level, performs13F360/13F390 bookkeeping, marks target dirty116,
+   writes30556 and invokes114D30. Native128100 then shifts30560/30564 normally.
+6. On disabled/disconnect/heartbeat/lease failure, policy becomes pass-through; no synchronous
+   resource restore or historical-field rewrite. Native adaptation may take multiple frames.
+
+Why this location preserves replay:
+128100 normal branch runs119E90 then records previous/current levels into30560/30564.
+Replay120ED0 sets22944=1 before128100; replay restores the appropriate historical level
+and bypasses119E90.128260 also restores30564 when closing the normal recorded interval.
+The timing worker's repeated frames stay on these historical native states. A policy is
+effective at the next normal quality-decision point, not immediately inside a replay.
+Resize bypasses the policy once, setsAA0, renegotiates capability and permits policy again
+on a later normal frame. No retained heap/attachment pointer is required by the policy.
+
+Required implementation work, not yet discharged:
+- A5-byte call-site patch is not an atomic arbitrary-worker write. Install only at an
+  application-thread safe point under the native presentation mutex, after proving no
+  other entry can execute that site. Normal timing replay bypasses it; startup must already
+  be complete. Third-party patches/callers must cause rejection. A nearby relay must satisfy
+  rel32 range, executable-memory policy and instruction-cache flush; keep payload resident.
+- Prove wrapper unwind/SEH behavior and original-once for all bypasses with isolated tests.
+  Do not dynamically unhook on an unrelated worker thread. Prefer a resident pass-through
+  wrapper afterDisable rather than unsafe teardown.
+- Test min/max/current/history across every0..3 combination, cooldown/middle/high/low load,
+  AMD max0, resize resetting0, capability reductions, replay-1/0, host loss, unknown caller,
+  same GX static address reused after shutdown and preexisting callsite modifications.
+- No hook was written or live tested in this research round. Safe code installation is a
+  remaining implementation dependency, not an excuse to replace the requested control with readouts.
+
+3. PSO/resource evidence relevant to AA
+--------------------------------------
+1121D0 reads selected framebuffer+160, maps1/2/4/8 to packed key bits27..28;
+117710 maps those bits back to SampleDesc.Count in the PSO description. Shader IDs/blobs
+are unchanged; no shader-bytecode or shader-constant edit is needed for this policy.
+114D30 chooses main0/aux1..4/resolve5 or current negativeID, computes1<<low5bits(exponent),
+and uses11B4F0 plus11B290 when existing color/depth indices are valid. Only0..3 is supported
+by the proved renderer pipeline; do not expose the raw native shift/target range.
+11AF70 uses descriptor-keyed64-slot pools;125AA0 binds resource slots to native contexts
+or current/history slots.123C60 retains those references. This is why the normal frame
+decision is preferable to an out-of-band resource setter.
+1253D0 selects direct shader sampling, CopyResource(single sample) or ResolveSubresource
+(multisample), with matching tracked resource barriers. A raw sample-field edit bypasses it.
+
+Correction to an earlier summary:
+113B80's cooldown/middle-band path DOES compare current against max at113BED and returns
+min at113BF8 if current exceeds max. A different path remains unbounded: when current
+headroom is high but any of the next29 history samples is not sufficiently low-cost,
+1140EB jumps directly to1145A1 and returns current without that maximum check. Earlier
+shorthand 'results bounded by caller limits' was too broad, and this round's preliminary
+cooldown/middle-band explanation was corrected after independent ASM review. Reducing
+GX+1108 alone therefore is not a reliable immediateAA cap.
+
+Review boundaries
+Only address-scoped claims in renderer_round6_deep.json count as new semantic findings.
+All63 full exports support the review, but raw capture is not63 newly understood systems.
+No tests of graphics output, GPU/driver failures, monitor changes, mod compatibility or
+machine-code patch installation were performed. Existing0.10 source/reports remain frozen.

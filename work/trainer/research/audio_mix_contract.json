@@ -1,0 +1,434 @@
+{
+  "title": "One-time audio mixer contract",
+  "date": "2026-10-04",
+  "status": "Frozen native source reviewed; isolated guard tests reported passing by root; live audio behavior untested.",
+  "target": {
+    "imageBase": "0x140000000",
+    "sha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed"
+  },
+  "source": {
+    "path": "trainer/Native/AudioFeatures.inl",
+    "sha256": "a2e56de2e4e672f3402c20053ba30340e90c0c70e2312b11c7853cca1296fa26"
+  },
+  "validation": {
+    "testPath": "work/trainer/tests/AudioGuardTests.cpp",
+    "testSha256": "53c893746ec7cbaeb352c53fbeac808c0af0d4ed1855e2f72465fc328b6a6a53",
+    "checks": 618,
+    "failures": 0,
+    "resultAttribution": "Run reported by root. This reviewer read the final test source and checked its hash; did not execute the test binary or game.",
+    "coverage": [
+      "All four logical groups at 0/50/100%, both routing values and both softening values.",
+      "Reapply all four loaded settings, preserving the config bytes.",
+      "Driver/list/master identity, unsupported code/vtables, invalid or unreadable late targets.",
+      "All controllers constructed before the first setter; final-controller failure causes zero gain writes.",
+      "Graph replacement during the final controller construction causes zero gain writes and destroys all six temporaries.",
+      "Invalid inputs, wrong thread, expired heartbeat, busy audio lock, malformed envelope values.",
+      "Partial setter failure stops later setters and reports the partial result.",
+      "SEH unwinding destroys temporary controllers and releases the global CS to another thread.",
+      "Current-stage diagnostics, unavailable snapshots and nonuniform Effects target readout."
+    ],
+    "originalCodeSignatures": "Seven embedded signatures were independently matched against the original EXE.",
+    "liveTested": false
+  },
+  "protocol": {
+    "slotBase": 144,
+    "slotEnd": 159,
+    "commandRule": "Write/action command ID = 1000 + slot; read-only diagnostics have no command.",
+    "requiresScene": false,
+    "runtimeAvailability": "Uses current audio graph and engine-thread checks, independent of Sora sceneReady. Capability flags state implementation support; each action still validates runtime state."
+  },
+  "controls": [
+    {
+      "slot": 144,
+      "id": "audio.master",
+      "command": 1144,
+      "kind": "Number",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "targetIds": [
+        0
+      ],
+      "profile": true
+    },
+    {
+      "slot": 145,
+      "id": "audio.music",
+      "command": 1145,
+      "kind": "Number",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "targetIds": [
+        1
+      ],
+      "profile": true
+    },
+    {
+      "slot": 146,
+      "id": "audio.effects",
+      "command": 1146,
+      "kind": "Number",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "targetIds": "(swapped ? 3 : 2), 4, 5, 6, 7, 8",
+      "profile": true
+    },
+    {
+      "slot": 147,
+      "id": "audio.voice",
+      "command": 1147,
+      "kind": "Number",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "targetIds": "swapped ? 2 : 3",
+      "factor": "0.9 only when !swapped && softened; otherwise 1.0",
+      "profile": true
+    },
+    {
+      "slot": 148,
+      "id": "audio.reset",
+      "command": 1148,
+      "kind": "Action",
+      "name": "Apply game audio settings",
+      "targetIds": "All nine targets 0..8 exactly once",
+      "profile": false
+    }
+  ],
+  "nativeAbi": {
+    "construct": {
+      "rva": "0x079C90",
+      "prototype": "Controller* __fastcall(Controller* out, unsigned busId)",
+      "registers": "RCX output, EDX ID; RAX returned output",
+      "sizeBytes": 24,
+      "layout": "vtable +0, signed ID +8, padding +12, nonowning backend +16"
+    },
+    "set": {
+      "rva": "0x07FAD0",
+      "prototype": "void __fastcall(Controller*, float gain, unsigned milliseconds)",
+      "registers": "RCX controller, XMM1 gain, R8D duration",
+      "gain": "finite normalized 0..1",
+      "milliseconds": 1,
+      "behavior": "Requests a native gain envelope. 1 ms avoids the immediate voice-list branches; completion waits for the next native update and is not a wall-clock latency guarantee."
+    },
+    "destroy": {
+      "rva": "0x07F7E0",
+      "prototype": "void __fastcall(Controller*)",
+      "registers": "RCX controller"
+    }
+  },
+  "routing": {
+    "swappedRva": "0x8BBD14",
+    "softenedRva": "0x8BBD18",
+    "acceptedFlagValues": [
+      0,
+      1
+    ],
+    "voiceFactorRva": "0x5AAA40",
+    "voiceFactorOriginal": 0.9,
+    "labelEvidence": "Master follows the native master path. Music, Effects and Voice are friendly names inferred from the analyzed settings routing and sound subsystems; no direct English menu-label resource was recovered."
+  },
+  "loadedSettings": {
+    "fieldsRva": "0x715364",
+    "headerRva": "0x715350",
+    "requiredHeader": {
+      "magic": "SET-",
+      "version": 8,
+      "size": 508
+    },
+    "type": "uint16 per level",
+    "acceptedRange": [
+      1,
+      10
+    ],
+    "gainTableRva": "0x5AB960",
+    "conversion": "Read float table[level], corresponding to 0.1..1.0 in this build; require finite 0..1.",
+    "fields": [
+      {
+        "offset": 20,
+        "group": "Master",
+        "wrapperRva": "0x137F50"
+      },
+      {
+        "offset": 22,
+        "group": "Music / bus 1",
+        "wrapperRva": "0x137D50"
+      },
+      {
+        "offset": 24,
+        "group": "Effects group",
+        "wrapperRva": "0x138290"
+      },
+      {
+        "offset": 26,
+        "group": "Voice group",
+        "wrapperRva": "0x138440"
+      }
+    ],
+    "behavior": "Reapply the four levels currently loaded in memory, including Master, with the current routing and voice factor. The action changes only the live mixer. It does not edit or save configuration files."
+  },
+  "transaction": {
+    "callSite": "Existing verified application post-Update callback, original result == 0, matching App identity and recorded engine thread.",
+    "heartbeat": "Connected host with nonzero heartbeat no older than 5000 ms, and bridge not disabled.",
+    "lock": "TryEnterCriticalSection(base + 0x2B81278); busy returns a retry/unavailable result. Hold the same lock until validation, all setter calls and temporary cleanup finish; release in __finally.",
+    "graph": "Exact driver vtable 0x61B760 and ready BYTE +52; ordinary count 1..1024 and readable list; exact supported master 0x61DA28 or 0x621998; master child-list +336 and DWORD count +344 match global roots.",
+    "bus": "Validate target ID, exact bus/master and DynamicValue vtables, setter signatures, readable structure, writable first-stage storage and finite plausible envelope fields.",
+    "prepare": "Preflight every target bus. Construct and validate every 24-byte controller before the first setter. Verify current roots still equal the validated graph.",
+    "apply": "Exactly one setter per planned target with duration 1 ms. After each call, verify stored target gain. No later setters after an unexpected failure.",
+    "failure": "If preflight or graph identity changes, issue zero gain setters. If a later setter fails, report possible partial application; successful earlier changes remain. No rollback is attempted."
+  },
+  "readouts": {
+    "149": "Ordinary bus count; Master is additional.",
+    "150": "ID 0 / master current first-stage gain at +32 multiplied by 100.",
+    "151": "ID 1 current first-stage gain.",
+    "152": "ID 2 current first-stage gain.",
+    "153": "ID 3 current first-stage gain.",
+    "154": "ID 4 current first-stage gain.",
+    "155": "ID 5 current first-stage gain.",
+    "156": "ID 6 current first-stage gain.",
+    "157": "ID 7 current first-stage gain.",
+    "158": "ID 8 current first-stage gain.",
+    "159": "Audio graph available for the current snapshot: 0 or 1.",
+    "logicalControlValues": "Slots 144/145 show target +36, not current +32. Slot 147 divides the actual target by the active voice factor. Slot 146 is present only when all six Effects targets match.",
+    "units": "Internal linear multipliers expressed as percentages. These are raw first-stage values, not dB, a sound-pressure measurement or the final composed output.",
+    "consistency": "Copy all values while holding global Sound CS. Unreadable/invalid buses are omitted; busy or unavailable audio reports availability 0. Native game changes may occur after the snapshot."
+  },
+  "ownership": {
+    "mode": "One-time application only.",
+    "laterGameChanges": "Native settings, fades and game transitions may replace the requested gain.",
+    "disconnect": "Disconnect, heartbeat expiry and Disable all effects leave already applied one-time mix changes in place.",
+    "explicitRestore": "Use Apply game audio settings to reapply the four current loaded levels; it is not a captured pre-trainer snapshot.",
+    "excluded": [
+      "No continuous override or observer hook.",
+      "No automatic restore on disconnect or disable.",
+      "No stop, pause, resume, song selection or Jukebox operation.",
+      "No direct writes to gain fields, pause flags or configuration. Native setters own gain mutations."
+    ],
+    "zero": "Gain zero requests silence through the native envelope and does not call a stop or pause API. Native playback state and pause/duck ownership remain separate."
+  },
+  "profiles": {
+    "savedIds": [
+      "audio.master",
+      "audio.music",
+      "audio.effects",
+      "audio.voice"
+    ],
+    "excluded": [
+      "audio.reset",
+      "all audio diagnostics"
+    ],
+    "save": "Profiles store the four selected numeric inputs, validated against the current catalog and target game hash.",
+    "load": "Loading changes trainer input controls only; applying the profile sends each saved command once.",
+    "apply": "Profile commands are sent sequentially. Runtime audio guards still apply. Failure stops later profile commands; earlier successful actions remain applied.",
+    "sources": [
+      "work/trainer/research/audio_features.json",
+      "trainer/KH2Trainer.Core/ProfileStore.cs",
+      "trainer/KH2Trainer/ViewModels.cs"
+    ]
+  },
+  "limits": [
+    "Live audio and listening behavior are untested.",
+    "The lifetime proof covers the supported native application loop. An external mod that invokes private teardown/reset concurrently is outside that proof.",
+    "The first-stage gain is only one contributor to audible output; native fades, additional gain stages and pause/duck state still apply.",
+    "Static evidence and isolated tests do not constitute whole-program semantic coverage."
+  ],
+  "claims": [
+    {
+      "addr": "0x140121d90",
+      "Finding": "The normal application loop calls initialization, repeated Update callbacks and shutdown in sequence on the same thread. A successful post-Update hook is a supported audio access point.",
+      "Evidence": [
+        "work/trainer/research/audio_lifecycle_evidence.json"
+      ],
+      "Limitations": "The contract excludes arbitrary worker threads, shutdown callbacks, DLL detach and unsupported external mods that tear audio down concurrently."
+    },
+    {
+      "addr": "0x140077fc0",
+      "Finding": "The audio worker holds global Sound CS at RVA 0x2B81278 across the 08FE90 bus/master update, including envelope interpolation.",
+      "Evidence": [
+        "work/trainer/research/audio_lifecycle_evidence.json"
+      ],
+      "Limitations": "The envelope is coherent while this lock is held; the game can change it immediately after release."
+    },
+    {
+      "addr": "0x1400787c0",
+      "Finding": "The alternative driver virtual +88 update route also holds global Sound CS.",
+      "Evidence": [
+        "work/trainer/research/audio_lifecycle_evidence.json"
+      ],
+      "Limitations": "Only identified native paths are covered."
+    },
+    {
+      "addr": "0x140077be0",
+      "Finding": "Native shutdown joins both timer workers before releasing the driver and its buses.",
+      "Evidence": [
+        "work/trainer/research/audio_lifecycle_evidence.json"
+      ],
+      "Limitations": "Several roots remain nonnull during destruction, so pointer checks alone are insufficient outside the supported game-thread call site."
+    },
+    {
+      "addr": "0x14008fa20",
+      "Finding": "Bus teardown frees the bus list and master without clearing every corresponding root/count.",
+      "Evidence": [
+        "work/trainer/research/audio_lifecycle_evidence.json"
+      ],
+      "Limitations": "This function is evidence for the lifetime restriction, not an API used by the trainer."
+    },
+    {
+      "addr": "0x140091250",
+      "Finding": "SoundDriver initialization finishes by writing BYTE(driver + 52) = 1 after bus construction.",
+      "Evidence": [
+        "work/trainer/research/audio_lifecycle_evidence.json"
+      ],
+      "Limitations": "The readiness check is one byte; an earlier DWORD store at that location also initializes adjacent flags."
+    },
+    {
+      "addr": "0x14008d720",
+      "Finding": "Native bus initialization binds master +336 to the global bus list and master +344 to the ordinary bus count.",
+      "Evidence": [
+        "work/trainer/research/audio_lifecycle_evidence.json"
+      ],
+      "Limitations": "These relationships validate graph ownership; they do not permit a trainer to call initialization or reset routines."
+    },
+    {
+      "addr": "0x140079c90",
+      "Finding": "Constructs a 24-byte BusController under Sound CS using driver virtual +152; RCX is output storage and EDX is the bus ID.",
+      "Evidence": [
+        "work/trainer/research/audio_lifecycle_evidence.json"
+      ],
+      "Limitations": "The resulting ID and vtable must be checked before use."
+    },
+    {
+      "addr": "0x1400936a0",
+      "Finding": "The supported driver factory writes controller vtable RVA 0x61ACD0, ID at +8 and the nonowning backend pointer from RVA 0x2B81DE8 at +16.",
+      "Evidence": [
+        "work/trainer/research/audio_lifecycle_settings_evidence.json"
+      ],
+      "Limitations": "The factory itself does not validate the target bus ID."
+    },
+    {
+      "addr": "0x14007fad0",
+      "Finding": "Native BusController gain setter resolves ID 0 to the master and ID 1..count to list[id - 1]. ABI is RCX=controller, XMM1=float gain, R8D=unsigned milliseconds.",
+      "Evidence": [
+        "work/trainer/research/audio_lifecycle_evidence.json"
+      ],
+      "Limitations": "Trainer calls use exactly 1 ms. This sets a gain envelope and does not stop or pause playback."
+    },
+    {
+      "addr": "0x14007f7e0",
+      "Finding": "Temporary controller destruction rewrites the controller vtable and does not free its nonowned backend.",
+      "Evidence": [
+        "work/trainer/research/audio_lifecycle_evidence.json"
+      ],
+      "Limitations": "Cleanup is required for every successfully constructed temporary; it does not restore mixer values."
+    },
+    {
+      "addr": "0x1400a54d0",
+      "Finding": "For nonzero duration, the ordinary bus gain setter updates the first DynamicValue envelope rather than entering its immediate voice-list update branch.",
+      "Evidence": [
+        "work/trainer/research/audio_bus_setter_asm.json"
+      ],
+      "Limitations": "The trainer requests 1 ms; audible completion depends on the next native audio update."
+    },
+    {
+      "addr": "0x1400a8830",
+      "Finding": "The XA2 master gain setter has a nonzero-duration envelope path compatible with the same 1 ms call.",
+      "Evidence": [
+        "work/trainer/research/audio_bus_setter_asm.json"
+      ],
+      "Limitations": "No new backend voice or stop operation is requested by this path."
+    },
+    {
+      "addr": "0x1400c4b80",
+      "Finding": "The generic master gain setter supports the same nonzero-duration first-stage envelope update.",
+      "Evidence": [
+        "work/trainer/research/audio_bus_setter_asm.json"
+      ],
+      "Limitations": "Only the exact validated master implementation is accepted."
+    },
+    {
+      "addr": "0x140505d00",
+      "Finding": "ApplyAll dispatches four loaded ushort settings at GetFields +20/+22/+24/+26 to 137F50/137D50/138290/138440 respectively.",
+      "Evidence": [
+        "work/trainer/research/audio_lifecycle_settings_evidence.json"
+      ],
+      "Limitations": "Music/Effects/Voice labels are inferred from routing and subsystem behavior; their English menu localization strings were not recovered."
+    },
+    {
+      "addr": "0x140137f50",
+      "Finding": "A loaded master level 1..10 selects float table 0x5AB960[level] and forwards the gain through 079B00.",
+      "Evidence": [
+        "work/trainer/research/audio_lifecycle_settings_evidence.json",
+        "work/trainer/research/audio_mix_evidence.json"
+      ],
+      "Limitations": "The trainer reapply action uses this actual loaded master level, not a fixed 100% value."
+    },
+    {
+      "addr": "0x140079b00",
+      "Finding": "The native master wrapper holds Sound CS and dispatches the current master virtual +24 with the gain in XMM1.",
+      "Evidence": [
+        "work/trainer/research/audio_lifecycle_settings_evidence.json",
+        "work/trainer/research/audio_mix_evidence.json"
+      ],
+      "Limitations": "The trainer uses validated BusController ID 0 with duration 1 ms instead of invoking this settings wrapper with duration 0."
+    },
+    {
+      "addr": "0x140137d50",
+      "Finding": "Loaded setting +22 controls bus ID 1.",
+      "Evidence": [
+        "work/trainer/research/audio_lifecycle_settings_evidence.json"
+      ],
+      "Limitations": "The friendly name Music is a routing inference."
+    },
+    {
+      "addr": "0x140138290",
+      "Finding": "Loaded setting +24 controls bus (routing flag 0x8BBD14 ? 3 : 2), followed by buses 4 through 8.",
+      "Evidence": [
+        "work/trainer/research/audio_lifecycle_settings_evidence.json"
+      ],
+      "Limitations": "All six target buses must pass preflight before the first trainer setter."
+    },
+    {
+      "addr": "0x140138440",
+      "Finding": "Loaded setting +26 controls bus (0x8BBD14 ? 2 : 3). Gain is multiplied by float 0x5AAA40 (0.9) only when the routing flag is zero and 0x8BBD18 is set.",
+      "Evidence": [
+        "work/trainer/research/audio_lifecycle_settings_evidence.json",
+        "work/trainer/research/audio_mix_evidence.json"
+      ],
+      "Limitations": "The Voice label is inferred; current routing and scale are read for each transaction."
+    },
+    {
+      "addr": "0x140138e80",
+      "Finding": "Native pause/duck behavior changes pause ownership or individual music-entry gain separately from the first bus gain stage.",
+      "Evidence": [
+        "work/trainer/research/audio_lifecycle_evidence.json"
+      ],
+      "Limitations": "The trainer gain controls do not own native pause state or undo game ducking."
+    },
+    {
+      "addr": "0x1400a5430",
+      "Finding": "The bus composite-gain calculation combines multiple DynamicValue stages.",
+      "Evidence": [
+        "work/trainer/research/audio_mix_evidence.json"
+      ],
+      "Limitations": "A raw first-stage current value is not the full composed output, measured loudness or decibels."
+    }
+  ],
+  "evidenceHashes": {
+    "work/trainer/research/audio_mix_evidence.json": "dd7363ac9b58fc789af56bbea3a9a0fc5b48fd27b943ab13da552c1cd6c8dcfc",
+    "work/trainer/research/audio_lifecycle.json": "e19d9a288895ea38c0551bef369ffcbb915898c0b2a593d2765075aa5e93446e",
+    "work/trainer/research/audio_lifecycle_evidence.json": "9abc02ce34ea263e68062f12b42cac167b95c068eefcc05f5af1c48879556685",
+    "work/trainer/research/audio_lifecycle_settings_evidence.json": "79e05a6ff915e013b5dc215eefdd21f25da572e6358de5c4865fc3adb8bfc68b",
+    "work/trainer/research/audio_bus_setter_asm.json": "84f5f48fab381a2fbdbe878dc7470b43cf7e25945dde4c919c1223d3e492c022",
+    "work/trainer/research/audio_features.json": "02055c45e4dbb0e9038e6feaeec7bddcf8ac72a141b5478e8254db4a0da64bd9"
+  }
+}

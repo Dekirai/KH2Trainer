@@ -1,0 +1,367 @@
+{
+  "Domain": "Independent Drive entrypoint review",
+  "Date": "2026-10-04",
+  "Methods": "Read-only IDA, full fresh pseudocode and ASM; all45 cursors complete",
+  "Findings": [
+    {
+      "Address": "0x140405440",
+      "Finding": "Type4 consumes actor RCX and command RDX, resolves native form, spends canonical resolved-form cost, updates usage and queues transition; Type5 queues form0. No descriptor pointer is retained on these branches.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x140405440; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403A9EA0",
+      "Finding": "Boolean validator takes actor RCX/command RDX and composes character compatibility, current action and command availability (<4).",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x1403A9EA0; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x14040CE60",
+      "Finding": "Allocates56-byte transition context for changed form, invokes constructor, alters actor action/velocity and records form; revert byte+48 assumes allocation succeeds.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x14040CE60; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x14040CAA0",
+      "Finding": "Owns transition context containing actor/form/object ID/effect/status/task; schedules40CF10 plus40CF20 cleanup and never stores command descriptor.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x14040CAA0; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x14040CF10",
+      "Finding": "Task callback forwards task+24 context with task pointer to40D000.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x14040CF10; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x14040CF20",
+      "Finding": "Transition cleanup releases effect/status, clears native state flags, conditionally clears global pending context and frees its memory.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x14040CF20; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x14040D000",
+      "Finding": "Fiber loads form resources, waits, constructs replacement3608-byte player actor, transfers references and waits for old actor teardown.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x14040D000; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x140421D60",
+      "Finding": "Native Drive outcome uses Anti thresholds and RNG, may choose Anti6/Final5 and grant Final item29; updates corresponding counters.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x140421D60; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x140401D60",
+      "Finding": "Command availability type4 includes global state, party, player metadata, map/form restrictions and Drive cost; all types honor root form exclusions and command mask.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x140401D60; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403B6A10",
+      "Finding": "Command compatibility rejects character-specific command flag masks and excludes player mode12.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x1403B6A10; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403BA070",
+      "Finding": "Command acceptance evaluates native actor action/combo/motion flags and current command relationships.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x1403BA070; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1404005E0",
+      "Finding": "Drive party eligibility distinguishes Valor/Wisdom partner IDs, exempts Limit and uses native partner availability; summon has its own branch.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x1404005E0; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403B6D50",
+      "Finding": "Sourcebyte+6 not255 and not4 causes normal command-availability Drive checks to be skipped.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x1403B6D50; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403B6CF0",
+      "Finding": "Command flags combine actor action predicate, combat state and global142A11400 bit2 for availability exclusions.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x1403B6CF0; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403B6CB0",
+      "Finding": "Follows command kind aliases to root and tests root word+44 against current player form; traversal is unbounded.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x1403B6CB0; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403E0630",
+      "Finding": "Resolves form object via405190 and requests loader3E0660(object,5000,4,7).",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x1403E0630; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x140400B20",
+      "Finding": "Starts native partner transition for partners associated with selected form; Limit skips partner consumption.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x140400B20; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403B6920",
+      "Finding": "Maps form through static form-item mapping, item+16 command ID and command-table lookup.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x1403B6920; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x140405190",
+      "Finding": "Returns model table word(form+11), or world-costume-selected base model at word(costume+8).",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x140405190; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403C2780",
+      "Finding": "Deducts byte cost from status Drive bars433, clamps zero, clears fraction432 when full or overspending.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_evidence.json entry 0x1403C2780; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403A3990",
+      "Finding": "Reads float area+1704 when global142A0FF68 is nonzero, otherwise1.0.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_additional.json entry 0x1403A3990; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403BFB70",
+      "Finding": "Actor membership walks global142A171C8 and packed next+2704 until actor or null, with no bound/cycle protection.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_additional.json entry 0x1403BFB70; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403C3950",
+      "Finding": "Partner availability traverses filtered actor list to reject attachment/ownership and state constraints.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_additional.json entry 0x1403C3950; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403BF4F0",
+      "Finding": "Filtered actor iterator follows packed next+2704 while native predicate3BAA80 rejects current node.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_additional.json entry 0x1403BF4F0; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x140400330",
+      "Finding": "Revert availability iterates saved party IDs142AE9788 under count142AE9790 and queries model-character/party presence.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_additional.json entry 0x140400330; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403E2E60",
+      "Finding": "Directly indexes word142A25300 by input ID, resolves nonzero object and dereferences character ID+76.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_additional.json entry 0x1403E2E60; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403C3FE0",
+      "Finding": "Grants inventory by item locator; type21 resets Anti counter and may choose/decrement first owned Type2 weapon for empty form weapon.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_additional.json entry 0x1403C3FE0; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403C4720",
+      "Finding": "Reads item quantity from unique bit locator or byte stock locator, with special type19 zero behavior.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_additional.json entry 0x1403C4720; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403C4A40",
+      "Finding": "Removes a unique flag or decreases/clamps byte stock according to item locator.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_additional.json entry 0x1403C4A40; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403E3960",
+      "Finding": "Iterates24-byte item records from current item table start to count-derived end.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_additional.json entry 0x1403E3960; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403E2E40",
+      "Finding": "Returns static room-model structure142A252F0.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_additional.json entry 0x1403E2E40; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403E2E20",
+      "Finding": "Returns four-byte per-world costume record9ACDE4+4*world, choosing current world for negative argument.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_additional.json entry 0x1403E2E20; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403E3670",
+      "Finding": "Reads low5bits of selected byte in a world costume record.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_additional.json entry 0x1403E3670; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403E37F0",
+      "Finding": "Uses world costume-character slot resolution and native costume availability to decide partner restriction.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_additional.json entry 0x1403E37F0; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403C0620",
+      "Finding": "Obtains character status, establishes Drive-save/form pointers as needed, and rebuilds through3C1D90.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_additional.json entry 0x1403C0620; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403C1D90",
+      "Finding": "Rebuilds status from character level/equipment and optional form weapon, plus saved Drive values and ability effects.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_additional.json entry 0x1403C1D90; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403DFEB0",
+      "Finding": "Resolves virtual object IDs through party/form/weapon state before final object-table search; raw ID membership is insufficient for aliases.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_additional.json entry 0x1403DFEB0; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403C17C0",
+      "Finding": "Sets active form gauge mode2 and duration from form level or Anti parameter140, scaled by parameter104.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_additional.json entry 0x1403C17C0; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403E69A0",
+      "Finding": "Increments form usage counter capped999 and executes existing achievement branch for Anti usage threshold.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_additional.json entry 0x1403E69A0; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403E2EB0",
+      "Finding": "Initializes exactly18 model selector words142A25300..142A25322 using applicable52-byte room-model records.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_bounds.json entry 0x1403E2EB0; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403E3830",
+      "Finding": "Examines four world costume bytes; selector18 denotes empty, other selectors resolve model character ID.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_bounds.json entry 0x1403E3830; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403E3680",
+      "Finding": "Selector18 returns0; other world-costume selectors index room model table and dereference resolved object character+76.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_bounds.json entry 0x1403E3680; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403C04E0",
+      "Finding": "Finds first active matching character status in80x632 pool, increments references and stores current values; allocates from free-index stack if none exists.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_bounds.json entry 0x1403C04E0; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1404016B0",
+      "Finding": "Initializes status ability-effect accumulator and its owner pointer with fixed defaults.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_bounds.json entry 0x1404016B0; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    },
+    {
+      "Address": "0x1403C1190",
+      "Finding": "Applies equipped-item parameter stats and ability effect to a character status.",
+      "Evidence": [
+        "work/trainer/research/drive_independent_bounds.json entry 0x1403C1190; complete fresh ASM and pseudocode"
+      ],
+      "Limitations": "Static control/data-flow proof for this build; no live transition or asynchronous resource success test."
+    }
+  ]
+}

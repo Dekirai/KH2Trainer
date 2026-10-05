@@ -1,0 +1,43 @@
+{
+  "status": "PASSED_STATIC_REPORT_REVIEW",
+  "reviewer": "/root/pe_inventory",
+  "scope": "Address-scoped semantic comparison; no new product control or live test.",
+  "inputs": [
+    {
+      "path": "work/trainer/research/actor_ai_round7_report.json",
+      "sha256": "39a6d083621151f74edc52b98f52f6e6adc137c6201f152e1eea8104365a58f4"
+    },
+    {
+      "path": "work/trainer/research/actor_ai_round7_complete_evidence.json",
+      "sha256": "e53ae4f73e765d2a820083dac97f610adcad7e4b908bdf9f3d8c1fe42cfd61db"
+    },
+    {
+      "path": "work/trainer/research/actor_ai_round7_validation.json",
+      "sha256": "5f39308a7d1a9c99327a30ca6f74a4c61f98ced776058e0fa3888dd9c53a2739"
+    },
+    {
+      "path": "work/trainer/research/actor_ai_round6_complete_evidence.json",
+      "sha256": "ebdec2a5d66e7a99810651e2b7eb6cd889bb51fe56925f3e470a5bfba6c59ff9"
+    }
+  ],
+  "checked": {
+    "function_bodies": 16,
+    "assembly_instructions": 813,
+    "function_bytes": 3379,
+    "manual": "All sixteen pseudocode bodies and the corresponding complete ASM/control-flow anchors were read. Page/address bounds were independently counted. The original-PE comparison result is the root-authored validation, not a second independent PE run."
+  },
+  "findings": [],
+  "confirmations": [
+    "3BA7C0 reads Actor+288 bit0x400;3BA840/3BA890 combine that flag with other Actor/global gates rather than exposing a private pause API.",
+    "552240 identifies reuse candidates with category0x08000000/nativeID/bit0x400/549660/Actor+3448<=0 and resets extension/context/descriptor/motion state.552430 and562220 set the same bit;552770 clears it. The report correctly declines an ownership-safe generic AI toggle.",
+    "3DB4C0/411420/41A560 are exactly two-instruction RDX-to-RCX tailcalls to3B4460. Base descriptor-slot evidence does not establish every concrete enemy or direct VM path.",
+    "3D4F00/3D6040 require3DAC30 and both optional child predicates at descriptor+64.3BFA40 is a distinct ordinary-update gate over the indexed bitmap,mask0x200000,152940 and conditionally Actor+2488bit0x80.",
+    "3BFAB0/3BFCE0 set completion flags even when bit0x400 suppresses work.3BEEC0 drains the packed motion list, batches five jobs with dependency waits, and maintains completion/list bookkeeping rather than merely skipping AI.",
+    "The non-character101 interpretation is explicitly backed by Round6 complete3BA530 ASM: call3B5B20;cmpEAX,0x65;setzAL. This resolves the initially missing direct evidence link.",
+    "552770 call ABI carries RCX=actor+344,EDX=0,XMM2=0,XMM3=0 into3C86A0; the pseudocode two-argument display alone would miss the float arguments."
+  ],
+  "limitations": [
+    "Review validates the scoped statements and conservative no-feature decision, not universal Actor/AI coverage.",
+    "No mutation, build, game process, GUI action, or new native routine invocation was performed."
+  ]
+}

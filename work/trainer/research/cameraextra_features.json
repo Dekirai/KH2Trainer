@@ -1,0 +1,236 @@
+[
+  {
+    "Id": "camera.roll",
+    "Category": "Camera",
+    "Name": "Camera roll",
+    "Description": "Set the additional native roll angle of the held free camera. Enable free camera first. The setting ends when camera ownership or the scene changes.",
+    "Kind": "Number",
+    "CommandId": 1240,
+    "ValueSlot": 240,
+    "CapabilitySlot": 240,
+    "Minimum": -180,
+    "Maximum": 180,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "degrees",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Held roll is released with free camera. Native follow resumes its own pose; no camera bank is restored.",
+    "Evidence": [
+      {
+        "Address": "0x14019D3D0 / 0x14019CBA0 / 0x1401AADC0",
+        "Finding": "Camera+120 is an additional roll angle in radians, applied to the view after eye/target/up.",
+        "Level": "Complete native IDA assembly and static control-flow review; synthetic guard tests passed. Live camera validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "camera.owner",
+    "Category": "Camera",
+    "Name": "Camera owner",
+    "Description": "Native camera owner: 0 normal follow, 1 scripted camera, 2 observed minigame control. Other values are not classified.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 241,
+    "CapabilitySlot": 241,
+    "Minimum": -2147483648,
+    "Maximum": 2147483647,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read only. Availability follows the current camera and field scene.",
+    "Evidence": [
+      {
+        "Address": "0x14019CE70 / 0x14019DDA0",
+        "Finding": "Camera owner is int32 at RVA AC1528, separate from the bank and controller mode.",
+        "Level": "Complete native IDA assembly and static control-flow review; synthetic guard tests passed. Live camera validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "camera.controller_mode",
+    "Category": "Camera",
+    "Name": "Follow controller mode",
+    "Description": "Native field camera branch. Mode 0 is normal follow; other branches may belong to aiming, tracking or scripted actions.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 242,
+    "CapabilitySlot": 242,
+    "Minimum": 0,
+    "Maximum": 10,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read only. Availability follows the current camera and field scene.",
+    "Evidence": [
+      {
+        "Address": "0x140166100",
+        "Finding": "The field controller dispatches its int32 mode at RVA 718CA8.",
+        "Level": "Complete native IDA assembly and static control-flow review; synthetic guard tests passed. Live camera validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "camera.recenter",
+    "Category": "Camera",
+    "Name": "Recenter behind player",
+    "Description": "Queue the native recenter behind the followed player and restore its preset follow distance. Requires the normal camera, a living current player and no menu, event or transition.",
+    "Kind": "Action",
+    "CommandId": 1243,
+    "ValueSlot": -1,
+    "CapabilitySlot": 243,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Pending request is canceled on timeout, disconnect or camera/player/scene ownership loss. Executed native recenter/snap is a one-time action.",
+    "Evidence": [
+      {
+        "Address": "0x140430B60 / 0x140165A40 / 0x140165110",
+        "Finding": "Request byte+65 is set immediately before the next normal follow task and consumed during that update.",
+        "Level": "Complete native IDA assembly and static control-flow review; synthetic guard tests passed. Live camera validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "camera.snap",
+    "Category": "Camera",
+    "Name": "Snap camera interpolation",
+    "Description": "Queue one native camera snap to its current desired pose. Requires normal follow and free camera disabled. This does not change the player or camera owner.",
+    "Kind": "Action",
+    "CommandId": 1244,
+    "ValueSlot": -1,
+    "CapabilitySlot": 244,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Pending request is canceled on timeout, disconnect or camera/player/scene ownership loss. Executed native recenter/snap is a one-time action.",
+    "Evidence": [
+      {
+        "Address": "0x140430B40 / 0x140165BC0 / 0x140166100",
+        "Finding": "Request byte+64 is consumed by the ordinary field camera update before smoothing.",
+        "Level": "Complete native IDA assembly and static control-flow review; synthetic guard tests passed. Live camera validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "camera.pending",
+    "Category": "Camera",
+    "Name": "Pending camera action",
+    "Description": "0 none, 1 recenter queued, 2 camera snap queued. Requests expire after 1.5 seconds or when player, scene, ownership or connection changes.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 245,
+    "CapabilitySlot": 245,
+    "Minimum": 0,
+    "Maximum": 2,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read only. Availability follows the current camera and field scene.",
+    "Evidence": [
+      {
+        "Address": "0x140164860 / 0x140164CB0",
+        "Finding": "The trainer queues a request for the existing group 1, priority 26000 camera task; it does not run an extra camera update.",
+        "Level": "Complete native IDA assembly and static control-flow review; synthetic guard tests passed. Live camera validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "camera.follows_player",
+    "Category": "Camera",
+    "Name": "Camera follows current player",
+    "Description": "Whether the native field controller currently holds the freshly validated player pointer.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 246,
+    "CapabilitySlot": 246,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read only. Availability follows the current camera and field scene.",
+    "Evidence": [
+      {
+        "Address": "0x140164C60 / 0x140164CF0",
+        "Finding": "The borrowed followed-actor pointer is at RVA 718CB0 and is cleared by player teardown.",
+        "Level": "Complete native IDA assembly and static control-flow review; synthetic guard tests passed. Live camera validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "camera.follow_distance",
+    "Category": "Camera",
+    "Name": "Native follow distance",
+    "Description": "Read the native follow distance parameter. Collision and interpolation can make the rendered eye-to-target distance different.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 247,
+    "CapabilitySlot": 247,
+    "Minimum": 0,
+    "Maximum": 1000000,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "units",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read only. Availability follows the current camera and field scene.",
+    "Evidence": [
+      {
+        "Address": "0x1401654D0 / 0x140164520",
+        "Finding": "Controller+88 is the native distance input, bounded by controller+212/+216 in the zoom input path.",
+        "Level": "Complete native IDA assembly and static control-flow review; synthetic guard tests passed. Live camera validation is pending."
+      }
+    ]
+  },
+  {
+    "Id": "camera.focus_distance",
+    "Category": "Camera",
+    "Name": "Eye to target distance",
+    "Description": "Read the geometric distance from the rendered camera eye to its target point. This is not an optical depth of field setting.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 248,
+    "CapabilitySlot": 248,
+    "Minimum": 0.01,
+    "Maximum": 1000000,
+    "DefaultValue": 0.01,
+    "Step": 0.1,
+    "Unit": "units",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read only. Availability follows the current camera and field scene.",
+    "Evidence": [
+      {
+        "Address": "0x14019D340 / 0x14019CBA0",
+        "Finding": "Camera+72/+88 hold eye and target vectors used to build the view.",
+        "Level": "Complete native IDA assembly and static control-flow review; synthetic guard tests passed. Live camera validation is pending."
+      }
+    ]
+  }
+]

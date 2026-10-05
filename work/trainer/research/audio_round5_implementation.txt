@@ -1,0 +1,107 @@
+Spatial audio diagnostics — implementation, 2026-10-04
+====================================================
+Status: owned module and isolated tests complete; independent static source review
+passed without blocking findings. Frozen for root integration and package checks.
+No running game, UI or save access occurred.
+
+Files and integration
+---------------------
+trainer/Native/SpatialAudioFeatures.inl
+  Namespace spatial_audio.
+  Include after AudioFeatures.inl because it reuses the existing audio_mix
+  ThreadReady, GraphReady and SameGraph helpers.
+
+Add these two calls to the existing corresponding Common paths:
+  SpatialAudioCapabilities();
+  SpatialAudioSnapshot(c);
+
+There is no Handle, Tick or Reset entry point. The module owns no commands,
+hooks or persistent effects. Slots408..418 are ReadOnly and419..423 stay unused.
+The common snapshot path already clears validity before collecting the frame.
+
+Merge work/trainer/research/spatial_audio_features.json into the catalogue.
+The11 entries use category 'Spatial Audio', CommandId0, RequiresScene=false,
+ChangesProgression=false and CanSaveInProfile=false.
+
+The isolated test command is:
+  work\trainer\tests\build_spatial_audio_tests.cmd
+It follows the existing build_*_tests.cmd convention for Root's package runner.
+No shared Bridge, UI, build pipeline, C# test or catalogue assembler file was
+changed by this agent.
+
+Snapshot meaning
+----------------
+408 Ready: valid0 when context/host/graph/locks/list are unavailable;1 only after
+  full structural list validation and rechecking the captured roots.
+409 Registered count;410 allocated capacity;411 historical peak;412 enabled count.
+  These can remain valid for an empty list or a temporarily stale selected pointer.
+413 Selected ID;414 kind (1Base,2Point,3Line);415 unsigned priority;
+416..418 last native audio-update position X/Y/Z.
+  All six active fields are withheld together unless selected equals the fully
+  validated current winner and the cached position/matrices are finite.
+
+Zero is a valid count, priority or coordinate. Unavailable values have no validity
+bit and are not synthesized as zero. The shared frame reset is responsible for
+discarding old validity before this module publishes a new sample.
+
+Lifetime and locks
+------------------
+Only the validated application post-Update continuation may call this snapshot.
+It uses the existing audio module's thread, base, disabled and heartbeat gate.
+It does not require a loaded Sora scene because the audio graph has its own normal
+application lifetime.
+
+Lock order is global Sound CS, then ListenerManager CS+776. Both use TryEnter;
+both captured critical-section ranges must also pass Writable because Win32 lock
+entry changes their state. Busy means no dependent sample. Captured lock addresses are retained and released
+in reverse order through nested finally clauses, including early validation
+returns and structured exceptions. IPC publication happens after unlock.
+
+The manager's byte816 is required to equal1, but this is a structural condition,
+not a lifetime generation. Native070E20 can leave it1 after deleting the CS.
+Normal application init/update/shutdown sequencing supplies the essential
+independent lifetime condition. Private teardown by a foreign thread is outside
+the observed supported engine path.
+
+The full capacity array is bounded at1024, and all counted pointers and IDs must
+be nonnull/nonzero and unique. The module checks exact vtable/BYTEkind pairs and
+manager backlinks. Signed count/capacity/peak are bounded before conversion to
+lengths. Overflowing pointer ranges are rejected. No pointer read through selected
+is performed: only equality with the previously validated winner is used.
+
+Priority selection is uint32 with later-list ties, matching native072070's JA.
+Position includes a finite check of its fourth component, plus both cached64-byte
+transforms. The unproven field at manager+148 is ignored. A recent setter can
+change a listener's own matrix before the next native audio update; the module
+reports the manager cache and does not recompute or claim current-frame freshness.
+
+Validation
+----------
+Author's isolated run:1,774 checks,0 failures, MSVC/W4 without warnings.
+The tests include actual Win32 CS contention from another thread, root/readiness
+changes after inner acquisition, every Readable-call fault point, cleanup when
+inner TryEnter or Leave raises, and confirmation that IPC publication is outside
+the locks. They exercise empty/full lists, stale selected pointers, null members,
+duplicate IDs/pointers, all kind/size pairs, high-bit unsigned priority, ties,
+heartbeat expiry/wrap, every cached float, invalid-vs-zero and reserved slots.
+Readable but read-only outer and inner critical sections are specifically rejected
+before the corresponding native TryEnter call.
+
+The fixture includes the real AudioFeatures.inl helper implementation. Native
+engine callback addresses are never executed; all sample objects are synthetic
+allocated memory. This does not replace a later authorized live game test.
+
+Exact source, test, catalogue and reviewed-contract hashes are recorded in
+audio_round5_implementation.json. The final freeze manifest is separate so it
+can include the implementation report hash without self-reference.
+
+Independent source review: audio_round5_implementation_review.json/.txt by
+pe_inventory. It covers the complete module/tests and five saved full native
+assembly bodies (826 instructions). The 1,774-check result remains the author's
+isolated execution; the reviewer did not run a second build. Earlier contract
+reports retain their historical status and hashes; this report is their current
+implementation follow-up.
+The independent review's implementation-report hash ff55376f...a8ab5f identifies
+the report at review time. This later status-only refresh records the review's
+completion. Source, test and catalogue hashes are unchanged; no reciprocal
+review/report hash cycle is introduced.

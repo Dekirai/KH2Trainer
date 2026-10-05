@@ -1,0 +1,626 @@
+{
+  "scope": "GX adaptive antialiasing, framebuffer/resource lifetime and bounded native timing histories; specific claims only",
+  "image_sha256": "9002B2DE6A1F91A790BD0673DE125D1CF833F7942BFEC827CDCF6BA64D5849ED",
+  "private_idb": "work/trainer/ida/round5_renderer.i64",
+  "session": "4e3eb336",
+  "complete_asm_functions": 82,
+  "complete_asm_instructions": 9255,
+  "claimed_functions": 55,
+  "previously_without_concrete_claim": 46,
+  "claims": [
+    {
+      "addr": "0x140001450",
+      "Finding": "Initializes the global QPC frequency at RVA79D088 by QueryPerformanceFrequency.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_3.json"
+      ],
+      "Limitations": "The frequency describes the CPU clock, not GPU timestamp units before calibration.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x14010a270",
+      "Finding": "Constructs six independent doubly linked timeline sentinels at GX+864/880/896/912/928/944 with zero counts; initializes history CS+31392, other renderer critical sections and the presentation mutex.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_1.json"
+      ],
+      "Limitations": "Construction and static epoch initialization do not themselves prove a live render session.",
+      "baseline_evidence_tier": 3,
+      "previously_without_concrete_claim": false
+    },
+    {
+      "addr": "0x14010be40",
+      "Finding": "Deletes the history critical section before freeing all six timeline lists; releases framebuffer managers, device references, synchronization objects and window/thread handles.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_1.json"
+      ],
+      "Limitations": "This destructor does not provide a lockable lifetime lease. It must be excluded by the live application-thread contract.",
+      "baseline_evidence_tier": 3,
+      "previously_without_concrete_claim": false
+    },
+    {
+      "addr": "0x14011ad80",
+      "Finding": "GX exit sets application exit+4752=256, waits for the application thread to finish, closes its handle, then sets GX+808 and joins/closes the timing thread.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_2.json"
+      ],
+      "Limitations": "A trainer callback executing on the verified application thread can finish before this native join completes. Arbitrary third-party destruction remains outside the contract.",
+      "baseline_evidence_tier": 3,
+      "previously_without_concrete_claim": false
+    },
+    {
+      "addr": "0x140107d00",
+      "Finding": "Creates a CPU render-interval list node with two link pointers followed by a 40-byte payload copied from GX+960.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_1.json"
+      ],
+      "Limitations": "Payload timestamps0/1 bracket a native timing/wait section, not the whole application update. Timestamps2/3 are the render-recording interval.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140107d40",
+      "Finding": "Creates a GPU timeline node with two pointers and a 24-byte payload: calibrated start/end QPC ticks, completion marker and command-buffer tag.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_1.json"
+      ],
+      "Limitations": "The marker is final-fence-in-batch, not a verified whole-game-frame ID.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140107d80",
+      "Finding": "Creates a submission marker node with two links and a 16-byte payload: QPC timestamp, submission ordinal and backbuffer index.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_2.json"
+      ],
+      "Limitations": "This is a point event; it does not measure a duration or count primitive draw calls.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140107db0",
+      "Finding": "Creates a Present timeline node with a 32-byte payload after its two link pointers.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_1.json"
+      ],
+      "Limitations": "Only the initialized begin/end ticks and three DWORD fields are meaningful; padding is not a diagnostic value.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140107e20",
+      "Finding": "Copies a 56-byte timing-worker cycle record into a linked-list node, including six QPC timestamps and a state DWORD.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_2.json"
+      ],
+      "Limitations": "Several optional-phase timestamps are conditional; no general-purpose timing plot should assume every timestamp is refreshed on every cycle.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140107e70",
+      "Finding": "Creates a wait timeline node with a 24-byte payload after two links: QPC begin/end and a native wait category.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_1.json"
+      ],
+      "Limitations": "The final four bytes are padding, not an extra wait field.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140114f10",
+      "Finding": "Increments GX+58240 per command submission, records QPC time/old ordinal/current backbuffer in GX+928, and removes the oldest node when the list reaches180.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_1.json"
+      ],
+      "Limitations": "This submission ordinal resets per presented frame and is not a GPU draw counter.",
+      "baseline_evidence_tier": 3,
+      "previously_without_concrete_claim": false
+    },
+    {
+      "addr": "0x14011a510",
+      "Finding": "On the first close of a recording interval, flushes pending native recording work, writes QPC end at GX+984, copies GX+960..999 into list+880, caps it at30 and sets interlocked GX+58248=1.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "The recorded interval includes any elapsed wall-clock time between the boundaries; it is not exclusive CPU execution time.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x1401231e0",
+      "Finding": "Brackets the actual swapchain Present1 call with QPC ticks and records it in list+944 (cap30); stores requested interval and actual/prior backbuffer indices. The real Present interval can be0 despite a nonzero recorded request.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "CPU time inside Present is not GPU frame time, display latency or monitor scanout duration.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140123440",
+      "Finding": "Appends a24-byte fence/wait record under the supplied critical section, removes the tail at count200, inserts at the head and releases the lock.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "It copies caller-supplied data; timestamp/category semantics come from the three concrete callers.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140129180",
+      "Finding": "Waits for a completed native fence, logs its CPU wait, maps completed command-buffer query pairs, converts GPU timestamps through per-buffer GPU/CPU calibration and frequency into CPU QPC units, appends GPU records (cap300), and feeds the adaptive quality history.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "Fresh ASM uses signed64-bit subtraction/conversion and float32 arithmetic; misleading DWORD casts in pseudocode are not the ABI. Each list record is a command-buffer span, not automatically a full frame.",
+      "baseline_evidence_tier": 3,
+      "previously_without_concrete_claim": false
+    },
+    {
+      "addr": "0x140129560",
+      "Finding": "Signals/increments a fence packet, waits when necessary, and appends a category0 CPU wait record to list+912.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "This function performs real GPU synchronization and must never be called merely to refresh diagnostics.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140127370",
+      "Finding": "Shifts a fixed64-float history toward older indices and writes its XMM1 sample to index0.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "Only caller129180 establishes that the sample is GPU time normalized by59.94/QPC-frequency.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140113b80",
+      "Finding": "Evaluates the64-sample GPU cost history and a frame-period budget. Low headroom can lower AA quality by two levels; sustained high headroom across30 samples can raise it by one; results are bounded by caller limits. It resets history/counters on adjustment.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "This is adaptive AA policy, not a generic FPS limiter. The XMM2 floating argument is explicit in caller ASM, although the decompiler inferred an integer at the call site.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140119e90",
+      "Finding": "Consumes resize requests under resize CS+31432; rebuilds resources after a fence wait when needed. Otherwise maps sample capability to an AA exponent limit, calls113B80 with GX+856 in XMM2 and applies a changed level through114D30.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "The AMD/vendor flag limits the adaptive exponent to0 on this path. Directly freezing30556 would bypass native resource and replay coordination.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140114d30",
+      "Finding": "Takes GX inRCX, targetID inEDX and sample exponent inR8B; writes target sample count1<<exponent and recreates existing color/depth resources via11B4F0/11B290 when the count changes.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_1.json"
+      ],
+      "Limitations": "This is a resource-creation operation requiring native context/fence ordering, not a safe one-field trainer setter.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140128100",
+      "Finding": "Begins a recording interval by clearing per-interval state, capturing QPC start at GX+976 and replay flag at+992; normal frames run resize/adaptive policy, while replay restores historical AA levels.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_2.json"
+      ],
+      "Limitations": "A coherent snapshot may still legitimately describe a replayed sample configuration; quality level and displayed frame identity are not interchangeable.",
+      "baseline_evidence_tier": 3,
+      "previously_without_concrete_claim": false
+    },
+    {
+      "addr": "0x140128260",
+      "Finding": "Finishes the native presentation pass, submits command lists, consumes completed GPU timing, rotates frame/context indices, presents, then runs GC on all three framebuffer resource managers.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_2.json"
+      ],
+      "Limitations": "Its synchronization and command submission make it unsuitable for a trainer-triggered refresh.",
+      "baseline_evidence_tier": 3,
+      "previously_without_concrete_claim": false
+    },
+    {
+      "addr": "0x140128470",
+      "Finding": "Acquires GX presentation mutex+30848 around close/flush/present, deferred release-ring collection, next recording-interval setup and DummyDraw enqueue; unlocks before the final application call.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_2.json"
+      ],
+      "Limitations": "This proves the native lock order presentation mutex then history CS for snapshots that need both.",
+      "baseline_evidence_tier": 3,
+      "previously_without_concrete_claim": false
+    },
+    {
+      "addr": "0x1401287d0",
+      "Finding": "The timing worker acquires the same presentation mutex for interpolated/replayed render work; Present, fence-wait and timing-cycle records are also appended through history CS+31392.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_1.json"
+      ],
+      "Limitations": "The worker can present outside the presentation mutex. History CS remains necessary even after the outer mutex is acquired.",
+      "baseline_evidence_tier": 3,
+      "previously_without_concrete_claim": false
+    },
+    {
+      "addr": "0x1401233d0",
+      "Finding": "Mode0 captures QPC at GX+960 and mode1 captures at+968 through the GX singleton.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_3.json"
+      ],
+      "Limitations": "Concrete callers154740/1548E0 bracket timing/wait work; the pair must not be labeled total game logic time.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140129630",
+      "Finding": "Brackets CThread wait0FDD90 with the same GX+960/+968 QPC fields.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_3.json"
+      ],
+      "Limitations": "This alternate writer further rules out calling the first timestamp pair a pure logic-update duration.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x1401119b0",
+      "Finding": "Clamps requested dimensions to at least1, records requested float dimensions atGX+1080/+1084, passes mutable dimensions/sample capability to heap-budget negotiation, then commits resulting swapchain/render size.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_3.json"
+      ],
+      "Limitations": "Requested dimensions and resulting dimensions may differ after memory-budget fallback.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140124b50",
+      "Finding": "Caches a framebuffer-heap budget from local adapter Budget minus CurrentUsage minus813694976 bytes, aligned down4MiB; estimates requirements, reserves optional128MiB headroom and reduces sample count or dimensions to fit before creating a replacement heap.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "This cached budget is neither total adapter VRAM nor continuously refreshed free memory. The unsigned arithmetic can yield implausible values; diagnostics should reject unreasonable magnitudes without claiming a confirmed runtime failure.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140117ef0",
+      "Finding": "Releases the old heap, stores its requested allocation bytes at owner+16, and creates a default render/depth heap with4MiB alignment and native flags132.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "The stored byte count is not a verified successful allocation unless the live heap pointer is also present.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x1401145b0",
+      "Finding": "Computes native heap requirements with D3D12 GetResourceAllocationInfo for render/depth descriptions and4MiB-or-driver alignment; uses maximums for aliased regions and adds a fixed2048x1088 color surface.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "The estimator does not include separately committed frame textures, arbitrary game textures or all GPU memory.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x14011c2b0",
+      "Finding": "Binds framebuffer+264/+272/+280 to fixed RenderTarget/DepthStencil/ShaderResource managers at RVAs89D090/89E300/89F570, initializes each once and sets its concrete vtable.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_3.json"
+      ],
+      "Limitations": "These static addresses outlive active renderer sessions as storage; initialized pointers alone are not a live-session gate.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140109e70",
+      "Finding": "Initializes the common manager layout:64 records of72 bytes beginning at+8 plus four six-entry tracking-index arrays initialized to-1.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_3.json"
+      ],
+      "Limitations": "The first record COM pointer is manager+8, not manager+0, which contains the manager vtable.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x14011af70",
+      "Finding": "Searches the64 resource records for an exact descriptor key; otherwise uses a free COM-pointer slot, copies the key and tracks the current context through125AA0.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_1.json"
+      ],
+      "Limitations": "Returnsfalse for both existing-key reuse and no-free-slot failure. Its boolean is not a general success flag.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140125aa0",
+      "Finding": "Associates a pool slot with a live frame-context ownership set, or updates per-target current/sample/history indices when context is null.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_2.json"
+      ],
+      "Limitations": "These ownership references protect old resources across replay and queued GPU work; clearing indices independently is unsafe.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140123c60",
+      "Finding": "When fewer than10 of64 entries are empty, collects occupied pool slots except swapchain target5, currently tracked target/sample/history slots and records whose context-reference set is nonempty.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "Occupied entries include cached resources, not only currently bound attachments. Pool occupancy is a count, not a byte estimate.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140119630",
+      "Finding": "Clears all64 COM resource slots, releases each COM reference, resets descriptor identity/reference tracking and invokes the manager-specific slot cleanup.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_3.json"
+      ],
+      "Limitations": "Callers must have completed appropriate GPU lifetime synchronization; this is not a user cache-purge operation.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140117ac0",
+      "Finding": "Initializes framebuffer color/sample metadata, reserves a4MiB-aligned placed-resource offset in the shared heap cursor and creates the color target through11B4F0.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "Dimensions and sample descriptor are resource identity, not independent display-preview variables.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140117240",
+      "Finding": "Initializes depth clear metadata, obtains a depth resource allocation size, reserves its aligned shared-heap offset and creates depth via11B290.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "Depth and color sample counts must remain coordinated by the native framebuffer path.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x14011b4f0",
+      "Finding": "Resolves/allocates a color pool slot and creates a placed render-target resource (format87, state4) at framebuffer+144 heap offset, then builds the RTV for that slot.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "A current framebuffer pointer does not own the COM object alone; the shared manager and context tracking govern lifetime.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x14011b290",
+      "Finding": "Creates/reuses a placed depth-stencil resource (format20, initial state16) at framebuffer+152 and writes the matching depth view descriptor.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "Its shared pool is separately counted from render-target and frame-texture pools.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x14011b730",
+      "Finding": "Creates/reuses single-sample committed FrameTexture resources in the shader-resource pool (format87, state128) and builds SRVs; non-MSAA auxiliary targets can use an alternate color-pool slot.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "These textures are outside the placed framebuffer heap, so heap bytes are not total renderer memory.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x14011dca0",
+      "Finding": "Rebinds all three swapchain buffers, retains COM references in the render-target pool, creates RTVs, records resource states and selects buffer0 for the resolve framebuffer.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "This explains the swapchain resources included in pool occupancy. Their count cannot be equated with user-created targets.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x14011dad0",
+      "Finding": "Rebuilds the previous-frame surface view over all three swapchain buffers; releases old descriptor indices and allocates/newly binds three SRVs.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "Descriptor indices are allocator-owned and can change across resize. They are not stable texture handles for a trainer.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x1401253d0",
+      "Finding": "Selects direct shader-readable target reuse when supported; otherwise transitions source/destination resources and performs CopyResource for samplecount1 or ResolveSubresource for multisampling.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "Calling this outside the current command-list/pass can corrupt resource-state tracking; readouts do not invoke it.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140124d70",
+      "Finding": "Transitions current color/depth/frame-texture slots to their expected states, resets resolve counters and recreates attachments when the framebuffer dimensions change.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "A width/height write alone omits the barrier and resource-creation contract.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140119890",
+      "Finding": "Releases previous-frame descriptor indices, asks framebuffers to release their state and clears color/depth pools, optionally preserving the shader-resource pool for resize.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_1.json"
+      ],
+      "Limitations": "This is reached after fence synchronization on resize/shutdown, not a lock-free background cleanup.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140115230",
+      "Finding": "Shutdown first waits for GPU completion, drains four deferred-destruction ring buckets under CS+31352, frees fixed textures/framebuffers/descriptors and closes fence events.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "The native presentation/history locks cannot substitute for this GPU completion condition when changing resources.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140119a60",
+      "Finding": "Enqueues a nonnull renderer resource for deferred destruction in the current four-bucket ring under CS+31352.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "Resource destruction is delayed; storing a pointer outside its owning scope is not made safe by a readable address.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140119b00",
+      "Finding": "Obtains the GX singleton and enqueues a second resource-interface class in its parallel four-bucket deferred-release ring under CS+31352.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "The corresponding collector invokes virtual slot+8, unlike the first ring which invokes slot0.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140123990",
+      "Finding": "Advances the deferred release index modulo4 and destroys the newly reached bucket from both resource rings under CS+31352, retaining vector capacity.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "The four-cycle delay participates in native GPU lifetime ordering; it is not a reliable external lease duration.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x1401276f0",
+      "Finding": "Closes the previous recording context, switches/rotates command and constant-buffer rings, releases prior retained references, waits/restarts context and ensures target color/depth/frame-texture resources exist.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "Frame-context and pass ownership prevent safely exposing this as an arbitrary trainer command.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140126670",
+      "Finding": "Prepares a framebuffer for shader sampling via recorded checkTexture/setFrameTex closures, marks texture bindings dirty and installs the selected framebuffer/SRV in the active slot.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "No independent persistent hide-layer or wireframe control follows from this binding operation.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140117fd0",
+      "Finding": "Performs swapchain creation/resize and reinitializes main, resolve and previous-frame resources using negotiated dimensions/sample capability.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "This is a full resource rebuild. All proposed round5 values are read-only observations.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x1401138f0",
+      "Finding": "Selects the target-specific applyRenderTarget closure, captures depth/color state and dirty flags, and resets the target resolve-prepared flag.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "This is per-pass state recorded for deferred execution; changing its globals after an application update would not be a stable render override.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    },
+    {
+      "addr": "0x140113a40",
+      "Finding": "Binds either an ordinary shader-resource descriptor or a special previous-frame texture path according to the surface virtual capability and texture-stage selection.",
+      "Evidence": [
+        "work/trainer/research/renderer_round5_evidence_0.json"
+      ],
+      "Limitations": "A diagnostic texture viewer would still need a native pass/descriptor lifetime contract beyond this binding function.",
+      "baseline_evidence_tier": 0,
+      "previously_without_concrete_claim": true
+    }
+  ],
+  "raw_evidence_only_addresses": [
+    "0x14010b360",
+    "0x14010b3c0",
+    "0x14010b420",
+    "0x14010b480",
+    "0x14010b5a0",
+    "0x14010bca0",
+    "0x14010edb0",
+    "0x14010ee00",
+    "0x14010ee50",
+    "0x14010eea0",
+    "0x14010ef40",
+    "0x14010ef90",
+    "0x140110820",
+    "0x140113590",
+    "0x140115060",
+    "0x140116100",
+    "0x140116450",
+    "0x140116720",
+    "0x140116a10",
+    "0x1401175d0",
+    "0x1401219f0",
+    "0x140121d90",
+    "0x140123020",
+    "0x140123b50",
+    "0x140124060",
+    "0x140154740",
+    "0x1401548e0"
+  ],
+  "contract": "work/trainer/research/renderer_round5_contract.json",
+  "new_findings": [
+    "Adaptive AA uses completed GPU timestamp history and recreates target attachments rather than toggling a rasterizer scalar.",
+    "Memory-budget fallback can reduce AA capability or negotiated dimensions; cached heap accounting excludes committed frame textures.",
+    "Native histories permit bounded read-only timing diagnostics without resource mapping, GPU waits or renderer hooks.",
+    "Complete64-bit ASM disproves apparent32-bit timestamp truncation in decompiler output; float32 calibration still limits precision.",
+    "The CPU Present interval, GPU command slice, CPU wait and CPU recording span are distinct measurements, not components that can be naively added."
+  ],
+  "changes": "New research files only; no product, IDB, executable, game or frozen audit modifications.",
+  "evidence_files": [
+    {
+      "path": "work/trainer/research/renderer_round5_evidence_0.json",
+      "sha256": "cef92ebd2c484666a9698d280637081f6de4dfd2a3857c0ac088a16d5b8f0d95"
+    },
+    {
+      "path": "work/trainer/research/renderer_round5_evidence_1.json",
+      "sha256": "fd3cd586bcfef2764dccb4c0fd7d129de9a95f51b16dac387eb633d19a150df3"
+    },
+    {
+      "path": "work/trainer/research/renderer_round5_evidence_2.json",
+      "sha256": "d25ed9aff81541d5a5dc758c2423ec510b71fbf809840ccba97f7923c1dd908e"
+    },
+    {
+      "path": "work/trainer/research/renderer_round5_evidence_3.json",
+      "sha256": "c5b486c8c01c07cb94bfeec7ea5a717c8ee3b52ba856d159b78382caec243eef"
+    }
+  ],
+  "data_evidence": "work/trainer/research/renderer_round5_data.json",
+  "original_byte_verification": "work/trainer/research/renderer_round5_verification.json",
+  "limitations": [
+    "Static evidence only; no game process or UI access and no live verification.",
+    "These are specific semantics for the captured paths, not complete semantics of the whole renderer.",
+    "Exact memory reuse by unsupported modifications cannot be excluded by an initialization epoch; the native join/thread contract and exact build are required.",
+    "Synchronous outer mutex acquisition can wait for native render work. This proposal does not silently introduce a different runtime try-lock ABI."
+  ]
+}

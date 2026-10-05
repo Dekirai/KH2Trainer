@@ -1,0 +1,728 @@
+{
+  "title": "Gummi round4: enemy shots, collision and Drain ownership",
+  "status": "Source/tests/catalog/research frozen; slots360/361 implemented;208 own synthetic checks pass. Root independently reviewed source and found no blocker. Common integration remains root-owned; no live tests.",
+  "original_path": "E:\\SteamLibrary\\steamapps\\common\\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-\\KINGDOM HEARTS II FINAL MIX.exe",
+  "original_sha256": "9002B2DE6A1F91A790BD0673DE125D1CF833F7942BFEC827CDCF6BA64D5849ED",
+  "image_base": "0x140000000",
+  "evidence_summary": {
+    "function_count": 75,
+    "asm_instruction_count": 2973,
+    "all_start_addresses_match": true,
+    "all_full_asm_counts_match": true,
+    "note": "Initial75 complete bodies were captured before a local health-readiness mismatch. Root then reopened the same annotated IDB with real auto_wait and captured8 supplemental owner/collision functions. All actual line counts and start addresses were checked independently. No new worker was started by this subagent.",
+    "supplement_functions": 8,
+    "supplement_asm_instructions": 476,
+    "combined_functions": 83,
+    "combined_asm_instructions": 3449
+  },
+  "claims": [
+    {
+      "Address": "0x14021EA80",
+      "Finding": "Allocates and initializes 768 ENEMY_SHOT records (176 bytes each), a count header of 768, 768 main sprite records and 128 impact sprite records. Each object receives the ENEMY_SHOT vtable and its permanent sprite index; inactive flags, impact=-1 and attraction owner=0 are initialized.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14021EA80"
+      ],
+      "Limitations": "Allocation/effect creation assumes working native resources. This is not a proposed trainer construction entrypoint. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14021E660",
+      "Finding": "Spawns only projectile type33 into the first inactive member of the fixed 768-entry pool. It clears transient impact/attraction fields, calls the inherited initializer, sets flags0x28 and records a spatial source index. A full pool returns0.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14021E660"
+      ],
+      "Limitations": "The returned pointer is borrowed from the pool and must not survive subsystem teardown. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14023E060",
+      "Finding": "The inherited projectile initializer copies the 48-byte attack descriptor, initializes position/direction/speed/lifetime, sets flags0x1100 and optionally coordinate-space bit2. It does not set individually allocated flag1.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14023E060"
+      ],
+      "Limitations": "Generic initializer semantics alone do not establish the type or ownership of arbitrary caller objects. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14021E880",
+      "Finding": "Enumerates active ENEMY_SHOT entries using flag0x100 and stride176, with null as the initial cursor and a maximum index of767.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14021E880"
+      ],
+      "Limitations": "Caller-supplied nonnull cursor is assumed to belong to the current pool. A trainer should bound its own scan rather than pass stale cursors. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14021E830",
+      "Finding": "Clears all active entries of exactly the ENEMY_SHOT pool by calling active predicate23E020 then deactivation23DAC0 for each of768 records. The relevant return value is not a success status.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14021E830"
+      ],
+      "Limitations": "This excludes laser and other projectile families and does not prevent future enemy firing. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14023E020",
+      "Finding": "Returns whether projectile flags+128 contain active bit0x100.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14023E020"
+      ],
+      "Limitations": "It validates no pointer, object type or lifetime. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14023DAC0",
+      "Finding": "Clears active bit0x100, invokes virtual cleanup slot+48, and only if ownership flag1 is set invokes the deleting destructor with argument1.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14023DAC0"
+      ],
+      "Limitations": "A trainer must reject pooled objects with flag1 or changed vtables/callbacks before using the bulk clear. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14021F1F0",
+      "Finding": "ENEMY_SHOT virtual cleanup writes zero only to DWORD(mainSpriteBuffer + 16*spriteIndex + 12), using signed index+152. It does not award score, drop items, allocate or free memory.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14021F1F0"
+      ],
+      "Limitations": "Bounds and current buffer ownership are caller invariants. Impact sprites are not directly cleared here. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14021E970",
+      "Finding": "The subsystem frame update selects visibility for main/impact effects from active entries and impact index, then dispatches23DB00 for each active projectile and deactivates entries returningfalse.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14021E970"
+      ],
+      "Limitations": "This is a live update loop, not a safe general trainer call because it advances collision and movement. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14021E8F0",
+      "Finding": "Destroys and zeros both effect handles, frees main/impact sprite buffers, and invokes the pool vector destructor. Pool/buffer globals themselves are left nonzero.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14021E8F0"
+      ],
+      "Limitations": "A nonnull AF8288/AF8278 value is insufficient proof of a live subsystem. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14021E560",
+      "Finding": "ENEMY_SHOT deleting destructor can traverse a vector using the count immediately before the first element and free its header. The per-entry clear path avoids this when flag1 is absent.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14021E560"
+      ],
+      "Limitations": "Calling this on the live pool would destroy engine-owned storage. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14023D7B0",
+      "Finding": "The base MISSILE constructor initializes position vectors, an attack descriptor and flags0 before ENEMY_SHOT construction replaces its vtable.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14023D7B0"
+      ],
+      "Limitations": "Constructor output is incomplete without the subtype and subsystem initialization. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14023DB00",
+      "Finding": "Projectile update performs sprite initialization/update, spatial registration, collision callbacks, world collision, previous-position capture and virtual movement in that order. Collision precedes the movement callback that consumes attraction.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14023DB00"
+      ],
+      "Limitations": "The full generic callback family is wider than the proposed ENEMY_SHOT clear call. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14023D8D0",
+      "Finding": "Integrates projectile position and acceleration using native timing, decreases remaining lifetime, computes fade below10ticks, and terminates when time<0 or flag0x200. Flag0x20 can hold lifetime at10 until a distance limit is crossed.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14023D8D0"
+      ],
+      "Limitations": "Ticks are native timing units, not established milliseconds. This does not justify a universal projectile-speed override. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14021EFE0",
+      "Finding": "Stores a GUMISHIP attraction target in ENEMY_SHOT+160 without retaining or validating its owner.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14021EFE0"
+      ],
+      "Limitations": "It is a one-frame borrowed pointer, not an ownership or reference-count operation. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14021EC90",
+      "Finding": "If a transient attraction owner exists, steers the projectile toward ship center, adjusts speed and then clears owner+160 before calling base motion/lifetime update.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14021EC90"
+      ],
+      "Limitations": "Attraction requests must be refreshed by a valid live owner each frame; retaining an old ship pointer is unsafe. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14021EE20",
+      "Finding": "Tests spatial compatibility and projectile collision against companions/main ship, calls1FF340 with the shot's attack descriptor on a main-ship hit, and sets handled-hit byte168. Attraction changes companion handling and nearby visual fading.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14021EE20"
+      ],
+      "Limitations": "The read and callback chain is unsuitable for a direct trainer collision call; it assumes valid geometry, companions and effect buffers. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14021F2A0",
+      "Finding": "On first projectile update initializes the main sprite control DWORD at its permanent index and configures the effect coordinate mode.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14021F2A0"
+      ],
+      "Limitations": "The buffer and effect handle must already exist. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14021F140",
+      "Finding": "Updates main or impact sprite position. During terminal collision it marks the projectile for removal when its impact record is missing or expired; near normal lifetime expiry it scales the main sprite control byte.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14021F140"
+      ],
+      "Limitations": "Impact visual lifetime is separate from main-sprite cleanup. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14021F210",
+      "Finding": "On collision first clears the main sprite; if handled-hit byte168 is clear, allocates the first free impact sprite index0..127 and reduces projectile speed to30percent.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14021F210"
+      ],
+      "Limitations": "When all128 impact records are busy it returns without allocating one. Native clear does not call this effect-producing path. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401F6120",
+      "Finding": "Creates the projectile subsystem task on the current Gummi scheduler with group1, priority22000, callback1F6080 and cleanup1F60D0, then initializes ENEMY_SHOT and other projectile families.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x1401F6120"
+      ],
+      "Limitations": "The task is the useful live-owner witness because the pool globals remain stale after cleanup. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401F6080",
+      "Finding": "The registered projectile task updates each native projectile family, including ENEMY_SHOT21E970.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x1401F6080"
+      ],
+      "Limitations": "Presence must be checked in the current scheduler, not inferred from an old task address. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401F60D0",
+      "Finding": "The projectile task cleanup calls ENEMY_SHOT21E8F0 and other projectile-family destructors.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x1401F60D0"
+      ],
+      "Limitations": "No borrowed pool pointer remains valid after this cleanup. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401F6050",
+      "Finding": "A broader native all-projectile clear calls ENEMY_SHOT21E830 plus four other families.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x1401F6050"
+      ],
+      "Limitations": "Only ENEMY_SHOT's exact cleanup is fully proposed for trainer use in this round; do not substitute this broader wrapper. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401F6000",
+      "Finding": "The native radius-clear wrapper calls ENEMY_SHOT21E740 plus four other family radius operations.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x1401F6000"
+      ],
+      "Limitations": "Those additional families and coordinate contracts need separate verification before exposure. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14021E740",
+      "Finding": "For each active ENEMY_SHOT obtains world position through23DDD0 and deactivates shots with distanceSquared strictly less than radiusSquared.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14021E740"
+      ],
+      "Limitations": "A radius action would also require reliable world-coordinate input and is not part of the initial two-slot proposal. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402312E0",
+      "Finding": "The inline32-byte DRAIN object initializes owner0, phase0, counter0, level-1 and warmup0; it has a native vtable.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x1402312E0"
+      ],
+      "Limitations": "This inline instance belongs to its player and must never be individually freed. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140231310",
+      "Finding": "DRAIN's nondestructive destructor only restores its vtable. Player destruction invokes it on the inline object.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x140231310"
+      ],
+      "Limitations": "It is not a safe reset or recreation API. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402313D0",
+      "Finding": "Installation sets DRAIN phase1 and its owning GUMISHIP pointer.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x1402313D0"
+      ],
+      "Limitations": "The normal caller first establishes installed Drain parts and their backlinks. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401FB830",
+      "Finding": "Traverses the main ship part list and attaches the inline DRAIN pointer to every part whose kind is10; returns whether any such part was found.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x1401FB830"
+      ],
+      "Limitations": "The native traversal assumes a valid, finite packed-pointer list. Raw phase changes do not create these parts. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140229C40",
+      "Finding": "Recognizes Drain parts by DWORD(part+1224)==10.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x140229C40"
+      ],
+      "Limitations": "Part type alone does not prove object ownership or sufficient memory. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14022B3A0",
+      "Finding": "Stores the attached DRAIN pointer in DrainPart+1400.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14022B3A0"
+      ],
+      "Limitations": "This is a borrowed owner link with player/part lifetime dependence. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401FC8F0",
+      "Finding": "Player construction creates the inline DRAIN at+4944 and installs it only when main-ship part attachment succeeds; owner is the inline main ship atplayer+1160.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x1401FC8F0"
+      ],
+      "Limitations": "A ship without the required installed part remains phase0; forcing phase1 would bypass resource ownership. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 3,
+      "PriorAuditClaims": [
+        1265,
+        1283
+      ]
+    },
+    {
+      "Address": "0x1401FCDB0",
+      "Finding": "Player cleanup clears current-player globalAF0540, destroys inline DRAIN and other player components, and releases effects.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x1401FCDB0"
+      ],
+      "Limitations": "No trainer lease should migrate across this destruction or a new player allocation. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 2,
+      "PriorAuditClaims": [
+        1327
+      ]
+    },
+    {
+      "Address": "0x14022AEB0",
+      "Finding": "Creates a Drain part with kind10 and three guns for attack parameter IDs20/21/22 and projectile types80/81/82, storing them at1376/1384/1392; owner and effect links startnull.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14022AEB0"
+      ],
+      "Limitations": "Creation allocates and binds native resources and is not proposed as a trainer shortcut. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14022AB50",
+      "Finding": "Drain-part destruction deletes its three guns, clears their pointers, destroys its effect, calls base cleanup and frees the part through the Gummi allocator.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14022AB50"
+      ],
+      "Limitations": "Inline DRAIN and part resources have distinct owners. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14022ABE0",
+      "Finding": "Drain-part update follows its DRAIN owner, creates the charge effect only while absorbing with a nonnegative charge level, and scales the effect from the native charge fraction.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14022ABE0"
+      ],
+      "Limitations": "The effect path assumes current effect-resource availability; manipulating its pointer is not proposed. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14022B1E0",
+      "Finding": "An equivalent single-argument Drain-part update consumes the same owner/level/fraction fields and updates the attached charge effect.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14022B1E0"
+      ],
+      "Limitations": "No broader callable ABI is inferred beyond this observed function body. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14022B3B0",
+      "Finding": "Drain-part release cancels its charge effect and, for charge level other than-1, requests the gun selected by level at1376+8*level.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x14022B3B0"
+      ],
+      "Limitations": "Level must remain-1..2; values outside that interval can index beyond the three owned guns. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401FAF80",
+      "Finding": "Traverses the main ship's parts and invokes the Drain-part release helper for every kind10 part.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x1401FAF80"
+      ],
+      "Limitations": "Native firing requires a valid current part list and gun/resource ownership. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402313E0",
+      "Finding": "DRAIN phases are2 warmup,3 reset and enter absorption,4 attract/count/level-up,5 release and6 return to ready1. Warmup threshold is30ticks. Stage thresholds10/30/100 give140 total required absorbed hits for full charge, with at most one level transition per update.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x1402313E0"
+      ],
+      "Limitations": "Phase0 means uninstalled. Existing broad phase summary is extended here with owner, projectile and exact threshold semantics; no standalone phase patch is proposed. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 3,
+      "PriorAuditClaims": [
+        1234
+      ]
+    },
+    {
+      "Address": "0x140231350",
+      "Finding": "While phase4, awards native absorption points through233980 and then increments the stage counter only below full level2.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x140231350"
+      ],
+      "Limitations": "Repeated fake absorption calls would change score/progression outcomes, not merely a visual meter. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140233980",
+      "Finding": "Awards100 points per absorption, or1000 when current medal value equals30, through the existing score adder207A50.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x140233980"
+      ],
+      "Limitations": "Score-lock behavior is inherited from207A50. The clear-enemy-bullets path does not call this function. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 2,
+      "PriorAuditClaims": [
+        1314
+      ]
+    },
+    {
+      "Address": "0x140231650",
+      "Finding": "Returns full fraction1 at level2; below that, sums completed thresholds and current stage count then divides by140.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x140231650"
+      ],
+      "Limitations": "The result is not explicitly clamped. A post-projectile/pre-next-stage observation can transiently exceed the nominal progress threshold. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140231640",
+      "Finding": "Returns the raw charge-level DWORD, includingFFFFFFFF for level-1.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x140231640"
+      ],
+      "Limitations": "Readouts should interpret it as signed level-1..2, not a huge unsigned level. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140231760",
+      "Finding": "Returns whether DRAIN phase equals4 (actively absorbing).",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x140231760"
+      ],
+      "Limitations": "A true result does not establish general damage immunity. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140231770",
+      "Finding": "Returns whether the DRAIN phase is nonzero (installed/active state family).",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x140231770"
+      ],
+      "Limitations": "This includes several nonabsorbing phases. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140231780",
+      "Finding": "Returns whether DRAIN phase equals1 (ready).",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x140231780"
+      ],
+      "Limitations": "It does not check input or part-resource validity. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402317E0",
+      "Finding": "Native charge request only changes phase1 to2.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x1402317E0"
+      ],
+      "Limitations": "Normal input logic can later release the charge; this alone is not a persistent shield control. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402317B0",
+      "Finding": "Native release request changes phase4 to5; from any other phase it resets phase1, count0, warmup0 and level-1.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x1402317B0"
+      ],
+      "Limitations": "Calling outside the normal ready/absorption flow can cancel a warmup rather than fire. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140231790",
+      "Finding": "Unconditionally resets DRAIN to ready1 with count0, level-1 and warmup0; current xref query found no callers.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x140231790"
+      ],
+      "Limitations": "Unreferenced helper semantics do not justify exposing it as the normal gameplay API. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1402315F0",
+      "Finding": "Resets DRAIN counters and directly enters absorption phase4; current xref query found no callers.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x1402315F0"
+      ],
+      "Limitations": "This skips warmup and does not prove correct input/effect ownership, so it remains research only. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401FE410",
+      "Finding": "One native input mode starts/releases DRAIN according to inputbit0x100 combined with configuration9BA860bit0, and manages the player-side absorption effect.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x1401FE410"
+      ],
+      "Limitations": "Physical button mapping is not inferred; a one-shot start may be undone by normal input on later frames. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401FE860",
+      "Finding": "The alternate input path applies the same DRAIN input/configuration logic while also handling movement/roll controls.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x1401FE860"
+      ],
+      "Limitations": "No synthetic held-input override has been verified or proposed. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 3,
+      "PriorAuditClaims": [
+        1232,
+        1343,
+        1357,
+        1361
+      ]
+    },
+    {
+      "Address": "0x1401FF340",
+      "Finding": "Only attack descriptor kind1 is absorbed while DRAIN is installed and phase4; it calls231350 and returns before HP damage. Other attacks follow the normal ship damage path.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x1401FF340"
+      ],
+      "Limitations": "This is projectile-kind-specific absorption, not universal invulnerability. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 3,
+      "PriorAuditClaims": [
+        1287
+      ]
+    },
+    {
+      "Address": "0x1401FF4F0",
+      "Finding": "The integer ship-damage path has no DRAIN absorption check and proceeds through its own flags/HP handling.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x1401FF4F0"
+      ],
+      "Limitations": "A DRAIN phase control would not protect against all damage entrypoints. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 3,
+      "PriorAuditClaims": [
+        1288
+      ]
+    },
+    {
+      "Address": "0x140231B50",
+      "Finding": "At maximum charge, schedules the special fiber231CA0 on the Gummi scheduler (group1,priority22100) and installs cleanup231D00 under a shared busy flag.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x140231B50"
+      ],
+      "Limitations": "This has asynchronous effects and broader projectile clears; it is not the proposed direct clear API. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140231CA0",
+      "Finding": "The maximum-charge special sequence performs native visual transitions and waits, calls broad projectile clear1F6050, waits again, then ends its task.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x140231CA0"
+      ],
+      "Limitations": "Timing and other projectile families are engine-owned; no manual fiber invocation is proposed. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140231BB0",
+      "Finding": "Another native special sequence uses the shared busy flag, visual transition/wait, broad clear1F6050 and further gameplay operations.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x140231BB0"
+      ],
+      "Limitations": "This corroborates legitimate in-mission clearing but does not make all its side effects safe to generalize. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140231C20",
+      "Finding": "Another native special sequence performs fades/waits and broad projectile clear1F6050 before its own follow-up operation.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x140231C20"
+      ],
+      "Limitations": "No universal enemy-kill or mission-win interpretation is made. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x140231D00",
+      "Finding": "Special-sequence cleanup clears the shared busy flagAF95E0.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_evidence.json#/functions/0x140231D00"
+      ],
+      "Limitations": "Do not clear this flag independently while an engine-owned fiber is active. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14014F770",
+      "Finding": "Allocates a152-byte task, stores callback+0, manager+88, group+96, priority+100, cleanup+104 and fiber+112, then inserts it in the manager head16/tail24 doubly linked list using next120/previous128 in ascending priority order.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_owner_evidence.json#/functions/0"
+      ],
+      "Limitations": "Allocation and list insertion are engine operations; trainer code only validates the current list. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 1,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14014F680",
+      "Finding": "Unlinks a task and zeroes its next/previous links before invoking cleanup+104, then frees the task and optional fiber through its owning manager.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_owner_evidence.json#/functions/1"
+      ],
+      "Limitations": "This ordering makes the current linked task a useful ENEMY_SHOT lifetime witness; a cached task address is insufficient. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 1,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14014FA60",
+      "Finding": "Manager destruction traverses linked tasks, unlinks each before cleanup, destroys optional fibers, frees tasks and finally frees the manager.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_owner_evidence.json#/functions/2"
+      ],
+      "Limitations": "The Gummi module scheduler and heap identity still must be validated before reading the list. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x14014FD60",
+      "Finding": "Scheduler dispatch sets manager+32 to the current task, invokes direct callbacks or fibers, then clears+32 and retires callbacks that became null.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_owner_evidence.json#/functions/3"
+      ],
+      "Limitations": "The proposed trainer clear requires manager+32==0 and executes after the native outer update on the game thread. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 1,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401E1FA0",
+      "Finding": "Gummi allocation delegates to virtual slot+8 on heap globalAE94F0, matching the allocation path used by the ENEMY_SHOT pool initializer.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_owner_evidence.json#/functions/4"
+      ],
+      "Limitations": "A raw readable pointer alone is not a proof of a live allocation. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401E2030",
+      "Finding": "Gummi free delegates to virtual slot+16 on the same heap globalAE94F0.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_owner_evidence.json#/functions/5"
+      ],
+      "Limitations": "Pool pointers must not be reused across heap or module replacement. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401FA7E0",
+      "Finding": "Main-ship collision refreshes native geometry and tests its two indexed geometry arrays against an incoming shape, returning after the first collision.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_owner_evidence.json#/functions/6"
+      ],
+      "Limitations": "This read/update path assumes valid native geometry counts and arrays; it is not a proposed trainer call. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    },
+    {
+      "Address": "0x1401FA8D0",
+      "Finding": "Special ship-part collision selects only part IDs599/600, supplies radii20/30 in XMM2 to the shape builder and tests them against the incoming shape.",
+      "Evidence": [
+        "work/trainer/research/gummi_round4_owner_evidence.json#/functions/7"
+      ],
+      "Limitations": "Other part IDs contribute no positive radius in this path. No claim of general shield invulnerability is made. Static analysis; no live execution in this round.",
+      "PriorAuditTier": 0,
+      "PriorAuditClaims": []
+    }
+  ]
+}

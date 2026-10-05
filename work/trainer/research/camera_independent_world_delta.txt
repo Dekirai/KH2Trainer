@@ -1,0 +1,22 @@
+Independent World camera delta review — 2026-10-04
+
+No new significant issue found in the reviewed delta. The old owner and scene
+lease findings are resolved. CameraAvailable requires producer0/submode0, and
+the lease contains field scheduler, heap and all10MapTargetbytes. Render and
+Tick discard both FOV and held camera before further writes after takeover.
+Returning to normal follow does not reactivate an old held camera.
+
+The two setter calls match full native ASM:19D340 receives eye/target/up;
+19D3D0 receives eye/target and roll in XMM3 while preserving up. Captured and
+requested roll are finite and bounded by float pi. The original camera task
+is forwarded exactly once, including cancellation and caught setter faults.
+Normal disable removes trainer state without stale raw baseline restoration.
+
+WorldFeatures.inl SHA256:
+AED326CE2F757F6185F2D3DA118CEEE7754F84BADF2DEF8E3A3CC452429F852C
+WorldGuardTests.cpp SHA256:
+D49873860D9E064C2925A10A8B62B80488EF509B68FE65A484E5380E28ABEA9F
+
+Root reports121checks/0failures. The reviewer read the relevant fixture cases;
+no independent build, live test, game/UI access or product changes occurred.
+The still-evolving CameraExtra queued actions receive a separate review.

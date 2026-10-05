@@ -1,0 +1,445 @@
+{
+  "title": "Independent audio lifetime, pause and bus-gain review",
+  "buildSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "imageBase": "0x140000000",
+  "date": "2026-10-04",
+  "scope": "Static IDA read-only review. No game execution, memory writes, audio tests, trainer source changes or implementation.",
+  "evidenceSummary": {
+    "freshFunctionCaptures": 43,
+    "completeDedicatedDisassemblies": 43,
+    "canonicalSharedChunk": "RVA1389C0 belongs to function1DC390; counted as one canonical finding.",
+    "semantics": "Claims are limited to the listed paths; this is not full audio subsystem semantic coverage."
+  },
+  "conclusion": "A native bus gain stage is a better candidate for playback-preserving volume than music wrapper1388F0, whose zero gain stops playback. 07FAD0 with gain0..1 and duration1ms has verified ABI and avoids immediate voice traversal. It is not yet an unconditional implementation approval: a serialized driver lifetime point and restore ownership must be established.",
+  "claims": [
+    {
+      "addr": "0x140001000",
+      "Finding": "Initializes global Sound critical section at RVA 2B81278 and registers 571EB0 as an exit callback.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Process initialization, not a scene-ready flag."
+    },
+    {
+      "addr": "0x140571eb0",
+      "Finding": "Deletes global Sound critical section at process exit.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Must not invoke Sound APIs from DLL detach or after CRT teardown."
+    },
+    {
+      "addr": "0x140138880",
+      "Finding": "Finds the first type-1 entry with matching channel in list RVA 713470 and queries its SoundController at entry+16 through 081EB0.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Only establishes current activity; no ownership, no bank loading, no list lock in this wrapper."
+    },
+    {
+      "addr": "0x1401dc390",
+      "Finding": "Converts the original duration/channel arguments and jumps into shared tail RVA 1389C0; that tail searches the music list and calls 081B70 with the duration from R8D.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "1389C0 is a shared function chunk, not an independent conventional two-argument API. Its live decompile is attributed to canonical function 1DC390."
+    },
+    {
+      "addr": "0x1401388f0",
+      "Finding": "For matching music entry, gain<=0 calls native stop 0818B0; positive gain calls 082140. This wrapper cannot implement a mute that preserves playback.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Does not change the entry+64 stored baseline gain used by global pause/duck."
+    },
+    {
+      "addr": "0x140081b70",
+      "Finding": "Pauses a resolved SoundController: RCX=controller, EDX=unsigned milliseconds. Enters global CS then backend/layout lock; positive handle calls voice vtable+48, negative handle calls 0384E0.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "EDX is a duration, not a bool. No validity return or controller lifetime ownership is provided."
+    },
+    {
+      "addr": "0x140082140",
+      "Finding": "Sets gain on an existing SoundController with RCX=controller, XMM1=float gain, R8D=milliseconds. Rejects non-finite input and resolves the backend under global and backend locks.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Decompiler loses float register forwarding at the virtual call; dedicated ASM verifies it. This API alone is not a persistent bus setting."
+    },
+    {
+      "addr": "0x140081eb0",
+      "Finding": "Queries current SoundController activity under global and backend/layout locking after handle resolution.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Activity is distinct from the paused query 081FF0; do not use this result as pause ownership."
+    },
+    {
+      "addr": "0x140138520",
+      "Finding": "Native bus-gain wrapper constructs a BusController from *RCX, takes float in XMM1 and duration/rate in R8D/R9D, converts duration then calls 07FA10.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Only metadata xref was found. Caller-controlled rate0 and integer arithmetic make this a worse trainer entry point than 07FAD0."
+    },
+    {
+      "addr": "0x14007fa10",
+      "Finding": "Resolves BusController ID0 to the master and IDs1..count to list[id-1], then sets bus gain through vtable+24 under the global Sound CS. Duration is read from an integer pointer and converted from 300000 units/second to milliseconds.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Does not itself validate float finiteness or guarantee that bus globals are outside teardown."
+    },
+    {
+      "addr": "0x1400a8830",
+      "Finding": "MasterBusXA2 gain setter has RCX=master, XMM1=float gain, R8D=encoded milliseconds. Nonzero duration updates DynamicValue fields only; zero updates the XA2 voice volume directly and current/target fields.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Gain zero follows SetVolume/envelope logic, not native SoundController Stop. Actual audio output depends on subsequent backend updates."
+    },
+    {
+      "addr": "0x140079c90",
+      "Finding": "Constructs a 24-byte stack BusController by driver virtual+152 under the global CS; absent driver gives ID=-1 and null layout.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Controller is a non-owning selector; it does not extend driver, bus, or layout lifetime."
+    },
+    {
+      "addr": "0x14007fad0",
+      "Finding": "Native bus gain setter: RCX=BusController*, XMM1=float gain, R8D=milliseconds. It resolves current global bus/master and dispatches vtable+24 under global CS.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Use finite 0..1 and duration1 for a candidate trainer operation. Locks do not protect the separately serialized teardown by themselves."
+    },
+    {
+      "addr": "0x14007f7e0",
+      "Finding": "BusController destructor only writes its class vtable.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "No backend refcount or lifetime pin is acquired/released by this stack wrapper."
+    },
+    {
+      "addr": "0x1400a54d0",
+      "Finding": "Ordinary Bus gain setter uses target+36,current+32,step+40,remaining+44,total+48,start+52,curve+61. Nonzero duration writes envelope fields; zero immediately traverses voices under bus+280 lock and applies their composite gain.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "A 1 ms request avoids an immediate voice-list walk but still needs current driver/bus lifetime."
+    },
+    {
+      "addr": "0x1400c4b80",
+      "Finding": "Generic MasterBus gain setter interpolates when duration is nonzero; immediate mode writes current gain and each child bus's parent multiplier/dirty state.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "This is a gain stage, not a transport stop/pause. Generic and XA2 master implementations have different immediate propagation paths."
+    },
+    {
+      "addr": "0x140080da0",
+      "Finding": "Resolves a controller ID; positive IDs query the current backend voice under the pool lock and may map through virtual+560, while unresolved IDs fall back to the stored signed ID.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "A controller includes a layout pointer for negative IDs; copying the struct is not a lifetime guarantee."
+    },
+    {
+      "addr": "0x14009a890",
+      "Finding": "Validates positive voice IDs against their active-list membership and virtual+648 full-ID check after deriving a pool slot from ID&0x1ff.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Index alone is insufficient; the full generation-bearing ID and native resolver must be retained."
+    },
+    {
+      "addr": "0x140081c70",
+      "Finding": "Resumes a SoundController with RCX=controller and EDX=milliseconds, using matching global/backend or layout locks; positive voice virtual+64, negative 0385A0.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Resume should not be issued to undo an unrelated menu/global pause."
+    },
+    {
+      "addr": "0x140081ff0",
+      "Finding": "Queries whether the resolved SoundController is paused, under global and backend/layout locks; positive virtual+640, negative layout voice state bit2.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Reports state, not which caller owns the pause."
+    },
+    {
+      "addr": "0x1400812b0",
+      "Finding": "Checks whether a SoundController resolves to a currently valid positive pool voice or negative layout voice under global CS.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Validation is a momentary query; re-resolve immediately for an operation and do not retain raw backend pointers."
+    },
+    {
+      "addr": "0x140136340",
+      "Finding": "Destroys a music/SFX entry by destructing its embedded SoundController, replacing its joint vtable, and freeing on the deleting flag.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Cached raw active-entry pointers can become invalid during regular cleanup, even without scene or driver teardown."
+    },
+    {
+      "addr": "0x14013c910",
+      "Finding": "Creates/publishes the 72-byte AxaSoundManager singleton at RVA 8BBD08, initializing inherited thread handles to zero and manager state.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "CThread inheritance alone is not evidence that this manager list is always processed on a separate thread."
+    },
+    {
+      "addr": "0x14013c7c0",
+      "Finding": "Destroys and clears AxaSoundManager, removes loaded banks, resets bank-list globals, and frees auxiliary storage.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "This function does not by itself establish that every active-entry global was nulled before destruction."
+    },
+    {
+      "addr": "0x14013c470",
+      "Finding": "Walks active entries, removes and destroys those that are invalid or inactive, then cleans bank/stream state.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Only walk this high-level list in a proven serialized engine lifecycle point; low-level sound CS does not automatically cover the list."
+    },
+    {
+      "addr": "0x1401dc770",
+      "Finding": "Registers the Sound update callback 1DC370 on outer scheduler RVA 9BA888 with priority500010 during sound setup.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "This proves an engine-scheduler cleanup path; it does not prove the absence of other callers or backend worker threads."
+    },
+    {
+      "addr": "0x1401dc370",
+      "Finding": "Scheduled Sound callback calls 1DD8D0,1DF440,13C470 in order.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Callback registration and code together identify a regular cleanup boundary, not a license to call yielding resource loaders."
+    },
+    {
+      "addr": "0x140138e80",
+      "Finding": "Native global audio pause/duck/resume coordinates music entry+60 flags, stored gain+64 and manager+68, and bus pause/resume calls.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "A trainer must respect the existing global pause owner. Blind resume can defeat a game/menu pause; gain restoration can overwrite native ducking if the wrong stage is used."
+    },
+    {
+      "addr": "0x140077be0",
+      "Finding": "Stops active audio and joins backend workers before destroying helper objects and the SoundDriver; driver global is nulled only after its deleting destructor returns.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Final driver/bus destruction is not enclosed in the global Sound CS. Runtime pointer checks alone leave a teardown race for arbitrary worker callers."
+    },
+    {
+      "addr": "0x140077a30",
+      "Finding": "Cleanup variant joins audio worker threads, then destroys/nuls helpers and driver and clears XA2 initialization state.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Same lifetime boundary as normal teardown; do not use the CS as a universal ownership lock."
+    },
+    {
+      "addr": "0x14008d720",
+      "Finding": "Resets the global bus/master state, creates a 424-byte MasterBusXA2, creates ordinary buses, then binds master's child-list pointer+336 and count+344.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Driver/master/list identity can change across initialization; no old bus pointer may be carried across it."
+    },
+    {
+      "addr": "0x14008e150",
+      "Finding": "Builds ordinary buses using configured count, allocates the pointer array and 336-byte bus objects, assigns each ID=index+1.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Trainer must bound IDs by actual count and validate every selected object; an arbitrary number is not a valid bus."
+    },
+    {
+      "addr": "0x14008db30",
+      "Finding": "Creates a MasterBusXA2 from the current audio configuration and publishes it to global RVA 2B811D0.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Master identity can change independently of a stored controller ID. Bind and recheck the master pointer itself."
+    },
+    {
+      "addr": "0x140091470",
+      "Finding": "SoundDriver deleting destructor drains/releases backend resources, calls 08FA20 for buses and deletes its instance critical section before freeing itself.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Global driver pointer is still nonzero while its destructor runs; it cannot alone prove a stable object."
+    },
+    {
+      "addr": "0x1400a5430",
+      "Finding": "Computes a composite bus multiplier from three DynamicValues, including the first stage's parent multiplier at+56.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Do not use this composite getter as the original value for restoring only the first gain stage; save stage target/current fields instead."
+    },
+    {
+      "addr": "0x1400a88c0",
+      "Finding": "MasterBusXA2 regular update advances the gain DynamicValue and sends its evaluated gain to the XA2 voice SetVolume slot.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Confirms a nonzero-duration setter is applied by the regular update path. No live audibility test was performed."
+    },
+    {
+      "addr": "0x1400a4f70",
+      "Finding": "Bus regular update validates/removes dead controllers, advances gain envelopes, computes composite gain and applies it to voices under the bus list lock.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "The update can enter global Sound CS while holding the bus lock. Preserve native scheduling/locking order; do not introduce a worker that holds global CS across arbitrary bus/list work."
+    },
+    {
+      "addr": "0x14008fa20",
+      "Finding": "Destroys normal buses, frees global bus-list storage and destroys the master; it does not clear global bus-list pointer, count or master pointer.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "This is concrete evidence of temporarily dangling global bus pointers during destruction. Memory readability and expected vtable are insufficient lifecycle proofs."
+    },
+    {
+      "addr": "0x14007b5b0",
+      "Finding": "Stops one audio worker by setting its exit byte, waiting indefinitely on its thread handle, closing it, then destroying and nulling worker state.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Teardown synchronization is join-based; no trainer call should be made from an audio shutdown callback."
+    },
+    {
+      "addr": "0x14007b380",
+      "Finding": "Stops the second audio worker using exit byte, thread join, handle close and object destruction.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "Backend activity is multi-threaded even though high-level cleanup has an engine scheduler callback."
+    },
+    {
+      "addr": "0x140080c50",
+      "Finding": "SoundController destructor only restores the SoundController vtable.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "A copied controller struct does not own the voice or the negative-ID layout."
+    },
+    {
+      "addr": "0x140086260",
+      "Finding": "Evaluates a DynamicValue using current/target/start/remaining/total fields and curve kind; curve0 returns current directly.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "For a linear 1 ms override, save the original stable target, not a transient composite or nonlinear evaluated value."
+    },
+    {
+      "addr": "0x1400936a0",
+      "Finding": "Driver constructs BusController by writing ID at+8, vtable at+0 and auxiliary layout pointer at+16.",
+      "Evidence": [
+        "work/trainer/research/audio_independent_evidence.json"
+      ],
+      "Limitations": "The result contains selectors only; it has no bus pointer, generation token or refcount."
+    }
+  ],
+  "contract": {
+    "status": "Research contract for the next round; implementation paused for Drive priority.",
+    "proposedGainApi": {
+      "constructRva": "0x079C90",
+      "setGainRva": "0x07FAD0",
+      "destroyRva": "0x07F7E0",
+      "controllerBytes": 24,
+      "constructAbi": "void* __fastcall(void* outController, unsigned busId)",
+      "setAbi": "void __fastcall(void* controller, float gain, unsigned milliseconds)",
+      "destroyAbi": "void __fastcall(void* controller)",
+      "parameters": "Known fixed bus ID, finite gain0..1, duration1ms; ID0 master, ID1..count ordinary buses.",
+      "return": "No success boolean; publish applied only after safe identity-bound readback of target."
+    },
+    "fields": {
+      "driver": "RVA2B81DE0",
+      "master": "RVA2B811D0",
+      "buses": "RVA2B811C8",
+      "count": "RVA2B811A4",
+      "globalCs": "RVA2B81278",
+      "manager": "RVA8BBD08",
+      "normalBusVtable": "RVA61D598",
+      "xa2MasterVtable": "RVA61DA28",
+      "genericMasterVtable": "RVA621998",
+      "driverVtable": "RVA61B760",
+      "busIdOffset": 8,
+      "currentGainOffset": 32,
+      "targetGainOffset": 36,
+      "remainingMsOffset": 44,
+      "totalMsOffset": 48,
+      "startGainOffset": 52,
+      "parentMultiplierOffset": 56,
+      "curveOffset": 61
+    },
+    "acquire": [
+      "Only a proven game-engine lifecycle point after audio initialization, before teardown, on the known engine thread; fresh host heartbeat.",
+      "Read and bind driver, manager, master, buslist, count, selected bus and ID. Validate readable extents, expected vtables and code-backed setter entries; no arbitrary function pointers.",
+      "Reject an absent/unready/replaced driver and an active teardown. Pointer/vtable checks plus the public critical section alone do not prove this.",
+      "Acquire only a stable original gain stage: finite current/target, sane range and remainingMs==0. Save stage target, not composite gain. Bound normal bus IDs to actual count.",
+      "Construct local non-owning controller immediately before the native setter; revalidate identity at the selected serialized point."
+    ],
+    "lease": [
+      "An override lease is bound to the current driver/master/buslist/bus object identities and selected ID, not just bus number.",
+      "Only reapply while the same identity remains current and native target still equals the trainer-owned value.",
+      "Native settings changes, reinitialization, device replacement or observed unready state release ownership. Do not overwrite a native setting update."
+    ],
+    "restore": [
+      "At an equally safe game-thread point, restore saved target using the native setter only if identity and applied-target ownership still match.",
+      "If identity changed, object disappeared, or native target changed, relinquish without writing to old memory.",
+      "A pending fade is not exactly restorable by saving one float; conservative acquisition requires stable original stage.",
+      "On heartbeat expiry or Disable All, schedule best-effort owned restore on the next safe frame, then relinquish."
+    ],
+    "pauseApi": {
+      "pauseRva": "0x081B70",
+      "resumeRva": "0x081C70",
+      "pausedRva": "0x081FF0",
+      "validRva": "0x0812B0",
+      "activeRva": "0x081EB0",
+      "abi": "Pause/resume: void __fastcall(SoundController*, unsigned milliseconds). Queries take controller RCX.",
+      "safeSubset": "Only the current matching music entry at the serialized cleanup/lifecycle point, with identity and full controller ID/layout revalidated. Never cache raw voice pointers. Pause/resume are separate operations.",
+      "ownership": "Native manager+68 and music entry+60 represent global/menu pause coordination. A paused query does not identify its owner. Automatic resume/restore must not override a native pause; this requires a stronger lease/handoff design before implementation."
+    },
+    "excluded": [
+      "Do not use1388F0(gain0) for mute: it calls Stop.",
+      "Do not call1DF1D0 resource loading from the outer-frame hook: it yields through task/fiber state.",
+      "Do not call high-level list walkers from GUI or arbitrary worker threads.",
+      "Do not store raw entry/bus/voice pointers across teardown or track replacement.",
+      "No blanket volume force every frame that silently overrides game settings."
+    ],
+    "remainingBeforeImplementation": [
+      "Prove the exact engine-thread startup/teardown serialization window for the selected hook, including device reinitialization.",
+      "Decide bus UI semantics using root's settings-to-bus mapping and whether original stage range beyond0..1 should be accepted for restore.",
+      "Choose explicit lease cancellation on native gain changes and menu pause handoff; implement meaningful fake-memory lifecycle/ownership tests.",
+      "Perform an authorized live audio test for mute without stop, track transitions, device reset, settings changes and restoration only after static gates pass."
+    ]
+  },
+  "tests": [
+    "Reject missing driver/master/list; mismatched vtable; invalid bus count/ID; non-finite gain; stale heartbeat; wrong thread.",
+    "Identity changes between request and application reject before any engine call.",
+    "Teardown simulation with readable-but-freed-looking bus globals must reject based on lifecycle, not mere pointer readability.",
+    "Gain0 with1ms reaches bus gain setter, never SoundController Stop; verify captured ABI forwarding.",
+    "Acquisition during an active fade rejects; restore uses saved raw stage target, never composite multiplier.",
+    "External native gain change cancels ownership; changed master or driver prevents restore to old objects.",
+    "Pause ownership handoff: native menu pause acquired after trainer pause must not be undone by trainer disconnect.",
+    "For every evidence function, verify full ASM cursor.done and instruction count equals total; map shared tail1389C0 to canonical1DC390."
+  ]
+}

@@ -1,0 +1,603 @@
+{
+  "result": [
+    {
+      "target": "0x14011C970",
+      "addr": "0x14011c970",
+      "name": "kh2_GX_EnumerateResolutions",
+      "analysis": {
+        "size": "0x290",
+        "prototype": null,
+        "decompile": "// Static analysis (SHA256 9002b2de...49ed). Analysis label: kh2_GX_EnumerateResolutions. Enumerates modes >=800x600. When a4!=0, requires 9*width==16*height; sorts and deduplicates. If none, retries without aspect filter.\n// Hidden C++ exception states: #wind=1\n__int64 __fastcall kh2_GX_EnumerateResolutions(__int64 a1, __int64 a2, int a3, char a4)\n{\n  __int64 v5; // r12\n  DWORD v8; // edi\n  HMONITOR v9; // rax\n  DWORD i; // edx\n  _QWORD *v11; // rbx\n  __int64 *v12; // rsi\n  __int64 v13; // rax\n  void ***v14; // rsi\n  void **v15; // rdi\n  void **v16; // rbx\n  void **v17; // rcx\n  unsigned int v18; // edi\n  void **v19; // rax\n  __int64 v20; // r9\n  float v21; // xmm1_4\n  void **v22; // rcx\n  void *v23; // rax\n  void **v24; // rbx\n  char v26[8]; // [rsp+30h] [rbp-D0h] BYREF\n  void *Block; // [rsp+38h] [rbp-C8h] BYREF\n  __int64 v28; // [rsp+40h] [rbp-C0h]\n  _QWORD v29[3]; // [rsp+48h] [rbp-B8h] BYREF\n  struct tagMONITORINFO mi; // [rsp+60h] [rbp-A0h] BYREF\n  CHAR szDeviceName[40]; // [rsp+88h] [rbp-78h] BYREF\n  DEVMODEA DevMode; // [rsp+B0h] [rbp-50h] BYREF\n\n  v29[1] = -2; /*0x14011c988*/\n  v5 = a3; /*0x14011c9ab*/\n  memset(&DevMode, 0, sizeof(DevMode)); /*0x14011c9c0*/\n  v8 = 0; /*0x14011c9c7*/\n  Block = nullptr; /*0x14011c9c9*/\n  v28 = 0; /*0x14011c9ce*/\n  Block = (void *)sub_14010EEF0(&Block, 0, 0); /*0x14011c9e2*/\n  v9 = MonitorFromWindow(*(HWND *)(a1 + 1008), 2u); /*0x14011c9f3*/\n  mi.cbSize = 72; /*0x14011c9f9*/\n  GetMonitorInfoA(v9, &mi); /*0x14011ca09*/\n  for ( i = 0; EnumDisplaySettingsA(szDeviceName, i, &DevMode); i = v8 ) /*0x14011ca0f*/\n  {\n    ++v8; /*0x14011ca23*/\n    v29[0] = *(_QWORD *)&DevMode.dmPelsWidth; /*0x14011ca28*/\n    if ( (int)DevMode.dmPelsWidth >= 800 /*0x14011ca4f*/\n      && (int)DevMode.dmPelsHeight >= 600\n      && (!a4 || 9 * DevMode.dmPelsWidth == 16 * DevMode.dmPelsHeight) )\n    {\n      v11 = Block; /*0x14011ca51*/\n      v12 = *((__int64 **)Block + 1); /*0x14011ca56*/\n      v13 = sub_140107DF0(&Block, Block, v12, v29); /*0x14011ca6a*/\n      if ( v28 == 0xAAAAAAAAAAAAAA9LL ) /*0x14011ca85*/\n        std::_Xlength_error(\"list<T> too long\"); /*0x14011cbfa*/\n      ++v28; /*0x14011ca8e*/\n      v11[1] = v13; /*0x14011ca93*/\n      *v12 = v13; /*0x14011ca97*/\n    }\n  }\n  sub_140109530((unsigned int)&Block, (unsigned int)v29, *(_QWORD *)Block, (_DWORD)Block, (__int64)v26, v28); /*0x14011cad3*/\n  v14 = (void ***)Block; /*0x14011cad8*/\n  v15 = *(void ***)Block; /*0x14011cadd*/\n  v16 = **(void ****)Block; /*0x14011cae0*/\n  if ( v16 != Block ) /*0x14011cae6*/\n  {\n    do /*0x14011cb1f*/\n    {\n      if ( *((_DWORD *)v15 + 4) == *((_DWORD *)v16 + 4) && *((_DWORD *)v15 + 5) == *((_DWORD *)v16 + 5) ) /*0x14011caf6*/\n      {\n        v17 = v16; /*0x14011caf8*/\n        v16 = (void **)*v16; /*0x14011cafb*/\n        *v15 = v16; /*0x14011cafe*/\n        v16[1] = v15; /*0x14011cb01*/\n        j_j_free(v17); /*0x14011cb0a*/\n        --v28; /*0x14011cb0f*/\n      }\n      else\n      {\n        v15 = v16; /*0x14011cb16*/\n        v16 = (void **)*v16; /*0x14011cb19*/\n      }\n    }\n    while ( v16 != (void **)v14 ); /*0x14011cb1f*/\n    v14 = (void ***)Block; /*0x14011cb21*/\n  }\n  v18 = 0; /*0x14011cb26*/\n  v19 = *v14; /*0x14011cb28*/\n  if ( *v14 == (void **)v14 ) /*0x14011cb2e*/\n    goto LABEL_22; /*0x14011cb2e*/\n  v20 = 0; /*0x14011cb30*/\n  do /*0x14011cb60*/\n  {\n    if ( v20 >= v5 ) /*0x14011cb36*/\n      break; /*0x14011cb36*/\n    v21 = (float)*((int *)v19 + 5); /*0x14011cb3d*/\n    *(float *)(a2 + 8 * v20) = (float)*((int *)v19 + 4); /*0x14011cb48*/\n    *(float *)(a2 + 8 * v20 + 4) = v21; /*0x14011cb4e*/\n    v19 = (void **)*v19; /*0x14011cb55*/\n    ++v18; /*0x14011cb58*/\n    ++v20; /*0x14011cb5a*/\n  }\n  while ( v19 != (void **)v14 ); /*0x14011cb60*/\n  if ( !v18 ) /*0x14011cb64*/\n  {\nLABEL_22:\n    kh2_GX_EnumerateResolutions(a1, a2, (unsigned int)v5, 0); /*0x14011cb72*/\n    v18 = 1; /*0x14011cb77*/\n    v14 = (void ***)Block; /*0x14011cb7c*/\n  }\n  v22 = *v14; /*0x14011cb81*/\n  *v14 = (void **)v14; /*0x14011cb84*/\n  *((_QWORD *)Block + 1) = Block; /*0x14011cb8c*/\n  v28 = 0; /*0x14011cb90*/\n  v23 = Block; /*0x14011cb99*/\n  if ( v22 != Block ) /*0x14011cba1*/\n  {\n    do /*0x14011cbbb*/\n    {\n      v24 = (void **)*v22; /*0x14011cba3*/\n      j_j_free(v22); /*0x14011cbab*/\n      v22 = v24; /*0x14011cbb0*/\n      v23 = Block; /*0x14011cbb3*/\n    }\n    while ( v24 != Block ); /*0x14011cbbb*/\n  }\n  j_j_free(v23); /*0x14011cbc5*/\n  return v18; /*0x14011cbcc*/\n}",
+        "decompile_error": null,
+        "disasm": null,
+        "xrefs": null,
+        "callers": [
+          {
+            "addr": "0x14011c970",
+            "name": "kh2_GX_EnumerateResolutions",
+            "size": "0x290"
+          },
+          {
+            "addr": "0x140124060",
+            "name": "kh2_GX_CreateDeviceResources",
+            "size": "0x7df"
+          },
+          {
+            "addr": "0x140124fe0",
+            "name": "sub_140124FE0",
+            "size": "0x24e"
+          }
+        ],
+        "caller_count": 3,
+        "callers_truncated": false,
+        "callees": [
+          {
+            "addr": "0x1404390a0",
+            "name": "j_j_free",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140471a6c",
+            "name": "memset",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140439a60",
+            "name": "__security_check_cookie",
+            "type": "internal"
+          },
+          {
+            "addr": "0x14010eef0",
+            "name": "sub_14010EEF0",
+            "type": "internal"
+          },
+          {
+            "addr": "0x14057b528",
+            "name": "__imp_MonitorFromWindow",
+            "type": "external"
+          },
+          {
+            "addr": "0x140107df0",
+            "name": "sub_140107DF0",
+            "type": "internal"
+          },
+          {
+            "addr": "0x14043ace0",
+            "name": "?_Xlength_error@std@@YAXPEBD@Z",
+            "type": "internal"
+          },
+          {
+            "addr": "0x14057b530",
+            "name": "__imp_EnumDisplaySettingsA",
+            "type": "external"
+          },
+          {
+            "addr": "0x14011c970",
+            "name": "kh2_GX_EnumerateResolutions",
+            "type": "internal"
+          },
+          {
+            "addr": "0x14057b520",
+            "name": "__imp_GetMonitorInfoA",
+            "type": "external"
+          },
+          {
+            "addr": "0x140109530",
+            "name": "sub_140109530",
+            "type": "internal"
+          }
+        ],
+        "callee_count": 11,
+        "callees_truncated": false,
+        "strings": null,
+        "string_ref_count": 0,
+        "strings_truncated": false,
+        "constants": null,
+        "constant_count": 0,
+        "constants_truncated": false,
+        "basic_blocks": null,
+        "basic_block_count": 0,
+        "basic_blocks_truncated": false
+      },
+      "error": null
+    },
+    {
+      "target": "0x140136E10",
+      "addr": "0x140136e10",
+      "name": "sub_140136E10",
+      "analysis": {
+        "size": "0x162",
+        "prototype": null,
+        "decompile": "// Hidden C++ exception states: #wind=2\nvoid __fastcall sub_140136E10(unsigned int *a1, unsigned int *a2)\n{\n  __int64 v4; // rax\n  __int64 v5; // rbx\n  unsigned int v6; // eax\n  __int64 v7; // r8\n  __int64 v8; // rcx\n  __int64 v9; // rax\n  __int64 v10; // rbx\n  unsigned int v11; // eax\n  __int64 v12; // rcx\n  unsigned int v13; // ebx\n  __int64 v14; // rax\n  __int64 v15; // rdx\n  _BYTE v16[48]; // [rsp+28h] [rbp-30h] BYREF\n\n  while ( 1 ) /*0x140136e30*/\n  {\n    v4 = sub_140077FA0(); /*0x140136e30*/\n    v5 = v4; /*0x140136e35*/\n    if ( v4 ) /*0x140136e3b*/\n      break; /*0x140136e3b*/\n    Sleep(0xAu); /*0x140136e40*/\n  }\n  (*(void (__fastcall **)(__int64))(*(_QWORD *)v4 + 48LL))(v4); /*0x140136e4d*/\n  v6 = (*(__int64 (__fastcall **)(__int64, __int64, __int64))(*(_QWORD *)v5 + 16LL))(v5, 1, 0xFFFFFFFFLL); /*0x140136e5f*/\n  *a1 = v6; /*0x140136e64*/\n  LOBYTE(v7) = 1; /*0x140136e69*/\n  (*(void (__fastcall **)(__int64, _QWORD, __int64))(*(_QWORD *)v5 + 80LL))(v5, v6, v7); /*0x140136e6f*/\n  sub_14007AC10(3); /*0x140136e77*/\n  while ( 1 ) /*0x140136e80*/\n  {\n    v9 = sub_140077F90(v8); /*0x140136e80*/\n    v10 = v9; /*0x140136e85*/\n    if ( v9 ) /*0x140136e8b*/\n      break; /*0x140136e8b*/\n    Sleep(0xAu); /*0x140136e90*/\n  }\n  (*(void (__fastcall **)(__int64, __int64))(*(_QWORD *)v9 + 112LL))(v9, 1); /*0x140136ea2*/\n  (*(void (__fastcall **)(__int64, _QWORD))(*(_QWORD *)v10 + 312LL))(v10, *a2); /*0x140136ead*/\n  *a2 = v11; /*0x140136eb3*/\n  (*(void (__fastcall **)(__int64))(*(_QWORD *)v10 + 144LL))(v10); /*0x140136ec3*/\n  v13 = *a2; /*0x140136ec9*/\n  while ( 1 ) /*0x140136ed0*/\n  {\n    v14 = sub_140077F90(v12); /*0x140136ed0*/\n    if ( v14 ) /*0x140136ed8*/\n      break; /*0x140136ed8*/\n    Sleep(0xAu); /*0x140136edd*/\n  }\n  (*(void (__fastcall **)(__int64, _BYTE *, _QWORD))(*(_QWORD *)v14 + 328LL))(v14, v16, v13); /*0x140136ef2*/\n  LOBYTE(v15) = 1; /*0x140136f00*/\n  sub_140031090(v16, v15, 0xFFFFFFFFLL); /*0x140136f07*/\n  sub_140030E50(v16); /*0x140136f12*/\n  sub_14007A3B0(0); /*0x140136f19*/\n  sub_140079D20(v16, 0); /*0x140136f25*/\n  sub_14007D010(v16, 5); /*0x140136f35*/\n  sub_14007CEE0(v16); /*0x140136f40*/\n  sub_14007B220(16); /*0x140136f4f*/\n  sub_14007B450(16); /*0x140136f6d*/\n}",
+        "decompile_error": null,
+        "disasm": null,
+        "xrefs": null,
+        "callers": [],
+        "caller_count": 0,
+        "callers_truncated": false,
+        "callees": [
+          {
+            "addr": "0x140077f90",
+            "name": "sub_140077F90",
+            "type": "internal"
+          },
+          {
+            "addr": "0x1400fd9a0",
+            "name": "Sleep",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140030e50",
+            "name": "sub_140030E50",
+            "type": "internal"
+          },
+          {
+            "addr": "0x14007a3b0",
+            "name": "sub_14007A3B0",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140079d20",
+            "name": "sub_140079D20",
+            "type": "internal"
+          },
+          {
+            "addr": "0x14007b220",
+            "name": "sub_14007B220",
+            "type": "internal"
+          },
+          {
+            "addr": "0x14007d010",
+            "name": "sub_14007D010",
+            "type": "internal"
+          },
+          {
+            "addr": "0x14007cee0",
+            "name": "sub_14007CEE0",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140077fa0",
+            "name": "sub_140077FA0",
+            "type": "internal"
+          },
+          {
+            "addr": "0x14007ac10",
+            "name": "sub_14007AC10",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140031090",
+            "name": "sub_140031090",
+            "type": "internal"
+          }
+        ],
+        "callee_count": 11,
+        "callees_truncated": false,
+        "strings": null,
+        "string_ref_count": 0,
+        "strings_truncated": false,
+        "constants": null,
+        "constant_count": 0,
+        "constants_truncated": false,
+        "basic_blocks": null,
+        "basic_block_count": 0,
+        "basic_blocks_truncated": false
+      },
+      "error": null
+    },
+    {
+      "target": "0x140137410",
+      "addr": "0x140137410",
+      "name": "sub_140137410",
+      "analysis": {
+        "size": "0xca",
+        "prototype": null,
+        "decompile": "// Hidden C++ exception states: #wind=1\n__int64 __fastcall sub_140137410(unsigned int *a1, __int64 a2)\n{\n  unsigned int v3; // ebx\n  __int64 v4; // rax\n  _BYTE v6[8]; // [rsp+20h] [rbp-A8h] BYREF\n  __int64 v7; // [rsp+28h] [rbp-A0h]\n  _OWORD v8[4]; // [rsp+30h] [rbp-98h] BYREF\n  _OWORD v9[4]; // [rsp+70h] [rbp-58h] BYREF\n\n  v7 = -2; /*0x140137419*/\n  sub_14013B6D0(v8, v6, a2); /*0x140137444*/\n  v9[0] = v8[0]; /*0x14013744e*/\n  v9[1] = v8[1]; /*0x140137458*/\n  v9[2] = v8[2]; /*0x140137465*/\n  v9[3] = v8[3]; /*0x140137472*/\n  v3 = *a1; /*0x14013747a*/\n  while ( 1 ) /*0x140137480*/\n  {\n    v4 = sub_140077FA0(); /*0x140137480*/\n    if ( v4 ) /*0x140137488*/\n      break; /*0x140137488*/\n    Sleep(0xAu); /*0x14013748d*/\n  }\n  (*(void (__fastcall **)(__int64, _OWORD *, _QWORD))(*(_QWORD *)v4 + 32LL))(v4, v8, v3); /*0x1401374a2*/\n  sub_140032390(v8, v9); /*0x1401374b1*/\n  return sub_140031FE0(v8); /*0x1401374c1*/\n}",
+        "decompile_error": null,
+        "disasm": null,
+        "xrefs": null,
+        "callers": [],
+        "caller_count": 0,
+        "callers_truncated": false,
+        "callees": [
+          {
+            "addr": "0x140032390",
+            "name": "sub_140032390",
+            "type": "internal"
+          },
+          {
+            "addr": "0x1400fd9a0",
+            "name": "Sleep",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140031fe0",
+            "name": "sub_140031FE0",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140439a60",
+            "name": "__security_check_cookie",
+            "type": "internal"
+          },
+          {
+            "addr": "0x14013b6d0",
+            "name": "sub_14013B6D0",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140077fa0",
+            "name": "sub_140077FA0",
+            "type": "internal"
+          }
+        ],
+        "callee_count": 6,
+        "callees_truncated": false,
+        "strings": null,
+        "string_ref_count": 0,
+        "strings_truncated": false,
+        "constants": null,
+        "constant_count": 0,
+        "constants_truncated": false,
+        "basic_blocks": null,
+        "basic_block_count": 0,
+        "basic_blocks_truncated": false
+      },
+      "error": null
+    },
+    {
+      "target": "0x140137E20",
+      "addr": "0x140137e20",
+      "name": "sub_140137E20",
+      "analysis": {
+        "size": "0x111",
+        "prototype": null,
+        "decompile": "// Hidden C++ exception states: #wind=1\n__int64 __fastcall sub_140137E20(__int64 a1)\n{\n  __int64 v2; // rax\n  _BYTE v4[40]; // [rsp+28h] [rbp-100h] BYREF\n  _OWORD v5[4]; // [rsp+50h] [rbp-D8h] BYREF\n  _OWORD v6[4]; // [rsp+90h] [rbp-98h] BYREF\n  _OWORD v7[4]; // [rsp+D0h] [rbp-58h] BYREF\n\n  if ( qword_1408BBD08 ) /*0x140137e4f*/\n  {\n    v2 = sub_140077FA0(); /*0x140137e55*/\n    (*(void (__fastcall **)(__int64, _BYTE *, _QWORD))(*(_QWORD *)v2 + 32LL))(v2, v4, (unsigned int)dword_1408BBDB0); /*0x140137e6c*/\n    v5[0] = xmmword_140623CB0; /*0x140137e78*/\n    v5[1] = xmmword_140623CC0; /*0x140137e84*/\n    v5[2] = xmmword_1405ABFD0; /*0x140137e90*/\n    v5[3] = xmmword_140623DF0; /*0x140137e9c*/\n    sub_14013F850((__int64)v5, v6, a1); /*0x140137eb4*/\n    v7[0] = v6[0]; /*0x140137ec1*/\n    v7[1] = v6[1]; /*0x140137ed1*/\n    v7[2] = v6[2]; /*0x140137ee1*/\n    v7[3] = v6[3]; /*0x140137ef1*/\n    sub_140032390(v4, v7); /*0x140137f06*/\n    sub_140031FE0(v4); /*0x140137f11*/\n  }\n  return 0; /*0x140137f18*/\n}",
+        "decompile_error": null,
+        "disasm": null,
+        "xrefs": null,
+        "callers": [
+          {
+            "addr": "0x1405422c0",
+            "name": "sub_1405422C0",
+            "size": "0xc5"
+          }
+        ],
+        "caller_count": 1,
+        "callers_truncated": false,
+        "callees": [
+          {
+            "addr": "0x140032390",
+            "name": "sub_140032390",
+            "type": "internal"
+          },
+          {
+            "addr": "0x14013f850",
+            "name": "sub_14013F850",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140031fe0",
+            "name": "sub_140031FE0",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140439a60",
+            "name": "__security_check_cookie",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140077fa0",
+            "name": "sub_140077FA0",
+            "type": "internal"
+          }
+        ],
+        "callee_count": 5,
+        "callees_truncated": false,
+        "strings": null,
+        "string_ref_count": 0,
+        "strings_truncated": false,
+        "constants": null,
+        "constant_count": 0,
+        "constants_truncated": false,
+        "basic_blocks": null,
+        "basic_block_count": 0,
+        "basic_blocks_truncated": false
+      },
+      "error": null
+    },
+    {
+      "target": "0x140137F70",
+      "addr": "0x140137f70",
+      "name": "sub_140137F70",
+      "analysis": {
+        "size": "0xca",
+        "prototype": null,
+        "decompile": "// Hidden C++ exception states: #wind=1\n__int64 __fastcall sub_140137F70(unsigned int *a1, __int64 a2)\n{\n  unsigned int v3; // ebx\n  __int64 v4; // rax\n  _BYTE v6[8]; // [rsp+20h] [rbp-A8h] BYREF\n  __int64 v7; // [rsp+28h] [rbp-A0h]\n  _OWORD v8[4]; // [rsp+30h] [rbp-98h] BYREF\n  _OWORD v9[4]; // [rsp+70h] [rbp-58h] BYREF\n\n  v7 = -2; /*0x140137f79*/\n  sub_14013B6D0(v8, v6, a2); /*0x140137fa4*/\n  v9[0] = v8[0]; /*0x140137fae*/\n  v9[1] = v8[1]; /*0x140137fb8*/\n  v9[2] = v8[2]; /*0x140137fc5*/\n  v9[3] = v8[3]; /*0x140137fd2*/\n  v3 = *a1; /*0x140137fda*/\n  while ( 1 ) /*0x140137fe0*/\n  {\n    v4 = sub_140077FA0(); /*0x140137fe0*/\n    if ( v4 ) /*0x140137fe8*/\n      break; /*0x140137fe8*/\n    Sleep(0xAu); /*0x140137fed*/\n  }\n  (*(void (__fastcall **)(__int64, _OWORD *, _QWORD))(*(_QWORD *)v4 + 32LL))(v4, v8, v3); /*0x140138002*/\n  sub_1400322A0(v8, v9); /*0x140138011*/\n  return sub_140031FE0(v8); /*0x140138021*/\n}",
+        "decompile_error": null,
+        "disasm": null,
+        "xrefs": null,
+        "callers": [],
+        "caller_count": 0,
+        "callers_truncated": false,
+        "callees": [
+          {
+            "addr": "0x1400fd9a0",
+            "name": "Sleep",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140031fe0",
+            "name": "sub_140031FE0",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140439a60",
+            "name": "__security_check_cookie",
+            "type": "internal"
+          },
+          {
+            "addr": "0x14013b6d0",
+            "name": "sub_14013B6D0",
+            "type": "internal"
+          },
+          {
+            "addr": "0x1400322a0",
+            "name": "sub_1400322A0",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140077fa0",
+            "name": "sub_140077FA0",
+            "type": "internal"
+          }
+        ],
+        "callee_count": 6,
+        "callees_truncated": false,
+        "strings": null,
+        "string_ref_count": 0,
+        "strings_truncated": false,
+        "constants": null,
+        "constant_count": 0,
+        "constants_truncated": false,
+        "basic_blocks": null,
+        "basic_block_count": 0,
+        "basic_blocks_truncated": false
+      },
+      "error": null
+    },
+    {
+      "target": "0x140072070",
+      "addr": "0x140072070",
+      "name": "sub_140072070",
+      "analysis": {
+        "size": "0x5d1",
+        "prototype": null,
+        "decompile": "// Hidden C++ exception states: #wind=1\n__int64 __fastcall sub_140072070(__int64 a1, int a2)\n{\n  LARGE_INTEGER v4; // r12\n  __int64 v5; // rbx\n  __int64 v6; // rax\n  __int64 (__fastcall *v7)(); // r8\n  void **v8; // rdx\n  int v9; // eax\n  int v10; // eax\n  int v11; // r15d\n  __int64 v12; // r12\n  __int64 v13; // rsi\n  char v14; // al\n  _DWORD *v15; // rcx\n  __int64 (__fastcall *v16)(); // rdx\n  unsigned int v17; // r14d\n  unsigned int v18; // eax\n  __int64 v19; // rcx\n  unsigned __int8 v20; // r14\n  __int64 v21; // rcx\n  __int64 (__fastcall *v22)(); // r8\n  __int64 v23; // rcx\n  __int64 (__fastcall *v24)(); // r9\n  _DWORD *v25; // rcx\n  __int64 (__fastcall *v26)(); // rdx\n  int v27; // eax\n  __int64 (__fastcall *v28)(); // rdx\n  int v29; // eax\n  float v30; // xmm1_4\n  float v31; // xmm0_4\n  float *v32; // rcx\n  __int64 (__fastcall *v33)(); // rdx\n  float v34; // xmm1_4\n  float v35; // xmm2_4\n  float v36; // xmm1_4\n  float v37; // xmm1_4\n  __int64 v38; // rax\n  int v39; // edx\n  __int64 v40; // r8\n  LARGE_INTEGER v41; // rsi\n  __int64 i; // rcx\n  _DWORD *v43; // rax\n  __int64 v44; // rcx\n  void (__fastcall *v45)(int *, __int64); // r8\n  double v47; // xmm0_8\n  BOOL v48; // eax\n  LARGE_INTEGER v49; // rcx\n  LARGE_INTEGER PerformanceCount; // [rsp+30h] [rbp-99h] BYREF\n  LARGE_INTEGER Frequency; // [rsp+38h] [rbp-91h] BYREF\n  __int128 v52; // [rsp+40h] [rbp-89h] BYREF\n  __int128 v53; // [rsp+50h] [rbp-79h]\n  __int128 v54; // [rsp+60h] [rbp-69h]\n  __int128 v55; // [rsp+70h] [rbp-59h]\n  int v56; // [rsp+80h] [rbp-49h] BYREF\n  unsigned __int64 v57; // [rsp+88h] [rbp-41h]\n  int v58; // [rsp+90h] [rbp-39h]\n  _DWORD v60[17]; // [rsp+9Ch] [rbp-2Dh] BYREF\n\n  v4 = *(LARGE_INTEGER *)(a1 + 120); /*0x1400720ad*/\n  PerformanceCount = v4; /*0x1400720b1*/\n  *(_QWORD *)(a1 + 120) = 0; /*0x1400720b8*/\n  v5 = a1 + 776; /*0x1400720bc*/\n  *(_BYTE *)(a1 + 816) = 1; /*0x1400720c8*/\n  EnterCriticalSection((LPCRITICAL_SECTION)(a1 + 776)); /*0x1400720cf*/\n  v6 = *(_QWORD *)(a1 + 56); /*0x1400720da*/\n  v7 = *(__int64 (__fastcall **)())(v6 + 16); /*0x1400720dd*/\n  v8 = &SQEX::CDev::Engine::Sd::Driver::DynamicValue::`vftable'; /*0x1400720e1*/\n  if ( (void **)v6 == &SQEX::CDev::Engine::Sd::Driver::DynamicValue::`vftable' ) /*0x1400720eb*/\n  {\n    if ( *(_BYTE *)(a1 + 92) ) /*0x1400720f1*/\n      *(_BYTE *)(a1 + 92) = 0; /*0x1400720f7*/\n    if ( *(_BYTE *)(a1 + 94) ) /*0x1400720fb*/\n      *(_BYTE *)(a1 + 94) = 0; /*0x140072101*/\n    v9 = *(_DWORD *)(a1 + 76); /*0x140072105*/\n    if ( v9 > 0 ) /*0x14007210a*/\n    {\n      v10 = v9 - a2; /*0x14007210c*/\n      *(_DWORD *)(a1 + 76) = v10; /*0x14007210f*/\n      if ( v10 > 0 ) /*0x140072114*/\n      {\n        *(float *)(a1 + 64) = (float)((float)a2 * *(float *)(a1 + 72)) + *(float *)(a1 + 64); /*0x140072133*/\n      }\n      else\n      {\n        *(_DWORD *)(a1 + 64) = *(_DWORD *)(a1 + 68); /*0x140072119*/\n        *(_DWORD *)(a1 + 76) = 0; /*0x14007211c*/\n      }\n    }\n  }\n  else\n  {\n    ((void (__fastcall *)(__int64, _QWORD))v7)(a1 + 56, (unsigned int)a2); /*0x140072589*/\n  }\n  v11 = 0; /*0x140072138*/\n  if ( *(int *)(a1 + 24) > 0 )\n  {\n    v12 = 0; /*0x140072144*/\n    v7 = sub_140075910; /*0x14007214e*/\n    do\n    {\n      v13 = *(_QWORD *)(v12 + *(_QWORD *)(a1 + 768)); /*0x140072167*/\n      v8 = *(void ***)(*(_QWORD *)v13 + 24LL); /*0x14007216e*/\n      if ( v8 == (void **)sub_140075830 ) /*0x140072175*/\n      {\n        v14 = *(_BYTE *)(v13 + 132) & 1; /*0x140072182*/\n      }\n      else\n      {\n        v14 = ((__int64 (__fastcall *)(_QWORD, void **, __int64 (__fastcall *)()))v8)( /*0x140072594*/\n                *(_QWORD *)(v12 + *(_QWORD *)(a1 + 768)),\n                v8,\n                sub_140075910);\n        v7 = sub_140075910; /*0x140072596*/\n      }\n      if ( v14 )\n      {\n        v15 = *(_DWORD **)(a1 + 120); /*0x140072188*/\n        if ( !v15\n          || ((v16 = *(__int64 (__fastcall **)())(*(_QWORD *)v15 + 72LL), v16 != sub_140075910)\n            ? (v17 = ((__int64 (__fastcall *)(_DWORD *, __int64 (__fastcall *)(), __int64 (__fastcall *)()))v16)(\n                       v15,\n                       v16,\n                       sub_140075910),\n               v7 = sub_140075910)\n            : (__int64 (__fastcall *)())(v17 = v15[30]),\n              (v8 = *(void ***)(*(_QWORD *)v13 + 72LL), v8 != (void **)sub_140075910)\n            ? (v18 = ((__int64 (__fastcall *)(__int64, void **, __int64 (__fastcall *)()))v8)(v13, v8, sub_140075910),\n               v7 = sub_140075910)\n            : (__int64 (__fastcall *)())(v18 = *(_DWORD *)(v13 + 120)),\n              v17 <= v18) )\n        {\n          *(_QWORD *)(a1 + 120) = v13; /*0x1400721bd*/\n        }\n      }\n      ++v11; /*0x1400721c1*/\n      v12 += 8; /*0x1400721c4*/\n    }\n    while ( v11 < *(_DWORD *)(a1 + 24) );\n    v5 = a1 + 776; /*0x1400721ce*/\n    v4 = PerformanceCount; /*0x1400721d5*/\n  }\n  v19 = *(_QWORD *)(a1 + 120); /*0x1400721da*/\n  if ( !v19 ) /*0x1400721e1*/\n  {\n    v20 = 0; /*0x1400721e3*/\n    goto LABEL_51; /*0x1400721e6*/\n  }\n  if ( !(*(unsigned __int8 (__fastcall **)(__int64, void **, __int64 (__fastcall *)()))(*(_QWORD *)v19 + 152LL))( /*0x1400721ee*/\n          v19,\n          v8,\n          v7) )\n  {\n    v20 = 0; /*0x1400721f8*/\n    goto LABEL_51; /*0x1400721fb*/\n  }\n  v21 = *(_QWORD *)(a1 + 120); /*0x140072207*/\n  v22 = *(__int64 (__fastcall **)())(*(_QWORD *)v21 + 56LL); /*0x14007220e*/\n  if ( v22 == sub_1400758D0 ) /*0x14007221c*/\n  {\n    *(_OWORD *)(a1 + 164) = *(_OWORD *)(v21 + 56); /*0x140072226*/\n    *(_OWORD *)(a1 + 180) = *(_OWORD *)(v21 + 72); /*0x14007222d*/\n    *(_OWORD *)(a1 + 196) = *(_OWORD *)(v21 + 88); /*0x140072235*/\n    *(_OWORD *)(a1 + 212) = *(_OWORD *)(v21 + 104); /*0x14007223d*/\n  }\n  else\n  {\n    ((void (__fastcall *)(__int64, __int64))v22)(v21, a1 + 164); /*0x1400725c7*/\n  }\n  v23 = *(_QWORD *)(a1 + 120); /*0x140072241*/\n  v24 = *(__int64 (__fastcall **)())(*(_QWORD *)v23 + 32LL); /*0x140072248*/\n  if ( v24 == sub_140075840 ) /*0x140072256*/\n  {\n    sub_1400409E0(v23 + 56, &v52); /*0x140072265*/\n    *(_OWORD *)(a1 + 132) = v55; /*0x14007226e*/\n    *(_DWORD *)(a1 + 144) = 1065353216; /*0x140072275*/\n  }\n  else\n  {\n    ((void (__fastcall *)(__int64, __int64))v24)(v23, a1 + 132); /*0x1400725d6*/\n  }\n  sub_1400409E0(a1 + 164, &v52); /*0x140072287*/\n  *(_OWORD *)(a1 + 228) = v52; /*0x140072291*/\n  *(_OWORD *)(a1 + 244) = v53; /*0x14007229c*/\n  *(_OWORD *)(a1 + 260) = v54; /*0x1400722a7*/\n  *(_OWORD *)(a1 + 276) = v55; /*0x1400722b2*/\n  v25 = *(_DWORD **)(a1 + 120); /*0x1400722b9*/\n  v26 = *(__int64 (__fastcall **)())(*(_QWORD *)v25 + 88LL); /*0x1400722c0*/\n  if ( v26 == sub_140075930 ) /*0x1400722ce*/\n  {\n    v27 = v25[31]; /*0x1400722d4*/\n  }\n  else\n  {\n    v27 = ((__int64 (__fastcall *)(_DWORD *, __int64 (__fastcall *)()))v26)(v25, v26); /*0x1400725de*/\n    v25 = *(_DWORD **)(a1 + 120); /*0x1400725e0*/\n  }\n  if ( *(_DWORD *)(a1 + 36) != v27 ) /*0x1400722da*/\n  {\n    v28 = *(__int64 (__fastcall **)())(*(_QWORD *)v25 + 88LL); /*0x1400722df*/\n    if ( v28 == sub_140075930 ) /*0x1400722e6*/\n      v29 = v25[31]; /*0x1400722ec*/\n    else\n      v29 = ((__int64 (__fastcall *)(_DWORD *, __int64 (__fastcall *)()))v28)(v25, v28); /*0x1400725e9*/\n    *(_DWORD *)(a1 + 36) = v29; /*0x1400722ef*/\n    *(_BYTE *)(a1 + 93) = 0; /*0x1400722f2*/\n    *(_DWORD *)(a1 + 76) = 300; /*0x1400722f6*/\n    v30 = *(float *)(a1 + 64); /*0x1400722fd*/\n    *(_DWORD *)(a1 + 80) = 300; /*0x140072302*/\n    *(float *)(a1 + 84) = v30; /*0x140072309*/\n    if ( v29 ) /*0x140072310*/\n    {\n      *(_DWORD *)(a1 + 68) = 1028443341; /*0x140072323*/\n      v31 = 0.050000001; /*0x14007232a*/\n    }\n    else\n    {\n      *(_DWORD *)(a1 + 68) = 1065353216; /*0x140072312*/\n      v31 = 1.0; /*0x140072319*/\n    }\n    *(float *)(a1 + 72) = (float)(v31 - v30) / 300.0; /*0x14007233e*/\n  }\n  v32 = *(float **)(a1 + 120); /*0x140072343*/\n  v33 = *(__int64 (__fastcall **)())(*(_QWORD *)v32 + 104LL); /*0x14007234a*/\n  if ( v33 == sub_140075950 ) /*0x140072358*/\n  {\n    v34 = v32[32]; /*0x14007235e*/\n  }\n  else\n  {\n    v47 = ((double (__fastcall *)(float *, __int64 (__fastcall *)()))v33)(v32, v33); /*0x1400725f0*/\n    v34 = *(float *)&v47; /*0x1400725f2*/\n  }\n  v35 = *(float *)(a1 + 96); /*0x140072366*/\n  if ( v34 != v35 ) /*0x140072370*/\n  {\n    v36 = v34 - v35; /*0x140072372*/\n    if ( (float)(v36 * 1100.0) <= (float)a2 ) /*0x140072390*/\n    {\n      if ( (float)-a2 <= (float)(v36 * 1100.0) ) /*0x1400723a5*/\n      {\nLABEL_49:\n        *(float *)(a1 + 96) = v35 + v36; /*0x1400723b5*/\n        goto LABEL_50; /*0x1400723b9*/\n      }\n      v37 = -(float)a2; /*0x1400723aa*/\n    }\n    else\n    {\n      v37 = (float)a2; /*0x140072392*/\n    }\n    v36 = v37 / 1100.0; /*0x1400723b1*/\n    goto LABEL_49; /*0x1400723b1*/\n  }\nLABEL_50:\n  v20 = 1; /*0x1400723be*/\nLABEL_51:\n  v38 = *(_QWORD *)(a1 + 120); /*0x1400723c1*/\n  *(_BYTE *)(a1 + 128) = v4.QuadPart != v38 || (*(_BYTE *)(v38 + 132) & 2) != 0; /*0x1400723de*/\n  v39 = 0; /*0x1400723e4*/\n  if ( *(int *)(a1 + 24) > 0 ) /*0x1400723e9*/\n  {\n    v40 = 0; /*0x1400723eb*/\n    do /*0x14007240b*/\n    {\n      *(_BYTE *)(*(_QWORD *)(v40 + *(_QWORD *)(a1 + 768)) + 132LL) &= ~2u; /*0x1400723fb*/\n      ++v39; /*0x140072402*/\n      v40 += 8; /*0x140072404*/\n    }\n    while ( v39 < *(_DWORD *)(a1 + 24) ); /*0x14007240b*/\n  }\n  if ( *(_QWORD *)(*(_QWORD *)(a1 + 8) + 1368LL) ) /*0x140072411*/\n  {\n    v56 = 5767683; /*0x14007241f*/\n    v41.QuadPart = 0; /*0x140072437*/\n    if ( QueryPerformanceCounter(&PerformanceCount) ) /*0x140072431*/\n      v41 = PerformanceCount; /*0x14007243b*/\n    if ( dword_142B810E4 > *(_DWORD *)(*(_QWORD *)NtCurrentTeb()->ThreadLocalStoragePointer + 16LL) ) /*0x14007245b*/\n    {\n      sub_140439F50(&dword_142B810E4); /*0x140072601*/\n      if ( dword_142B810E4 == -1 ) /*0x14007260d*/\n      {\n        v48 = QueryPerformanceFrequency(&Frequency); /*0x140072618*/\n        v49.QuadPart = 0; /*0x14007261e*/\n        if ( v48 ) /*0x140072622*/\n          v49 = Frequency; /*0x140072622*/\n        qword_142B810E8 = v49.QuadPart; /*0x140072628*/\n        sub_140439EF0(&dword_142B810E4); /*0x140072636*/\n      }\n    }\n    v57 = 1000 * v41.QuadPart / (unsigned __int64)qword_142B810E8; /*0x140072471*/\n    if ( *(void ***)a1 == &SQEX::CDev::Engine::Sd::Layout::ListenerManager::`vftable' ) /*0x140072482*/\n    {\n      if ( !*(_QWORD *)(a1 + 120) ) /*0x14007248d*/\n        goto LABEL_70; /*0x14007248d*/\n      v52 = *(_OWORD *)(a1 + 164); /*0x14007249a*/\n      v53 = *(_OWORD *)(a1 + 180); /*0x1400724a6*/\n      v54 = *(_OWORD *)(a1 + 196); /*0x1400724b1*/\n      v55 = *(_OWORD *)(a1 + 212); /*0x1400724bc*/\n    }\n    else if ( (*(unsigned __int8 (__fastcall **)(__int64, __int128 *))(*(_QWORD *)a1 + 184LL))(a1, &v52) != 1 ) /*0x14007257f*/\n    {\n      goto LABEL_70; /*0x14007257f*/\n    }\n    for ( i = 0; i < 16; i += 4 ) /*0x1400724c0*/\n    {\n      v60[i - 1] = *(_DWORD *)((char *)&v52 + i * 4); /*0x1400724d4*/\n      v60[i] = *(_DWORD *)((char *)&v52 + i * 4 + 4); /*0x1400724dc*/\n      v60[i + 1] = *(_DWORD *)((char *)&v52 + i * 4 + 8); /*0x1400724e4*/\n      v60[i + 2] = *(_DWORD *)((char *)&v52 + i * 4 + 12); /*0x1400724ec*/\n    }\n    v58 = 0; /*0x1400724fa*/\n    v43 = v60; /*0x140072501*/\n    v44 = 4; /*0x140072505*/\n    do /*0x140072518*/\n    {\n      v43 += 4; /*0x140072510*/\n      --v44; /*0x140072514*/\n    }\n    while ( v44 ); /*0x140072518*/\n    v45 = *(void (__fastcall **)(int *, __int64))(*(_QWORD *)(a1 + 8) + 1368LL); /*0x14007251e*/\n    if ( v45 ) /*0x140072528*/\n      v45(&v56, 88); /*0x140072531*/\n  }\nLABEL_70:\n  if ( *(_BYTE *)(v5 + 40) ) /*0x140072535*/\n    LeaveCriticalSection((LPCRITICAL_SECTION)v5); /*0x14007253e*/\n  return v20; /*0x140072548*/\n}",
+        "decompile_error": null,
+        "disasm": null,
+        "xrefs": null,
+        "callers": [],
+        "caller_count": 0,
+        "callers_truncated": false,
+        "callees": [
+          {
+            "addr": "0x14057b2f0",
+            "name": "__imp_QueryPerformanceCounter",
+            "type": "external"
+          },
+          {
+            "addr": "0x140439a60",
+            "name": "__security_check_cookie",
+            "type": "internal"
+          },
+          {
+            "addr": "0x1400409e0",
+            "name": "sub_1400409E0",
+            "type": "internal"
+          },
+          {
+            "addr": "0x14057b2d0",
+            "name": "__imp_LeaveCriticalSection",
+            "type": "external"
+          },
+          {
+            "addr": "0x14057b2d8",
+            "name": "__imp_EnterCriticalSection",
+            "type": "external"
+          },
+          {
+            "addr": "0x14057b2e8",
+            "name": "__imp_QueryPerformanceFrequency",
+            "type": "external"
+          },
+          {
+            "addr": "0x140439ef0",
+            "name": "sub_140439EF0",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140439f50",
+            "name": "sub_140439F50",
+            "type": "internal"
+          }
+        ],
+        "callee_count": 8,
+        "callees_truncated": false,
+        "strings": null,
+        "string_ref_count": 0,
+        "strings_truncated": false,
+        "constants": null,
+        "constant_count": 0,
+        "constants_truncated": false,
+        "basic_blocks": null,
+        "basic_block_count": 0,
+        "basic_blocks_truncated": false
+      },
+      "error": null
+    },
+    {
+      "target": "0x1400710C0",
+      "addr": "0x1400710c0",
+      "name": "sub_1400710C0",
+      "analysis": {
+        "size": "0x415",
+        "prototype": null,
+        "decompile": "// Hidden C++ exception states: #wind=5\n__int64 __fastcall sub_1400710C0(__int64 a1, int a2, unsigned int a3)\n{\n  __int64 v6; // rbx\n  unsigned int v7; // esi\n  int v8; // r14d\n  int v9; // ecx\n  __int64 v10; // rdx\n  __int64 v11; // rdx\n  void (__fastcall ***v12)(_QWORD, __int64); // rcx\n  int v13; // r8d\n  __int64 v14; // rdx\n  int v15; // eax\n  __int64 v16; // rax\n  __int64 v17; // r14\n  __int64 v18; // rax\n  __int64 v19; // r14\n  __int64 v20; // rdx\n  __int128 v22; // [rsp+28h] [rbp-28h]\n  __int128 v23; // [rsp+38h] [rbp-18h] BYREF\n  const char *v24; // [rsp+48h] [rbp-8h]\n\n  v6 = a1 + 776; /*0x1400710ec*/\n  *(_BYTE *)(a1 + 816) = 1; /*0x1400710f7*/\n  EnterCriticalSection((LPCRITICAL_SECTION)(a1 + 776)); /*0x1400710fe*/\n  if ( a3 == -1 ) /*0x140071109*/\n  {\n    a3 = *(_DWORD *)(a1 + 16); /*0x14007110b*/\n    *(_DWORD *)(a1 + 16) = a3 + 1; /*0x140071113*/\n  }\n  v7 = 0; /*0x140071116*/\n  v8 = 0; /*0x140071118*/\n  v9 = *(_DWORD *)(a1 + 24); /*0x14007111b*/\n  if ( v9 > 0 ) /*0x140071120*/\n  {\n    v10 = *(_QWORD *)(a1 + 768); /*0x14007112d*/\n    while ( *(_DWORD *)(*(_QWORD *)v10 + 12LL) != a3 ) /*0x140071137*/\n    {\n      ++v8; /*0x140071139*/\n      v10 += 8; /*0x14007113c*/\n      if ( v8 >= v9 ) /*0x140071143*/\n        goto LABEL_16; /*0x140071143*/\n    }\n    if ( (*(unsigned int (__fastcall **)(_QWORD))(**(_QWORD **)(*(_QWORD *)(a1 + 768) + 8LL * v8) + 8LL))(*(_QWORD *)(*(_QWORD *)(a1 + 768) + 8LL * v8)) == a2 ) /*0x14007115a*/\n      goto LABEL_38; /*0x14007115a*/\n    v11 = *(_QWORD *)(a1 + 768); /*0x140071160*/\n    v12 = *(void (__fastcall ****)(_QWORD, __int64))(v11 + 8LL * v8); /*0x140071167*/\n    if ( v12 ) /*0x14007116e*/\n    {\n      (**v12)(v12, 1); /*0x140071178*/\n      v11 = *(_QWORD *)(a1 + 768); /*0x14007117a*/\n    }\n    v13 = v8 + 1; /*0x140071181*/\n    if ( v8 + 1 < *(_DWORD *)(a1 + 24) ) /*0x140071189*/\n    {\n      v14 = 8LL * v13; /*0x14007118e*/\n      do /*0x1400711bb*/\n      {\n        *(_QWORD *)(*(_QWORD *)(a1 + 768) + v14 - 8) = *(_QWORD *)(*(_QWORD *)(a1 + 768) + v14); /*0x1400711ab*/\n        ++v13; /*0x1400711b0*/\n        v14 += 8; /*0x1400711b3*/\n      }\n      while ( v13 < *(_DWORD *)(a1 + 24) ); /*0x1400711bb*/\n      v11 = *(_QWORD *)(a1 + 768); /*0x1400711bd*/\n    }\n    *(_QWORD *)(v11 + 8LL * v13 - 8) = 0; /*0x1400711c7*/\n    v9 = --*(_DWORD *)(a1 + 24); /*0x1400711cf*/\n  }\nLABEL_16:\n  v15 = v9; /*0x1400711d2*/\n  if ( a2 >= 0 ) /*0x1400711d7*/\n  {\n    if ( a2 <= 1 ) /*0x1400711e1*/\n    {\n      if ( v9 >= *(_DWORD *)(a1 + 32) ) /*0x1400713df*/\n        goto LABEL_39; /*0x1400713df*/\n      *(_QWORD *)&v22 = 16; /*0x1400713e5*/\n      DWORD2(v22) = 0; /*0x1400713ed*/\n      v23 = v22; /*0x1400713f4*/\n      v24 = \"CDev.Engine.Sd.SoundLayout\"; /*0x1400713ff*/\n      v20 = sub_140069970(136, &v23); /*0x140071411*/\n      if ( v20 ) /*0x14007141b*/\n      {\n        *(_QWORD *)v20 = &SQEX::CDev::Engine::Sd::Layout::Listener::`vftable'; /*0x140071424*/\n        *(_DWORD *)(v20 + 12) = a3; /*0x140071427*/\n        *(_QWORD *)(v20 + 16) = a1; /*0x14007142b*/\n        *(_BYTE *)(v20 + 8) = 1; /*0x14007142f*/\n        *(_BYTE *)(v20 + 132) |= 1u; /*0x140071433*/\n        *(_QWORD *)(v20 + 24) = 0; /*0x14007143a*/\n        *(_QWORD *)(v20 + 32) = 0; /*0x14007143e*/\n        *(_QWORD *)(v20 + 40) = 0; /*0x140071442*/\n        *(_QWORD *)(v20 + 48) = 0; /*0x140071446*/\n        *(_OWORD *)(v20 + 56) = xmmword_140623CB0; /*0x140071466*/\n        *(_OWORD *)(v20 + 72) = xmmword_140623CC0; /*0x14007146a*/\n        *(_OWORD *)(v20 + 88) = xmmword_140623CE0; /*0x14007146e*/\n        *(_OWORD *)(v20 + 104) = xmmword_140623DF0; /*0x140071472*/\n        *(_QWORD *)(v20 + 120) = 0; /*0x140071476*/\n        *(_BYTE *)(v20 + 132) |= 2u; /*0x14007147a*/\n        *(_DWORD *)(v20 + 128) = 0; /*0x140071481*/\n      }\n      else\n      {\n        v20 = 0; /*0x140071489*/\n      }\n      *(_QWORD *)(*(_QWORD *)(a1 + 768) + 8LL * *(int *)(a1 + 24)) = v20; /*0x140071497*/\n    }\n    else if ( a2 == 2 ) /*0x1400711eb*/\n    {\n      if ( v9 >= *(_DWORD *)(a1 + 32) ) /*0x140071309*/\n        goto LABEL_39; /*0x140071309*/\n      *(_QWORD *)&v22 = 16; /*0x14007130f*/\n      DWORD2(v22) = 0; /*0x140071317*/\n      v23 = v22; /*0x14007131e*/\n      v24 = \"CDev.Engine.Sd.SoundLayout\"; /*0x140071329*/\n      v18 = sub_140069970(136, &v23); /*0x14007133e*/\n      v19 = v18; /*0x140071343*/\n      if ( v18 ) /*0x14007134d*/\n      {\n        *(_DWORD *)(v18 + 12) = a3; /*0x14007134f*/\n        *(_QWORD *)(v18 + 16) = a1; /*0x140071353*/\n        *(_BYTE *)(v18 + 132) |= 1u; /*0x140071357*/\n        *(_QWORD *)(v18 + 24) = 0; /*0x14007135e*/\n        *(_QWORD *)(v18 + 32) = 0; /*0x140071362*/\n        *(_QWORD *)(v18 + 40) = 0; /*0x140071366*/\n        *(_QWORD *)(v18 + 48) = 0; /*0x14007136a*/\n        *(_OWORD *)(v18 + 56) = xmmword_140623CB0; /*0x14007138a*/\n        *(_OWORD *)(v18 + 72) = xmmword_140623CC0; /*0x14007138e*/\n        *(_OWORD *)(v18 + 88) = xmmword_140623CE0; /*0x140071392*/\n        *(_OWORD *)(v18 + 104) = xmmword_140623DF0; /*0x140071396*/\n        *(_QWORD *)(v18 + 120) = 0; /*0x14007139a*/\n        *(_BYTE *)(v18 + 132) |= 2u; /*0x14007139e*/\n        *(_DWORD *)(v18 + 128) = 0; /*0x1400713a5*/\n        *(_QWORD *)v18 = &SQEX::CDev::Engine::Sd::Layout::PointListener::`vftable'; /*0x1400713b2*/\n        *(_BYTE *)(v18 + 8) = 2; /*0x1400713b5*/\n        sub_140075FB0(v18); /*0x1400713bd*/\n      }\n      else\n      {\n        v19 = 0; /*0x1400713c5*/\n      }\n      *(_QWORD *)(*(_QWORD *)(a1 + 768) + 8LL * *(int *)(a1 + 24)) = v19; /*0x1400713d3*/\n    }\n    else\n    {\n      if ( a2 != 3 ) /*0x1400711f5*/\n        goto LABEL_36; /*0x1400711f5*/\n      if ( v9 >= *(_DWORD *)(a1 + 32) ) /*0x1400711fe*/\n        goto LABEL_39; /*0x1400711fe*/\n      *(_QWORD *)&v22 = 16; /*0x140071204*/\n      DWORD2(v22) = 0; /*0x14007120c*/\n      v23 = v22; /*0x140071213*/\n      v24 = \"CDev.Engine.Sd.SoundLayout\"; /*0x14007121e*/\n      v16 = sub_140069970(184, &v23); /*0x140071233*/\n      v17 = v16; /*0x140071238*/\n      if ( v16 ) /*0x140071242*/\n      {\n        *(_DWORD *)(v16 + 12) = a3; /*0x140071248*/\n        *(_QWORD *)(v16 + 16) = a1; /*0x14007124c*/\n        *(_BYTE *)(v16 + 132) |= 1u; /*0x140071250*/\n        *(_QWORD *)(v16 + 24) = 0; /*0x140071257*/\n        *(_QWORD *)(v16 + 32) = 0; /*0x14007125b*/\n        *(_QWORD *)(v16 + 40) = 0; /*0x14007125f*/\n        *(_QWORD *)(v16 + 48) = 0; /*0x140071263*/\n        *(_OWORD *)(v16 + 56) = xmmword_140623CB0; /*0x140071283*/\n        *(_OWORD *)(v16 + 72) = xmmword_140623CC0; /*0x140071287*/\n        *(_OWORD *)(v16 + 88) = xmmword_140623CE0; /*0x14007128b*/\n        *(_OWORD *)(v16 + 104) = xmmword_140623DF0; /*0x14007128f*/\n        *(_QWORD *)(v16 + 120) = 0; /*0x140071293*/\n        *(_BYTE *)(v16 + 132) |= 2u; /*0x140071297*/\n        *(_DWORD *)(v16 + 128) = 0; /*0x14007129e*/\n        *(_QWORD *)v16 = &SQEX::CDev::Engine::Sd::Layout::LineListener::`vftable'; /*0x1400712ab*/\n        *(_BYTE *)(v16 + 8) = 3; /*0x1400712ae*/\n        *(_QWORD *)(v16 + 136) = 0; /*0x1400712b2*/\n        *(_QWORD *)(v16 + 144) = 0; /*0x1400712b9*/\n        *(_QWORD *)(v16 + 152) = 0; /*0x1400712c0*/\n        *(_QWORD *)(v16 + 160) = 0; /*0x1400712c7*/\n        *(_QWORD *)(v16 + 168) = 0; /*0x1400712ce*/\n        *(_DWORD *)(v16 + 176) = 0; /*0x1400712d5*/\n        *(_BYTE *)(v16 + 180) |= 1u; /*0x1400712dc*/\n        sub_140076920(v16); /*0x1400712e7*/\n      }\n      else\n      {\n        v17 = 0; /*0x1400712ef*/\n      }\n      *(_QWORD *)(*(_QWORD *)(a1 + 768) + 8LL * *(int *)(a1 + 24)) = v17; /*0x1400712fd*/\n    }\n    v15 = ++*(_DWORD *)(a1 + 24); /*0x14007149e*/\n  }\nLABEL_36:\n  if ( v15 > *(_DWORD *)(a1 + 28) ) /*0x1400714a4*/\n    *(_DWORD *)(a1 + 28) = v15; /*0x1400714a6*/\nLABEL_38:\n  v7 = a3; /*0x1400714a9*/\nLABEL_39:\n  if ( *(_BYTE *)(v6 + 40) ) /*0x1400714ac*/\n    LeaveCriticalSection((LPCRITICAL_SECTION)v6); /*0x1400714b5*/\n  return v7; /*0x1400714bd*/\n}",
+        "decompile_error": null,
+        "disasm": null,
+        "xrefs": null,
+        "callers": [
+          {
+            "addr": "0x1400708b0",
+            "name": "sub_1400708B0",
+            "size": "0x56d"
+          }
+        ],
+        "caller_count": 1,
+        "callers_truncated": false,
+        "callees": [
+          {
+            "addr": "0x14057b2d0",
+            "name": "__imp_LeaveCriticalSection",
+            "type": "external"
+          },
+          {
+            "addr": "0x14057b2d8",
+            "name": "__imp_EnterCriticalSection",
+            "type": "external"
+          },
+          {
+            "addr": "0x140076920",
+            "name": "sub_140076920",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140075fb0",
+            "name": "sub_140075FB0",
+            "type": "internal"
+          },
+          {
+            "addr": "0x140069970",
+            "name": "sub_140069970",
+            "type": "internal"
+          }
+        ],
+        "callee_count": 5,
+        "callees_truncated": false,
+        "strings": null,
+        "string_ref_count": 0,
+        "strings_truncated": false,
+        "constants": null,
+        "constant_count": 0,
+        "constants_truncated": false,
+        "basic_blocks": null,
+        "basic_block_count": 0,
+        "basic_blocks_truncated": false
+      },
+      "error": null
+    },
+    {
+      "target": "0x1400715A0",
+      "addr": "0x1400715a0",
+      "name": "sub_1400715A0",
+      "analysis": {
+        "size": "0xa0",
+        "prototype": null,
+        "decompile": "__int64 __fastcall sub_1400715A0(__int64 a1, int a2)\n{\n  __int64 v5; // rbp\n  int v6; // edx\n  __int64 v7; // r8\n  __int64 v8; // rcx\n\n  if ( !a2 ) /*0x1400715b1*/\n    return 0; /*0x1400715b3*/\n  *(_BYTE *)(a1 + 816) = 1; /*0x1400715c0*/\n  EnterCriticalSection((LPCRITICAL_SECTION)(a1 + 776)); /*0x1400715d8*/\n  v5 = 0; /*0x1400715e2*/\n  v6 = 0; /*0x1400715e4*/\n  if ( *(int *)(a1 + 24) > 0 ) /*0x1400715e8*/\n  {\n    v7 = *(_QWORD *)(a1 + 768); /*0x1400715ea*/\n    v8 = 0; /*0x1400715f4*/\n    while ( *(_DWORD *)(*(_QWORD *)(v7 + 8 * v8) + 12LL) != a2 ) /*0x1400715fd*/\n    {\n      ++v6; /*0x1400715ff*/\n      if ( ++v8 >= *(int *)(a1 + 24) ) /*0x140071607*/\n        goto LABEL_9; /*0x140071607*/\n    }\n    v5 = *(_QWORD *)(v7 + 8LL * v6); /*0x14007160e*/\n  }\nLABEL_9:\n  if ( *(_BYTE *)(a1 + 816) ) /*0x140071612*/\n    LeaveCriticalSection((LPCRITICAL_SECTION)(a1 + 776)); /*0x140071622*/\n  return v5; /*0x1400715b5*/\n}",
+        "decompile_error": null,
+        "disasm": null,
+        "xrefs": null,
+        "callers": [
+          {
+            "addr": "0x14006e650",
+            "name": "sub_14006E650",
+            "size": "0x1c7"
+          },
+          {
+            "addr": "0x1400717f0",
+            "name": "sub_1400717F0",
+            "size": "0xa2"
+          },
+          {
+            "addr": "0x1400718a0",
+            "name": "sub_1400718A0",
+            "size": "0x99"
+          },
+          {
+            "addr": "0x140071970",
+            "name": "sub_140071970",
+            "size": "0xbd"
+          },
+          {
+            "addr": "0x140071a30",
+            "name": "sub_140071A30",
+            "size": "0xc4"
+          },
+          {
+            "addr": "0x140071b00",
+            "name": "sub_140071B00",
+            "size": "0xc4"
+          },
+          {
+            "addr": "0x140071bd0",
+            "name": "sub_140071BD0",
+            "size": "0x8a"
+          },
+          {
+            "addr": "0x140071c60",
+            "name": "sub_140071C60",
+            "size": "0x8d"
+          },
+          {
+            "addr": "0x140071cf0",
+            "name": "sub_140071CF0",
+            "size": "0x94"
+          },
+          {
+            "addr": "0x140074a80",
+            "name": "sub_140074A80",
+            "size": "0x2e1"
+          },
+          {
+            "addr": "0x140076480",
+            "name": "sub_140076480",
+            "size": "0x7b"
+          },
+          {
+            "addr": "0x140076640",
+            "name": "sub_140076640",
+            "size": "0x2db"
+          }
+        ],
+        "caller_count": 12,
+        "callers_truncated": false,
+        "callees": [
+          {
+            "addr": "0x14057b2d8",
+            "name": "__imp_EnterCriticalSection",
+            "type": "external"
+          },
+          {
+            "addr": "0x14057b2d0",
+            "name": "__imp_LeaveCriticalSection",
+            "type": "external"
+          }
+        ],
+        "callee_count": 2,
+        "callees_truncated": false,
+        "strings": null,
+        "string_ref_count": 0,
+        "strings_truncated": false,
+        "constants": null,
+        "constant_count": 0,
+        "constants_truncated": false,
+        "basic_blocks": null,
+        "basic_block_count": 0,
+        "basic_blocks_truncated": false
+      },
+      "error": null
+    }
+  ]
+}

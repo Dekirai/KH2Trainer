@@ -1,0 +1,333 @@
+Actor collision and lifetime, round4: proven controls and last-result diagnostics
+
+Specific findings: 73 functions; complete captured assembly: 75 functions / 5832 instructions.
+These are narrow static claims, not complete semantics. No live-game validation.
+
+IMPLEMENTED CONTRACT
+Slots376..391; CollisionFeatures.inl included after ActorMovementFeatures.inl.
+Only command1376 changes memory: Sora Actor+288 bit2 disables body-to-body separation. World collision and damage keep separate native rules.
+Native preexisting bit2 is not acquired. A CAS adds/removes only the owned bit. Actor/status allocation/list/backlinks, form, scheduler, heap and full10-byte map target bind the lease.
+On identity loss or transition, abandon without touching old memory. Native clear ends ownership; no continuous forced reapply.
+Heartbeat expiry, explicit disable, death and disabled bridge restore where identity remains valid. Field pause can retain ownership; explicit reset still restores.
+A restore CAS conflict relinquishes ownership without retrying a changed flags word; the separation bit can remain set until a native reset. Restoration is not unconditional.
+Exact address+identity ABA or same-value native flag reuse between observations is unresolved without generation tokens.
+
+READOUTS
+377 world gate;378 body gate;379 raw results;380 last polygon;381 cached floorY;382 last support;383 last lateral hit;384 radius;385 vertical extent;386 vertical offset;387..389 cached normal;390 dynamic-contact marker;391 request category.
+Cached results are not refreshed. Native floor getters mutate Actor/shared collision data and are intentionally avoided.
+Constructor flags2 and polygonFFFF never mean grounded. Known pause, stop, freeze, bypass and missing-map states suppress contact interpretation.
+No frame stamp is known. Native skipped actions can leave old results. A dynamic-contact pointer is tested only for null and never retained/dereferenced.
+
+THREAD AND LIFETIME
+Actor task3BF5E0 calls motion batches3BEEC0. Worker130030 invokes every queued job before releasing its completion semaphore.130130 waits all six completion semaphores.
+The trainer module belongs after the original native update, on the game thread. It has no engine calls or hooks.
+World wrappers are248 bytes and map-owned;170340 frees/nulls roots. Dynamic80-node pool163C20 is freed by163BE0, which leaves list roots stale.
+Body/hurt buffers are scene-heap allocations, rebuilt by pose/motion; cleanup3B3D60/3B2B80 releases them. Readability alone does not prove ownership.
+
+PRACTICAL NEW LEADS
+A model-less body-bounds fallback40AC20 literally uses MINSS for upper bounds after the first shape; this is not yet a demonstrated gameplay bug.
+A future copied proxy overlay can use type0 ellipsoid, type1 cylinder and type3 sphere. It still needs its own bounded data-copy contract.
+Native snap-to-ground3B9D20 is side-effectful and remains research-only.
+
+VALIDATION
+595 isolated synthetic checks passed,0 failures, MSVC /W4 without warnings. No game process, GUI or native engine call was used.
+
+PER-FUNCTION CLAIMS
+
+0x14016fec0 — Runs dynamic/static lateral resolution, then dynamic/static floor resolution; resets lateral bit4 and the borrowed dynamic-owner pointer before choosing a contact.
+Limit: RCX points to the mutable 136-byte request/result block. Not a pure query.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x14016fec0.c
+
+0x1401752e0 — Lateral resolver divides travel by block+32 radius, steps the sweep, writes corrected position+48 and sets result+116 bit4 on obstruction/correction.
+Limit: Mutates collider scratch and request/result. A nonpositive or nonfinite radius is unsafe for a new call.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1401752e0.c
+
+0x140172840 — Builds the vertical segment, probes the mesh, writes floor Y at block+104 and clears invalid-height bit2 on hit; failure sets bit2 before support classification.
+Limit: The function also writes shared collider filters. Do not call from a snapshot getter.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x140172840.c
+
+0x140172640 — Stores selected polygon WORD+96, uses FFFF as unavailable, and sets/clears no-accepted-support bit1 after tolerance/extent and polygon classification.
+Limit: Bit1 alone does not prove grounded state; initialized polygon and height cache are required.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x140172640.c
+
+0x140163750 — Iterates dynamic floor colliders, skips disabled/self nodes, chooses the native floor result and stores a borrowed node at block+120.
+Limit: The borrowed node can be freed at map teardown and must not be retained or followed from an old snapshot.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x140163750.c
+
+0x1401638f0 — Iterates dynamic wall colliders; node flag2 excludes the node and flag1 excludes its lateral pass; owner-ID equality excludes self geometry.
+Limit: These node flags differ from Actor+288 body-separation flags.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1401638f0.c
+
+0x140170c10 — Builds the Actor support cache from the selected polygon and either the recorded dynamic collider or static map collider; FFFF receives a fallback normal.
+Limit: Fallback is not measured ground. Cached normal is copied only after native cache/polygon checks.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x140170c10.c
+
+0x140170b00 — Builds a temporary request around a position, probes/selects support information, and invokes the support-cache builder.
+Limit: Presence of a surface cache alone does not prove that the Actor's movement resolver ran this frame.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x140170b00.c
+
+0x1403ba940 — World-collision gate is Actor+2488 bit1 set, Actor+288 bit1 clear, and no decoded attachment at Actor+1696.
+Limit: Here 'bit1' in the mask means numeric mask0x1. Gate alone does not prove a completed collision evaluation.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1403ba940.c
+
+0x1403ba970 — Body-separation gate requires Actor+288 mask2 clear, Actor+2488 mask0x1000 clear, and a nonnull body buffer+2560 with positive count.
+Limit: This is separate from world collision and damage/hurt-shape eligibility.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1403ba970.c
+
+0x1403b5e00 — Returns mass10000 when Actor+400 mask2 is set; otherwise reads the object's model record float+80.
+Limit: Mass is used by separation weighting, not a general physics-engine mass contract.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1403b5e00.c
+
+0x1403ba7d0 — Determines whether separation treats an Actor as immovable using zero mass, Actor+288 mask4, action flags, attachment and stop conditions.
+Limit: Changing mass or this result is not implemented; several independent native owners exist.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1403ba7d0.c
+
+0x14040a9e0 — Counts collision-source records of the requested type and allocates24+40*N bytes; header count starts0, owner is+8 and type is+16.
+Limit: Allocation capacity is implied by the source table, not stored explicitly in the buffer header.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x14040a9e0.c
+
+0x14040b140 — Rebuilds a buffer by zeroing its count and converting active source records into40-byte shapes only when the owner pose-available mask0x400 is set.
+Limit: Direct edits to shape positions/dimensions are overwritten by native pose rebuilding.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x14040b140.c
+
+0x14040ad70 — Finds overlapping shape pairs, derives horizontal correction, weights movable Actors by mass and modifies shape centers plus pending Actor correction.
+Limit: Not a pure overlap test. Return value is not a useful stable boolean contract.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x14040ad70.c
+
+0x14040b0b0 — Tailcalls the scene-heap release wrapper for the shape-buffer allocation.
+Limit: The caller's pointer is not automatically cleared; readable freed memory is not lifetime proof.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x14040b0b0.c
+
+0x1403c9b30 — Counts20-byte collision-source entries starting at resource+64 whose type byte+4 equals the requested type.
+Limit: Header count and loaded resource extent are prerequisites; malformed resources are outside the native routine's safety contract.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1403c9b30.c
+
+0x1403c9bc0 — Iterates source entries selected by a bitmask over their type byte, rather than treating17 as a literal type number.
+Limit: Mask17 selects bits0/4; names for those categories have not been established.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1403c9bc0.c
+
+0x1403c9c00 — Converts a source entry into a40-byte shape: type+0, radius+4, height+8, source pointer+16 and transformed center Vec4+24; bone/pose gating can zero dimensions.
+Limit: These are collision proxies, not an asserted final damage hitbox layout for every actor.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1403c9c00.c
+
+0x1403b3200 — Initializes the Actor world block at+1744, invalid floor state at+1860, polygonFFFF, null dynamic owner; loads collision resource+2744 and allocates body+2560/hurt+1600 buffers.
+Limit: A constructor state with flags2 must not be interpreted as grounded. Static claim covers these initialization paths only.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1403b3200.c
+
+0x1403b3d60 — Releases both Actor body/hurt shape collections during cleanup.
+Limit: No general generation counter or post-free pointer clearing was identified here.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1403b3d60.c
+
+0x1403b2b80 — Performs Actor cleanup including shape-buffer release and Actor allocation release.
+Limit: A retained Actor pointer can remain readable after this function; live-list/status ownership is required.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1403b2b80.c
+
+0x1403b6310 — Rebinds a collision resource, updates world dimensions and creates new body/hurt buffers without first releasing the old buffers in this body.
+Limit: No direct runtime caller was found in the examined index. Do not repurpose as a trainer refresh API.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1403b6310.c
+
+0x1403b9090 — Runs body-to-body separation via3BA970/40AD70 independently of the world-collision gate and resolver; copies the refreshed support-cache result flags.
+Limit: This distinguishes the proposed body-only bit from the existing complete movement-collision bypass.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1403b9090.c
+
+0x1403b8720 — Returns cached floor Y when valid; on an invalid cache it invokes3F3DD0 and writes the Actor cache, possibly clearing the invalid-height bit.
+Limit: Not a side-effect-free getter; the trainer reads the guarded cache directly.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1403b8720.c
+
+0x1403b87e0 — Returns an action-dependent Actor+256 value for selected descriptors, otherwise shares the mutating floor-cache refresh behavior.
+Limit: Not a universal current-ground getter and not called by diagnostics.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1403b87e0.c
+
+0x1403ba750 — Writes start/displacement into the live Actor collision block and runs the resolver before returning a result bit.
+Limit: Cannot be used as a harmless 'can move there' test; it changes the live block and shared filters.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1403ba750.c
+
+0x1403b9d20 — Probes the ground under an Actor and uses the position-setting path when a hit is accepted.
+Limit: Potential snap-to-floor API needs separate caller, action and transition validation; no trainer call is implemented.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1403b9d20.c
+
+0x1403b9ce0 — Sets Actor+1876 dynamic-platform/snap tolerance from the decoded platform-parent context and a native constant.
+Limit: The tolerance is context-owned and not exposed as a persistent trainer override.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1403b9ce0.c
+
+0x1401639b0 — Pops a24-byte node from the dynamic-collider pool, constructs its248-byte collider and links the node into the global list.
+Limit: The native allocator assumes available pool capacity; it is not a checked mod allocation API.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1401639b0.c
+
+0x140163a90 — Unlinks a dynamic collider node, releases its collider pointer+8 and returns its index to the free stack.
+Limit: Requires a known current linked node. Never pass a cached or guessed node.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x140163a90.c
+
+0x140163b90 — Iterates dynamic nodes while skipping flag2-disabled nodes.
+Limit: Packed next links and list lifetime still require independent validation.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x140163b90.c
+
+0x14016ffa0 — Creates map collision wrappers of248 bytes and binds the loaded map collision/environment resources, including static rootABD448.
+Limit: Wrappers are scene-owned; their existence is not permanent process lifetime.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x14016ffa0.c
+
+0x140170340 — Releases and nulls the map collider wrapper globals and associated map root during teardown.
+Limit: Snapshots require a current playable scene and fresh root validation.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x140170340.c
+
+0x1401722f0 — Binds a248-byte collider wrapper to resource tables: polygon+24, vertex+32, attribute+40, normal+48, counts+72..84, matrices+100/+164 and scratch flags.
+Limit: Raw header offsets/counts are trusted by native code; this is not a safe arbitrary external-mesh parser.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1401722f0.c
+
+0x1403c94c0 — Dispatches shape intersection: type1 cylinders, type3 spheres, and supported type0 ellipsoid combinations, with strict overlap comparisons.
+Limit: Unsupported type combinations return false; tangency is not overlap and zero dimensions can divide by zero.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1403c94c0.c
+
+0x1403c90b0 — Derives horizontal separation for supported type0/3 pairs with a native skin allowance of5.
+Limit: Does not resolve arbitrary shapes or vertical penetration; unsupported pairs leave correction unchanged.
+Evidence: work/trainer/research/actor_collision_round4_evidence.json; work/native_decompile/0x1403c90b0.c
+
+0x1403ccb90 — Updates pose/transforms and rebuilds the body-shape buffer+2560 through40B140.
+Limit: Body shape data follows pose lifetime and may be computed on the native motion workers.
+Evidence: work/trainer/research/actor_collision_round4_lifecycle_evidence.json; work/native_decompile/0x1403ccb90.c
+
+0x1403bfab0 — Performs Actor motion work and rebuilds the hurt-shape buffer+1600 after body/pose processing.
+Limit: This worker entry must finish before an external observer assumes stable shape data.
+Evidence: work/trainer/research/actor_collision_round4_lifecycle_evidence.json; work/native_decompile/0x1403bfab0.c
+
+0x1403beec0 — Queues batches of Actor motion jobs via12FDB0 and waits via130130 before returning; then clears the active work flag.
+Limit: Trainer snapshot placement after the original native update relies on this normal completion path, not arbitrary worker sampling.
+Evidence: work/trainer/research/actor_collision_round4_lifecycle_evidence.json; work/native_decompile/0x1403beec0.c
+
+0x1403bf5e0 — Runs the Actor update phase including3BFD30 and invokes the motion/pose batch processing before post-update processing.
+Limit: A frame may still skip collision for native stop/action states.
+Evidence: work/trainer/research/actor_collision_round4_lifecycle_evidence.json; work/native_decompile/0x1403bf5e0.c
+
+0x1403bf810 — Registers the field Actor-update task and its cleanup and creates the subordinate Actor scheduler with the3BF5E0 callback.
+Limit: Task/scene lifetime is required; merely finding an Actor address is insufficient.
+Evidence: work/trainer/research/actor_collision_round4_lifecycle_evidence.json; work/native_decompile/0x1403bf810.c
+
+0x1403b4f10 — Iterates collision-source entries and skips entries whose group is disabled by3BA550.
+Limit: Native enabled-shape count can vary with action and group masks within one Actor lifetime.
+Evidence: work/trainer/research/actor_collision_round4_lifecycle_evidence.json; work/native_decompile/0x1403b4f10.c
+
+0x1403c9780 — Implements the supported mixed ellipsoid/cylinder overlap calculation using radial cross sections.
+Limit: No broad physics-engine interpretation beyond the examined proxy pair is claimed.
+Evidence: work/trainer/research/actor_collision_round4_lifecycle_evidence.json; work/native_decompile/0x1403c9780.c
+
+0x1403c9890 — Tests normalized ellipsoid-style squared separation against1 for supported shape pairs.
+Limit: Nonzero dimensions are required; the routine is unsuitable for arbitrary malformed input.
+Evidence: work/trainer/research/actor_collision_round4_lifecycle_evidence.json; work/native_decompile/0x1403c9890.c
+
+0x14040ac20 — Builds shape bounds but uses MINSS for subsequent upper bounds as well as lower bounds; full ASM confirms upper X/Y/Z can shrink.
+Limit: This is a literal static anomaly. Visible gameplay impact is not proven; the normal model-bounds path differs.
+Evidence: work/trainer/research/actor_collision_round4_lifecycle_evidence.json; work/native_decompile/0x14040ac20.c
+
+0x140163c20 — Allocates2248 bytes for the dynamic-node pool, initializes80 nodes/free indices and clears dynamic list head/tail.
+Limit: 80 is the pool allocator capacity, not proof that every possible list node must belong to this pool.
+Evidence: work/trainer/research/actor_collision_round4_lifecycle_evidence.json; work/native_decompile/0x140163c20.c
+
+0x140163bd0 — Clears numeric flag1 on a dynamic node.
+Limit: This is a lateral-pass flag operation, not node destruction.
+Evidence: work/trainer/research/actor_collision_round4_lifecycle_evidence.json; work/native_decompile/0x140163bd0.c
+
+0x140164120 — Constructs/appends a dynamic node provided by the caller instead of allocating it from the80-node pool.
+Limit: No direct code caller was found in the inspected index. External-node reachability remains unproven.
+Evidence: work/trainer/research/actor_collision_round4_lifecycle_evidence.json; work/native_decompile/0x140164120.c
+
+0x1403f3dd0 — Ground probe receives startRCX, outputRDX, rangeXMM2, biasXMM3 and a stack mask; writes a fallback output on failure and returns a hit boolean.
+Limit: Calls shared collider-query machinery and is not used by trainer readouts.
+Evidence: work/trainer/research/actor_collision_round4_lifecycle_evidence.json; work/native_decompile/0x1403f3dd0.c
+
+0x140173500 — Fetches a plane normal through the polygon's normal index, transforms and normalizes it for a nonidentity collider.
+Limit: Requires valid polygon/normal indices and loaded tables; trainer copies the native cache instead of following these tables.
+Evidence: work/trainer/research/actor_collision_round4_lifecycle_evidence.json; work/native_decompile/0x140173500.c
+
+0x140152430 — Allocates through the current scene heap's virtual allocation slot.
+Limit: Shape collections belong to scene heap9BA920; no cross-scene ownership is implied.
+Evidence: work/trainer/research/actor_collision_round4_lifecycle_evidence.json; work/native_decompile/0x140152430.c
+
+0x140152570 — Releases through the current scene heap's virtual release slot.
+Limit: Calling it after heap replacement with an old allocation is unsafe.
+Evidence: work/trainer/research/actor_collision_round4_lifecycle_evidence.json; work/native_decompile/0x140152570.c
+
+0x140563940 — Clears Actor+288 numeric mask2 on the Actor passed in RDX.
+Limit: Only descriptor/data references were found; do not infer a publicly callable generic toggle contract.
+Evidence: work/trainer/research/actor_collision_round4_lifecycle_evidence.json; work/native_decompile/0x140563940.c
+
+0x140563950 — Sets Actor+288 mask2 but also clears movement vectors and requests native motion/action0xA1.
+Limit: Not called as a trainer separation setter because its other side effects are substantial.
+Evidence: work/trainer/research/actor_collision_round4_lifecycle_evidence.json; work/native_decompile/0x140563950.c
+
+0x140163be0 — Frees the dynamic-node pool and nulls its pool pointer while leaving dynamic list head/tail uncleared in this body.
+Limit: Nonnull list roots can be stale after teardown; never dereference a cached dynamic contact from readability alone.
+Evidence: work/trainer/research/actor_collision_round4_boundaries_evidence.json; work/native_decompile/0x140163be0.c
+
+0x1401579d0 — Performs map/scene subsystem teardown, including dynamic-pool release before later asset unloads.
+Limit: Confirms transition-time lifetime loss; a scene-ready/heap/scheduler lease must be revalidated.
+Evidence: work/trainer/research/actor_collision_round4_boundaries_evidence.json; work/native_decompile/0x1401579d0.c
+
+0x1403bfd30 — Skips normal collision/update work for native stopped/frozen or special action paths while other maintenance can continue.
+Limit: Cached contact data has no proven per-frame freshness token; diagnostics are explicitly last-evaluated results.
+Evidence: work/trainer/research/actor_collision_round4_boundaries_evidence.json; work/native_decompile/0x1403bfd30.c
+
+0x1403ba550 — Resolves collision-group enable/disable through Actor action/group bitsets then collision-resource defaults.
+Limit: Do not assign friendly names to undocumented group indices or indiscriminately enable all shapes.
+Evidence: work/trainer/research/actor_collision_round4_boundaries_evidence.json; work/native_decompile/0x1403ba550.c
+
+0x1403c9b80 — Iterates20-byte source entries by exact type, with22 as a wildcard selector.
+Limit: The separate3C9BC0 iterator uses type masks and must not be conflated with this API.
+Evidence: work/trainer/research/actor_collision_round4_boundaries_evidence.json; work/native_decompile/0x1403c9b80.c
+
+0x1403f7df0 — Prize processing uses the same3BA970 body gate on prize actors in its attraction/pickup path.
+Limit: Global application of the separation bit could affect prizes; the new feature changes only the validated current Sora.
+Evidence: work/trainer/research/actor_collision_round4_boundaries_evidence.json; work/native_decompile/0x1403f7df0.c
+
+0x1403f8400 — Another prize update path checks the native body-separation gate before attraction/pickup processing.
+Limit: No universal 'noclip all actors' control is proposed.
+Evidence: work/trainer/research/actor_collision_round4_boundaries_evidence.json; work/native_decompile/0x1403f8400.c
+
+0x1403cbfe0 — Uses transformed model bounds normally; the40AC20 multi-shape bounds fallback is used when model+2696 is absent and a body buffer exists.
+Limit: The MINSS anomaly is limited to this fallback, not asserted for all rendered actors.
+Evidence: work/trainer/research/actor_collision_round4_boundaries_evidence.json; work/native_decompile/0x1403cbfe0.c
+
+0x1403b7e40 — A separate movement/separation pass iterates other actors and honors3BA970 on the relevant body buffers.
+Limit: The mask2 control affects these verified separation consumers, not hit detection.
+Evidence: work/trainer/research/actor_collision_round4_boundaries_evidence.json; work/native_decompile/0x1403b7e40.c
+
+0x140130030 — Motion worker removes queued callback/context/index triples under its mutex, invokes each callback, then signals its completion semaphore only after the queue is empty.
+Limit: A static ordering guarantee for this native worker loop; arbitrary mods can change scheduling.
+Evidence: work/trainer/research/actor_collision_round4_thread_evidence.json; work/native_decompile/0x140130030.c
+
+0x140130130 — Waits on and releases all six worker completion semaphores at112-byte stride before returning.
+Limit: Together with130030 this establishes the normal post-motion completion barrier.
+Evidence: work/trainer/research/actor_collision_round4_thread_evidence.json; work/native_decompile/0x140130130.c
+
+0x14012fdb0 — Acquires all worker completion semaphores, distributes24-byte job triples across six workers under queue mutexes, then wakes every worker.
+Limit: The input callback ABI is contextRCX/indexEDX, confirmed by the worker callsite.
+Evidence: work/trainer/research/actor_collision_round4_thread_evidence.json; work/native_decompile/0x14012fdb0.c
+
+0x1400fdd90 — Increments waiter count, calls WaitForSingleObject(handle+8,INFINITE), then decrements waiter count.
+Limit: Used as the completion wait primitive; no timeout/error recovery beyond native behavior is inferred.
+Evidence: work/trainer/research/actor_collision_round4_thread_evidence.json; work/native_decompile/0x1400fdd90.c
+
+0x1400fdc90 — Tailcalls ReleaseSemaphore(handle+8,1,null).
+Limit: A synchronization primitive, not a lifetime allocator.
+Evidence: work/trainer/research/actor_collision_round4_thread_evidence.json; work/native_decompile/0x1400fdc90.c
+
+0x1403bf4e0 — Reads Actor pointer from context array at indexEDX and tailcalls3BFAB0 with Actor in RCX.
+Limit: Confirms the motion-worker callback ABI and Actor argument ownership.
+Evidence: work/trainer/research/actor_collision_round4_thread_evidence.json; work/native_decompile/0x1403bf4e0.c
+
+0x1403baad0 — Native stop predicate checks timed stop+1612, category-dependent stop, Actor+288 mask0x400 and global stop context38EE40.
+Limit: The implemented cache filter excludes these known stop branches conservatively; no complete frame-freshness claim.
+Evidence: work/trainer/research/actor_collision_round4_thread_evidence.json; work/native_decompile/0x1403baad0.c
+
+0x14040a910 — Returns numeric flag1 from the timed-state byte pointed to by RCX.
+Limit: Used at Actor+1612 by the stop predicate.
+Evidence: work/trainer/research/actor_collision_round4_thread_evidence.json; work/native_decompile/0x14040a910.c
+
+0x14038ee40 — Returns true if global stop contextBF2AC8 has any nonzero QWORD among four lanes at+80..104.
+Limit: The readout checks these lanes without calling the native routine; unknown/unreadable context suppresses contact interpretation.
+Evidence: work/trainer/research/actor_collision_round4_thread_evidence.json; work/native_decompile/0x14038ee40.c
+
+SOURCE HASHES
+trainer/Native/CollisionFeatures.inl 625778734787d426b18752b7d3b54e3baede48dfade827318dd396a348136166
+work/trainer/tests/CollisionGuardTests.cpp c3430a7c100896c19e28eae64bdfb9bfae5cc8a91a71f561fc76d0329bda8440
+work/trainer/tests/build_collision_tests.cmd 51b9ad72b8b68a37f14c5c8ba260e76e0a56dc0ac50bc98d767591419e4672a7
+work/trainer/research/collision_features.json a609819cba1a42939588f6740015a2fa205aae51be076641eb9a8d1bf84b613e

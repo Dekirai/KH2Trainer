@@ -1,0 +1,944 @@
+{
+  "title": "Gummi editor history and blueprint serialization: function claims",
+  "status": "Research checkpoint; v0.10 unchanged",
+  "original_sha256": "9002B2DE6A1F91A790BD0673DE125D1CF833F7942BFEC827CDCF6BA64D5849ED",
+  "session": "d5d17246",
+  "claims": [
+    {
+      "Address": "0x14027eb70",
+      "Finding": "HISTORY undo checks side != 0, removes group 1, reconstructs group 0, then stores side 0.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x14027eb70"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14027eb30",
+      "Finding": "HISTORY redo checks side != 1, removes group 0, reconstructs group 1, then stores side 1.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x14027eb30"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140269b50",
+      "Finding": "WORKAREA undo uses current history slot modulo four, calls 27EB70, then decrements current. It only checks begin <= current.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140269b50"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140265580",
+      "Finding": "WORKAREA redo increments current when current+1 < end and calls 27EB30 on that slot.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140265580"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1402654f0",
+      "Finding": "Debug blueprint export serializes the current work area/editor into static scratch, then passes a nonempty plan to 52FDE0 with /kh2/proj/gumi/edit/plan/%DATE%.pln.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x1402654f0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140260f90",
+      "Finding": "Serializes material then decoration owners into version-2 in-memory PLN, encodes axis orientation, mirror bits, palette indices and recentered four-bit grid coordinates. Writes global AFBEE8 and work+1414656; empty early return does not restore AFBEE8.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140260f90"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14026c6a0",
+      "Finding": "Editor serialization wraps 260F90, appends the editor ability list and copies exactly 128 palette bytes from editor+1456 to plan+16.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x14026c6a0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14052fde0",
+      "Finding": "Sets source plan version to 3, allocates a 64-byte-rounded output, copies the 216-byte header and canonical part/ability/color sections, calls the native transport, then frees output. It is neither read-only nor a useful file API on this build.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x14052fde0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14027e900",
+      "Finding": "Recreates every snapshot in the selected group using a 2576-byte part allocation, 254CE0(snapshot, priority 20000), and 267300(saved grid handle, no new history). It restores the material-layer global and conditionally tints the other layer.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x14027e900"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14027ea50",
+      "Finding": "Removes the current owner at each snapshot's saved grid handle and selected material/decorative layer. Handles are dereferenced directly and require current grid membership.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x14027ea50"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14027e740",
+      "Finding": "Appends one snapshot to one of two groups, each limited to 1000 records, stride 176; payload starts at history+64, saved grid handle at payload+144. Negative existing counts are not rejected natively.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x14027e740"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140254ce0",
+      "Finding": "Reconstructs a GUMI object from the 138-byte snapshot payload. Snapshot byte129 supplies the task group; incoming R8D supplies priority 20000. Loads resources before copying transform, size and appearance fields.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140254ce0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1402592a0",
+      "Finding": "Loads the part parameter row and model, optional motion set and variant, derives raw dimensions from parameter bytes9..11 times10, and initializes contacts. Missing parameter/model resources are not tolerated by later dereferences.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x1402592a0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140263010",
+      "Finding": "Deletes a cell's owner or linked anchor owner, adjusts cost/HUD, marks the part for deferred deletion, unlinks the placed-part list and clears layer indices. It assumes list membership.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140263010"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140267300",
+      "Finding": "Places a part and updates the grid, part list and cost. Multicell bounds use float32 transformed size/cell size rounded by +0.5 then truncation; covered cells point back to the anchor.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140267300"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140262c20",
+      "Finding": "Selects material/decorative layer from the part parameter type and clears every computed occupied cell through 263010, with global-layer restoration.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140262c20"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14025fc20",
+      "Finding": "Clears all current-layer grid owners; optionally records group-0 snapshots, updates cost, unlinks parts and clears covered cells. The import path invokes it separately for both layers.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x14025fc20"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1402600a0",
+      "Finding": "Recursively clears same-anchor grid coverage through six neighbor pointers. It clears the root before recursion, so verified grid topology and matching roots govern termination.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x1402600a0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140267e60",
+      "Finding": "Binds one anchor owner, initializes its paint from the part's palette index and stores paint in the layer-specific cell byte.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140267e60"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140269ba0",
+      "Finding": "Unlinks a part from a head/tail list using packed next at part+1444; traversal assumes the target exists.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140269ba0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140259ee0",
+      "Finding": "Sets part paint index and reads palette bytes 4*index+2/+3 into appearance WORDs at part+2560/+2562.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140259ee0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140258470",
+      "Finding": "Writes the snapshot transform, raw size, flags, part ID, camera, task group, material/decorative selector, variant, paint and appearance bytes.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140258470"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140528fb0",
+      "Finding": "Part parameter lookup scans 128-byte rows but returns using an 8-bit row index; missing or index255 routes to a TLS-initialized fallback. It is unsuitable as a read-only validation helper.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140528fb0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1405291d0",
+      "Finding": "Scans the same parameter rows and returns the first matching row index narrowed to BYTE, or 0xFF. Export must reject an unrepresentable row index.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x1405291d0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140253d40",
+      "Finding": "Loads the Gummi model by the last three characters of the object MDLX basename from gumiobj.bar; requires nested BAR type4, optionally type7, and invokes model virtual construction and initialization. Missing model still reaches an unconditional model update.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140253d40"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140253960",
+      "Finding": "Finds a 96-byte object record with bsearch after masking object ID bit0x40000000; depends on sorted current object table AFBA58.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140253960"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140259080",
+      "Finding": "Computes absolute XYZ transformed raw size from part+1672 and its rotation matrix at+1448; this size feeds grid placement and PLN anchoring.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140259080"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140257580",
+      "Finding": "Maps signed unit axes to six orientation codes: +Y0,-Y1,+X2,-X3,+Z4,-Z5; returns -1 otherwise.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140257580"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1403a0da0",
+      "Finding": "Tail-calls 3F9C60 with path, buffer and length; provides no independent file implementation.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x1403a0da0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1403f9c60",
+      "Finding": "Builds dummy_string/path in a fixed stack buffer, locks the file manager, calls 106AF0, then unlocks. This build's output function is a stub.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x1403f9c60"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140106af0",
+      "Finding": "Exactly two instructions, bytes 33 C0 C3: returns zero without reading arguments or producing output.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140106af0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140151ca0",
+      "Finding": "Returns static scratch at 9A8880 for index0, or 9A9080 +1024*(index-1) otherwise. It does not provide a caller-sized allocation contract.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140151ca0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14028a420",
+      "Finding": "Writes the ability count byte and copies DWORD ability IDs from a 12-entry editor list; source count is at+48. Internal ability offset follows the aligned color section.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x14028a420"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140264600",
+      "Finding": "Starts a new history transaction, discards redo tail, maintains a four-slot window and wraps all cursor indices by four when begin reaches four; resets the selected slot's two current counts.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140264600"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14027e8e0",
+      "Finding": "Clears both current history group counts and resets side to 1.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x14027e8e0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14025dcd0",
+      "Finding": "Constructs WORKAREA, creates four embedded HISTORY objects, publishes AFBEF0 and initializes editor/grid/camera fields.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x14025dcd0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14026d620",
+      "Finding": "Normal editor input calls undo269B50 for event kind2/subcode0 or menu71; redo265580 for kind2/subcode1 or menu70, with distinct sounds. History actions are native editor operations.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x14026d620"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1402645a0",
+      "Finding": "Resets all four history slots and sets begin=end=0,current=-1 after blueprint import.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x1402645a0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14027ee20",
+      "Finding": "Adds signed cost delta to cost+8, recomputes capacity with 27EE60 and refreshes the cost HUD through27F370.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x14027ee20"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14027cdb0",
+      "Finding": "Writes object tint RGBA and its translucent-queue flag; history uses color0x80808080 for restored parts on the nonselected visible layer.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x14027cdb0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140259130",
+      "Finding": "Searches a fixed 36-entry object-ID list for contact geometry; unknown IDs fall back to index0.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x140259130"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1402591c0",
+      "Finding": "Resets part parameter/variant/appearance fields, grid index=-1, transform matrices and flags before resource initialization.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_evidence.json#/functions/0x1402591c0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140268120",
+      "Finding": "Allocates 208-byte cells, two WORD index layers and 2*N pointer storage from dimensions. Creates exact linear indices, clamped six-neighbor topology and empty layer owners/roots.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1402601a0",
+      "Finding": "Reinitializes the work grid, bounds, camera and placed-part list, then clears history and resets current=-1.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/1"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14027ee60",
+      "Finding": "Computes cost limit from editor mode, base limits, SaveGummi bytes170/171/175 and partner bonus count; sets main/tiny mode indicator.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/2"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14027f370",
+      "Finding": "Refreshes cost bar with signed integer ((limit-used)<<7)/limit and a float ratio. Chooses menu-resource entry270,271 or272, starts its animation and writes bar+976.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/3"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140253cb0",
+      "Finding": "Creates the GUMI part allocator from a 3,864,000-byte menu-heap allocation and publishes AFBA60.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/4"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1402539c0",
+      "Finding": "Loads the Gummi object table into a 51,200-byte resource allocation, relocates it with3E0DD0 and publishes AFBA58.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/5"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1405293d0",
+      "Finding": "Binds parameter row count and row base, resolves optional variant offsets and type-specific references for each128-byte row.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/6"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1405294a0",
+      "Finding": "Allocates and asynchronously loads the part-parameter resource, with5293D0 as completion callback.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/7"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140528f70",
+      "Finding": "Frees the parameter resource and clears buffer/row pointers, while the count can remain stale.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/8"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14024c590",
+      "Finding": "Scans global OBJ membership using packed next+40; if the object is present, sets object+16 deletion bit2. It does not free the object inline.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/9"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14024c620",
+      "Finding": "Sets object+16 bit0x40, used when a part is placed.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/10"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140271710",
+      "Finding": "Selects a menu-resource row and copies six animation IDs into a widget; optional text/color processing uses the current animation state and message manager.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/11"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140271210",
+      "Finding": "Chooses the active/inactive animation from widget flags, starts a nonnegative animation ID and queues a follow-up in a three-entry ring.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/12"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1402503d0",
+      "Finding": "Returns global editor mode AFB318, consumed by cost-limit selection.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/13"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140529070",
+      "Finding": "Reads SaveGummi bytes at9BA710+index except for its special index1 case; cost limit uses ordinary indices170/171/175.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/14"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140151c80",
+      "Finding": "Exposes static scratch9A8880 only when the scratch-enable byte9A8824 is set.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/15"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1402604b0",
+      "Finding": "Imports nonempty PLN: starts a history transaction, clears both layers, constructs parts by table index, restores orientation/mirrors/variant/colors and places them in padded grid coordinates.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/16"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14027ebb0",
+      "Finding": "Initializes cost structure defaults, clears HUD pointers and publishes global AFC9C8.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/17"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14027e2d0",
+      "Finding": "If an object has a motion name and the resource manager reports loaded state>=2, obtains it and passes it to27E380; otherwise releases/clears the current motion resource.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/18"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14027e380",
+      "Finding": "Binds a motion set, resolves its first nested BAR, requires type9 motion and type16 auxiliary data, calls motion virtual+8 for duration. Missing type9/type16 can cause null dereferences.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/19"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1403e0b50",
+      "Finding": "Formats an object's MDLX path into supplied storage or shared global scratch. It is not a read-only naming helper.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/20"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1401a4e30",
+      "Finding": "Swaps model instance transform and auxiliary buffers, then calls the resource object's virtual+80 update.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/21"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140258390",
+      "Finding": "Sets object+16 active bit1 after resource initialization.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/22"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140252a10",
+      "Finding": "Lazily loads the menu-resource BAR into AFB598 and returns decoded payload at the requested entry index; absent entries are dereferenced without a null guard.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_dependency_evidence.json#/functions/23"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140253b00",
+      "Finding": "Constructs GUMIOBJ through OBJ3D with forwarded task-group/priority registers, initializes its resource field and vtable.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14027bb10",
+      "Finding": "Constructs OBJ3D and its transform/model/motion state after registering the base object/task.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/1"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14024b720",
+      "Finding": "Registers OBJ3DBASE in the global object list and creates a task on AFA700 with caller-provided group and priority, callback24C180 and cleanup24C360.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/2"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14027eef0",
+      "Finding": "Creates the cost HUD and secondary display, derives cost bonuses from ability1013, binds their ownership and starts the cost refresh path.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/3"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14026e9c0",
+      "Finding": "Editor setup creates menu widgets, optionally imports the existing plan and clears history, binds palette/camera, then initializes the cost HUD.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/4"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140251ba0",
+      "Finding": "Returns one bit from a widget's DWORD flag array using unsigned index/32 and index%32.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/5"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1402515d0",
+      "Finding": "Stores a message-manager result for a nonnegative message ID, or null for a negative ID; the cost-HUD resource can enter this branch.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/6"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140193250",
+      "Finding": "Changes animation when its ID differs, calls192050 and resets playback state/frame.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/7"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140192050",
+      "Finding": "Selects a36-byte animation row, follows its range of144-byte records and computes timing bounds. It assumes animation row/range validity.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/8"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14052fdb0",
+      "Finding": "Stores a WORD title length at PLN+144 and copies that many UTF16-like code units to+146. It does not bound the caller's count.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/9"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14052fda0",
+      "Finding": "Clears both part counts and the title-length WORD; supports an explicitly empty title.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/10"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14052f8f0",
+      "Finding": "Returns the plan title-code-unit pointer at+146.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/11"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14052f900",
+      "Finding": "Returns the plan title length at+144.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/12"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14052e440",
+      "Finding": "Reads decoration color at plan+colorOffset+materialCount+decorationIndex.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/13"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14052e840",
+      "Finding": "Reads material color at plan+colorOffset+materialIndex.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/14"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1402968a0",
+      "Finding": "Blueprint naming UI validates input and calls52FDB0 before dispatching its native completion action.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/15"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1403e0dc0",
+      "Finding": "Tests object motion-name availability by checking object-record byte+40.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/16"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1403e0bd0",
+      "Finding": "Formats object motion paths in shared scratch and handles optional MEMO variants; the Gummi caller supplies a2=0.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/17"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1403e0ab0",
+      "Finding": "Formats the object's auxiliary resource path into supplied or shared storage; Gummi model loading passes it to the resource manager.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/18"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140253c00",
+      "Finding": "GUMIOBJ deleting destructor frees through the part allocator when requested by its deletion flags.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/19"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140255d00",
+      "Finding": "GUMI deleting destructor performs resource/base cleanup and frees the2576-byte part through AFBA60.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/20"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14024c180",
+      "Finding": "Object task processes deletion/pause/active flags, invokes the object's update virtual and builds draw queues; deletion marks the task for cancellation.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/21"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14024c360",
+      "Finding": "Object-task cleanup marks its owner deleted; this is distinct from freeing the object allocation.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/22"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14024c690",
+      "Finding": "Adds an object to the global OBJ head/tail list using packed next+40 after checking existing membership.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_lifecycle_evidence.json#/functions/23"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1401c21e0",
+      "Finding": "ModelSKL virtual+64 allocates an instance, per-bone arrays and rendering data from counts/offsets in the resource, then initializes native model packets.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_models_evidence.json#/functions/0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1401c1500",
+      "Finding": "ModelBG virtual+64 allocates a912-byte base plus aligned visibility bytes and links the instance to its resource.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_models_evidence.json#/functions/1"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1401c2ca0",
+      "Finding": "ModelMulti virtual+64 walks nested models, allocates combined instance/bone/packet storage and initializes each nested model. Nested offsets/counts are trusted.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_models_evidence.json#/functions/2"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1401c20a0",
+      "Finding": "ModelSKL virtual+80 computes initial bone transforms from resource records and parent indices; parent and record bounds are required resource invariants.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_models_evidence.json#/functions/3"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1401c2c50",
+      "Finding": "ModelMulti virtual+80 delegates initialization to the first nested resource at its relative offset.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_models_evidence.json#/functions/4"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1401a4cc0",
+      "Finding": "Base/ModelBG virtual+80 is an empty return in this build.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_models_evidence.json#/functions/5"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14019c3a0",
+      "Finding": "Constructs a16-byte-aligned MemoryAllocator with a linked-block sentinel, start/end bounds and shared critical section.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_models_evidence.json#/functions/6"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14019c2b0",
+      "Finding": "Allocates aligned payload plus48 bytes overhead by cached gap or full linked-block scan under AC0FD8; returns null if no suitable gap exists.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_models_evidence.json#/functions/7"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14019c470",
+      "Finding": "Frees a MemoryAllocator block under AC0FD8, updates linked ownership/accounting and poisons the released block.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_models_evidence.json#/functions/8"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14019c520",
+      "Finding": "Returns allocator+80 used bytes; this is not the largest free contiguous gap.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_models_evidence.json#/functions/9"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14026c620",
+      "Finding": "Loads palette, grid parts and abilities from a plan into the current editor, then clears history.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_models_evidence.json#/functions/10"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14026c830",
+      "Finding": "Creates the editor work grid with equal dimensions and native10-unit cells, binds camera, palette, layer and embedded cost object.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_models_evidence.json#/functions/11"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14028a3e0",
+      "Finding": "Imports the signed ability count byte into the editor's fixed12-DWORD array, without a count bound.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_models_evidence.json#/functions/12"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14052e460",
+      "Finding": "Returns the maximum of the three packed PLN dimensions minus their absolute signed origin-shift bytes.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_models_evidence.json#/functions/13"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14052e4c0",
+      "Finding": "Returns the minimum of the three packed PLN dimensions minus their absolute signed origin-shift bytes.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_models_evidence.json#/functions/14"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14052e520",
+      "Finding": "Converts packed PLN dimensions minus absolute signed origin shifts to XYZ extents using native10-unit cells.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_models_evidence.json#/functions/15"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14024bdb0",
+      "Finding": "First destroys the previous deferred-delete queue, then unlinks newly marked OBJ objects and queues them through packed next+52. Removal and free occur in separate passes.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_cleanup_evidence.json#/functions/0"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14024ca90",
+      "Finding": "Unlinks OBJ membership through packed next+40 and maintains global head/tail without freeing allocation.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_cleanup_evidence.json#/functions/1"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14024c380",
+      "Finding": "Registers OBJ dispatch at priority20000 and deferred cleanup24BDB0 at70001, with shutdown24BEB0; creates the AFA700 object scheduler.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_cleanup_evidence.json#/functions/2"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14024beb0",
+      "Finding": "Runs the deferred-delete sweep twice at shutdown, covering both queueing and destruction phases.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_cleanup_evidence.json#/functions/3"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140264a60",
+      "Finding": "Tests whether the current workarea cursor exists and its flag4 is clear; history uses this only to decide tinting.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_cleanup_evidence.json#/functions/4"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140256bf0",
+      "Finding": "Returns the signed cost WORD at parameter-row+12 for a part ID using528FB0.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_cleanup_evidence.json#/functions/5"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x14027e5e0",
+      "Finding": "Constructs HISTORY with2000 initialized176-byte records, zero counts and side1.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_cleanup_evidence.json#/functions/6"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1401a4bb0",
+      "Finding": "Binds texture resources to a model instance, optionally walks a texture collection and allocates/links native texture structures.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_cleanup_evidence.json#/functions/7"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x1401a7cf0",
+      "Finding": "Forwards a model visibility selection to resource virtual+120 with the instance visibility buffer.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_cleanup_evidence.json#/functions/8"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140192e20",
+      "Finding": "Reads a field from the current36-byte animation row; a valid current animation index is required.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_cleanup_evidence.json#/functions/9"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    },
+    {
+      "Address": "0x140192b00",
+      "Finding": "Returns cached widget color or invokes193880 to compute it when the cache byte is unset.",
+      "Evidence": [
+        "work/trainer/research/gummi_round6_cleanup_evidence.json#/functions/10"
+      ],
+      "Limitations": "Static claim scoped to the described branch/data contract. Full ASM and original bytes are captured; this is not a proof of every transitive resource or allocation invariant and no live execution was performed."
+    }
+  ]
+}

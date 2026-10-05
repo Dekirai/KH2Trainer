@@ -1,0 +1,130 @@
+Gummi round5 — Schiffeditor, Kamera und Historie
+================================================
+
+Status: reine statische Forschung. Release0.9, Trainerquellen und Haupt-IDB
+bleiben unverändert. Keine GUI-, Prozess-, Spiel- oder Save-Aktionen.
+
+Nachweisumfang
+---------------
+Private IDB: work/trainer/ida/round5_gummi.i64, Sitzung5b5ee46c.
+Eine getrennte Health-Abfrage bestätigte fertige Autoanalyse und Hex-Rays.
+70 vollständige native Funktionsbodies:5866 tatsächlich gezählte ASM-Zeilen
+und3964 Pseudocodezeilen.26836 Originalbytes einschließlich des gemeinsamen
+Tails27EB00 stimmen mit der Original-EXE überein. Der komplette SHA256 lautet:
+9002B2DE6A1F91A790BD0673DE125D1CF833F7942BFEC827CDCF6BA64D5849ED.
+Laut dem geprüften Funktionsaudit waren62 Funktionen vorher aufTier0,
+eine aufTier1 und sieben aufTier3. Das ist kein Vollständigkeitsversprechen
+für alle Verzweigungen oder die gesamte Gummi-Familie.
+
+Die strukturierten70 Aussagen stehen in gummi_round5_deep.json. Jede enthält
+eine echte Adresse, konkrete Aussage, vorhandene Belegpfade und Grenzen.
+gummi_round5_validation.json enthält die Zählung und den Audit-Fingerprint.
+Originalbytes: gummi_round5_original_bytes.json; vollständige paginierte
+ASM und Pseudocode: gummi_round5_evidence/0x140*.json.
+
+1. Der Editor besitzt mehrere getrennte Lebensdauern
+----------------------------------------------------
+243BC0 erzeugt einen1414672-Byte-WORKAREA und registriert ihn beiAF9F08.
+25DCD0 veröffentlicht ihn unterAFBEF0; die Zerstörung löscht diesen Zeiger.
+Sein Task hatCallback25E190, Cleanup25E1A0, Gruppe2 undPriorität43400.
+
+Der eigentliche Editor ist ein12336-Byte-GUMIEDIT oderTINYEDIT.26C120
+veröffentlichtAFC118.27B570/27B7D0 wählen Hauptschiff oder Begleitschiff
+und native Teilelimits300 beziehungsweise64. Sein Fiber-Task beiAF9F08
+hatCallback2745A0, Cleanup2745B0 undPriorität1000.26CBB0 ist der
+yieldende Hauptablauf, kein gewöhnlich aufrufbarer Update-Helper.
+
+Die WORKAREACAMERA wird von26E440 gesondert erzeugt. Ihr Task liegt
+bei716CB8, nicht beiAF9F08:Callback272070, Cleanup272090,
+Gruppe0/Priorität65000. Ein Kameraeintrag im Namensspeicher reicht deshalb
+nicht als Gültigkeitsprüfung. Kamera+2352 bit1 kündigt die Zerstörung an.
+Der Arbeitsbereich verweist an+1414552 auf seine aktuelle Kamera und
+an+1414568 auf den2992-Byte-CURSOR.26C830 verbindet diese Objekte mit
+dem KostenobjektEditor+12016.
+
+2. Die Namenssuche ist teilweise mutierend
+-----------------------------------------
+73DD90 enthält80 Records zu40Bytes:Zeiger+0, Name+8 mit32Byte-Platz.
+73EA10 enthält freie Indizes;73EB50 deren Anzahl.291E20 sucht belegte
+Einträge.291DB0 erzeugt dagegen einen Eintrag, falls der Name fehlt.
+291D60 gibt einen Index frei; der alte Name kann stehenbleiben.
+Ein Trainer muss begrenzt lesen und die Freiliste berücksichtigen, statt
+291DB0 als vermeintlich harmlosen Getter aufzurufen.
+
+3. Native Kameraaktionen sind der belastbarste Produktkandidat
+--------------------------------------------------------------
+290900(camera,10) ist derselbe Reset, den die native Kameraeingabe nutzt.
+Er startet20 native Übergangseinheiten. Im Bearbeitungsmodus werden die
+Standardwinkel wiederhergestellt und der Fokus aus Cursor/Grid berechnet.
+Im Vorschaumodus gelten die beim Eintritt gespeicherten Winkel undFOV.
+Der normale Kameratask interpoliert weiter und baut die Matrizen neu.
+
+19DDE0(projection,angle,axis0) ist ein vollständiger Projektionssetter:
+RCX=Kamera+16, XMM1=FOV inRadiant, R8D=0. Er aktualisiert Brennweite
+und beide FOV-Werte. Der native Vorschau-Zoom begrenzt auf ungefähr20–90°.
+Ein einmaliger Aufruf bei stabiler, nicht interpolierender Vorschau ist
+ein geeigneter Kandidat; der nächste reguläre Kameratask verarbeitet ihn.
+Normale Eingabe, Reset oder Verlassen des Editors darf den Wert ersetzen.
+
+2943E0/F0 setzen/löschen lediglich einen globalen booleschen Input-Lock
+AFD1D8. Er ist keine Referenzzählung und gehört auch anderen Cursorpfaden.
+Der Trainer soll weder den Lock erzwingen noch die gesamte Updatefunktion
+außerhalb ihres Tasks aufrufen. Die konkreten Gates und offenen Punkte
+stehen in gummi_round5_contract.json.
+
+4. Korrektur: historische Undo-/Redo-Bezeichnungen
+-------------------------------------------------
+Im alten gummi_controls_deep.json waren nur die menschlichen Labels von
+27EB30 und27EB70 vertauscht. Die beschriebenen Gruppenoperationen waren
+richtig. Neu verfolgte Caller und History-Aufzeichnung belegen:
+
+UNDO:269B50 prüftbegin<=current, ruft27EB70 im aktuellen Ringslot auf
+und dekrementiertcurrent.27EB70 entfernt hinzugefügte Gruppe1 und stellt
+entfernte Gruppe0 wieder her; anschließend side=0.
+
+REDO:265580 berechnetnext=current+1, prüftnext<end, setztcurrent=next
+und ruft27EB30 auf. Dieser entfernt Gruppe0, stellt Gruppe1 wieder her
+und setzt side=1.
+
+WORKAREA-Offets:begin1414644,end1414648,current1414652;
+vier Ringslots ab6256 mitStride352064.264600 beginnt eine Transaktion,
+begrenzt aufvier und normalisiert die Indizes. Sein gemeinsamer Tail bei
+27EB00 wurde in ASM und Originalbytes separat mit erfasst.
+
+267300 zeichnet eingefügte Teile bei aktiviertem Recording inGruppe1
+auf;25FC20 zeichnet entfernte Teile inGruppe0 auf.26D620 ordnet
+Kind2/Subcode0 undMenü71 demUndo-Wrapper269B50 zu;Kind2/Subcode1
+undMenü70 demRedo-Wrapper265580.
+
+Produktprüfung:Das gesamte trainer-Verzeichnis referenziert weder diese
+vier Adressen noch bietet es eine Gummi-Undo-/Redo-Aktion an. Release0.9
+muss hierfür nicht geändert werden. Auf Root-Anweisung wurden die zwei Labels
+in den aktuellen Arbeitsquellen gummi_controls_deep.json/.txt korrigiert.
+Das historische0.9-Paket/Source.zip bleibt unverändert; der genaue Vorher-/
+Nachher-Stand ist in gummi_round5_history_correction.json dokumentiert.
+
+Undo/Redo sind noch kein abgeschlossener externer Aufrufvertrag:
+27E900 alloziert Teile neu,254CE0 konstruiert sie aus Snapshots und267300
+fügt sie ins Gitter ein.27EA50 dereferenziert aufbewahrte Grid-Handles;
+262C20 berechnet Zellbereiche aus Fließkomma-Geometrie. Vor einem Trainer-
+Aufruf sind Snapshot-/Zellzugehörigkeit, Ressourcen und alle Teil-Listen
+zu validieren. Die Belege rechtfertigen kein pauschales Ablehnen der
+Funktion; sie zeigen konkret, welche Vorbedingungen noch offen sind.
+
+5. Weitere interessante Spur
+-----------------------------
+2654F0 ist ein Entwickler-Exportpfad fürGummi-Pläne. Er serialisiert den
+Arbeitsbereich oder zusätzlich Editoranpassungen und verwendet die interne
+Vorlage /kh2/proj/gumi/edit/plan/%DATE%.pln. Er wurde nicht ausgeführt.
+26C6A0 kopiert32DWORDs Schiffparameter in den Plan. Das ist eine Grundlage
+für eine spätere Blaupausen-/Austauschfunktion; Format, Besitz des Ergebnisses
+und externer Dateischreibweg brauchen noch eine eigene Untersuchung.
+
+Validierungshinweis
+-------------------
+Ein großer get_bytes-Sammelaufruf lieferte nurzehn Regionen und kürzte einen
+Datenstring. Diese Ausgabe wurde verworfen. Alle Funktionsbytes wurden
+danach als einzelne Blöcke von höchstens256Bytes neu gelesen; der Offline-
+Validator prüft Längen, sämtliche tatsächlichen ASM-Zeilen, Seitencursor,
+Pseudocodezeilen, Belegpfade und jedes gespeicherte Byte gegen die EXE.
+Es wurden keine unveränderten Produkt-Tests oder Builds wiederholt.

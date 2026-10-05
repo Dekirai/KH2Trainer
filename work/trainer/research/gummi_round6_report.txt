@@ -1,0 +1,362 @@
+Gummi Runde 6 – History und Blueprint-Export
+=============================================
+
+Status: Forschungscheckpoint nach Release 0.10. Keine Produktdatei, IDB,
+Spielinstanz oder Save-Datei wurde verändert. Keine Live- oder UI-Tests.
+
+Original:
+E:\SteamLibrary\steamapps\common\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-\KINGDOM HEARTS II FINAL MIX.exe
+SHA256: 9002B2DE6A1F91A790BD0673DE125D1CF833F7942BFEC827CDCF6BA64D5849ED
+Imagebase: 0x140000000
+Private IDB: work/trainer/ida/round5_gummi.i64
+Sitzung: d5d17246; frische Health-Abfragen bestätigten Autoanalyse, Hex-Rays
+und Stringcache als bereit.
+
+Ergebnis
+--------
+
+Drei nützliche Aktionen sind konkret beschrieben:
+1. Eine vorhandene Editoränderung rückgängig machen.
+2. Eine vorhandene Editoränderung wiederholen.
+3. Das aktuell bearbeitete Schiff als eigenständigen PLN-Blueprint exportieren.
+
+Undo/Redo nutzt echte native Teile-Rekonstruktion. Dafür reichen gültige
+History-Zähler allein nicht: Grid, Teilelisten, Ressourcen, Task-Besitzer,
+Kosten-HUD und die laufende Editoroperation gehören zum Aufrufvertrag.
+Die Aufrufkette und Datenfelder sind jetzt belegt. Die verbleibenden
+Prüfungen vor einer Produktfreigabe stehen unten ausdrücklich offen.
+
+Der native Export ist auf diesem PC-Build unbrauchbar. Er serialisiert
+zwar Daten, sein Transport endet aber in einer Funktion mit den drei Bytes
+33 C0 C3 (xor eax,eax; ret). Zudem verändert bereits die Serialisierung
+Editorzustand. Der brauchbare Exportweg ist eine tiefe, pointerfreie
+Momentaufnahme auf dem Spielthread und ein eigener Dateischreiber im Host.
+
+Belegumfang
+-----------
+
+117 vollständige Funktionen, 7.864 tatsächliche ASM-Zeilen und 33.105 Codebytes.
+Zusätzlich sechs Datenbereiche mit 792 Bytes.
+Alle ASM-Seiten wurden zusammengefügt und gegen die angegebenen Gesamtzahlen
+geprüft. Sämtliche Code- und Datenbytes stimmen mit der Original-EXE überein.
+Verifier: 0 Fehler. Das ist keine Behauptung vollständiger Semantik aller
+117 Funktionen oder sämtlicher transitiver Ressourcenhelfer.
+
+Abgleich mit work/trainer/audit/function_status.jsonl vor dieser Runde:
+85 der 117 Funktionen hatten noch keine konkreten Claims; 32 hatten bereits
+mindestens einen. Neue Claims werden deshalb als konkrete zusätzliche
+Aussagen geführt. Der Baseline-Hash und Status je Adresse sind in
+gummi_round6_validation.json gespeichert. Der zentrale Audit wird von Root
+ausgeführt; die generierten Auditdateien wurden hier nicht verändert.
+
+1. Native Undo-/Redo-Semantik
+---------------------------
+
+RVA 269B50: WORKAREA Undo, RCX = aktuelle WORKAREA.
+RVA 265580: WORKAREA Redo, RCX = aktuelle WORKAREA.
+Ein späterer Wrapper kann beide als void __fastcall(void*) aufrufen.
+RAX enthält keinen verlässlichen Erfolgsvertrag.
+
+269B50 prüft begin <= current, wählt current % 4, ruft 27EB70 und
+dekrementiert anschließend current.
+265580 prüft current+1 < end, setzt current auf diesen Wert und ruft 27EB30.
+
+Die Zuordnung aus Runde 5 ist bestätigt:
+- 27EB70 ist Undo: Gruppe 1 entfernen, Gruppe 0 rekonstruieren, side = 0.
+- 27EB30 ist Redo: Gruppe 0 entfernen, Gruppe 1 rekonstruieren, side = 1.
+
+Der reguläre Editorhandler 26D620 ruft Undo bei Eventart 2/Subcode 0
+beziehungsweise Menüeintrag 71 auf. Redo gehört zu Subcode 1/Menüeintrag 70.
+Die jeweiligen Sounds sind 997115 und 997116. Ein direkter History-Aufruf
+muss nicht den gesamten Editorhandler oder seine Fiber starten.
+
+WORKAREA:
++6256: vier HISTORY-Objekte, Abstand 352064
++1414644: begin
++1414648: end
++1414652: current
++1414656: temporärer Materialmodus
+
+HISTORY:
++28/+32: aktuelle Anzahlen der beiden Gruppen
++64/+176064: erster Snapshot der jeweiligen Gruppe
+176 Bytes pro Snapshot, höchstens 1000 pro Gruppe
++352052: side
+
+Snapshot-Payload:
++0 Position, +16 Skalierung, +32 Rotationsmatrix, +96 Rohgröße
++112 Flags, +116 Teile-ID, +120 Kamera
++128 Untertyp, +129 Task-Gruppe, +130 Teilefeld 2516
++131 Ebene: 0 Material, 1 Dekoration
++132 Variante, +133 Spiegel-Flag, +134/+135 Erscheinungswerte
++136 Palettenindex, +137 Flag 0x1000
++144 gespeicherter Grid-Handle
+
+264600 beginnt eine neue Transaktion, kappt die Redo-Zukunft, hält das
+Fenster auf vier Einträge begrenzt und normalisiert die Indizes um vier.
+2645A0 und 2601A0 leeren alle History-Einträge und setzen
+begin=end=0/current=-1. Native signed-Modulo-Berechnung macht einen
+ungeprüften negativen current besonders gefährlich.
+
+2. Was bei einer History-Aktion tatsächlich geschieht
+----------------------------------------------------
+
+27EA50 dereferenziert die gespeicherten Grid-Handles und entfernt die dort
+aktuell vorhandenen Teile über 262C20/263010. Die Teile werden aus der
+platzierten Liste entfernt und für spätere Zerstörung markiert.
+
+27E900 reserviert pro wiederherzustellendem Teil 2576 Bytes aus AFBA60,
+ruft 254CE0 mit Snapshot und Priorität 20000 und setzt das neue Teil über
+267300 am gespeicherten Grid-Handle ein. Snapshot-Byte 129 wird tatsächlich
+als Task-Gruppe an den Basiskonstruktor weitergegeben. Die Kamera kommt
+aus dem Snapshot und muss zur aktuellen Editorinstanz gehören.
+
+Die History-Aktion lädt Modelle und gegebenenfalls Motion-Sets. Sie stellt
+Position, Skalierung, Rotation, Größe, Flags, Variante und Farbe wieder her.
+Wenn die andere Ebene sichtbar ist, kann sie deren Teile grau einfärben.
+Die Kostenanzeige wird bei jedem einzelnen Entfernen/Einsetzen aktualisiert.
+
+Wichtiger Lebensdauerbefund:
+24C380 registriert den OBJ-Dispatch bei Priorität 20000 und die Bereinigung
+24BDB0 bei 70001 im GM-Manager. 24BDB0 zerstört zuerst die vorherige
+Löschqueue und nimmt danach neu markierte Objekte aus der OBJ-Liste in
+die nächste Queue auf. Beim Shutdown wird dieser Durchlauf zweimal
+ausgeführt. Entfernte Teile sind folglich nicht während desselben
+History-Aufrufs bereits freier Speicher.
+
+3. Grid, Listen und numerische Voraussetzungen
+----------------------------------------------
+
+268120 erzeugt N = dx*dy*dz Zellen zu je 208 Bytes. Weitere Speicherblöcke
+halten zwei WORD-Indexebenen und 2*N Pointer. Der Zellblock hat einen
+QWORD-Anzahlheader unmittelbar davor.
+
+Zelle:
++0 float4 Zentrum, +16 linearer Index
++24/+32 Besitzer für Dekoration/Material
++40/+48 Anker für überdeckte Zellen
++56/+64 Y-Nachbarn, +72/+80 X-Nachbarn, +88/+96 Z-Nachbarn
++201/+202 Farbe für Dekoration/Material
+Nachbarn am Rand zeigen auf die Randzelle selbst.
+
+Die platzierte Teileliste liegt in AFBF40/AFBF48; next ist ein gepackter
+DWORD bei Teil+1444. Die allgemeine OBJ-Liste AFA780/AFA788 verwendet +40,
+die Löschqueue AFA7A0/AFA7A8 verwendet +52. Native Entfernung sucht ohne
+Iterationsgrenze nach dem erwarteten Teil. Deshalb müssen vollständige
+Mitgliedschaft, Eindeutigkeit, Endzeiger und Zyklenfreiheit geprüft werden.
+
+267300 und 262C20 rechnen mit Float32:
+- abs(rotierte Rohgröße)
+- Größe/Zellgröße + 0.5, danach Truncation zu int
+- Ursprung aus Teilposition, halber Größe und halber Zellgröße
+- daraus Zellindizes und Anzahl belegter Zellen
+
+Eine Prüfung muss die echten Zwischenwerte, Integergrenzen und alle
+berechneten Zellen berücksichtigen. Das Auflösen von sechs Nachbarn in
+2600A0 ist rekursiv; korrekte Anker und Topologie begrenzen den Weg.
+Auch das gemeinsame Ergebnis mehrerer aufeinanderfolgender Snapshots
+muss geprüft werden. Einzeln gültige Teile können sich gegenseitig
+überschreiben, wenn die History inkonsistent ist.
+
+Jeder Farbenzugriff 259EE0 liest zwei Bytes aus der Palette mit 32 Einträgen.
+Palettenindizes außerhalb 0..31 sind daher vor dem nativen Aufruf abzulehnen.
+
+4. Ressourcen, Speicher und Kosten-HUD
+--------------------------------------
+
+Teileparameter: count bei 2B58B00, Zeilen bei 2B58B08, Abstand 128.
+528FB0 hat einen schreibenden TLS-/Fallbackpfad und eine 8-Bit-Indexschwäche.
+Auch 5291D0 reduziert den gefundenen Index auf ein Byte. Ein eigener
+Preflight muss den ersten passenden Eintrag direkt bestimmen und einen
+verlustfrei darstellbaren Index unter 255 verlangen.
+
+253960 sucht im sortierten Objektkatalog AFBA58, Abstand 96 Bytes.
+253D40 bildet aus dem MDLX-Namen ein dreistelliges BAR-Tag und sucht es
+in gumimenu/gumiobj.bar (AFBAB8). Das verschachtelte BAR benötigt type 4
+als Modell; type 7 kann Texturdaten liefern. Motion-Sets führen über
+27E2D0/27E380 zu einer weiteren BAR-Ebene mit type 9 und type 16.
+Der Code dereferenziert einige fehlende Einträge trotz vorheriger
+oberflächlicher Nullprüfung.
+
+Die erfassten Modellvarianten zeigen weitere echte Abhängigkeiten:
+- ModelBG: 1C1500 erzeugt die Instanz; Initialisierung 1A4CC0 ist leer.
+- ModelSKL: 1C21E0 reserviert Knochen-/Packetfelder; 1C20A0 verwendet
+  Knochenrecords und Elternindizes.
+- ModelMulti: 1C2CA0 traversiert eingebettete Modelle; 1C2C50 delegiert
+  die Initialisierung an das erste Untermodell.
+- 1A4BB0 verarbeitet Texturkollektionen und weitere Allokationen.
+
+Das ist eine konkrete Liste der noch zu validierenden Ressourcenformen,
+keine pauschale Aussage, dass beliebige Moddaten sicher wären.
+
+AFBA60 erhält 3.864.000 Bytes. MemoryAllocator 19C2B0 braucht für ein
+2576-Byte-Teil 2624 Bytes einschließlich Alignment und Blockverwaltung.
++80 im Allocator ist die Zahl belegter Bytes, nicht die größte freie Lücke.
+Die Allokation verwendet echte verkettete Lücken unter dem Mutex AC0FD8.
+Ein späterer Guard muss diese Struktur berücksichtigen; entfernte Teile
+dürfen noch nicht als frei verrechnet werden. Weitere Task-, Modell- und
+Texturallokationen gehören zum nativen Vorgang.
+
+Die Kostenkette 27EE20 → 27EE60 → 27F370 hat zusätzliche Folgen:
+- Kapazität hängt von Modus und SaveGummi-Bytes 170, 171, 175 ab.
+- Der HUD-Balken rechnet signed32 ((Limit-Kosten)<<7)/Limit.
+- Je nach Quotient wählt er Menüressource 270, 271 oder 272.
+- 271710 kann Message-/Farbpfade verwenden; 271210 startet Animationen.
+- 192050 vertraut 36-Byte-Animationen und 144-Byte-Sequenzbereichen.
+
+Über dem regulären Kostenlimit zu liegen ist kein eigener Ausschlussgrund.
+Entscheidend sind arithmetische Grenzen und die tatsächlich betretenen
+Widget-/Ressourcenpfade. Bei Limit 0 wird der komplexe HUD-Zweig übersprungen.
+
+5. Blueprint-Transport und Seiteneffekte
+--------------------------------------
+
+2654F0 → 260F90 oder 26C6A0 → 52FDE0 → 3A0DA0 → 3F9C60 → 106AF0
+
+2654F0 ist ein Debugexport mit dem Entwicklungspfad
+/kh2/proj/gumi/edit/plan/%DATE%.pln. 151CA0(0) liefert statischen Scratch
+9A8880 und keinen dynamisch dimensionierten Ausgabepuffer.
+
+260F90 schreibt AFBEE8 sowie WORKAREA+1414656, während es die beiden Ebenen
+serialisiert. Der leere frühe Rückweg 2610E4 überspringt die Wiederherstellung
+bei 261C13/261C19. Selbst ein Export ohne Teile verändert somit den globalen
+Materialmodus und den Scratchwert in der WORKAREA.
+
+52FDE0 setzt die Eingabeversion auf 3, erzeugt eine Heapkopie, ruft den
+Transport und gibt die Kopie frei. 3F9C60 präfigiert den Pfad mit
+dummy_string, sperrt den Dateimanager und ruft 106AF0 auf.
+106AF0 kehrt ohne Ausgabe zurück. Ein Aufruf dieser Kette wäre daher eine
+Zustandsänderung ohne nutzbaren Dateiexport.
+
+Der unabhängige Gegencheck durch managed_tools bestätigt genau diesen
+Transport- und Seiteneffektbefund. Sein Review beansprucht ausdrücklich
+keine vollständige Prüfung des Geometriecodecs.
+
+6. Rekonstruiertes PLN-Layout
+----------------------------
+
+Little endian, Header 228 Bytes:
+0       BYTE Version (3 für kanonische Datei)
+1       reserviert/unbekannt
+2       WORD: drei 4-Bit-Ausdehnungen, oberes Nibble reserviert
+4..6    drei signed BYTE Ursprungskorrekturen
+7       reserviert
+8/10    signed WORD Material-/Dekorationsanzahl
+12      signed BYTE Fähigkeitsanzahl, Editorliste maximal 12
+13      reserviert
+14      WORD Anzahl Materialteile vom Parametertyp 3
+16..143 Palette: 32 DWORDs
+144     WORD Titel-Länge
+146..215 Titel: bis zu 35 Codeunits
+216     DWORD Teileoffset
+220     DWORD Fähigkeitsoffset
+224     DWORD Farboffset
+
+Für N Teile und A Fähigkeiten:
+Teileoffset = 228
+Fähigkeitsoffset = 228 + 4*N
+Farboffset = 228 + 4*N + 4*A
+Dateigröße = roundUp64(228 + 4*N + 4*A + roundUp4(N))
+
+Ein Teil benötigt vier Bytes:
+- Byte 0: Index in der aktuellen Teileparametertabelle.
+- Byte 1: Z-Richtung in Bits 0..2, Y-Richtung in Bits 3..5,
+  Variante in Bits 6..7.
+- WORD 2: X/Y/Z-Koordinaten in je vier Bits, Spiegelung X/Y/Z
+  in Bits 12/13/14; Bit 15 reserviert.
+Richtungen: +Y=0, -Y=1, +X=2, -X=3, +Z=4, -Z=5.
+
+Zuerst werden alle Materialanker in linearer Grid-Reihenfolge gespeichert,
+danach alle Dekorationsanker. Die Farbbytes folgen derselben Reihenfolge.
+Fähigkeiten sind DWORDs. 26C6A0 übernimmt Palette und Fähigkeiten aus dem
+aktuell bearbeiteten Editor, nicht bloß aus dessen ursprünglich geladenem Plan.
+
+Der Titelbereich ist jetzt durch 52FDB0/52F8F0/52F900 geklärt.
+52FDA0 erlaubt eine Länge von null. Ein neuer kanonischer Export kann
+explizit namenlos sein; er darf keinen alten Scratchtext übernehmen.
+
+Die Geometrie verwendet nur diskrete Orientierung und Vorzeichen der
+Skalierung. Beliebige Skalierungsgrößen oder affine Matrizen passen nicht
+verlustfrei in dieses Format. Das ist eine Formatgrenze, keine Empfehlung
+für stillen Datenverlust.
+
+Für jede Achse: d = Griddimension, c = floor(d/2), m/M = belegte Min/Max.
+H = max(c-m, M-c+1)
+Ausdehnung = 2*H
+Exportkoordinate = Ankerkoordinate + H-c
+Ursprungskorrektur = m+M-d+1
+H muss für die native Speicherung 1..7 sein. Die Ankerkoordinaten stammen
+aus dem nativen Float32-Ausdruck Teilposition + (abs(rotierteGröße)-10)*-0.5,
+anschließender Griddivision und Truncation. Ein künftiger Serializer muss
+diese Formel mit Import-Gegenprüfung testen, nicht auf grobe Ganzzahlwerte
+umstellen.
+
+Die Datei enthält Tabellenindizes statt stabiler Teile-IDs. Deshalb sollte
+ein Metadaten-Sidecar die EXE-Version, den Mapping-Digest und die originalen
+Teile-IDs enthalten. Gleiche Bytes können unter einem anderen Modkatalog
+andere Teile bedeuten. Versionsübergreifende Importkompatibilität wurde
+nicht getestet.
+
+7. Konkreter Implementierungsvertrag und offene Arbeit
+------------------------------------------------------
+
+History:
+- Spielthread, frischer Host, gültige GM-/Editorbesitzer, Editphase 1.
+- Die genaue Grenze zwischen ruhendem Cursor und laufender Drag-/Edit-
+  Transaktion in 26CBB0/26D620 bleibt vor einer Produktfreigabe zu schließen.
+- Beide Scheduler, registrierte Besitzer, alle Grid-/Teilelisten,
+  Historyfenster, Snapshots, Ressourcen und Kostenpfade vollständig prüfen.
+- Den zukünftigen Entfernen-/Einsetzen-Ablauf im Preflight simulieren.
+- Direkt vor genau einem nativen Aufruf alle Identitäten erneut prüfen.
+- Danach alte Teile-/Modellpointer verwerfen. Kein automatischer zweiter
+  Versuch nach einem möglicherweise teilweise ausgeführten Aufruf.
+- Einmalige Aktion, kein Profilreplay; Wirkung betrifft den bearbeiteten
+  Plan und kann durch die reguläre Spielspeicherung später persistent werden.
+
+Export:
+- Auf dem Spielthread nur lesen und benötigte Daten tief kopieren.
+- Keine native Serializer-/Namens-/Fallbackfunktion während des Preflights.
+- Kopie enthält Grid, Teile, Transform, Parametermapping, Farbe, Palette und
+  Fähigkeiten; keine verbleibenden Prozesspointer.
+- Zwei vollständige Prüfungen sichern Besitzer und Datenidentität.
+- Erst die fertige unveränderliche Kopie wird mit Request-ID, Länge,
+  Sequenz/Complete-Marke und Fingerprint an den Host veröffentlicht.
+- Host erstellt PLN und optionalen Sidecar außerhalb des Spielprozesses.
+- Bei nicht darstellbaren Werten klar abbrechen, keine Nibble-/Bytekürzung.
+- Einmalige Aktion, kein Profilreplay, keine Save- oder Spielzustandsänderung.
+
+Noch nötig: konkrete IPC-Pufferentscheidung mit Root; synthetische
+Float32-/Importparität, alle 24 rechtshändigen Achsenorientierungen,
+Spiegelungen, Varianten, Ebenenreihenfolge, Grenzen, Palette/Fähigkeiten,
+ungültige Graphen und genau-einmal-Aufrufprüfungen für History.
+Die Erstellung dieser Produktmodule wurde in dieser Forschungsrunde nicht
+begonnen. Die offenen Abhängigkeiten sind benannt, statt unbegrenzt alle
+Grafik-, Ressourcen- und Widgetunterfunktionen weiterzuverfolgen.
+
+8. Dateien
+----------
+
+work/trainer/research/gummi_round6_claims.json
+  117 konkrete, adressierte Claims mit vorhandenen Evidenzpfaden.
+work/trainer/research/gummi_round6_contract.json
+  Feature- und Layoutvertrag, Voraussetzungen und offene Freigabepunkte.
+work/trainer/research/gummi_round6_report.txt
+  Dieser lesbare Bericht.
+work/trainer/research/gummi_round6_evidence.json
+work/trainer/research/gummi_round6_dependency_evidence.json
+work/trainer/research/gummi_round6_lifecycle_evidence.json
+work/trainer/research/gummi_round6_models_evidence.json
+work/trainer/research/gummi_round6_cleanup_evidence.json
+  Vollständige frische ASM-Seiten, zusammengeführte Bodies, Pseudocode, Bytes.
+work/trainer/research/gummi_round6_data_evidence.json
+  Frisch gelesene Tabellen-/Konstantenbereiche.
+work/trainer/research/gummi_round6_verify.py
+work/trainer/research/gummi_round6_validation.json
+  Reproduzierbarer Offline-Abgleich gegen die Original-EXE und Auditbaseline.
+work/trainer/research/gummi_round6_export_review.json
+work/trainer/research/gummi_round6_export_review.txt
+  Unabhängiger enger Transport-/Seiteneffektreview durch managed_tools.
+
+Es gibt keine neue Trainer-EXE aus dieser Runde. Release 0.10 und sein
+ausgelieferter Drive-/Final-Form-Fix bleiben unverändert.
+

@@ -1,0 +1,66 @@
+Possible future offline feature: mixed-mode startup map
+=====================================================
+Status: research proposal only; no product implementation in this round.
+
+Purpose
+-------
+Explain what an explicitly selected mixed-mode PE would initialize and which
+metadata entries have actual IL. For this binary, show the98 newly documented
+body findings, imported pointer helpers, seven per-domain initializers and37
+per-process managed initializer tokens beside the native table inventories.
+
+This is useful for diagnosing old developer-host loading and unloading. There
+is no evidence for a newly discovered standalone model/texture preview control.
+The current independent Asset Explorer remains the useful asset-facing route.
+
+Suggested Core API
+------------------
+Task<MixedModeModuleMap> ReadAsync(Stream source, CancellationToken cancellation)
+
+Records should distinguish these identities explicitly:
+- MethodDef token;
+- original header RVA and code length, only for a real stored IL body;
+- bodyless P/Invoke declaration plus module/entry point;
+- original native VA/RVA, only for native methods or initializer pointers;
+- synthetic IDA address as optional research annotation, never executable input.
+
+The result may contain SourceSha256, ModuleIdentity, ManagedMethods, Imports,
+InitializerTables, StageMessages, UnloadHandlers, ExactDirectCallEdges and
+KnownFindings. An initializer entry must declare its value kind: method token
+or native RVA. A displayed name alone is not a semantic finding.
+
+Read-only implementation constraints
+-----------------------------------
+1. Parse file bytes/metadata, using bounded offsets and lengths. Do not load the
+   assembly or resolve methods through the real CLR ModuleHandle.
+2. A MethodDef with RVA0 is not a body, even when its implementation flag says IL.
+   Do not read the DOS header as a method header.
+3. Separate tiny/fat headers; validate header sizes, code ranges and optional
+   aligned EH sections. Expose fault/finally/filter/catch separately.
+4. Preserve original code bytes and source identity. Decoder results should be
+   checked against them; counts alone do not validate a body.
+5. For this exact-build initializer map, bind named ranges to the source hash.
+   Scanning an unrelated executable for arbitrary pointer arrays is not enough
+   to label them executable initializers.
+6. Bound method/table counts and strings, support cancellation, keep caller
+   stream ownership explicit, and export only to an explicitly new destination.
+7. Do not execute any default-domain COM callbacks, encoded exit callbacks,
+   native initializer arrays, module constructors or developer-host forms.
+
+Activation boundary
+-------------------
+BaseSimpleForm expects a live native AppInterface/GX environment and performs
+native resolution enumeration during construction, before a handle exists.
+The CLR cctor may run thousands of native initializer targets; shutdown uses
+process/AppDomain shared state. These requirements cannot be bypassed safely by
+calling a CIL address from the Trainer's native bridge. The static evidence does
+not establish a supported isolated activation recipe, so this proposal keeps
+the original module entirely offline.
+
+Potential report presentation
+-----------------------------
+Use ordinary labels such as 'Startup stages', 'Imported functions', 'Cleanup
+handlers' and 'Known issues'. Put raw tokens, synthetic addresses, native VAs,
+IL bytes and EH clauses under expandable source details. Explain that the
+resolution and OOM findings are static conditional defects, not reproduced
+retail failures or reasons to change a user's existing installation.

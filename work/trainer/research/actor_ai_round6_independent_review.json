@@ -1,0 +1,52 @@
+{
+  "date": "2026-10-04",
+  "reviewer": "managed_tools",
+  "method": "Independent static reading of the supplied complete ASM and pseudocode; no native call, process access, build or product change. No additional coverage claims are created by this review.",
+  "sourceSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "status": "Requested actor-AI core distinctions independently confirmed; no implementation or universal freeze claim.",
+  "scope": "Selected initialization, normal actor dispatch, motion-clock, direct VM-update, native stop-ID1 and stop-slot insertion bodies.",
+  "reviewedNativeVa": [
+    "0x1403bfd30",
+    "0x1403b44d0",
+    "0x1403d9130",
+    "0x1403b4420",
+    "0x1403b4460",
+    "0x1403c6740",
+    "0x14040a920",
+    "0x1403dbaa0",
+    "0x1403b4320",
+    "0x1403baad0",
+    "0x1403db430",
+    "0x1404117d0",
+    "0x1403dacb0"
+  ],
+  "conclusions": [
+    "3BFD30 checks Actor+2488 bit0x80 before descriptor vtable+8.3DB430 ->4117D0 ->3DACB0 ->3B44D0 is a concrete preparation path;3B44D0 creates/stores the BDX VM at Actor+1456, starts event1, copies pose state and sets bit0x80. Normal one-time initialization is supported, not an unconditional per-frame AI callback.",
+    "The normal dispatcher passes Actor+344 and float frame delta in XMM1 to3C6740. That body multiplies by motion+336 and advances motion frames/transitions.3B4420/3B4460 instead fetch the QWORD Actor+1456 for YSVM_UpdateTree. These data paths are distinct.",
+    "3D9130 passes ID1 to3DBAA0;3DBAA0 supplies duration0.0 in XMM2 to3B6730 for its native filtered actor set.3D9130 later calls3B42D0 with ID1. Thus ID1 cannot be assumed trainer-private.",
+    "3BFD30 performs descriptor+64/+72 and initialization before the stop gate. Its stopped path may still call3C73C0 and publish the actor to a postprocessing list.3B4460 has no local stop predicate. Animation freezing or a stop entry does not prove that every synchronous/event AI path is paused.",
+    "40A920 chooses a matching stop slot or the last empty one among four. If all four contain different nonzero IDs, R9 remainsnull and the store at40A966 targets null+4. The aggregate rebuild also trusts the stop-table lookup result. Future callers need capacity/table checks and ownership beyond ID equality."
+  ],
+  "remaining": [
+    "The other report claims and all enemy/boss/synchronous VM callers were not independently exhausted in this scoped review.",
+    "No general AI-pause control or stop-lease implementation is approved by these findings.",
+    "No live enemy behavior, save state or runtime fault was observed."
+  ],
+  "reviewedFiles": [
+    {
+      "path": "actor_ai_round6_report.json",
+      "sha256": "16f43c231a97f3395ea06231dcefe6fcd840934dee6581cc4b2e1deda83ffd62",
+      "size": 25198
+    },
+    {
+      "path": "actor_ai_round6_complete_evidence.json",
+      "sha256": "ebdec2a5d66e7a99810651e2b7eb6cd889bb51fe56925f3e470a5bfba6c59ff9",
+      "size": 706534
+    },
+    {
+      "path": "actor_ai_round6_validation.json",
+      "sha256": "ae7a2b8d91a03996c5e2c67128f1a8384642e566739eddcb39f113a74f40b76b",
+      "size": 19015
+    }
+  ]
+}

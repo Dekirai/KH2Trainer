@@ -1,0 +1,66 @@
+{
+  "status": "FROZEN_SOURCE_TESTS_AND_INDEPENDENT_REVIEW_COMPLETE",
+  "scope": "Resident Fixed/Maximum MSAA decision policy; slots447..455. No live game, GPU, UI or save access.",
+  "original_sha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "contract": "renderer_aa_round7_contract.txt",
+  "verification": "renderer_aa_round7_verification.json",
+  "independent_review": "renderer_aa_round7_implementation_review.json",
+  "fresh_evidence": {
+    "functions": 20,
+    "instructions": 2522,
+    "original_bytes": 11939,
+    "private_ida_session": "f0f0a692",
+    "health_at_capture": "auto_analysis_ready=true; complete saved outputs",
+    "later_health": "Worker later became unreachable. No additional freshness claim or database mutation was made."
+  },
+  "source": {"path":"trainer/Native/RendererAaFeatures.inl","sha256":"af7adcbaed5a611d18368035bae8b2f6bf83fa1ede469fe19f669fce38dd779c"},
+  "tests": {
+    "path":"work/trainer/tests/RendererAaTests.cpp",
+    "sha256":"56f588e28c584809bace2ce98d30146116d91c43ea7a707c3bfd1176fe805841",
+    "command":"work/trainer/tests/build_renderer_aa_tests.cmd",
+    "log":"work/trainer/tests/renderer_aa_build.log",
+    "checks":2422,
+    "failures":0,
+    "compiler":"MSVC /std:c++17 /O2 /W4 /MT; no warnings; production branch separately compiled",
+    "executed":[
+      "Real private RX relay with all six mixed register/stack arguments",
+      "Synthetic caller at the patched E8 address to RX relay to compiled wrapper; exact arguments and return",
+      "Native exception propagation through real leaf relay and ordinary compiled PE unwind, original once",
+      "1024 mode/request/capability/current/proposal/vendor combinations",
+      "BOOL and SEH failures before/after protection/CAS and within cache/rollback; exposed relay retention",
+      "Host/epoch/thread creation/lifecycle changes, lock-wait mutations, full code pins and invalid-vs-zero snapshots"
+    ]
+  },
+  "catalog":{"path":"work/trainer/research/renderer_aa_features.json","sha256":"f665c669c18967d23589fe574941a21564bd9dbfc0be7484d4b7ad4717ddcc5c"},
+  "integration": {
+    "include_after":"DisplayFeatures.inl; after WindowDisplay is also valid",
+    "entrypoints":["RendererAaHandle","RendererAaCapabilities","RendererAaSnapshot","RendererAaTick","RendererAaReset","RendererAaFailureReset"],
+    "tick":"On each normal TrainerFrame before snapshots; monitor resident identity even while mode is off.",
+    "profile":"Explicit actions only; no automatic reapplication."
+  },
+  "review_dispositions": [
+    {"source":"Root","finding":"Epoch name alone is not a generation proof.","resolution":"8AEEF0 is the singleton construction guard in11C150, an extra conservative equality check. Exact App/device/root/handles and GetThreadTimes creation timestamps additionally bind the resident lifetime."},
+    {"source":"Root","finding":"Transient host loss and actual lifetime replacement had inconsistent failure behavior.","resolution":"Host loss disables without permanent local fault. Changed resident identity/code/creation timestamp latches permanent failure, consistently in Tick and wrapper."},
+    {"source":"Root","finding":"Failed replacement Apply could leave an old mode active while reporting no policy.","resolution":"A valid new request first disables the previous mode. Invalid arguments do not change it; null arguments are rejected."},
+    {"source":"Pe","finding":"SEH inside cleanup could skip protection restoration.","resolution":"Own Protect/Flush/CAS/query/rollback failures are individually guarded and tested before/after writes. Native113B80 is outside all trainer catches and is never retried."}
+  ],
+  "limits": [
+    "No observed graphics result or native driver/allocation failure guarantee.",
+    "Relay is RW then RX. Shared original image page briefly needs RWX while the exact decision site is quiescent; unrelated functions may execute on that page.",
+    "Every possibly exposed relay and its pinned DLL remain until process exit. Disable does not force an immediate sample count.",
+    "OS failures can prevent protection/cache repair. The module disables permanently and reports restart-required rather than promising recovery.",
+    "Uncooperative concurrent code patchers and invented callers cannot be synchronized with the native mutex and are unsupported.",
+    "Static initialization guard is not a unique renderer generation. Equality is conservative and combined with observed object/thread lifetime."
+  ],
+  "Claims": [
+    {"addr":"0x140119e90","Domain":"native","Finding":"Single MSAA call at11A14F has aligned rel32 operand11A150. Mixed six-argument ABI and native caller-owned resource updates allow a bounded decision wrapper without direct graphics calls.","Evidence":["renderer_aa_round7_evidence0.json","renderer_aa_round7_verification.json"]},
+    {"addr":"0x140113b80","Domain":"native","Finding":"Native history mutation must run exactly once. The insufficient-history return can leave current unbounded; policy caps its result rather than editing negotiated capability.","Evidence":["renderer_aa_round7_evidence0.json","renderer_aa_round7_verification.json"]},
+    {"addr":"0x140128100","Domain":"native","Finding":"Normal decision path updates30560/30564 history; replay22944 bypasses119E90 and restores recorded levels, so policy interception preserves native replay.","Evidence":["renderer_aa_round7_evidence0.json"]},
+    {"addr":"0x140128470","Domain":"native","Finding":"Normal render path takesGX+30848 around128100 and unlocks before103440. Complete caller routing provides exact-site quiescence at post-AppUpdate installation.","Evidence":["renderer_aa_round7_evidence0.json","renderer_aa_round7_evidence1.json"]},
+    {"addr":"0x140120ed0","Domain":"native","Finding":"Replay sets22944 before128100 and clears it after128260; no independent normal policy call is introduced.","Evidence":["renderer_aa_round7_evidence0.json"]},
+    {"addr":"0x1401287d0","Domain":"native","Finding":"Timing uses the same outer mutex for replay/record close. Present-related execution outside it means the shared code page cannot be made non-executable during patching.","Evidence":["renderer_aa_round7_evidence0.json"]},
+    {"addr":"0x14011d0a0","Domain":"native","Finding":"Startup128100 finishes before creation of app and timing threads. Verified execution on the app thread with both live matching handles excludes startup during installation.","Evidence":["renderer_aa_round7_evidence0.json"]},
+    {"addr":"0x140121d90","Domain":"native","Finding":"Application loop invokes App.vtable+32 without owning the presentation mutex. Existing post-original update callback can acquire it in the native order.","Evidence":["renderer_aa_round7_evidence1.json"]},
+    {"addr":"0x14011ad80","Domain":"native","Finding":"Shutdown waits for app thread before closing its handle, then signals timing stop808 and joins/closes timing. Callback thread lifetime plus handles/state bounds installation and passive policy use.","Evidence":["renderer_aa_round7_evidence0.json"]}
+  ]
+}
