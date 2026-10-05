@@ -1,0 +1,106 @@
+<UserControl x:Class="KH2Trainer.HomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:KH2Trainer">
+ <UserControl.Resources>
+  <Style x:Key="StatValue" TargetType="TextBlock"><Setter Property="FontSize" Value="24"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Margin" Value="0,2,0,10"/></Style>
+ </UserControl.Resources>
+ <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+  <StackPanel Margin="0,0,0,24">
+
+   <!-- Live summary -->
+   <local:AdaptiveGrid MinColumnWidth="170" MaxColumns="5" ColumnSpacing="14" Margin="0,0,0,16">
+    <Border Style="{StaticResource Card}" Padding="16,14">
+     <StackPanel>
+      <TextBlock Text="HEALTH" Style="{StaticResource Text.Overline}" Margin="0"/>
+      <TextBlock Text="{Binding Shell.HealthText}" Style="{StaticResource StatValue}"/>
+      <ProgressBar Style="{StaticResource Meter}" Value="{Binding Shell.HealthFraction,Mode=OneWay}" Foreground="{StaticResource SuccessBrush}"/>
+     </StackPanel>
+    </Border>
+    <Border Style="{StaticResource Card}" Padding="16,14">
+     <StackPanel>
+      <TextBlock Text="MAGIC" Style="{StaticResource Text.Overline}" Margin="0"/>
+      <TextBlock Text="{Binding Shell.MagicText}" Style="{StaticResource StatValue}"/>
+      <ProgressBar Style="{StaticResource Meter}" Value="{Binding Shell.MagicFraction,Mode=OneWay}" Foreground="{StaticResource AccentBrush}"/>
+     </StackPanel>
+    </Border>
+    <Border Style="{StaticResource Card}" Padding="16,14">
+     <StackPanel>
+      <TextBlock Text="DRIVE" Style="{StaticResource Text.Overline}" Margin="0"/>
+      <TextBlock Text="{Binding Shell.DriveText}" Style="{StaticResource StatValue}"/>
+      <ProgressBar Style="{StaticResource Meter}" Value="{Binding Shell.DriveFraction,Mode=OneWay}" Foreground="{StaticResource GoldBrush}"/>
+     </StackPanel>
+    </Border>
+    <Border Style="{StaticResource Card}" Padding="16,14">
+     <StackPanel>
+      <TextBlock Text="LEVEL" Style="{StaticResource Text.Overline}" Margin="0"/>
+      <TextBlock Text="{Binding Shell.LevelText}" Style="{StaticResource StatValue}"/>
+      <TextBlock Text="Sora" Style="{StaticResource Text.Small}" Foreground="{StaticResource DimBrush}"/>
+     </StackPanel>
+    </Border>
+    <Border Style="{StaticResource Card}" Padding="16,14">
+     <StackPanel>
+      <TextBlock Text="MUNNY" Style="{StaticResource Text.Overline}" Margin="0"/>
+      <TextBlock Text="{Binding Shell.MunnyText}" Style="{StaticResource StatValue}"/>
+      <TextBlock Text="Loaded save" Style="{StaticResource Text.Small}" Foreground="{StaticResource DimBrush}"/>
+     </StackPanel>
+    </Border>
+   </local:AdaptiveGrid>
+
+   <!-- Session and quick actions -->
+   <local:AdaptiveGrid MinColumnWidth="360" MaxColumns="2" ColumnSpacing="14" Margin="0,0,0,26">
+    <Border Style="{StaticResource Card}">
+     <DockPanel>
+      <TextBlock DockPanel.Dock="Top" Text="Game session" Style="{StaticResource Text.CardTitle}"/>
+      <TextBlock DockPanel.Dock="Top" Text="{Binding Shell.SessionSummary}" Style="{StaticResource Text.Muted}" Margin="0,6,0,14"/>
+      <ComboBox DockPanel.Dock="Top" ItemsSource="{Binding Shell.Processes}" SelectedItem="{Binding Shell.SelectedProcess}" DisplayMemberPath="Label" Margin="0,0,0,12"
+                Visibility="{Binding Shell.HasMultipleProcesses,Converter={StaticResource BoolVisibility}}" AutomationProperties.Name="Game process"/>
+      <WrapPanel VerticalAlignment="Bottom">
+       <Button Content="{Binding Shell.ConnectLabel}" Command="{Binding Shell.ConnectCommand}" Style="{StaticResource Button.Primary}" MinWidth="110" Margin="0,0,8,0"/>
+       <Button Command="{Binding Shell.StartGameCommand}">
+        <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE768;" Style="{StaticResource Text.Icon}" FontSize="12" Margin="0,0,8,0"/><TextBlock Text="Start game"/></StackPanel>
+       </Button>
+      </WrapPanel>
+     </DockPanel>
+    </Border>
+    <Border Style="{StaticResource Card}">
+     <StackPanel>
+      <TextBlock Text="Quick actions" Style="{StaticResource Text.CardTitle}"/>
+      <TextBlock Text="One click, no settings. Hover a button for details." Style="{StaticResource Text.Muted}" Margin="0,6,0,14"/>
+      <ItemsControl ItemsSource="{Binding Shell.QuickActions}" Focusable="False">
+       <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+       <ItemsControl.ItemTemplate><DataTemplate>
+        <Button Content="{Binding Name}" Command="{Binding ApplyCommand}" ToolTip="{Binding ToolTipText}" Margin="0,0,8,8"/>
+       </DataTemplate></ItemsControl.ItemTemplate>
+      </ItemsControl>
+     </StackPanel>
+    </Border>
+   </local:AdaptiveGrid>
+
+   <!-- Pinned features -->
+   <DockPanel Margin="2,0,0,10">
+    <TextBlock Text="Pinned" Style="{StaticResource Text.GroupTitle}" Margin="0"/>
+    <TextBlock Text="Click the star next to any feature to add or remove it here." Style="{StaticResource Text.Small}" Foreground="{StaticResource DimBrush}" Margin="12,0,0,0" VerticalAlignment="Center"/>
+   </DockPanel>
+   <ContentControl Content="{Binding Pinned}" ContentTemplate="{StaticResource FeatureGroupTemplate}" Focusable="False" Visibility="{Binding HasPinned,Converter={StaticResource BoolVisibility}}"/>
+   <Border Style="{StaticResource Card}" Margin="0,0,0,26" Visibility="{Binding HasNoPinned,Converter={StaticResource BoolVisibility}}">
+    <StackPanel Orientation="Horizontal">
+     <TextBlock Text="&#xE734;" Style="{StaticResource Text.Icon}" Foreground="{StaticResource GoldBrush}" Margin="0,0,12,0"/>
+     <TextBlock Text="Nothing pinned yet. Hover a feature in any section and click its star." Style="{StaticResource Text.Muted}" VerticalAlignment="Center"/>
+    </StackPanel>
+   </Border>
+
+   <!-- Safety notes -->
+   <Border Style="{StaticResource Card}" Padding="16,14">
+    <DockPanel>
+     <TextBlock Text="&#xE946;" Style="{StaticResource Text.Icon}" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Top" Margin="0,1,12,0"/>
+     <TextBlock Style="{StaticResource Text.Muted}">
+      Switches and continuous effects stop when the trainer disconnects. Features marked
+      <Run Text="SAVE DATA" Foreground="{StaticResource WarningBrush}" FontWeight="SemiBold" FontSize="11"/>
+      change the loaded game; saving in the game makes them permanent. Create a backup under Profiles &amp; Saves before experimenting.
+     </TextBlock>
+    </DockPanel>
+   </Border>
+  </StackPanel>
+ </ScrollViewer>
+</UserControl>

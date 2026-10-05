@@ -8,8 +8,6 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using System.Windows.Markup;
-using System.Xml.Linq;
 using KH2Trainer;
 using KH2Trainer.Core;
 
@@ -29,14 +27,9 @@ internal static class Program
             for(int i=32;i<80;++i)bytes[i]=(byte)i;File.WriteAllBytes(source,bytes);
         }
         // A plain WPF Application has no trainer Startup override or StartupUri.
-        // Parse only resources; never construct KH2Trainer.App or MainWindow.
+        // Load only the compiled theme and templates; never construct KH2Trainer.App or MainWindow.
         var app=new Application { ShutdownMode=ShutdownMode.OnExplicitShutdown };
-        XNamespace presentation="http://schemas.microsoft.com/winfx/2006/xaml/presentation";
-        var applicationXml=XDocument.Load(Path.Combine(AppContext.BaseDirectory,"ApplicationResources.Source.xaml"));
-        var resourcesXml=new XElement(presentation+"ResourceDictionary",
-            new XAttribute(XNamespace.Xmlns+"x","http://schemas.microsoft.com/winfx/2006/xaml"),
-            applicationXml.Root!.Element(presentation+"Application.Resources")!.Elements());
-        app.Resources=(ResourceDictionary)XamlReader.Parse(resourcesXml.ToString());
+        app.Resources=new ResourceDictionary { Source=new Uri("pack://application:,,,/KH2_Trainer;component/Themes/FeatureTemplates.xaml",UriKind.Absolute) };
         var bindingLog=new StringWriter();PresentationTraceSources.DataBindingSource.Listeners.Add(new TextWriterTraceListener(bindingLog));
         PresentationTraceSources.DataBindingSource.Switch.Level=SourceLevels.Warning;
         using var vm=new AssetExplorerViewModel(_=>{});
@@ -65,13 +58,13 @@ internal static class Program
         if(bright>(pixels.Length/4)*.02)throw new InvalidDataException("Unexpected light background in the asset page.");
         var diagnostics=CheckDiagnostics(output,app);
         var fingerprints=AssetFingerprintUiChecks.Run(Path.Combine(output,"Fingerprints"),app);
-        var featureCards=FeatureCardUiChecks.Run(Path.Combine(output,"FeatureCards"),app);
+        var featurePages=FeatureLayoutUiChecks.Run(Path.Combine(output,"FeaturePages"),app);
         if(app.Windows.Count!=0 || app.MainWindow!=null || app.StartupUri!=null)
             throw new InvalidDataException("Offscreen verification created an application window or startup target.");
         if(bindingLog.ToString().Length>0)throw new InvalidDataException(bindingLog.ToString());
         var report=new { success=true,source,sourceIsSynthetic=fixture,entries=rootEntries,height,width=780,bindingErrors=0,
-            diagnostics,fingerprints,featureCards,applicationType=app.GetType().FullName,windowCount=app.Windows.Count,
-            scope="Offscreen feature-card template, Asset Explorer, content-fingerprint comparison and Game Messages views. New diagnostic states, navigation, fingerprint identity/save/load, all 66 diagnostic texts/captions and bindings checked. No visible window, game process, input or gameplay test." };
+            diagnostics,fingerprints,featurePages,applicationType=app.GetType().FullName,windowCount=app.Windows.Count,
+            scope="Offscreen feature pages (sections, tabs, control rows and readouts), Asset Explorer, content-fingerprint comparison and Game Messages views. Navigation completeness, switch behavior, diagnostic states, fingerprint identity/save/load, all 66 diagnostic texts/captions and bindings checked. No visible window, game process, input or gameplay test." };
         File.WriteAllText(Path.Combine(output,"report.json"),JsonSerializer.Serialize(report,new JsonSerializerOptions {WriteIndented=true}));
         Console.WriteLine(JsonSerializer.Serialize(report));return 0;
     }

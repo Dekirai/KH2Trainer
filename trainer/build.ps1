@@ -66,7 +66,7 @@ try {
     } finally { $taskSourceZip.Dispose() }
     $taskChecks = [ordered]@{
         builtAt = (Get-Date).ToUniversalTime().ToString('o'); architecture = 'win-x64'; selfContained = -not $FrameworkDependent
-        nativeTestSuites = @($taskTests.BaseName); syntheticTests = 'passed'; liveGameplay = 'not yet tested'; visualReview = 'Feature cards, Asset Explorer, asset fingerprints and Game Messages offscreen renders and binding checks; live UI/gameplay pending'
+        nativeTestSuites = @($taskTests.BaseName); syntheticTests = 'passed'; liveGameplay = 'not yet tested'; visualReview = 'Feature pages, Asset Explorer, asset fingerprints and Game Messages offscreen renders and binding checks; live UI/gameplay pending'
         scope = 'Synthetic tests and build validation do not prove live gameplay behavior.'
         nativeSourceFingerprint = $taskNativeFingerprint
     }

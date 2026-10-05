@@ -1,0 +1,145 @@
+<!--
+  How catalog features are drawn everywhere (sections, search, Home):
+  controls are compact rows, readouts are a dense two-column property grid.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:KH2Trainer">
+ <!-- Self-contained: the templates resolve colors and styles from the theme. -->
+ <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Theme.xaml"/></ResourceDictionary.MergedDictionaries>
+
+ <Style x:Key="Button.Star" TargetType="Button" BasedOn="{StaticResource Button.Subtle}">
+  <Setter Property="Content" Value="&#xE734;"/>
+  <Setter Property="FontFamily" Value="{StaticResource IconFont}"/>
+  <Setter Property="FontSize" Value="13"/>
+  <Setter Property="Padding" Value="5"/>
+  <Setter Property="IsTabStop" Value="False"/>
+  <Setter Property="Foreground" Value="{StaticResource DimBrush}"/>
+  <Setter Property="ToolTip" Value="Pin to Home"/>
+  <Setter Property="Opacity" Value="0"/>
+  <Setter Property="VerticalAlignment" Value="Center"/>
+  <Setter Property="Command" Value="{Binding ToggleFavoriteCommand}"/>
+  <Style.Triggers>
+   <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+    <Setter Property="Content" Value="&#xE735;"/>
+    <Setter Property="Foreground" Value="{StaticResource GoldBrush}"/>
+    <Setter Property="ToolTip" Value="Unpin from Home"/>
+    <Setter Property="Opacity" Value="1"/>
+   </DataTrigger>
+   <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter Property="Opacity" Value="1"/></Trigger>
+  </Style.Triggers>
+ </Style>
+
+ <!-- One command argument: a small labelled number field or picker. -->
+ <DataTemplate x:Key="ArgumentTemplate" DataType="{x:Type local:ArgumentVm}">
+  <StackPanel Margin="0,0,12,6">
+   <TextBlock Text="{Binding Name}" Style="{StaticResource Text.Small}" Margin="0,0,0,4" MaxWidth="{Binding InputWidth}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" ToolTip="{Binding Name}"/>
+   <TextBox Text="{Binding ValueText,UpdateSourceTrigger=PropertyChanged}" Width="{Binding InputWidth}" ToolTip="{Binding RangeText}" HorizontalAlignment="Left"
+            Visibility="{Binding IsNumber,Converter={StaticResource BoolVisibility}}" IsEnabled="{Binding DataContext.IsAvailable,RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+   <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding SelectedChoice}" DisplayMemberPath="Label" IsEditable="True" IsTextSearchEnabled="True" Width="{Binding InputWidth}" HorizontalAlignment="Left"
+             Visibility="{Binding IsChoice,Converter={StaticResource BoolVisibility}}" IsEnabled="{Binding DataContext.IsAvailable,RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+  </StackPanel>
+ </DataTemplate>
+
+ <!-- A control row: name | live value | input | apply button or switch. -->
+ <DataTemplate x:Key="FeatureControlTemplate" DataType="{x:Type local:FeatureVm}">
+  <!-- The outer border draws the inset separator; the inner one is the rounded hover highlight. -->
+  <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Margin="14,0">
+  <Border x:Name="Row" Background="Transparent" CornerRadius="6" Margin="-10,3" Padding="2,6,10,6">
+   <Grid>
+    <Grid.ColumnDefinitions>
+     <ColumnDefinition Width="Auto"/>
+     <ColumnDefinition Width="*" MinWidth="160"/>
+     <ColumnDefinition Width="Auto"/>
+     <ColumnDefinition Width="Auto"/>
+     <ColumnDefinition Width="Auto"/>
+    </Grid.ColumnDefinitions>
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+
+    <Button x:Name="Star" Style="{StaticResource Button.Star}"/>
+
+    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="4,0,12,0" Background="Transparent" ToolTip="{Binding ToolTipText}" ToolTipService.InitialShowDelay="400">
+     <StackPanel Orientation="Horizontal">
+      <TextBlock x:Name="FeatureName" Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+      <TextBlock Text="&#xE946;" Style="{StaticResource Text.Icon}" FontSize="12" Foreground="{StaticResource DimBrush}" Margin="7,1,0,0"/>
+      <Border Style="{StaticResource Badge.Warning}" Visibility="{Binding ChangesProgression,Converter={StaticResource BoolVisibility}}" ToolTip="Changes the loaded game state. Saving in the game can make it permanent.">
+       <TextBlock Text="SAVE DATA" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource WarningBrush}"/>
+      </Border>
+     </StackPanel>
+     <TextBlock x:Name="FeatureDescription" Text="{Binding Description}" Style="{StaticResource Text.Small}" Margin="0,3,0,0" Visibility="{Binding ShowDescription,Converter={StaticResource BoolVisibility}}"/>
+    </StackPanel>
+
+    <TextBlock x:Name="FeatureLiveValue" Grid.Column="2" Text="{Binding LiveValue}" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,14,0" MaxWidth="180" TextTrimming="CharacterEllipsis"
+               ToolTip="Current value in the game" Visibility="{Binding ShowLiveValue,Converter={StaticResource BoolVisibility}}"/>
+
+    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+     <TextBox Text="{Binding ValueText,UpdateSourceTrigger=PropertyChanged}" Width="110" ToolTip="{Binding RangeText}" IsEnabled="{Binding IsAvailable}"
+              Visibility="{Binding ShowValueInput,Converter={StaticResource BoolVisibility}}" AutomationProperties.Name="{Binding Name}">
+      <TextBox.InputBindings><KeyBinding Key="Return" Command="{Binding ApplyCommand}"/></TextBox.InputBindings>
+     </TextBox>
+     <TextBlock Text="{Binding UnitText}" Style="{StaticResource Text.Small}" VerticalAlignment="Center" Margin="6,0,0,0" MaxWidth="80" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
+                Visibility="{Binding ShowUnit,Converter={StaticResource BoolVisibility}}"/>
+     <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding SelectedChoice}" DisplayMemberPath="Label" Width="190" IsEnabled="{Binding IsAvailable}"
+               Visibility="{Binding ShowChoiceInput,Converter={StaticResource BoolVisibility}}" AutomationProperties.Name="{Binding Name}"/>
+    </StackPanel>
+
+    <Button Grid.Column="4" Grid.RowSpan="2" Content="{Binding ApplyLabel}" Command="{Binding ApplyCommand}" MinWidth="84" Margin="12,0,0,0" VerticalAlignment="Center"
+            Visibility="{Binding ShowApplyButton,Converter={StaticResource BoolVisibility}}"/>
+    <CheckBox Grid.Column="4" Style="{StaticResource Switch}" IsChecked="{Binding ToggleValue}" IsEnabled="{Binding CanToggle}" Margin="12,0,0,0" VerticalAlignment="Center"
+              Visibility="{Binding IsToggle,Converter={StaticResource BoolVisibility}}" AutomationProperties.Name="{Binding Name}"/>
+
+    <ItemsControl Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" ItemsSource="{Binding Arguments}" ItemTemplate="{StaticResource ArgumentTemplate}" Margin="4,10,0,0"
+                  Visibility="{Binding HasArguments,Converter={StaticResource BoolVisibility}}" Focusable="False">
+     <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+    </ItemsControl>
+   </Grid>
+  </Border>
+  </Border>
+  <DataTemplate.Triggers>
+   <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
+    <Setter TargetName="Row" Property="Background" Value="{StaticResource HoverBrush}"/>
+    <Setter TargetName="Star" Property="Opacity" Value="1"/>
+   </Trigger>
+  </DataTemplate.Triggers>
+ </DataTemplate>
+
+ <!-- A readout: label and live value on one line. -->
+ <DataTemplate x:Key="FeatureReadoutTemplate" DataType="{x:Type local:FeatureVm}">
+  <Border x:Name="Tile" Background="Transparent" CornerRadius="6" Padding="2,5,10,5" ToolTip="{Binding ToolTipText}" ToolTipService.InitialShowDelay="400">
+   <Grid>
+    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <Button x:Name="Star" Style="{StaticResource Button.Star}" FontSize="11" Padding="4"/>
+    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,10,0">
+     <TextBlock x:Name="FeatureName" Text="{Binding Name}" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis"/>
+     <TextBlock x:Name="FeatureDescription" Text="{Binding Description}" Style="{StaticResource Text.Small}" Foreground="{StaticResource DimBrush}" Margin="0,2,0,0" Visibility="{Binding ShowDescription,Converter={StaticResource BoolVisibility}}"/>
+    </StackPanel>
+    <TextBlock x:Name="FeatureLiveValue" Grid.Column="2" Text="{Binding LiveValue}" FontWeight="SemiBold" VerticalAlignment="Center" MaxWidth="200" TextTrimming="CharacterEllipsis"/>
+   </Grid>
+  </Border>
+  <DataTemplate.Triggers>
+   <Trigger SourceName="Tile" Property="IsMouseOver" Value="True">
+    <Setter TargetName="Tile" Property="Background" Value="{StaticResource HoverBrush}"/>
+    <Setter TargetName="Star" Property="Opacity" Value="1"/>
+   </Trigger>
+  </DataTemplate.Triggers>
+ </DataTemplate>
+
+ <!-- A category: its controls in one card, its readouts in a second. -->
+ <DataTemplate x:Key="FeatureGroupTemplate" DataType="{x:Type local:FeatureGroupVm}">
+  <StackPanel Margin="0,0,0,26">
+   <TextBlock Text="{Binding Title}" Style="{StaticResource Text.GroupTitle}" Visibility="{Binding ShowTitle,Converter={StaticResource BoolVisibility}}"/>
+   <Border Style="{StaticResource Card.Flush}" Visibility="{Binding HasControls,Converter={StaticResource BoolVisibility}}" Margin="0,0,0,14" ClipToBounds="True">
+    <!-- Shift up one pixel so the first separator merges with the card edge. -->
+    <ItemsControl ItemsSource="{Binding Controls}" ItemTemplate="{StaticResource FeatureControlTemplate}" Focusable="False" Margin="0,-1,0,1"/>
+   </Border>
+   <StackPanel Visibility="{Binding HasReadouts,Converter={StaticResource BoolVisibility}}">
+    <TextBlock Text="LIVE VALUES" Style="{StaticResource Text.Overline}"/>
+    <Border Style="{StaticResource Card}" Padding="8,6">
+     <ItemsControl ItemsSource="{Binding Readouts}" ItemTemplate="{StaticResource FeatureReadoutTemplate}" Focusable="False">
+      <ItemsControl.ItemsPanel><ItemsPanelTemplate><local:AdaptiveGrid MinColumnWidth="320" MaxColumns="3" ColumnSpacing="18"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+     </ItemsControl>
+    </Border>
+   </StackPanel>
+  </StackPanel>
+ </DataTemplate>
+</ResourceDictionary>

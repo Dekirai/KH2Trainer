@@ -1,0 +1,53 @@
+<UserControl x:Class="KH2Trainer.AboutView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:KH2Trainer">
+ <UserControl.Resources>
+  <Style x:Key="Key" TargetType="Border"><Setter Property="Background" Value="{StaticResource InputBrush}"/><Setter Property="BorderBrush" Value="{StaticResource StrongLineBrush}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="4"/><Setter Property="Padding" Value="7,1"/><Setter Property="Margin" Value="0,0,12,0"/><Setter Property="MinWidth" Value="64"/><Setter Property="HorizontalAlignment" Value="Left"/></Style>
+ </UserControl.Resources>
+ <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+  <StackPanel Margin="0,0,0,24">
+   <local:AdaptiveGrid MinColumnWidth="400" MaxColumns="2" ColumnSpacing="14" RowSpacing="14">
+    <Border Style="{StaticResource Card}">
+     <StackPanel>
+      <TextBlock Text="KH2 Trainer" Style="{StaticResource Text.CardTitle}"/>
+      <TextBlock Text="{Binding Version}" Style="{StaticResource Text.Small}" Margin="0,2,0,12"/>
+      <TextBlock Text="{Binding ResearchSummary}" Style="{StaticResource Text.Muted}"/>
+      <TextBlock Text="SUPPORTED EXECUTABLE · SHA-256" Style="{StaticResource Text.Overline}" Margin="0,18,0,6"/>
+      <TextBox Text="{Binding GameHash,Mode=OneWay}" Style="{StaticResource TextBox.Code}" TextWrapping="Wrap" AutomationProperties.Name="Supported executable hash"/>
+     </StackPanel>
+    </Border>
+
+    <Border Style="{StaticResource Card}">
+     <StackPanel>
+      <TextBlock Text="Keyboard shortcuts" Style="{StaticResource Text.CardTitle}"/>
+      <TextBlock Text="In the trainer" Style="{StaticResource Text.Overline}" Margin="0,12,0,6"/>
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,6"><Border Style="{StaticResource Key}"><TextBlock Text="Ctrl+F" FontSize="12"/></Border><TextBlock Text="Search all features" Style="{StaticResource Text.Muted}"/></StackPanel>
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,6"><Border Style="{StaticResource Key}"><TextBlock Text="Enter" FontSize="12"/></Border><TextBlock Text="Apply the value you typed" Style="{StaticResource Text.Muted}"/></StackPanel>
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,6"><Border Style="{StaticResource Key}"><TextBlock Text="Esc" FontSize="12"/></Border><TextBlock Text="Clear the search" Style="{StaticResource Text.Muted}"/></StackPanel>
+      <TextBlock Text="In the game (enable Training shortcuts, hold Ctrl)" Style="{StaticResource Text.Overline}" Margin="0,12,0,6"/>
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,6"><Border Style="{StaticResource Key}"><TextBlock Text="F5" FontSize="12"/></Border><TextBlock Text="Disable effects and shortcuts" Style="{StaticResource Text.Muted}"/></StackPanel>
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,6"><Border Style="{StaticResource Key}"><TextBlock Text="F6" FontSize="12"/></Border><TextBlock Text="Restore HP and MP" Style="{StaticResource Text.Muted}"/></StackPanel>
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,6"><Border Style="{StaticResource Key}"><TextBlock Text="F7 / F8" FontSize="12"/></Border><TextBlock Text="Save / return to position bookmark" Style="{StaticResource Text.Muted}"/></StackPanel>
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,6"><Border Style="{StaticResource Key}"><TextBlock Text="F9" FontSize="12"/></Border><TextBlock Text="Freeze actors and effects" Style="{StaticResource Text.Muted}"/></StackPanel>
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,6"><Border Style="{StaticResource Key}"><TextBlock Text="F11 / F12" FontSize="12"/></Border><TextBlock Text="Pause the field / advance one update" Style="{StaticResource Text.Muted}"/></StackPanel>
+      <StackPanel Orientation="Horizontal"><Border Style="{StaticResource Key}"><TextBlock Text="F10" FontSize="12"/></Border><TextBlock Text="Developer desktop (no Ctrl needed)" Style="{StaticResource Text.Muted}"/></StackPanel>
+     </StackPanel>
+    </Border>
+
+    <Border Style="{StaticResource Card}">
+     <StackPanel>
+      <TextBlock Text="Documents and exports" Style="{StaticResource Text.CardTitle}"/>
+      <TextBlock Text="The user guide explains every feature. Exports never include save data." Style="{StaticResource Text.Muted}" Margin="0,6,0,14"/>
+      <WrapPanel>
+       <Button Content="Open user guide" Command="{Binding OpenGuideCommand}" Style="{StaticResource Button.Primary}" Margin="0,0,8,8"/>
+       <Button Content="Open IDA analysis" Command="{Binding OpenAnalysisCommand}" Margin="0,0,8,8"/>
+       <Button Content="Export feature evidence…" Command="{Binding ExportEvidenceCommand}" Margin="0,0,8,8"/>
+       <Button Content="Export session log…" Command="{Binding ExportLogCommand}" Margin="0,0,8,8"/>
+      </WrapPanel>
+     </StackPanel>
+    </Border>
+   </local:AdaptiveGrid>
+  </StackPanel>
+ </ScrollViewer>
+</UserControl>

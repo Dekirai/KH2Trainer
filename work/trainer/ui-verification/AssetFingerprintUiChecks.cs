@@ -74,6 +74,8 @@ internal static class AssetFingerprintUiChecks
         Await(vm.OpenFileAsync(fixture));vm.SourceLabel="Original fixture";vm.SelectedRow=vm.Rows[0];Await(vm.InspectSelectedAsync());vm.SelectedRow=vm.Rows[0];Await(vm.CompareSelectedFingerprintAsync());
         vm.SelectedFingerprint=vm.FingerprintRows[0];
         var view=new AssetExplorerView { DataContext=vm };
+        // Fingerprints live on the second ("Compare content") tab of the explorer.
+        ((TabControl)view.FindName("AssetTabs")).SelectedIndex=1;
         ((Expander)view.FindName("FingerprintDetailsExpander")).IsExpanded=true;
         var panel=new Border { Background=(Brush)app.Resources["BackgroundBrush"],Padding=new Thickness(24),Child=view };
         panel.SetValue(TextElement.ForegroundProperty,app.Resources["TextBrush"]);panel.SetValue(TextElement.FontFamilyProperty,new FontFamily("Segoe UI"));panel.SetValue(TextElement.FontSizeProperty,14.0);
@@ -90,7 +92,7 @@ internal static class AssetFingerprintUiChecks
             panel.Arrange(new Rect(0,0,width,height));panel.UpdateLayout();
             if(height==previous&&panel.IsMeasureValid&&panel.IsArrangeValid)break;previous=height;
         }
-        Check(double.IsFinite(height)&&height>1000&&height<4000,"bounded offscreen page layout");
+        Check(double.IsFinite(height)&&height>400&&height<4000,"bounded offscreen page layout");
         var bitmap=new RenderTargetBitmap((int)width,(int)height,96,96,PixelFormats.Pbgra32);bitmap.Render(panel);
         byte[] pixels=new byte[bitmap.PixelWidth*bitmap.PixelHeight*4];bitmap.CopyPixels(pixels,bitmap.PixelWidth*4,0);
         int bright=0;for(int i=0;i<pixels.Length;i+=4)if(pixels[i]>240&&pixels[i+1]>240&&pixels[i+2]>240)bright++;

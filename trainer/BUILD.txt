@@ -33,7 +33,16 @@ Optional read-only retail asset checks:
 Pass -AssetGameDirectory '<KH collection installation folder>' to build.ps1.
 This compares decoded package payloads with an existing OpenKh extracted corpus.
 Without this parameter, the portable synthetic Core tests still run.
-The build also renders the feature-card template, Asset Explorer, asset
+The build also renders every feature tab, the Asset Explorer, asset
 fingerprints and Game Messages offscreen using synthetic data. It checks their
-bindings, navigation and dark backgrounds. No game or visible window is opened.
+bindings, that every catalog feature is reachable from a sidebar section, switch
+behavior and dark backgrounds. No game or visible window is opened.
+
+User interface layout (trainer/KH2Trainer):
+  Themes/Theme.xaml            colors and control styles (built-in WPF types only)
+  Themes/FeatureTemplates.xaml feature rows, live-value grid and group template
+  ViewModels/Navigation.cs     maps catalog categories to sidebar sections and tabs
+  ViewModels/*.cs              shell, feature rows, Home, Profiles & Saves, About, tools
+  Views/*.xaml                 main window and pages
+A catalog category missing from Navigation.cs still appears, in a "More" section.
 Sources, nested research evidence and validation reports are included.

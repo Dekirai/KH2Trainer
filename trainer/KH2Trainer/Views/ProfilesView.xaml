@@ -1,0 +1,66 @@
+<UserControl x:Class="KH2Trainer.ProfilesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:KH2Trainer">
+ <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+  <StackPanel Margin="0,0,0,24">
+   <local:AdaptiveGrid MinColumnWidth="400" MaxColumns="2" ColumnSpacing="14">
+
+    <!-- Profiles -->
+    <Border Style="{StaticResource Card}">
+     <StackPanel>
+      <TextBlock Text="Trainer profiles" Style="{StaticResource Text.CardTitle}"/>
+      <TextBlock Text="Store the switches and numeric settings you use often. One-time actions are never saved or replayed." Style="{StaticResource Text.Muted}" Margin="0,6,0,16"/>
+
+      <TextBlock Text="SAVE CURRENT SETTINGS" Style="{StaticResource Text.Overline}"/>
+      <DockPanel Margin="0,0,0,18">
+       <Button DockPanel.Dock="Right" Content="Save" Command="{Binding SaveProfileCommand}" MinWidth="80" Margin="8,0,0,0"/>
+       <TextBox Text="{Binding ProfileName,UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Profile name"/>
+      </DockPanel>
+
+      <TextBlock Text="SAVED PROFILES" Style="{StaticResource Text.Overline}"/>
+      <ListBox ItemsSource="{Binding SavedProfiles}" SelectedItem="{Binding SelectedProfileFile}" Style="{StaticResource List}" ItemContainerStyle="{StaticResource ListRow}" Height="150"
+               AutomationProperties.Name="Saved profiles"/>
+      <WrapPanel Margin="0,10,0,0">
+       <Button Content="Load selected" Command="{Binding LoadSelectedCommand}" Margin="0,0,8,8"/>
+       <Button Content="Browse…" Command="{Binding LoadProfileCommand}" Margin="0,0,8,8"/>
+       <Button Content="Open folder" Command="{Binding OpenProfilesCommand}" Style="{StaticResource Button.Subtle}" Margin="0,0,8,8"/>
+      </WrapPanel>
+
+      <Border Style="{StaticResource Banner}" Margin="0,8,0,0">
+       <DockPanel>
+        <Button DockPanel.Dock="Right" Content="Apply profile" Command="{Binding ApplyProfileCommand}" Style="{StaticResource Button.Primary}" Margin="12,0,0,0" VerticalAlignment="Center"/>
+        <TextBlock Text="{Binding ProfileSummary}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+       </DockPanel>
+      </Border>
+     </StackPanel>
+    </Border>
+
+    <!-- Save backups -->
+    <Border Style="{StaticResource Card}">
+     <StackPanel>
+      <TextBlock Text="Save backups" Style="{StaticResource Text.CardTitle}"/>
+      <TextBlock Text="Dated, checksummed copies of your KH2 save files, kept outside the game folder. Close the game before creating or restoring a backup." Style="{StaticResource Text.Muted}" Margin="0,6,0,16"/>
+
+      <TextBlock Text="SAVE FOLDER" Style="{StaticResource Text.Overline}"/>
+      <DockPanel Margin="0,0,0,18">
+       <Button DockPanel.Dock="Right" Content="Choose…" Command="{Binding ChooseSaveFolderCommand}" MinWidth="80" Margin="8,0,0,0"/>
+       <TextBox Text="{Binding SaveFolder,UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Save folder"/>
+      </DockPanel>
+
+      <WrapPanel>
+       <Button Content="Create backup" Command="{Binding BackupCommand}" Style="{StaticResource Button.Primary}" Margin="0,0,8,8"/>
+       <Button Content="Restore backup…" Command="{Binding RestoreBackupCommand}" Margin="0,0,8,8"/>
+       <Button Content="Open backups" Command="{Binding OpenBackupsCommand}" Style="{StaticResource Button.Subtle}" Margin="0,0,8,8"/>
+      </WrapPanel>
+      <TextBlock Text="{Binding BackupSummary}" Style="{StaticResource Text.Small}" Margin="0,8,0,0"/>
+     </StackPanel>
+    </Border>
+   </local:AdaptiveGrid>
+
+   <TextBlock Style="{StaticResource Text.Small}" Foreground="{StaticResource DimBrush}" Margin="2,16,0,0">
+    Profiles, backups and preferences are stored in <Run Text="{Binding StorageFolder,Mode=OneWay}"/>.
+   </TextBlock>
+  </StackPanel>
+ </ScrollViewer>
+</UserControl>
