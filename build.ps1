@@ -12,6 +12,7 @@
 .PARAMETER AssetGameDirectory
   Optional KH collection folder for read-only retail asset checks.
 #>
+[CmdletBinding()]
 param(
     [switch]$FrameworkDependent,
     [string]$OutputDirectory,
@@ -22,7 +23,8 @@ $root = $PSScriptRoot
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $artifacts = Join-Path $root 'artifacts'
 if (-not $OutputDirectory) { $OutputDirectory = Join-Path $artifacts "packages\$stamp" }
-$package = [IO.Path]::GetFullPath($OutputDirectory)
+# Relative paths are relative to the PowerShell location, not the process directory.
+$package = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutputDirectory)
 if (Test-Path -LiteralPath $package) { throw 'Choose a new output directory so stale files cannot enter the package.' }
 $logs = Join-Path $artifacts "build-logs\$stamp"
 New-Item -ItemType Directory -Path $logs -Force | Out-Null
@@ -54,7 +56,7 @@ try {
     $nativeResults = & (Join-Path $root 'tests\KH2Trainer.Bridge.Tests\run-tests.ps1') -LogDirectory $logs
 
     $coreArgs = @('run', '--project', (Join-Path $root 'tests\KH2Trainer.Core.Tests\KH2Trainer.Core.Tests.csproj'), '-c', 'Release', '--', $features)
-    if ($AssetGameDirectory) { $coreArgs += [IO.Path]::GetFullPath($AssetGameDirectory) }
+    if ($AssetGameDirectory) { $coreArgs += $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($AssetGameDirectory) }
     Invoke-Checked 'dotnet' $coreArgs 'core-tests.txt'
     Invoke-Checked 'dotnet' @('run', '--project', (Join-Path $root 'tests\KH2Trainer.UiTests\KH2Trainer.UiTests.csproj'), '-c', 'Release', '--', '--fixture', (Join-Path $logs 'OffscreenUi')) 'offscreen-ui.txt'
     if ((Get-NativeSourceFingerprint) -ne $nativeFingerprint) { throw 'Native sources changed during compilation/tests. Run the build again from a stable source state.' }

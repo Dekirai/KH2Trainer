@@ -58,50 +58,61 @@ $output = Join-Path $root 'bin'
 New-Item -ItemType Directory -Path $output -Force | Out-Null
 if ($LogDirectory) { New-Item -ItemType Directory -Path $LogDirectory -Force | Out-Null }
 
-# Runs a native program, mirrors its output to the console and a log, and returns its exit code.
+# Runs a native program, mirrors its output to the console and a UTF-8 log, and returns its exit code.
 function Invoke-Native([string]$Program, [string[]]$Arguments, [string]$Log) {
     $previous = $ErrorActionPreference
     $ErrorActionPreference = 'Continue' # Compiler diagnostics on stderr are not script errors.
     try {
-        & $Program @Arguments 2>&1 | ForEach-Object { "$_" } | Tee-Object -FilePath $Log -Append | Write-Host
+        & $Program @Arguments 2>&1 | ForEach-Object { $line = "$_"; Write-Host $line; $line } | Out-File -LiteralPath $Log -Append -Encoding utf8
         return $LASTEXITCODE
     }
     finally { $ErrorActionPreference = $previous }
 }
 
-# Imports the MSVC developer environment (cl, link, INCLUDE, LIB) into this process once.
-if (-not (Get-Command cl.exe -ErrorAction SilentlyContinue)) {
-    $toolchain = [IO.Path]::GetFullPath((Join-Path $root '..\..\scripts\setup-toolchain.cmd'))
-    $environment = & cmd.exe /d /c call $toolchain '>nul' '2>&1' '&&' set
-    if ($LASTEXITCODE -ne 0) { throw 'The MSVC toolchain was not found. Install Visual Studio Build Tools with the C++ workload and a Windows SDK.' }
-    foreach ($line in $environment) {
-        $separator = $line.IndexOf('=')
-        if ($separator -gt 0) { [Environment]::SetEnvironmentVariable($line.Substring(0, $separator), $line.Substring($separator + 1), 'Process') }
+# The MSVC developer environment is imported for this run only and restored afterwards, so the
+# caller's session (for example a later "dotnet build") never inherits PATH, INCLUDE or Platform=x64.
+$savedEnvironment = [Environment]::GetEnvironmentVariables('Process')
+try {
+    # An x86 developer prompt also has cl.exe on PATH; the bridge and its tests need the x64 compiler.
+    if (-not (Get-Command cl.exe -ErrorAction SilentlyContinue) -or $env:VSCMD_ARG_TGT_ARCH -ne 'x64') {
+        $toolchain = [IO.Path]::GetFullPath((Join-Path $root '..\..\scripts\setup-toolchain.cmd'))
+        $environment = & cmd.exe /d /c call $toolchain '>nul' '2>&1' '&&' set
+        if ($LASTEXITCODE -ne 0) { throw 'The MSVC toolchain was not found. Install Visual Studio Build Tools with the C++ workload and a Windows SDK.' }
+        foreach ($line in $environment) {
+            $separator = $line.IndexOf('=')
+            if ($separator -gt 0) { [Environment]::SetEnvironmentVariable($line.Substring(0, $separator), $line.Substring($separator + 1), 'Process') }
+        }
     }
-}
 
-$common = @('/nologo', '/std:c++17', '/O2', '/W4', '/MT', '/EHsc', '/DUNICODE', '/D_UNICODE')
-$linker = @('/link', '/INCREMENTAL:NO', '/DYNAMICBASE', '/NXCOMPAT')
-$results = foreach ($test in $suites) {
-    $name = $test.Name
-    $log = if ($LogDirectory) { Join-Path $LogDirectory "native-$name.txt" } else { Join-Path $output "$name.log" }
-    Set-Content -LiteralPath $log -Value "Native test suite $name" -Encoding utf8
-    Write-Host "== $name"
-    $source = Join-Path $root "$name.cpp"
-    $exe = Join-Path $output "$name.exe"
-    $code = 0
-    if ($test.ProductionSource) {
-        $code = Invoke-Native 'cl.exe' ($common + @('/c', (Join-Path $root $test.ProductionSource), "/Fo$(Join-Path $output "$name.Production.obj")")) $log
+    $common = @('/nologo', '/std:c++17', '/O2', '/W4', '/MT', '/EHsc', '/DUNICODE', '/D_UNICODE')
+    $linker = @('/link', '/INCREMENTAL:NO', '/DYNAMICBASE', '/NXCOMPAT')
+    $results = foreach ($test in $suites) {
+        $name = $test.Name
+        $log = if ($LogDirectory) { Join-Path $LogDirectory "native-$name.txt" } else { Join-Path $output "$name.log" }
+        Set-Content -LiteralPath $log -Value "Native test suite $name" -Encoding utf8
+        Write-Host "== $name"
+        $source = Join-Path $root "$name.cpp"
+        $exe = Join-Path $output "$name.exe"
+        $code = 0
+        if ($test.ProductionSource) {
+            $code = Invoke-Native 'cl.exe' ($common + @('/c', (Join-Path $root $test.ProductionSource), "/Fo$(Join-Path $output "$name.Production.obj")")) $log
+        }
+        elseif ($test.ProductionDefine) {
+            $code = Invoke-Native 'cl.exe' ($common + @("/D$($test.ProductionDefine)", '/c', $source, "/Fo$(Join-Path $output "$name.Production.obj")")) $log
+        }
+        if ($code -eq 0) { $code = Invoke-Native 'cl.exe' ($common + @($source, "/Fo$(Join-Path $output "$name.obj")", "/Fe$exe") + $linker + @($test.Libraries | Where-Object { $_ })) $log }
+        if ($code -eq 0) { $code = Invoke-Native $exe @() $log }
+        [pscustomobject]@{ Name = $name; Passed = ($code -eq 0); ExitCode = $code; Log = $log }
     }
-    elseif ($test.ProductionDefine) {
-        $code = Invoke-Native 'cl.exe' ($common + @("/D$($test.ProductionDefine)", '/c', $source, "/Fo$(Join-Path $output "$name.Production.obj")")) $log
-    }
-    if ($code -eq 0) { $code = Invoke-Native 'cl.exe' ($common + @($source, "/Fo$(Join-Path $output "$name.obj")", "/Fe$exe") + $linker + @($test.Libraries | Where-Object { $_ })) $log }
-    if ($code -eq 0) { $code = Invoke-Native $exe @() $log }
-    [pscustomobject]@{ Name = $name; Passed = ($code -eq 0); ExitCode = $code; Log = $log }
-}
 
-$failed = @($results | Where-Object { -not $_.Passed })
-$results
-if ($failed) { throw "Native test suites failed: $($failed.Name -join ', ')" }
-Write-Host "All $(@($results).Count) native test suites passed."
+    $failed = @($results | Where-Object { -not $_.Passed })
+    $results
+    if ($failed) { throw "Native test suites failed: $($failed.Name -join ', ')" }
+    Write-Host "All $(@($results).Count) native test suites passed."
+}
+finally {
+    foreach ($name in @([Environment]::GetEnvironmentVariables('Process').Keys)) {
+        if (-not $savedEnvironment.Contains($name)) { [Environment]::SetEnvironmentVariable($name, $null, 'Process') }
+    }
+    foreach ($entry in $savedEnvironment.GetEnumerator()) { [Environment]::SetEnvironmentVariable($entry.Key, $entry.Value, 'Process') }
+}

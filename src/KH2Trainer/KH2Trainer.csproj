@@ -20,15 +20,15 @@
   </PropertyGroup>
   <ItemGroup>
     <BridgeSource Include="$(BridgeDirectory)*.cpp;$(BridgeDirectory)*.h;$(BridgeDirectory)*.inl;$(BridgeDirectory)build.cmd" />
-    <UpToDateCheckInput Include="@(BridgeSource)" />
+    <UpToDateCheckInput Include="@(BridgeSource);$(BridgeDll)" />
   </ItemGroup>
   <!-- Rebuilds the bridge with MSVC on Windows when a source is newer than the DLL.
-       Pass -p:SkipNativeBridgeBuild=true to use an existing DLL as is. -->
+       Pass -p:SkipNativeBridgeBuild=true to use an existing DLL as is. IDE design-time builds skip both targets. -->
   <Target Name="BuildNativeBridge" Inputs="@(BridgeSource)" Outputs="$(BridgeDll)"
-          Condition="'$(OS)' == 'Windows_NT' And '$(SkipNativeBridgeBuild)' != 'true'">
+          Condition="'$(OS)' == 'Windows_NT' And '$(SkipNativeBridgeBuild)' != 'true' And '$(DesignTimeBuild)' != 'true'">
     <Exec Command="&quot;$(BridgeDirectory)build.cmd&quot;" />
   </Target>
-  <Target Name="EmbedNativeBridge" BeforeTargets="PrepareForBuild" DependsOnTargets="BuildNativeBridge">
+  <Target Name="EmbedNativeBridge" BeforeTargets="PrepareForBuild" DependsOnTargets="BuildNativeBridge" Condition="'$(DesignTimeBuild)' != 'true'">
     <Error Condition="!Exists('$(BridgeDll)')" Text="The native bridge is missing: $(BridgeDll). Build it with src\KH2Trainer.Bridge\build.cmd (Visual Studio Build Tools with the C++ workload)." />
     <ItemGroup>
       <EmbeddedResource Include="$(BridgeDll)" LogicalName="KH2Trainer.Bridge" />

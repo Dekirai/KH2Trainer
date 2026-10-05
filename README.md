@@ -56,6 +56,9 @@ The application project compiles the native bridge automatically (through
 dotnet build KH2Trainer.sln -c Release
 ```
 
+For `dotnet build` or Visual Studio, pass `-p:SkipNativeBridgeBuild=true` to use an existing
+`src\KH2Trainer.Bridge\bin\KH2Trainer.Bridge.dll` without recompiling it.
+
 **Release package:** from PowerShell in the repository root:
 
 ```powershell
@@ -70,9 +73,7 @@ to `artifacts\packages\<timestamp>`. Options:
 | --- | --- |
 | `-FrameworkDependent` | Publish without the .NET runtime (the target needs the .NET 8 Desktop Runtime). |
 | `-OutputDirectory <path>` | Write the package to a new folder of your choice. |
-| `-AssetGameDirectory <path>` | Also compare decoded retail packages with an existing OpenKh extraction (read-only). |
-
-To build with an existing bridge DLL without recompiling it, pass `-p:SkipNativeBridgeBuild=true`.
+| `-AssetGameDirectory <KH collection folder>` | The game installation folder that contains `Image\dt` and an OpenKh extraction in `Modding\openkh`; adds a read-only comparison of decoded retail packages. |
 
 ## Tests
 
@@ -116,8 +117,11 @@ new feature catalog.
 
 The reverse-engineering evidence behind the catalog (IDA exports, contracts, validation reports
 and the per-domain catalog sources) was removed from the working tree to keep the repository
-small. Source comments that cite `research archive (see README)` refer to it. Restore it with:
+small. Source comments that cite `research archive (see README)` refer to it. To look at it, restore
+it into the working tree only (nothing is staged; `work/` is ignored, so it is not committed again):
 
 ```powershell
-git checkout 672ac3f -- work/trainer/research
+git restore --source=ffac525 --worktree -- work/trainer/research
 ```
+
+Commit `ffac525` is on `main` of [Dekirai/KH2Trainer](https://github.com/Dekirai/KH2Trainer).
