@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>KH2_Trainer</AssemblyName>
+    <RootNamespace>KH2Trainer</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>0.12.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\KH2Trainer.Core\KH2Trainer.Core.csproj" />
+    <EmbeddedResource Include="Data\*.json" LogicalName="KH2Trainer.Data.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- The native game-thread bridge (src/KH2Trainer.Bridge) is embedded into the executable. -->
+  <PropertyGroup>
+    <BridgeDirectory>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', 'KH2Trainer.Bridge'))</BridgeDirectory>
+    <BridgeDll>$(BridgeDirectory)bin\KH2Trainer.Bridge.dll</BridgeDll>
+  </PropertyGroup>
+  <ItemGroup>
+    <BridgeSource Include="$(BridgeDirectory)*.cpp;$(BridgeDirectory)*.h;$(BridgeDirectory)*.inl;$(BridgeDirectory)build.cmd" />
+    <UpToDateCheckInput Include="@(BridgeSource)" />
+  </ItemGroup>
+  <!-- Rebuilds the bridge with MSVC on Windows when a source is newer than the DLL.
+       Pass -p:SkipNativeBridgeBuild=true to use an existing DLL as is. -->
+  <Target Name="BuildNativeBridge" Inputs="@(BridgeSource)" Outputs="$(BridgeDll)"
+          Condition="'$(OS)' == 'Windows_NT' And '$(SkipNativeBridgeBuild)' != 'true'">
+    <Exec Command="&quot;$(BridgeDirectory)build.cmd&quot;" />
+  </Target>
+  <Target Name="EmbedNativeBridge" BeforeTargets="PrepareForBuild" DependsOnTargets="BuildNativeBridge">
+    <Error Condition="!Exists('$(BridgeDll)')" Text="The native bridge is missing: $(BridgeDll). Build it with src\KH2Trainer.Bridge\build.cmd (Visual Studio Build Tools with the C++ workload)." />
+    <ItemGroup>
+      <EmbeddedResource Include="$(BridgeDll)" LogicalName="KH2Trainer.Bridge" />
+    </ItemGroup>
+  </Target>
+</Project>
