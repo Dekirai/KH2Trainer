@@ -121,7 +121,9 @@ public sealed class TwitchAuth(HttpClient http, Uri? identityBase = null, Func<T
         using var response = await http.PostAsync(new Uri(identity, "oauth2/token"), Form(
             ("client_id", clientId), ("grant_type", "refresh_token"), ("refresh_token", refreshToken)), cancellation);
         string body = await response.Content.ReadAsStringAsync(cancellation);
-        if (!response.IsSuccessStatusCode) throw new TwitchAuthException("The Twitch login expired. Connect again.");
+        // Only a rejected refresh token means the login is gone; anything else is a temporary problem.
+        if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized) throw new TwitchAuthException("The Twitch login expired. Connect again.");
+        if (!response.IsSuccessStatusCode) throw new HttpRequestException($"Twitch could not renew the login right now ({(int)response.StatusCode}).", null, response.StatusCode);
         return ParseToken(body, refreshToken);
     }
 

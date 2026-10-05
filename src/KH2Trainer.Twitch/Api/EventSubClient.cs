@@ -103,7 +103,8 @@ public sealed class EventSubClient(
     Action<RedemptionEvent> onRedemption,
     Action<EventSubState, string> onState,
     Uri? endpoint = null,
-    Func<TimeSpan, CancellationToken, Task>? delay = null)
+    Func<TimeSpan, CancellationToken, Task>? delay = null,
+    Action<bool>? onSubscribed = null)
 {
     public static readonly Uri DefaultEndpoint = new("wss://eventsub.wss.twitch.tv/ws?keepalive_timeout_seconds=30");
     private readonly Uri start = endpoint ?? DefaultEndpoint;
@@ -115,6 +116,7 @@ public sealed class EventSubClient(
     {
         IEventSubTransport? current = null;
         int failures = 0, keepalive = 30;
+        bool hadSession = false;
         try
         {
             while (!cancellation.IsCancellationRequested)
@@ -129,6 +131,9 @@ public sealed class EventSubClient(
                         var welcome = await ExpectWelcomeAsync(current, cancellation);
                         keepalive = welcome.KeepaliveSeconds;
                         await subscribe(welcome.SessionId!, cancellation);
+                        // After a connection loss, redemptions made meanwhile were not delivered; the owner can catch up on them.
+                        onSubscribed?.Invoke(hadSession);
+                        hadSession = true;
                         failures = 0;
                         onState(EventSubState.Connected, "Listening for channel point redemptions.");
                     }
@@ -138,15 +143,16 @@ public sealed class EventSubClient(
                     switch (message.MessageType)
                     {
                         case "notification":
-                            if (message.Redemption is { } redemption && Remember(message.MessageId)) onRedemption(redemption);
+                            Deliver(message);
                             break;
                         case "session_reconnect" when message.ReconnectUrl is { } url:
-                            // Twitch hands the subscriptions to the new session; keep the old socket until it is welcomed.
+                            // Twitch hands the subscriptions to the new session and keeps delivering on the old
+                            // socket until the new one is welcomed, so both are read during the handover.
                             var replacement = transportFactory();
                             try
                             {
                                 await replacement.ConnectAsync(new Uri(url), cancellation);
-                                keepalive = (await ExpectWelcomeAsync(replacement, cancellation)).KeepaliveSeconds;
+                                keepalive = (await HandOverAsync(current, replacement, cancellation)).KeepaliveSeconds;
                             }
                             catch { await replacement.DisposeAsync(); throw; }
                             await current.DisposeAsync();
@@ -179,6 +185,46 @@ public sealed class EventSubClient(
             onState(EventSubState.Disconnected, "Disconnected from Twitch EventSub.");
         }
     }
+
+    private void Deliver(EventSubMessage message)
+    {
+        if (message.Redemption is { } redemption && Remember(message.MessageId)) onRedemption(redemption);
+    }
+
+    /// <summary>
+    /// Waits for the new socket's welcome while still delivering notifications from the old one, then
+    /// takes what the old socket still has until it closes or stays quiet for a moment.
+    /// </summary>
+    private async Task<EventSubMessage> HandOverAsync(IEventSubTransport old, IEventSubTransport replacement, CancellationToken cancellation)
+    {
+        var welcome = ExpectWelcomeAsync(replacement, cancellation);
+        using var draining = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+        try
+        {
+            Task<string?>? receive = null;
+            Task? quiet = null;
+            while (true)
+            {
+                receive ??= old.ReceiveAsync(draining.Token);
+                if (welcome.IsCompleted) quiet ??= Task.Delay(HandoverQuietPeriod, cancellation);
+                if (await Task.WhenAny(receive, quiet ?? welcome) != receive)
+                {
+                    if (quiet != null) break; // Welcomed and the old socket has nothing more.
+                    continue;
+                }
+                string? json = await receive;
+                receive = null; quiet = null;
+                if (json is null) break; // The old socket closed.
+                var message = EventSubMessage.Parse(json);
+                if (message.MessageType == "notification") Deliver(message);
+            }
+        }
+        catch (Exception error) when (error is not OperationCanceledException || !cancellation.IsCancellationRequested) { /* The old socket failed; the new one counts. */ }
+        finally { draining.Cancel(); }
+        return await welcome;
+    }
+
+    private static readonly TimeSpan HandoverQuietPeriod = TimeSpan.FromMilliseconds(300);
 
     private async Task<EventSubMessage> ExpectWelcomeAsync(IEventSubTransport transport, CancellationToken cancellation)
     {

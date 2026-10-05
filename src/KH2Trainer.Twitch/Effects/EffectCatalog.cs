@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace KH2Trainer.Twitch;
 
 /// <summary>
@@ -64,10 +66,10 @@ public static class EffectCatalog
             Title = "Refill Drive Gauge", TitleDe = "Drive-Leiste auffüllen",
             Prompt = "Fills every Drive bar. Waits until a running Drive Form has ended.",
             PromptDe = "Füllt alle Drive-Balken. Wartet, bis eine laufende Drive-Form vorbei ist.",
-            Features = ["player.drive.bars", "player.drive.max", "player.form.id"],
+            Features = ["player.drive.bars", "player.drive.max", "player.form.id", "player.gauge.mode"],
             Check = ctx =>
             {
-                if (InForm(ctx)) return Readiness.Wait("Waiting for the Drive Form to end.");
+                if (InForm(ctx) || GaugeBusy(ctx)) return Readiness.Wait("Waiting for the Drive Form or summon to end.");
                 if (ctx.Read("player.drive.max") is not double max) return Readiness.Wait("Waiting for the Drive gauge.");
                 return ctx.Read("player.drive.bars") >= max ? Readiness.Reject("The Drive gauge is already full.") : Readiness.Ready;
             },
@@ -75,7 +77,7 @@ public static class EffectCatalog
         },
         new()
         {
-            Key = "care-package", Category = RewardCategory.Help, Cost = 1000, Amount = 2, AmountLabel = "of each", MaxAmount = 99,
+            Key = "care-package", Category = RewardCategory.Help, Cost = 1000, Amount = 2, AmountLabel = "of each", AmountLabelDe = "je Sorte", MaxAmount = 99,
             Title = "Potion Care Package", TitleDe = "Trank-Care-Paket",
             Prompt = "Adds Potions, Hi-Potions and Ethers to Sora's bag.",
             PromptDe = "Legt Tränke, Hi-Tränke und Äther in Soras Tasche.",
@@ -84,7 +86,7 @@ public static class EffectCatalog
         },
         new()
         {
-            Key = "megalixir", Category = RewardCategory.Help, Cost = 2500, Amount = 1, AmountLabel = "Megalixir(s)", MaxAmount = 99,
+            Key = "megalixir", Category = RewardCategory.Help, Cost = 2500, Amount = 1, AmountLabel = "Megalixir(s)", AmountLabelDe = "Megalixier", MaxAmount = 99,
             Title = "Gift a Megalixir", TitleDe = "Megalixier schenken",
             Prompt = "Adds a Megalixir to Sora's bag. Fully restores the whole party when used.",
             PromptDe = "Legt ein Megalixier in Soras Tasche. Heilt beim Benutzen die ganze Gruppe vollständig.",
@@ -102,7 +104,7 @@ public static class EffectCatalog
         },
         new()
         {
-            Key = "munny-gift", Category = RewardCategory.Help, Cost = 1000, Amount = 1000, AmountLabel = "munny",
+            Key = "munny-gift", Category = RewardCategory.Help, Cost = 1000, Amount = 1000, AmountLabel = "munny", AmountLabelDe = "Munny",
             Title = "Munny Donation", TitleDe = "Munny-Spende",
             Prompt = "Gives Sora a pile of munny.",
             PromptDe = "Schenkt Sora einen Haufen Munny.",
@@ -117,21 +119,21 @@ public static class EffectCatalog
             {
                 double current = ctx.Read("munny") ?? 0, target = Math.Min(999999, current + ctx.Amount);
                 await ctx.RunAsync("munny", target);
-                ctx.Detail = $"+{target - current:N0} munny";
+                ctx.Detail = $"+{N(target - current)} munny";
             },
         },
         new()
         {
-            Key = "exp-gift", Category = RewardCategory.Help, Cost = 2500, Amount = 1000, AmountLabel = "EXP", MaxAmount = 9999999,
+            Key = "exp-gift", Category = RewardCategory.Help, Cost = 2500, Amount = 1000, AmountLabel = "EXP", AmountLabelDe = "EXP", MaxAmount = 9999999,
             Title = "EXP Gift", TitleDe = "EXP-Geschenk",
             Prompt = "Gives Sora experience. Level-ups and their rewards apply.",
             PromptDe = "Schenkt Sora Erfahrung. Level-ups samt Belohnungen inklusive.",
             Features = ["add-experience"], ChangesSaveData = true,
-            Start = async ctx => { await ctx.RunAsync("add-experience", ctx.Amount); ctx.Detail = $"+{ctx.Amount:N0} EXP"; },
+            Start = async ctx => { await ctx.RunAsync("add-experience", ctx.Amount); ctx.Detail = $"+{N(ctx.Amount)} EXP"; },
         },
         new()
         {
-            Key = "power-boost", Category = RewardCategory.Help, Cost = 10000, Amount = 1, AmountLabel = "Strength", MaxAmount = 100,
+            Key = "power-boost", Category = RewardCategory.Help, Cost = 10000, Amount = 1, AmountLabel = "Strength", AmountLabelDe = "Stärke", MaxAmount = 100,
             Title = "Strength +1 (permanent)", TitleDe = "Stärke +1 (dauerhaft)",
             Prompt = "Raises Sora's Strength permanently.",
             PromptDe = "Erhöht Soras Stärke dauerhaft.",
@@ -182,25 +184,25 @@ public static class EffectCatalog
                 await ctx.SetAsync("movement.walk_speed", (ctx.Read("movement.walk_speed") ?? 2) * 2.5);
             },
         },
+        // Setting the search scale also recalculates the break distance, so restoring the scale restores both.
+        Values("eagle-eye", RewardCategory.Help, 500, 120, "targeting", "Eagle Eye", "Adlerauge",
+            "Lock-on reaches enemies far away for a while.", "Lock-on erreicht eine Weile lang weit entfernte Gegner.",
+            ("targeting.search_scale", 4)),
         new()
         {
-            Key = "eagle-eye", Category = RewardCategory.Help, Cost = 500, DurationSeconds = 120, Group = "targeting",
-            Title = "Eagle Eye", TitleDe = "Adlerauge",
-            Prompt = "Lock-on reaches enemies far away for a while.",
-            PromptDe = "Lock-on erreicht eine Weile lang weit entfernte Gegner.",
-            Features = ["targeting.search_scale", "targeting.reset"],
-            Start = ctx => ctx.SetAsync("targeting.search_scale", 4, restore: false),
-            End = ctx => ResetTargeting(ctx, 4),
-        },
-        new()
-        {
-            Key = "enemy-glass-cannon", Category = RewardCategory.Help, Cost = 2500, DurationSeconds = 30, Group = "enemy", MaxWaitSeconds = 120,
+            // The factor belongs to that enemy; it cannot be taken back once lock-on moves on, so it lasts for the enemy's life.
+            Key = "enemy-glass-cannon", Category = RewardCategory.Help, Cost = 3000, MaxWaitSeconds = 120,
             Title = "Weaken the Enemy", TitleDe = "Gegner schwächen",
-            Prompt = "The enemy Sora has locked on to takes 2.5x damage. Waits for a manual lock-on.",
-            PromptDe = "Der anvisierte Gegner nimmt 2,5-fachen Schaden. Wartet auf ein manuelles Lock-on.",
+            Prompt = "The enemy Sora has locked on to takes 2.5x damage from now on. Waits for a manual lock-on.",
+            PromptDe = "Der anvisierte Gegner nimmt ab jetzt 2,5-fachen Schaden. Wartet auf ein manuelles Lock-on.",
             Features = ["damage.target.general", "target_lock_mode", "target_hp"],
-            Check = TargetLocked,
-            Start = ctx => ctx.SetAsync("damage.target.general", 250, sustain: false),
+            Check = ctx =>
+            {
+                var locked = TargetLocked(ctx);
+                if (locked.Kind != ReadinessKind.Ready) return locked;
+                return ctx.Read("damage.target.general") is >= 250 ? Readiness.Reject("This enemy is already weakened.") : Readiness.Ready;
+            },
+            Start = ctx => ctx.RunAsync("damage.target.general", 250),
         },
         Form("valor", 1, RewardCategory.Help, 2000, 45, "Valor Form", "Mut-Form"),
         Form("wisdom", 2, RewardCategory.Help, 2000, 45, "Wisdom Form", "Weisheits-Form"),
@@ -213,8 +215,13 @@ public static class EffectCatalog
             Title = "Repair Gummi Ship", TitleDe = "Gumi-Jet reparieren",
             Prompt = "Restores the Gummi Ship's HP. Gummi missions only; refunded elsewhere.",
             PromptDe = "Repariert den Gumi-Jet vollständig. Nur in Gumi-Missionen, sonst gibt es die Punkte zurück.",
-            Features = ["gummi.refill", "gummi.hp"],
-            Check = InGummiMission,
+            Features = ["gummi.refill", "gummi.hp", "gummi.max_hp"],
+            Check = ctx =>
+            {
+                var mission = InGummiMission(ctx);
+                if (mission.Kind != ReadinessKind.Ready) return mission;
+                return Full(ctx, "gummi.hp", "gummi.max_hp") ? Readiness.Reject("The Gummi Ship is already fully repaired.") : Readiness.Ready;
+            },
             Start = ctx => ctx.RunAsync("gummi.refill"),
         },
         new()
@@ -235,8 +242,13 @@ public static class EffectCatalog
             Title = "One HP Left", TitleDe = "Nur noch 1 HP",
             Prompt = "Drops Sora to 1 HP. One hit and it's over...",
             PromptDe = "Setzt Sora auf 1 HP. Ein Treffer und es ist vorbei...",
-            Features = ["player.hp"],
-            Check = ctx => ctx.Read("player.hp") is <= 1 ? Readiness.Reject("Sora already has 1 HP.") : Readiness.Ready,
+            Features = ["player.hp", "combat.autoheal"],
+            Check = ctx =>
+            {
+                if (ctx.Read("player.hp") is <= 1) return Readiness.Reject("Sora already has 1 HP.");
+                // Regeneration would refill the HP within a frame.
+                return ctx.Read("combat.autoheal") == 1 ? Readiness.Wait("Waiting for Regeneration to end.") : Readiness.Ready;
+            },
             Start = ctx => ctx.RunAsync("player.hp", 1),
         },
         new()
@@ -245,17 +257,18 @@ public static class EffectCatalog
             Title = "Drain Drive Gauge", TitleDe = "Drive-Leiste leeren",
             Prompt = "Empties every Drive bar. No forms for you.",
             PromptDe = "Leert alle Drive-Balken. Keine Formen mehr für dich.",
-            Features = ["player.drive.bars", "player.form.id"],
+            Features = ["player.drive.bars", "player.drive.fraction", "player.form.id", "player.gauge.mode"],
             Check = ctx =>
             {
-                if (InForm(ctx)) return Readiness.Wait("Waiting for the Drive Form to end.");
-                return ctx.Read("player.drive.bars") is 0 ? Readiness.Reject("The Drive gauge is already empty.") : Readiness.Ready;
+                if (InForm(ctx) || GaugeBusy(ctx)) return Readiness.Wait("Waiting for the Drive Form or summon to end.");
+                return ctx.Read("player.drive.bars") is 0 && ctx.Read("player.drive.fraction") is null or 0
+                    ? Readiness.Reject("The Drive gauge is already empty.") : Readiness.Ready;
             },
             Start = ctx => ctx.RunAsync("player.drive.bars", 0),
         },
         new()
         {
-            Key = "pickpocket", Category = RewardCategory.Harm, Cost = 1500, Amount = 500, AmountLabel = "munny",
+            Key = "pickpocket", Category = RewardCategory.Harm, Cost = 1500, Amount = 500, AmountLabel = "munny", AmountLabelDe = "Munny",
             Title = "Pickpocket", TitleDe = "Taschendieb",
             Prompt = "Steals munny from Sora.",
             PromptDe = "Klaut Sora Munny.",
@@ -270,12 +283,12 @@ public static class EffectCatalog
             {
                 double current = ctx.Read("munny") ?? 0, target = Math.Max(0, current - ctx.Amount);
                 await ctx.RunAsync("munny", target);
-                ctx.Detail = $"-{current - target:N0} munny";
+                ctx.Detail = $"-{N(current - target)} munny";
             },
         },
         new()
         {
-            Key = "potion-thief", Category = RewardCategory.Harm, Cost = 2000, Amount = 3, AmountLabel = "of each", MaxAmount = 99,
+            Key = "potion-thief", Category = RewardCategory.Harm, Cost = 2000, Amount = 3, AmountLabel = "of each", AmountLabelDe = "je Sorte", MaxAmount = 99,
             Title = "Potion Thief", TitleDe = "Trankdieb",
             Prompt = "Steals Potions, Hi-Potions and Ethers from Sora's bag.",
             PromptDe = "Klaut Tränke, Hi-Tränke und Äther aus Soras Tasche.",
@@ -285,8 +298,12 @@ public static class EffectCatalog
                 var stolen = new List<string>();
                 foreach (var (id, name) in new[] { (Potion, "Potion"), (HiPotion, "Hi-Potion"), (Ether, "Ether") })
                 {
-                    int change = await ctx.AdjustItemAsync(id, -ctx.Amount);
-                    if (change != 0) stolen.Add($"{change} {name}");
+                    try
+                    {
+                        int change = await ctx.AdjustItemAsync(id, -ctx.Amount);
+                        if (change != 0) stolen.Add($"{change} {name}");
+                    }
+                    catch (Exception) when (stolen.Count > 0) { break; } // Keep what was already taken; that is what the viewer paid for.
                 }
                 if (stolen.Count == 0) throw new EffectRejectedException("Sora has nothing to steal.");
                 ctx.Detail = string.Join(", ", stolen);
@@ -307,8 +324,9 @@ public static class EffectCatalog
             Title = "Kick Out of Drive Form", TitleDe = "Raus aus der Drive-Form",
             Prompt = "Ends the current Drive Form immediately. Refunded if Sora is not in a form.",
             PromptDe = "Beendet die aktuelle Drive-Form sofort. Ohne Form gibt es die Punkte zurück.",
-            Features = ["drive.revert", "player.form.id"],
-            Check = ctx => InForm(ctx) ? Readiness.Ready : Readiness.Reject("Sora is not in a Drive Form."),
+            Features = ["drive.revert", "player.form.id", "drive.phase"],
+            Check = ctx => !InForm(ctx) ? Readiness.Reject("Sora is not in a Drive Form.")
+                : ctx.Read("drive.phase") is > 0 ? Readiness.Wait("Waiting for the current Drive transformation to finish.") : Readiness.Ready,
             Start = ctx => ctx.RunAsync("drive.revert"),
         },
         new()
@@ -317,8 +335,13 @@ public static class EffectCatalog
             Title = "Heal the Enemy", TitleDe = "Gegner heilen",
             Prompt = "Fully heals the enemy Sora has locked on to. Waits for a manual lock-on.",
             PromptDe = "Heilt den anvisierten Gegner vollständig. Wartet auf ein manuelles Lock-on.",
-            Features = ["target_refill_hp", "target_lock_mode", "target_hp"],
-            Check = TargetLocked,
+            Features = ["target_refill_hp", "target_lock_mode", "target_hp", "target_max_hp"],
+            Check = ctx =>
+            {
+                var locked = TargetLocked(ctx);
+                if (locked.Kind != ReadinessKind.Ready) return locked;
+                return Full(ctx, "target_hp", "target_max_hp") ? Readiness.Reject("The enemy already has full HP.") : Readiness.Ready;
+            },
             Start = ctx => ctx.RunAsync("target_refill_hp"),
         },
         new()
@@ -358,16 +381,9 @@ public static class EffectCatalog
         Values("fast-forward", RewardCategory.Harm, 2000, 30, "time", "Fast Forward", "Vorspulen",
             "The whole game runs at double speed. Good luck dodging.", "Das ganze Spiel läuft doppelt so schnell. Viel Glück beim Ausweichen.",
             ("time.multiplier", 2)),
-        new()
-        {
-            Key = "short-sighted", Category = RewardCategory.Harm, Cost = 1000, DurationSeconds = 60, Group = "targeting",
-            Title = "Short-Sighted", TitleDe = "Kurzsichtig",
-            Prompt = "Lock-on only reaches enemies right next to Sora for a while.",
-            PromptDe = "Lock-on erreicht eine Weile lang nur Gegner direkt neben Sora.",
-            Features = ["targeting.search_scale", "targeting.reset"],
-            Start = ctx => ctx.SetAsync("targeting.search_scale", 0.15, restore: false),
-            End = ctx => ResetTargeting(ctx, 0.15),
-        },
+        Values("short-sighted", RewardCategory.Harm, 1000, 60, "targeting", "Short-Sighted", "Kurzsichtig",
+            "Lock-on only reaches enemies right next to Sora for a while.", "Lock-on erreicht eine Weile lang nur Gegner direkt neben Sora.",
+            ("targeting.search_scale", 0.15)),
         Form("antiform", 6, RewardCategory.Harm, 4000, 30, "Antiform", "Anti-Form",
             "Turns Sora into Antiform for a while. No healing, no items, pure chaos.",
             "Verwandelt Sora eine Weile lang in die Anti-Form. Keine Heilung, keine Items, nur Chaos."),
@@ -379,7 +395,8 @@ public static class EffectCatalog
             Title = "Drive Roulette", TitleDe = "Drive-Roulette",
             Prompt = "A random Drive Form for a while. Antiform included!",
             PromptDe = "Eine Weile lang eine zufällige Drive-Form. Anti-Form inklusive!",
-            Features = ["drive.trigger", "drive.revert", "combat.formtimer", "player.form.id"],
+            Features = FormFeatures,
+            Check = FormCheck,
             Start = ctx => StartForm(ctx, ctx.Random.Next(1, 7)),
             Monitor = FormMonitor,
             End = EndForm,
@@ -388,8 +405,8 @@ public static class EffectCatalog
         {
             Key = "moon-jump", Category = RewardCategory.Funny, Cost = 1000, DurationSeconds = 45, Group = "jump",
             Title = "Moon Jump", TitleDe = "Mondsprung",
-            Prompt = "Huge, floaty jumps for a while.",
-            PromptDe = "Eine Weile lang riesige, schwebende Sprünge.",
+            Prompt = "Low gravity for a while: floaty jumps and slow falls.",
+            PromptDe = "Eine Weile lang geringe Schwerkraft: schwebende Sprünge und langsames Fallen.",
             Features = ["movement.base_jump_height", "movement.fall_speed"],
             Start = async ctx =>
             {
@@ -436,9 +453,25 @@ public static class EffectCatalog
             Title = "Ghost Walk", TitleDe = "Geistermodus",
             Prompt = "Sora walks through walls for a few seconds, then snaps back to the starting point.",
             PromptDe = "Sora läuft ein paar Sekunden durch Wände und springt danach zum Startpunkt zurück.",
-            Features = ["player.position.bookmark", "player.position.return", "combat.movementcollision"],
-            Start = async ctx => { await ctx.RunAsync("player.position.bookmark"); await ctx.SetAsync("combat.movementcollision", 1, sustain: false); },
-            End = async ctx => { await ctx.RestoreAsync(); await TryRunAsync(ctx, "player.position.return"); },
+            Features = ["player.position.bookmark", "player.position.return", "combat.movementcollision", "drive.phase", "world.reload_room", "world.current_room", "world.current_world"],
+            Check = NoDriveTransition,
+            Start = async ctx =>
+            {
+                ctx.State["world"] = ctx.Read("world.current_world") ?? -1;
+                ctx.State["room"] = ctx.Read("world.current_room") ?? -1;
+                await ctx.RunAsync("player.position.bookmark");
+                await ctx.SetAsync("combat.movementcollision", 1, sustain: false);
+            },
+            End = async ctx =>
+            {
+                // Back to the start while walls are still off, then walls on again.
+                bool back = await TryRunAsync(ctx, "player.position.return");
+                await ctx.RestoreAsync();
+                // The bookmark was lost (for example a Drive Form changed the player): reload the room so Sora is never left inside a wall.
+                if (!back && ctx.SceneReady && ctx.Read("world.current_world") == ctx.State["world"] && ctx.Read("world.current_room") == ctx.State["room"]
+                    && await TryRunAsync(ctx, "world.reload_room"))
+                    ctx.Detail = "room reloaded";
+            },
         },
         new()
         {
@@ -475,11 +508,13 @@ public static class EffectCatalog
         {
             Key = "deja-vu", Category = RewardCategory.Annoying, Cost = 2500, DurationSeconds = 10, Group = "position",
             Title = "Déjà Vu", TitleDe = "Déjà-vu",
-            Prompt = "A few seconds later, Sora is pulled back to the exact same spot.",
-            PromptDe = "Ein paar Sekunden später wird Sora genau an dieselbe Stelle zurückgezogen.",
-            Features = ["player.position.bookmark", "player.position.return"],
+            Prompt = "A few seconds later, Sora is pulled back to the exact same spot. Refunded if that is not possible.",
+            PromptDe = "Ein paar Sekunden später wird Sora genau an dieselbe Stelle zurückgezogen. Klappt das nicht, gibt es die Punkte zurück.",
+            Features = ["player.position.bookmark", "player.position.return", "drive.phase"],
+            ChargeAfterEnd = true,
+            Check = NoDriveTransition,
             Start = ctx => ctx.RunAsync("player.position.bookmark"),
-            End = ctx => TryRunAsync(ctx, "player.position.return"),
+            End = ctx => ctx.RunAsync("player.position.return"),
         },
         Values("mute-voices", RewardCategory.Annoying, 500, 90, "voice", "Who Said That?", "Wer hat das gesagt?",
             "Mutes every voice for a while.", "Schaltet alle Stimmen eine Weile lang stumm.",
@@ -498,6 +533,9 @@ public static class EffectCatalog
         Key = key, Category = category, Cost = cost, DurationSeconds = duration, Group = group,
         Title = title, TitleDe = titleDe, Prompt = prompt, PromptDe = promptDe,
         Features = [value.Feature],
+        // The streamer may already have it on; then the redemption would change nothing.
+        Check = ctx => ctx.Read(value.Feature) is double current && EffectContext.Near(current, value.Value)
+            ? Readiness.Reject($"{title} is already active.") : Readiness.Ready,
         Start = ctx => ctx.SetAsync(value.Feature, value.Value, sustain: sustain),
     };
 
@@ -509,42 +547,78 @@ public static class EffectCatalog
         TitleDe = category == RewardCategory.Harm ? nameDe : "Drive: " + nameDe,
         Prompt = prompt ?? $"Sora transforms into {name} for a while.",
         PromptDe = promptDe ?? $"Sora verwandelt sich eine Weile lang in die {nameDe}.",
-        Features = ["drive.trigger", "drive.revert", "combat.formtimer", "player.form.id"],
+        Features = FormFeatures,
+        Check = FormCheck,
         Start = ctx => StartForm(ctx, form),
         Monitor = FormMonitor,
         End = EndForm,
     };
 
+    // A property, not a field: the catalog is built by a static initializer that runs before later fields are set.
+    private static string[] FormFeatures =>
+        ["drive.trigger", "drive.revert", "drive.cancel", "combat.formtimer", "player.form.id", "drive.phase", "drive.result", "drive.requested"];
+
+    /// <summary>The bridge takes one Drive switch at a time; a queued form waits until the previous revert or transformation is done.</summary>
+    private static Readiness FormCheck(EffectContext ctx) => NoDriveTransition(ctx);
+
+    private static Readiness NoDriveTransition(EffectContext ctx) =>
+        ctx.Read("drive.phase") is > 0 ? Readiness.Wait("Waiting for the current Drive transformation to finish.") : Readiness.Ready;
+
     private static async Task StartForm(EffectContext ctx, int form)
     {
         ctx.State["form"] = form;
+        ctx.State["from"] = ctx.Read("player.form.id") ?? 0;
+        ctx.State["resultBefore"] = ctx.Read("drive.result") ?? -1;
+        ctx.State["requestedBefore"] = ctx.Read("drive.requested") ?? -1;
         ctx.Detail = FormNames[form];
         ctx.Established = false; // The timer starts once Sora has actually transformed.
-        await ctx.RunAsync("drive.trigger", form);
-        // Hold the form timer so the form lasts exactly as long as the reward says.
+        // Hold the form timer so the form lasts exactly as long as the reward says. Set first: if the
+        // transformation is refused, the engine takes it back and nothing has changed.
         await ctx.SetAsync("combat.formtimer", 1);
+        await ctx.RunAsync("drive.trigger", form);
+        if (ctx.Read("drive.phase") is > 0 || ctx.Read("drive.result") == 1) ctx.State["busy"] = 1;
     }
 
+    /// <summary>
+    /// The form counts once the switch has finished on the target form. Sora may already be in that
+    /// form (the bridge reverts first), so the form id alone proves nothing until the switch was seen running.
+    /// </summary>
     private static EffectProgress FormMonitor(EffectContext ctx)
     {
         double target = ctx.State["form"];
-        double? form = ctx.Read("player.form.id");
+        double? form = ctx.Read("player.form.id"), phase = ctx.Read("drive.phase"), result = ctx.Read("drive.result"), requested = ctx.Read("drive.requested");
         if (!ctx.Established)
         {
-            if (form == target) { ctx.Established = true; return EffectProgress.Running; }
-            if (ctx.SinceStart > TimeSpan.FromSeconds(2) && ctx.Read("drive.requested") == target && ctx.Read("drive.result") is >= 3 and <= 8)
-                return EffectProgress.Failed("The game cancelled the transformation.");
+            if (phase is > 0 || result == 1) ctx.State["busy"] = 1;
+            // Evidence that this switch ran: it was seen running, or its result or target changed (a short switch can fall between two polls).
+            bool switched = ctx.State.ContainsKey("busy") || (result ?? -1) != ctx.State["resultBefore"] || (requested ?? -1) != ctx.State["requestedBefore"];
+            bool onTarget = phase == 0 && form == target && (requested is null || requested == target) && result is null or 2;
+            if (onTarget && (switched || ctx.State["from"] != target))
+            {
+                ctx.Established = true;
+                return EffectProgress.Running;
+            }
+            if (switched && phase == 0 && result is >= 3 and <= 8) return EffectProgress.Failed("The game cancelled the transformation.");
             return ctx.SinceStart > TimeSpan.FromSeconds(30) ? EffectProgress.Failed("Sora could not transform right now.") : EffectProgress.Running;
         }
+        if (!ctx.SceneReady || phase is > 0) return EffectProgress.Running;
         return form is double current && current != target ? EffectProgress.Ended("Sora left the form.") : EffectProgress.Running;
     }
 
     private static async Task EndForm(EffectContext ctx)
     {
         await ctx.RestoreAsync();
+        if (!ctx.Established)
+        {
+            // Still transforming: drop the trainer's pending steps (a native transition already running finishes).
+            await TryRunAsync(ctx, "drive.cancel");
+            return;
+        }
         // A replacing form reverts by itself; a form the game already ended needs nothing.
-        if (ctx.EndReason != EndReason.Replaced && ctx.Read("player.form.id") == ctx.State["form"])
-            await TryRunAsync(ctx, "drive.revert");
+        if (ctx.EndReason == EndReason.Replaced || ctx.Read("player.form.id") != ctx.State["form"]) return;
+        // Kick Out of Drive Form is paid for only if the revert was accepted.
+        if (ctx.EndReason == EndReason.Interrupted) await ctx.RunAsync("drive.revert");
+        else await TryRunAsync(ctx, "drive.revert");
     }
 
     /// <summary>
@@ -561,6 +635,8 @@ public static class EffectCatalog
             ctx.State["fovWasEnabled"] = ctx.Read("camera.fov_enabled") ?? 0;
             ctx.State["fovOriginal"] = ctx.Read("camera.fov") ?? 70;
             await ctx.SetAsync("camera.fov", fov, restore: false);
+            // Menus, doors and camera changes switch the override off; owning the switch lets the engine turn it back on.
+            await ctx.SetAsync("camera.fov_enabled", 1, restore: false);
         },
         End = async ctx =>
         {
@@ -595,6 +671,11 @@ public static class EffectCatalog
 
     private static bool InForm(EffectContext ctx) => ctx.Read("player.form.id") is double form && form != 0;
 
+    /// <summary>The Drive gauge shows a form or summon timer instead of Drive bars.</summary>
+    private static bool GaugeBusy(EffectContext ctx) => ctx.Read("player.gauge.mode") is 2 or 3;
+
+    private static string N(double value) => value.ToString("N0", CultureInfo.InvariantCulture);
+
     private static Readiness TargetLocked(EffectContext ctx) =>
         ctx.Read("target_lock_mode") == 2 && ctx.Read("target_hp") is > 0
             ? Readiness.Ready
@@ -603,17 +684,11 @@ public static class EffectCatalog
     private static Readiness InGummiMission(EffectContext ctx) =>
         ctx.Read("gummi.hp") is not null ? Readiness.Ready : Readiness.Reject("Only works during a Gummi Ship mission.");
 
-    private static async Task ResetTargeting(EffectContext ctx, double applied)
+    /// <summary>Best effort: the scene may have changed in the meantime. Returns whether the game accepted it.</summary>
+    private static async Task<bool> TryRunAsync(EffectContext ctx, string featureId, params double[] arguments)
     {
-        // Only reset when the range is still the one this effect set.
-        if (ctx.Read("targeting.search_scale") is double scale && EffectContext.Near(scale, applied))
-            await ctx.RunAsync("targeting.reset");
-    }
-
-    private static async Task TryRunAsync(EffectContext ctx, string featureId, params double[] arguments)
-    {
-        try { await ctx.RunAsync(featureId, arguments); }
-        catch (Exception) { /* Best effort: the scene may have changed in the meantime. */ }
+        try { await ctx.RunAsync(featureId, arguments); return true; }
+        catch (Exception) { return false; }
     }
 
     private static async Task GiveItems(EffectContext ctx, (int Id, string Name)[] items, int amount)
@@ -621,8 +696,12 @@ public static class EffectCatalog
         var given = new List<string>();
         foreach (var (id, name) in items)
         {
-            int change = await ctx.AdjustItemAsync(id, amount);
-            if (change > 0) given.Add($"+{change} {name}");
+            try
+            {
+                int change = await ctx.AdjustItemAsync(id, amount);
+                if (change > 0) given.Add($"+{change} {name}");
+            }
+            catch (Exception) when (given.Count > 0) { break; } // Keep what was already given; that is what the viewer paid for.
         }
         if (given.Count == 0) throw new EffectRejectedException("Sora's bag has no room for these items.");
         ctx.Detail = string.Join(", ", given);

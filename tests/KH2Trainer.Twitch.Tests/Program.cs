@@ -1,4 +1,8 @@
+using System.Globalization;
 using KH2Trainer.Core;
+
+// Run under a locale with different number formatting: texts must not depend on the PC's regional settings.
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
 
 int passed = 0, failed = 0;
 var gate = new object();

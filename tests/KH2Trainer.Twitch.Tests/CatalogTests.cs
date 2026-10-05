@@ -100,8 +100,10 @@ internal static class CatalogTests
         german.For("regen").Title = "  Mein Titel  ";
         check(RewardResolver.Title(regen, german) == "Mein Titel", "custom titles are trimmed");
         var munny = EffectCatalog.Find("munny-gift")!;
-        check(RewardResolver.Prompt(munny, new TwitchSettings()).Contains("1,000 munny") || RewardResolver.Prompt(munny, new TwitchSettings()).Contains("1.000 munny"),
-            "amount appears in the prompt");
+        check(RewardResolver.Prompt(munny, new TwitchSettings()).EndsWith("(1,000 munny)", StringComparison.Ordinal), "amount appears in the prompt");
+        check(RewardResolver.Prompt(munny, new TwitchSettings { Language = RewardLanguage.German }).EndsWith("(1.000 Munny)", StringComparison.Ordinal)
+            && RewardResolver.Prompt(EffectCatalog.Find("care-package")!, new TwitchSettings { Language = RewardLanguage.German }).EndsWith("(2 je Sorte)", StringComparison.Ordinal),
+            "German prompts use German numbers and labels");
         check(new RewardSpec(new string('x', 46), 1, "", "#000000", 0, 0, 0).Validate() != null, "titles over 45 characters are rejected");
         check(new RewardSpec("ok", 0, "", "#000000", 0, 0, 0).Validate() != null, "cost 0 is rejected");
     }

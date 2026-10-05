@@ -74,6 +74,7 @@ public sealed class EffectDefinition
     /// <summary>0 when the effect has no adjustable amount.</summary>
     public int Amount { get; init; }
     public string AmountLabel { get; init; } = "";
+    public string AmountLabelDe { get; init; } = "";
     public int MinAmount { get; init; } = 1;
     public int MaxAmount { get; init; } = 999999;
     /// <summary>Effects of one group change the same part of the game and never run at the same time.</summary>
@@ -84,6 +85,8 @@ public sealed class EffectDefinition
     public bool ChangesSaveData { get; init; }
     /// <summary>Overrides the global maximum waiting time when the effect waits for a game situation.</summary>
     public int MaxWaitSeconds { get; init; }
+    /// <summary>The viewer pays only when the effect's end succeeded (for example Déjà Vu's pull back); otherwise the points are refunded.</summary>
+    public bool ChargeAfterEnd { get; init; }
     /// <summary>Trainer features the effect uses; all must be available for it to start.</summary>
     public required IReadOnlyList<string> Features { get; init; }
     public Func<EffectContext, Readiness>? Check { get; init; }
@@ -95,6 +98,7 @@ public sealed class EffectDefinition
     public bool IsTimed => DurationSeconds > 0;
     public string TitleFor(RewardLanguage language) => language == RewardLanguage.German ? TitleDe : Title;
     public string PromptFor(RewardLanguage language) => language == RewardLanguage.German ? PromptDe : Prompt;
+    public string AmountLabelFor(RewardLanguage language) => language == RewardLanguage.German && AmountLabelDe.Length > 0 ? AmountLabelDe : AmountLabel;
     public string Color => ColorOf(Category);
 
     public static string ColorOf(RewardCategory category) => category switch
@@ -150,6 +154,10 @@ public sealed class EffectContext
     public string? Detail { get; set; }
 
     public bool Supports(string featureId) => game.Supports(features.Get(featureId).CapabilitySlot);
+    /// <summary>The game is in a playable scene (not loading).</summary>
+    public bool SceneReady => game.IsConnected && game.SceneReady;
+    /// <summary>Values this effect still has to put back because an earlier restore was rejected.</summary>
+    public bool HasPendingRestores => owned.Any(o => o.Restore);
 
     public double? Read(string featureId)
     {
@@ -189,22 +197,40 @@ public sealed class EffectContext
         }
     }
 
-    /// <summary>Restores owned values in reverse order. Returns how many restores the game rejected.</summary>
+    /// <summary>
+    /// Restores owned values in reverse order. A value the game rejected stays owned, so a later
+    /// call (the engine retries while the game is ready) can put it back. Returns how many restores were rejected.
+    /// </summary>
     public async Task<int> RestoreAsync()
     {
         int failures = 0;
         for (int i = owned.Count - 1; i >= 0; i--)
         {
             var value = owned[i];
-            if (!value.Restore) continue;
+            if (!value.Restore) { owned.RemoveAt(i); continue; }
             double? original = value.Original ?? (value.Feature.Kind == FeatureKind.Toggle ? 0 : null);
-            if (original is null) continue;
-            if (value.Feature.ValueSlot >= 0 && game.TryRead(value.Feature.ValueSlot, out double live) && !Near(live, value.Applied)) continue;
-            try { await game.ExecuteAsync(value.Feature.CommandId, [original.Value], "Twitch · end " + Definition.Title); }
+            // Not owned any more: the game, a script or the streamer changed it since.
+            if (original is null || value.Feature.ValueSlot >= 0 && game.TryRead(value.Feature.ValueSlot, out double live) && !Near(live, value.Applied))
+            {
+                owned.RemoveAt(i);
+                continue;
+            }
+            try
+            {
+                await game.ExecuteAsync(value.Feature.CommandId, [original.Value], "Twitch · end " + Definition.Title);
+                owned.RemoveAt(i);
+            }
             catch (Exception) { failures++; }
         }
-        owned.Clear();
         return failures;
+    }
+
+    /// <summary>Gives up on values that could not be restored (logged by the engine).</summary>
+    internal IReadOnlyList<string> AbandonRestores()
+    {
+        var names = owned.Where(o => o.Restore).Select(o => o.Feature.Name).ToArray();
+        owned.Clear();
+        return names;
     }
 
     /// <summary>Waits for the next game snapshots until the condition holds.</summary>

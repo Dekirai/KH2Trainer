@@ -14,6 +14,7 @@ internal static class EngineTests
             for (double done = 0; done < seconds - 1e-9; done += step)
             {
                 Clock.Now = Clock.Now.AddSeconds(Math.Min(step, seconds - done));
+                Game.Pump();
                 await Engine.TickAsync(Clock.Now);
             }
         }
@@ -102,7 +103,12 @@ internal static class EngineTests
 
             var capped = Create(features, s => s.MaxDurationSeconds = 90);
             capped.Redeem("a", "regen"); await capped.TickAsync(); capped.Redeem("b", "regen"); capped.Redeem("c", "regen"); await capped.TickAsync(1);
-            check(capped.Engine.ActiveEffects.Single().DurationSeconds == 90, "extend: capped by the maximum duration");
+            check(Math.Abs(capped.Engine.ActiveEffects.Single().RemainingSeconds - 90) < 0.01 && capped.Sink.IsFulfilled("b") && capped.Sink.IsRefunded("c"),
+                "extend: capped by the maximum; an extension that adds nothing is refunded");
+            await capped.TickAsync(50);
+            capped.Redeem("d", "regen"); await capped.TickAsync(1);
+            check(capped.Engine.ActiveEffects.Single().RemainingSeconds is > 85 and <= 90 && capped.Sink.IsFulfilled("d"),
+                "extend: the cap limits the time left, so a later extension still adds time");
 
             var refund = Create(features, s => s.SameEffect = SameEffectBehavior.Refund);
             refund.Redeem("a", "regen"); await refund.TickAsync(); refund.Redeem("b", "regen"); await refund.TickAsync(1);
@@ -166,11 +172,16 @@ internal static class EngineTests
             check(h.Sink.IsRefunded("b"), "reject: Revert without a Drive Form is refunded");
             h.Game.Reject = (feature, _) => feature == "player.hp";
             h.Redeem("c", "one-hp"); await h.TickAsync();
-            check(h.Sink.IsRefunded("c") && !h.Sink.IsFulfilled("c"), "failure: a rejected command refunds the viewer");
+            check(h.IsWaiting("c") && h.Engine.PendingEffects.Single().Status.Contains("Trying again") && !h.Sink.IsRefunded("c"),
+                "failure: a refused command is retried for a while (menus and transitions refuse briefly)");
+            await h.TickAsync(61);
+            check(h.Sink.IsRefunded("c") && !h.Sink.IsFulfilled("c"), "failure: a command the game keeps refusing refunds the viewer");
             h.Game.Reject = (feature, _) => feature == "movement.walk_speed";
             h.Redeem("d", "super-speed"); await h.TickAsync();
-            check(h.Sink.IsRefunded("d") && h.Game.Get("movement.run_speed") == 8, "failure: a half-applied effect restores what it already changed");
-            h.Game.Reject = null;
+            check(h.IsWaiting("d") && h.Game.Get("movement.run_speed") == 8, "failure: a half-applied effect restores what it already changed");
+            h.Game.Reject = null; await h.TickAsync(4);
+            check(h.IsActive("super-speed") && h.Sink.IsFulfilled("d") && !h.Sink.IsRefunded("d"), "failure: the retry succeeds once the game allows it");
+            await h.TickAsync(46);
             h.Redeem("e", "no-such-reward"); await h.TickAsync();
             check(h.Sink.IsRefunded("e"), "an unknown reward is refunded");
             h.Game.Set("player.drive.bars", 5);
@@ -193,7 +204,7 @@ internal static class EngineTests
             check(h.Sink.IsRefunded("a") && !h.IsActive("master") && h.Game.Get("combat.formtimer") == 0, "form: refunded and restored when Sora never transforms");
 
             var failed = Create(features);
-            failed.Game.FormResult = 7;
+            failed.Game.FormResult = 7; failed.Game.DriveSteps = 1;
             failed.Redeem("a", "wisdom"); await failed.TickAsync(); await failed.TickAsync(3);
             check(failed.Sink.IsRefunded("a"), "form: a transformation the game rejected is refunded quickly");
 
@@ -275,6 +286,7 @@ internal static class EngineTests
         // Stopping everything restores values and refunds what never ran.
         {
             var h = Create(features);
+            h.Game.DriveSteps = 5; // Final Form is still loading when everything stops.
             h.Redeem("a", "regen"); h.Redeem("b", "final"); await h.TickAsync();
             h.Game.SceneReady = false; h.Redeem("c", "heal"); await h.TickAsync(1);
             await h.Engine.StopAllAsync("Stopped by the streamer", h.Clock.Now);
@@ -307,6 +319,123 @@ internal static class EngineTests
             check(h.Engine.ActiveEffects.Count == 0 && h.Engine.PendingEffects.Count == 0 && !h.Sink.Refunded.Any(r => fulfilled.Contains(r.Redemption.Id)),
                 "concurrency: nothing is both charged and refunded");
             check(h.Game.Get("time.multiplier") == 1 && h.Game.Get("camera.fov_enabled") == 0, "concurrency: effects started by that tick are undone");
+        }
+
+        // Drive switches take time in the bridge: the queued form waits for the revert instead of being refused.
+        {
+            var h = Create(features);
+            h.Game.DriveSteps = 3;
+            h.Redeem("a", "final"); await h.TickAsync(); await h.TickAsync(4);
+            check(h.Game.Get("player.form.id") == 5 && h.Sink.IsFulfilled("a"), "handoff: Final Form establishes after its transformation");
+            h.Redeem("b", "valor"); await h.TickAsync(46);
+            check(h.Game.Get("drive.phase") is > 0 || h.Game.Calls("drive.trigger").Count() == 1, "handoff: Final is reverting");
+            await h.TickAsync(10);
+            check(h.Game.Get("player.form.id") == 1 && h.Sink.IsFulfilled("b") && h.Sink.Refunded.Count == 0,
+                "handoff: Valor Form starts after Final's revert finished; nobody is refunded");
+
+            var same = Create(features);
+            same.Game.DriveSteps = 3; same.Game.Set("player.form.id", 1); // The streamer is already in Valor Form.
+            same.Redeem("a", "valor"); await same.TickAsync(); await same.TickAsync(1);
+            check(!same.Sink.IsFulfilled("a") && same.Engine.ActiveEffects.Single().Established == false, "same form: not counted while the bridge re-enters the form");
+            await same.TickAsync(4);
+            check(same.Sink.IsFulfilled("a"), "same form: counted once the switch finished");
+            await same.TickAsync(30);
+            check(same.IsActive("valor"), "same form: the reward's full time is kept");
+
+            var loading = Create(features);
+            loading.Game.DriveSteps = 5;
+            loading.Redeem("a", "final"); await loading.TickAsync(); await loading.TickAsync(1);
+            loading.Redeem("b", "revert"); await loading.TickAsync(1);
+            check(loading.IsWaiting("b") && loading.Engine.PendingEffects.Single().Status.Contains("finish starting"), "interrupt: Kick Out waits while the form is still loading");
+            await loading.TickAsync(6);
+            check(loading.Sink.IsFulfilled("a") && loading.Sink.IsFulfilled("b") && !loading.IsActive("final") && loading.Game.Count("drive.revert") == 1,
+                "interrupt: Kick Out reverts once the form has loaded; both viewers got what they paid for");
+
+            var fifo = Create(features);
+            fifo.Redeem("a", "final"); await fifo.TickAsync(); await fifo.TickAsync(1);
+            fifo.Redeem("b", "valor"); fifo.Redeem("c", "revert"); await fifo.TickAsync(1);
+            check(fifo.Sink.IsFulfilled("c") && !fifo.IsActive("final") && fifo.Game.Count("drive.revert") == 1, "interrupt: Kick Out acts at once instead of waiting behind a queued form");
+            await fifo.TickAsync(1);
+            check(fifo.Game.Get("player.form.id") == 1, "interrupt: the queued Valor Form follows");
+
+            var refused = Create(features);
+            refused.Redeem("a", "final"); await refused.TickAsync(); await refused.TickAsync(1);
+            refused.Game.Reject = (feature, _) => feature == "drive.revert";
+            refused.Redeem("b", "revert"); await refused.TickAsync(1);
+            check(refused.Sink.IsRefunded("b") && !refused.Sink.IsFulfilled("b"), "interrupt: Kick Out is refunded when the game refuses the revert");
+
+            var end = Create(features);
+            end.Game.DriveSteps = 5;
+            end.Redeem("a", "master"); await end.TickAsync(); await end.TickAsync(1);
+            await end.Engine.EndEffectAsync("master", end.Clock.Now);
+            check(end.Sink.IsRefunded("a") && end.Game.Count("drive.cancel") == 1 && end.Game.Get("combat.formtimer") == 0,
+                "end: ending a form that is still loading refunds the viewer and cancels the switch");
+
+            var replace = Create(features, s => s.Conflict = ConflictBehavior.Replace);
+            replace.Game.DriveSteps = 5;
+            replace.Redeem("a", "final"); await replace.TickAsync(); await replace.TickAsync(1);
+            replace.Redeem("b", "valor"); await replace.TickAsync(1);
+            check(replace.IsWaiting("b") && replace.IsActive("final"), "replace: a form that is still loading is not replaced");
+            await replace.TickAsync(12);
+            check(replace.Sink.IsFulfilled("a") && replace.Sink.IsFulfilled("b") && replace.Game.Get("player.form.id") == 1, "replace: it is replaced once it has loaded");
+        }
+
+        // Restores the game refused are retried, and the group waits for them.
+        {
+            var h = Create(features);
+            h.Redeem("a", "snail"); await h.TickAsync();
+            h.Game.Reject = (feature, args) => feature == "movement.run_speed" && args[0] == 8;
+            await h.TickAsync(31);
+            check(!h.IsActive("snail") && h.Game.Get("movement.run_speed") == 2 && h.Game.Get("movement.walk_speed") == 2, "restore: a refused restore leaves the value for now");
+            h.Redeem("b", "super-speed"); await h.TickAsync(1);
+            check(h.IsWaiting("b") && h.Engine.PendingEffects.Single().Status.Contains("undone"), "restore: the next effect of the group waits for it");
+            h.Game.Reject = null; await h.TickAsync(2);
+            check(h.Game.Get("movement.run_speed") == 20 && h.Sink.IsFulfilled("b"), "restore: retried, then the next effect starts from the real original");
+            await h.TickAsync(46);
+            check(h.Game.Get("movement.run_speed") == 8, "restore: everything is back to normal");
+
+            var giveUp = Create(features);
+            giveUp.Redeem("a", "glass-cannon"); await giveUp.TickAsync();
+            giveUp.Game.Reject = (feature, _) => feature == "damage.player.general";
+            await giveUp.TickAsync(31); await giveUp.TickAsync(181, 10);
+            giveUp.Game.Reject = null;
+            giveUp.Redeem("b", "invincible"); await giveUp.TickAsync(1);
+            check(giveUp.Game.Get("damage.player.general") == 250 && giveUp.Sink.IsFulfilled("b"), "restore: gives up after a few minutes and stops blocking the group");
+        }
+
+        // The trainer's field freeze holds the game: other effects wait for it instead of failing.
+        {
+            var h = Create(features);
+            h.Redeem("a", "freeze-frame"); await h.TickAsync();
+            h.Redeem("b", "heal"); await h.TickAsync(1);
+            check(h.IsWaiting("b") && h.Engine.PendingEffects.Single().Status.Contains("frozen"), "freeze: redemptions wait during Freeze Frame");
+            await h.TickAsync(5);
+            check(h.Sink.IsFulfilled("b") && h.Game.Get("practice.field_pause") == 0, "freeze: they run when it ends");
+        }
+
+        // Redemptions that would change nothing are refunded; One HP Left waits for Regeneration.
+        {
+            var h = Create(features);
+            h.Game.Set("combat.autoheal", 1); // The streamer's own setting.
+            h.Redeem("a", "regen"); await h.TickAsync();
+            check(h.Sink.IsRefunded("a") && h.Sink.Refunded.Single().Reason.Contains("already active"), "values: refunded when it is already on");
+            h.Redeem("b", "one-hp"); await h.TickAsync(1);
+            check(h.IsWaiting("b") && h.Engine.PendingEffects.Single().Status.Contains("Regeneration"), "one hp: waits while HP refills by itself");
+            h.Game.Set("combat.autoheal", 0); await h.TickAsync(1);
+            check(h.Sink.IsFulfilled("b") && h.Game.Get("player.hp") == 1, "one hp: runs afterwards");
+        }
+
+        // Déjà Vu charges only when the pull back worked.
+        {
+            var h = Create(features);
+            h.Redeem("a", "deja-vu"); await h.TickAsync(); await h.TickAsync(1);
+            check(h.IsActive("deja-vu") && !h.Sink.IsFulfilled("a"), "deja vu: not charged before the pull back");
+            await h.TickAsync(10);
+            check(h.Sink.IsFulfilled("a") && h.Game.Count("player.position.return") == 1, "deja vu: charged after it pulled Sora back");
+            h.Redeem("b", "deja-vu"); await h.TickAsync();
+            h.Game.Reject = (feature, _) => feature == "player.position.return";
+            await h.TickAsync(11);
+            check(h.Sink.IsRefunded("b") && !h.Sink.IsFulfilled("b"), "deja vu: refunded when the pull back was not possible");
         }
 
         // A local test run behaves exactly like a redemption.

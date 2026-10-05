@@ -33,6 +33,9 @@ public sealed class EffectEngine
         public EffectDefinition Definition { get; } = definition;
         public DateTimeOffset Received { get; } = received;
         public string Status { get; set; } = "Waiting";
+        /// <summary>Set after the game refused the effect for a moment (menu, transition); the next try waits until then.</summary>
+        public DateTimeOffset? RetryAfter { get; set; }
+        public DateTimeOffset? FirstFailure { get; set; }
     }
 
     private sealed class Active(EffectContext context, DateTimeOffset started, int durationSeconds)
@@ -47,7 +50,17 @@ public sealed class EffectEngine
         public bool Fulfilled { get; set; }
     }
 
+    /// <summary>An ended effect whose values the game refused to take back; retried while the game is ready.</summary>
+    private sealed class Restoring(EffectContext context, DateTimeOffset deadline)
+    {
+        public EffectContext Context { get; } = context;
+        public DateTimeOffset Deadline { get; } = deadline;
+        public DateTimeOffset LastTry { get; set; }
+    }
+
     private static readonly TimeSpan SustainInterval = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan RetryInterval = TimeSpan.FromSeconds(3), RetryWindow = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan RestoreInterval = TimeSpan.FromSeconds(1), RestoreWindow = TimeSpan.FromMinutes(3);
     private readonly IGameControl game;
     private readonly FeatureMap features;
     private readonly Dictionary<string, EffectDefinition> catalog;
@@ -57,9 +70,11 @@ public sealed class EffectEngine
     private readonly Action<string> log;
     private readonly Func<TimeSpan, Task> delay;
     private readonly Random random;
+    private readonly int fieldPauseSlot;
     private readonly ConcurrentQueue<Redemption> incoming = new();
     private readonly List<Pending> pending = [];
     private readonly List<Active> active = [];
+    private readonly List<Restoring> restoring = [];
     private readonly LinkedList<EffectEvent> events = new();
     private DateTimeOffset? lastTick;
     private bool wasReady;
@@ -74,6 +89,7 @@ public sealed class EffectEngine
         this.catalog = catalog.ToDictionary(e => e.Key, StringComparer.Ordinal);
         this.delay = delay ?? (span => Task.Delay(span));
         this.random = random ?? new Random();
+        fieldPauseSlot = features.Contains("practice.field_pause") ? features.Get("practice.field_pause").ValueSlot : -1;
     }
 
     /// <summary>Raised after every tick that changed the queue, the running effects or the event list.</summary>
@@ -81,11 +97,14 @@ public sealed class EffectEngine
 
     public bool IsGameReady => game.IsConnected && game.SceneReady;
 
+    /// <summary>The trainer's field freeze (Freeze Frame) holds the game; most commands wait until it ends.</summary>
+    private bool FieldPaused => fieldPauseSlot >= 0 && game.TryRead(fieldPauseSlot, out double value) && value == 1;
+
     /// <summary>Accepts a redemption from any thread. It is handled on the next tick.</summary>
     public void Submit(Redemption redemption) => incoming.Enqueue(redemption);
 
     public IReadOnlyList<ActiveEffectInfo> ActiveEffects => active.Select(a => new ActiveEffectInfo(
-        a.Definition.Key, Title(a.Definition.Key), string.Join(", ", a.Redemptions.Select(r => r.UserName).Distinct()), a.Context.Detail,
+        a.Definition.Key, Title(a.Definition.Key), Viewers(a), a.Context.Detail,
         a.Definition.IsTimed ? Math.Max(0, a.DurationSeconds - a.ElapsedSeconds) : 0, a.DurationSeconds, a.Context.Established)).ToArray();
 
     public IReadOnlyList<PendingEffectInfo> PendingEffects => pending.Select(p => new PendingEffectInfo(
@@ -114,11 +133,32 @@ public sealed class EffectEngine
             bool becameReady = ready && !wasReady;
             wasReady = ready;
 
+            changed |= await RetryRestoresAsync(now, ready);
             changed |= await UpdateActiveAsync(now, step, ready, becameReady);
             changed |= await StartPendingAsync(now);
         }
         finally { gate.Release(); }
         if (changed || active.Count > 0 || pending.Count > 0) Changed?.Invoke();
+    }
+
+    private async Task<bool> RetryRestoresAsync(DateTimeOffset now, bool ready)
+    {
+        bool changed = false;
+        foreach (var item in restoring.ToArray())
+        {
+            if (now > item.Deadline)
+            {
+                restoring.Remove(item);
+                log($"Twitch: could not undo {Title(item.Context.Definition.Key)} ({string.Join(", ", item.Context.AbandonRestores())}). Set it back in the trainer if needed.");
+                changed = true;
+                continue;
+            }
+            if (!ready || FieldPaused || now - item.LastTry < RestoreInterval) continue;
+            item.LastTry = now;
+            await item.Context.RestoreAsync();
+            if (!item.Context.HasPendingRestores) { restoring.Remove(item); changed = true; }
+        }
+        return changed;
     }
 
     private async Task<bool> UpdateActiveAsync(DateTimeOffset now, double step, bool ready, bool becameReady)
@@ -128,7 +168,8 @@ public sealed class EffectEngine
         foreach (var effect in active.ToArray())
         {
             effect.Context.SinceStart = now - effect.Started;
-            if (effect.Definition.Monitor is { } monitor && ready)
+            // Monitors also run during loading: a Drive Form transition loads its model.
+            if (effect.Definition.Monitor is { } monitor && game.IsConnected)
             {
                 var progress = monitor(effect.Context);
                 if (progress.Status == EffectStatus.Failed && !effect.Context.Established)
@@ -146,7 +187,7 @@ public sealed class EffectEngine
                     continue;
                 }
             }
-            if (effect.Context.Established && !effect.Fulfilled) { FulfillAll(effect); changed = true; }
+            if (effect.Context.Established && !effect.Fulfilled && !effect.Definition.ChargeAfterEnd) { FulfillAll(effect); changed = true; }
             if (effect.Context.Established && (ready || !engine.PauseTimersWhileNotReady)) effect.ElapsedSeconds += step;
             if (effect.Definition.IsTimed && effect.Context.Established && effect.ElapsedSeconds >= effect.DurationSeconds)
             {
@@ -154,7 +195,7 @@ public sealed class EffectEngine
                 changed = true;
                 continue;
             }
-            if (ready && (becameReady || now - effect.LastSustain >= SustainInterval))
+            if (ready && !FieldPaused && (becameReady || now - effect.LastSustain >= SustainInterval))
             {
                 effect.LastSustain = now;
                 await effect.Context.SustainAsync();
@@ -179,24 +220,42 @@ public sealed class EffectEngine
                 changed = true;
                 continue;
             }
-
-            // FIFO within a group: a later redemption never overtakes an earlier one of the same group.
-            if (definition.Group is { } group && blockedGroups.Contains(group)) { changed |= SetStatus(item, "Waiting for an earlier redemption"); continue; }
+            if (item.RetryAfter is { } retry && now < retry)
+            {
+                if (definition.Group != null) blockedGroups.Add(definition.Group);
+                continue;
+            }
 
             var same = active.FirstOrDefault(a => a.Definition.Key == definition.Key);
+            if (same != null && definition.IsTimed && config.SameEffect == SameEffectBehavior.Refund)
+            {
+                Drop(item, $"{Title(definition.Key)} is already running", now);
+                changed = true;
+                continue;
+            }
+
+            // FIFO within a group: a later redemption never overtakes an earlier one of the same group.
+            // An interrupting effect (Kick Out of Drive Form) acts on the running effect instead of waiting in line.
+            if (definition.Group is { } group && !definition.Interrupts && blockedGroups.Contains(group)) { changed |= SetStatus(item, "Waiting for an earlier redemption"); continue; }
+
             if (same != null && definition.IsTimed)
             {
                 if (config.SameEffect == SameEffectBehavior.Extend)
                 {
-                    same.DurationSeconds = Math.Min(engine.MaxDurationSeconds, same.DurationSeconds + Math.Max(1, config.DurationSeconds));
+                    // The cap limits the time left, so an extension always adds real time or is refunded.
+                    int add = Math.Max(1, config.DurationSeconds);
+                    int room = (int)Math.Floor(engine.MaxDurationSeconds - (same.DurationSeconds - same.ElapsedSeconds));
+                    if (room < 1) { Drop(item, $"{Title(definition.Key)} already runs for the longest allowed time", now); changed = true; continue; }
+                    int added = Math.Min(add, room);
+                    same.DurationSeconds += added;
                     same.Redemptions.Add(item.Redemption);
                     pending.Remove(item);
                     if (same.Fulfilled) sink.Fulfill(item.Redemption);
-                    Record(now, EffectEventKind.Extended, definition.Key, item.Redemption.UserName, $"+{Math.Max(1, config.DurationSeconds)} s", $"{item.Redemption.UserName} extended {Title(definition.Key)} to {same.DurationSeconds} s.");
+                    Record(now, EffectEventKind.Extended, definition.Key, item.Redemption.UserName, $"+{added} s",
+                        $"{item.Redemption.UserName} extended {Title(definition.Key)} by {added} s.");
                     changed = true;
                     continue;
                 }
-                if (config.SameEffect == SameEffectBehavior.Refund) { Drop(item, $"{Title(definition.Key)} is already running", now); changed = true; continue; }
                 Block(item, $"Waiting for the running {Title(definition.Key)}", blockedGroups);
                 changed = true;
                 continue;
@@ -213,6 +272,20 @@ public sealed class EffectEngine
                 }
                 if (config.Conflict == ConflictBehavior.Refund) { Drop(item, $"{Title(conflict.Definition.Key)} is running", now); changed = true; continue; }
             }
+            // Replace or interrupt only an effect that has taken hold; one that is still starting (a form loading) finishes first.
+            if (conflict != null && !conflict.Context.Established)
+            {
+                Block(item, $"Waiting for {Title(conflict.Definition.Key)} to finish starting", blockedGroups);
+                changed = true;
+                continue;
+            }
+            // An earlier effect of this group still has values to put back; starting now would capture them as originals.
+            if (definition.Group != null && restoring.Any(r => r.Context.Definition.Group == definition.Group))
+            {
+                Block(item, "Waiting until the previous effect is undone", blockedGroups);
+                changed = true;
+                continue;
+            }
 
             // Check before touching a running effect, so nothing is replaced while the game is loading.
             var context = new EffectContext(definition, item.Redemption, definition.IsTimed ? Math.Max(1, config.DurationSeconds) : 0,
@@ -221,22 +294,36 @@ public sealed class EffectEngine
             if (readiness.Kind == ReadinessKind.Wait)
             {
                 changed |= SetStatus(item, readiness.Reason);
-                if (definition.Group != null) blockedGroups.Add(definition.Group);
+                if (definition.Group != null && !definition.Interrupts) blockedGroups.Add(definition.Group);
                 continue;
             }
             if (readiness.Kind == ReadinessKind.Reject) { Drop(item, readiness.Reason, now); changed = true; continue; }
 
+            int index = pending.IndexOf(item);
             pending.Remove(item);
             changed = true;
             if (conflict != null && definition.Interrupts)
             {
-                // Ending the running effect is the whole job (a form's end reverts it).
-                await EndAsync(conflict, EndReason.Interrupted, now, $"{item.Redemption.UserName} interrupted it");
-                sink.Fulfill(item.Redemption);
-                Record(now, EffectEventKind.Done, definition.Key, item.Redemption.UserName, null, $"{item.Redemption.UserName}: {Title(definition.Key)} done.");
+                // Ending the running effect is the whole job (a form's end reverts it). The viewer pays only if that worked.
+                if (await EndAsync(conflict, EndReason.Interrupted, now, $"{item.Redemption.UserName} interrupted it"))
+                {
+                    sink.Fulfill(item.Redemption);
+                    Record(now, EffectEventKind.Done, definition.Key, item.Redemption.UserName, null, $"{item.Redemption.UserName}: {Title(definition.Key)} done.");
+                }
+                else
+                {
+                    Refund(item.Redemption, "The game did not allow it right now.");
+                    Record(now, EffectEventKind.Failed, definition.Key, item.Redemption.UserName, null,
+                        $"{Title(definition.Key)} for {item.Redemption.UserName} did not work. Points refunded.");
+                }
                 continue;
             }
-            if (conflict != null) await EndAsync(conflict, EndReason.Replaced, now, $"replaced by {Title(definition.Key)}");
+            Active? replaced = null;
+            if (conflict != null)
+            {
+                await EndAsync(conflict, EndReason.Replaced, now, $"replaced by {Title(definition.Key)}");
+                replaced = conflict;
+            }
             try
             {
                 await definition.Start(context);
@@ -244,15 +331,28 @@ public sealed class EffectEngine
             catch (Exception error)
             {
                 await context.RestoreAsync();
-                Refund(item.Redemption, error.Message);
-                Record(now, EffectEventKind.Failed, definition.Key, item.Redemption.UserName, error.Message, $"{Title(definition.Key)} for {item.Redemption.UserName} did not work: {error.Message} Points refunded.");
+                QueueRestore(context, now);
+                if (replaced != null) await CleanUpAsync(replaced.Context);
+                item.FirstFailure ??= now;
+                // A refusal can be momentary (menu, transformation, busy queue): try again for a while before refunding.
+                if (error is EffectRejectedException || replaced != null || now - item.FirstFailure.Value >= RetryWindow)
+                {
+                    Refund(item.Redemption, error.Message);
+                    Record(now, EffectEventKind.Failed, definition.Key, item.Redemption.UserName, error.Message,
+                        $"{Title(definition.Key)} for {item.Redemption.UserName} did not work: {error.Message} Points refunded.");
+                    continue;
+                }
+                item.RetryAfter = now + RetryInterval;
+                item.Status = $"The game refused it for now ({error.Message}). Trying again.";
+                pending.Insert(Math.Min(index, pending.Count), item);
+                if (definition.Group != null) blockedGroups.Add(definition.Group);
                 continue;
             }
             if (definition.IsTimed || !context.Established)
             {
                 var effect = new Active(context, now, context.DurationSeconds);
                 active.Add(effect);
-                if (context.Established) FulfillAll(effect);
+                if (context.Established && !definition.ChargeAfterEnd) FulfillAll(effect);
                 Record(now, EffectEventKind.Started, definition.Key, item.Redemption.UserName, context.Detail, $"{item.Redemption.UserName} started {Title(definition.Key)}{Suffix(context)}.");
             }
             else
@@ -268,6 +368,7 @@ public sealed class EffectEngine
     {
         var definition = context.Definition;
         if (!game.IsConnected) return Readiness.Wait("Waiting for the trainer to connect to the game");
+        if (definition.Group != "freeze" && FieldPaused) return Readiness.Wait("Waiting until the frozen game continues");
         foreach (string id in definition.Features)
         {
             var feature = features.Get(id);
@@ -311,29 +412,60 @@ public sealed class EffectEngine
         {
             while (incoming.TryDequeue(out var redemption)) Refund(redemption, reason);
             foreach (var item in pending.ToArray()) Drop(item, reason, now);
-            foreach (var effect in active.ToArray())
-            {
-                if (!effect.Fulfilled) foreach (var redemption in effect.Redemptions) Refund(redemption, reason);
-                await EndAsync(effect, EndReason.Stopped, now, reason);
-            }
+            // Effects that never took hold are refunded by EndAsync; the others were already paid for.
+            foreach (var effect in active.ToArray()) await EndAsync(effect, EndReason.Stopped, now, reason);
+            if (IsGameReady) foreach (var item in restoring.ToArray()) { await item.Context.RestoreAsync(); if (!item.Context.HasPendingRestores) restoring.Remove(item); }
         }
         finally { gate.Release(); }
         Changed?.Invoke();
     }
 
-    private async Task EndAsync(Active effect, EndReason reason, DateTimeOffset now, string? why)
+    /// <summary>Ends an effect. Returns false when its end step failed (for example the game refused a revert).</summary>
+    private async Task<bool> EndAsync(Active effect, EndReason reason, DateTimeOffset now, string? why)
     {
-        await StopAsync(effect, reason, now);
-        if (!effect.Fulfilled && effect.Context.Established) FulfillAll(effect);
+        bool ok = await StopAsync(effect, reason, now);
+        if (!effect.Fulfilled)
+        {
+            if (effect.Context.Established && (ok || !effect.Definition.ChargeAfterEnd)) FulfillAll(effect);
+            else
+            {
+                string refund = why ?? "it ended before it took effect";
+                foreach (var redemption in effect.Redemptions) Refund(redemption, refund);
+                Record(now, EffectEventKind.Refunded, effect.Definition.Key, Viewers(effect), why,
+                    $"{Title(effect.Definition.Key)} ended without effect{(why is null ? "" : ": " + why)}. Points refunded.");
+                return ok;
+            }
+        }
         Record(now, EffectEventKind.Ended, effect.Definition.Key, Viewers(effect), why, $"{Title(effect.Definition.Key)} ended{(why is null ? "" : ": " + why)}.");
+        return ok;
     }
 
-    private async Task StopAsync(Active effect, EndReason reason, DateTimeOffset now)
+    private async Task<bool> StopAsync(Active effect, EndReason reason, DateTimeOffset now)
     {
         active.Remove(effect);
         effect.Context.EndReason = reason;
+        bool ok = true;
         try { await (effect.Definition.End ?? (ctx => ctx.RestoreAsync()))(effect.Context); }
-        catch (Exception error) { log($"Twitch: could not fully undo {Title(effect.Definition.Key)}: {error.Message}"); }
+        catch (Exception error)
+        {
+            ok = false;
+            log($"Twitch: could not fully end {Title(effect.Definition.Key)}: {error.Message}");
+        }
+        QueueRestore(effect.Context, now);
+        return ok;
+    }
+
+    /// <summary>After a replacement failed to start: end the replaced effect properly (for example revert its Drive Form).</summary>
+    private async Task CleanUpAsync(EffectContext replaced)
+    {
+        replaced.EndReason = EndReason.Stopped;
+        try { await (replaced.Definition.End ?? (ctx => ctx.RestoreAsync()))(replaced); }
+        catch (Exception error) { log($"Twitch: could not fully end {Title(replaced.Definition.Key)}: {error.Message}"); }
+    }
+
+    private void QueueRestore(EffectContext context, DateTimeOffset now)
+    {
+        if (context.HasPendingRestores && restoring.All(r => r.Context != context)) restoring.Add(new Restoring(context, now + RestoreWindow) { LastTry = now });
     }
 
     private void FulfillAll(Active effect)

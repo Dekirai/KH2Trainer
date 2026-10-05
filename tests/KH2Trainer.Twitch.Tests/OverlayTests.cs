@@ -32,12 +32,12 @@ internal static class OverlayTests
         var state = RewardResolver.Overlay(engine, settings);
         check(state.Active.Count == 1 && state.Active[0] is { Key: "fisheye", Viewers: "Alice" } && state.Active[0].Remaining > 0 && !state.Active[0].Image,
             "overlay: active effects with viewer and time; a non-image file is not offered");
-        check(state.Queue.Count == 1 && state.Queue[0] is { Key: "tunnel-vision", Viewer: "Bob" }, "overlay: the queue shows who waits");
+        check(state.Queue.Count == 1 && state.Queue[0] is { Key: "tunnel-vision", Viewer: "Bob", Id: "b" }, "overlay: the queue shows who waits (keyed by redemption)");
         check(state.Events.Count == 1 && state.Events[0].Text.StartsWith("Alice: ", StringComparison.Ordinal), "overlay: the toast names the viewer and effect");
 
         await using var server = new OverlayServer(0, () => RewardResolver.Overlay(engine, settings), key => RewardResolver.ImagePath(key, settings));
         server.Start();
-        check(server.Port > 0 && server.Url == $"http://localhost:{server.Port}/", "overlay: listens on a local port");
+        check(server.Port > 0 && server.Url == $"http://127.0.0.1:{server.Port}/", "overlay: listens on a local port and advertises the IPv4 address");
         using var http = new HttpClient(new HttpClientHandler { UseProxy = false }) { BaseAddress = new Uri($"http://127.0.0.1:{server.Port}/"), Timeout = TimeSpan.FromSeconds(10) };
 
         var page = await http.GetAsync("/?side=left");
@@ -60,8 +60,16 @@ internal static class OverlayTests
         check((await http.GetAsync("/image/..%2F..%2Fsecret")).StatusCode == HttpStatusCode.NotFound, "overlay: path tricks in the key are rejected");
         check((await http.GetAsync("/nothing")).StatusCode == HttpStatusCode.NotFound, "overlay: unknown paths return 404");
         check((await http.PostAsync("/state.json", new StringContent("x"))).StatusCode == HttpStatusCode.MethodNotAllowed, "overlay: only GET and HEAD are answered");
-        var head = await http.SendAsync(new HttpRequestMessage(HttpMethod.Head, "/state.json"));
-        check(head.StatusCode == HttpStatusCode.OK && (await head.Content.ReadAsByteArrayAsync()).Length == 0, "overlay: HEAD has no body");
+        string get = await Raw(server.Port, "GET /state.json HTTP/1.1\r\nHost: 127.0.0.1:" + server.Port + "\r\n\r\n");
+        string head = await Raw(server.Port, "HEAD /state.json HTTP/1.1\r\nHost: 127.0.0.1:" + server.Port + "\r\n\r\n");
+        int getLength = int.Parse(get.Split("Content-Length: ")[1].Split("\r\n")[0]);
+        check(head.StartsWith("HTTP/1.1 200", StringComparison.Ordinal) && head.EndsWith("\r\n\r\n", StringComparison.Ordinal) && head.Contains($"Content-Length: {getLength}")
+            && get.Length > head.Length, "overlay: HEAD sends the headers of GET without the body");
+        string foreignSite = await Raw(server.Port, "GET /state.json HTTP/1.1\r\nHost: evil.example:" + server.Port + "\r\n\r\n");
+        check(foreignSite.StartsWith("HTTP/1.1 403", StringComparison.Ordinal) && !foreignSite.Contains("Access-Control-Allow-Origin"),
+            "overlay: requests for another host name (DNS rebinding) are refused and nothing allows cross-site reads");
+        check((await Raw(server.Port, "GET / HTTP/1.1\r\nHost: localhost:" + server.Port + "\r\n\r\n")).StartsWith("HTTP/1.1 200", StringComparison.Ordinal),
+            "overlay: localhost works too");
 
         // A client that connects and sends nothing does not block others.
         using (var idle = new TcpClient())
@@ -80,10 +88,23 @@ internal static class OverlayTests
         }
 
         await server.DisposeAsync();
+        await server.DisposeAsync(); // Disposing twice is harmless.
         bool closed;
         try { await http.GetAsync("/state.json"); closed = false; }
         catch (HttpRequestException) { closed = true; }
         check(closed, "overlay: stopping the server closes the port");
         Directory.Delete(folder, true);
+    }
+
+    /// <summary>Sends a raw request and reads the whole answer until the server closes the connection.</summary>
+    private static async Task<string> Raw(int port, string request)
+    {
+        using var client = new TcpClient();
+        await client.ConnectAsync(IPAddress.Loopback, port);
+        var stream = client.GetStream();
+        await stream.WriteAsync(Encoding.ASCII.GetBytes(request));
+        using var answer = new MemoryStream();
+        await stream.CopyToAsync(answer).WaitAsync(TimeSpan.FromSeconds(10));
+        return Encoding.UTF8.GetString(answer.ToArray());
     }
 }

@@ -8,6 +8,7 @@ namespace KH2Trainer.Twitch;
 
 public sealed record TwitchUser(string Id, string Login, string DisplayName, string BroadcasterType);
 public sealed record TwitchReward(string Id, string Title, int Cost, bool IsPaused);
+public sealed record TwitchRedemption(string Id, string RewardId, string UserName, string UserInput, DateTimeOffset RedeemedAt);
 
 /// <summary>A Twitch API error with a message the streamer can act on.</summary>
 public sealed class TwitchApiException(HttpStatusCode status, string message) : Exception(Explain(status, message))
@@ -39,12 +40,13 @@ public sealed class HelixClient
     private readonly HttpClient http;
     private readonly string clientId;
     private readonly Func<CancellationToken, Task<string>> accessToken;
-    private readonly Func<CancellationToken, Task<string>> refreshAccessToken;
+    /// <summary>Called with the token Twitch rejected; returns a fresh one.</summary>
+    private readonly Func<string, CancellationToken, Task<string>> refreshAccessToken;
     private readonly Uri api;
     private readonly Func<TimeSpan, CancellationToken, Task> delay;
 
     public HelixClient(HttpClient http, string clientId, Func<CancellationToken, Task<string>> accessToken,
-        Func<CancellationToken, Task<string>> refreshAccessToken, Uri? apiBase = null, Func<TimeSpan, CancellationToken, Task>? delay = null)
+        Func<string, CancellationToken, Task<string>> refreshAccessToken, Uri? apiBase = null, Func<TimeSpan, CancellationToken, Task>? delay = null)
     {
         this.http = http; this.clientId = clientId; this.accessToken = accessToken; this.refreshAccessToken = refreshAccessToken;
         api = apiBase ?? new Uri("https://api.twitch.tv/helix/");
@@ -92,12 +94,29 @@ public sealed class HelixClient
             $"channel_points/custom_rewards/redemptions?broadcaster_id={Uri.EscapeDataString(broadcasterId)}&reward_id={Uri.EscapeDataString(rewardId)}&id={Uri.EscapeDataString(redemptionId)}",
             new JsonObject { ["status"] = fulfilled ? "FULFILLED" : "CANCELED" }, cancellation);
 
-    public async Task<IReadOnlyList<string>> GetUnfulfilledRedemptionIdsAsync(string broadcasterId, string rewardId, CancellationToken cancellation = default)
+    /// <summary>All redemptions of a reward that still wait in the request queue (follows Twitch's pages of 50).</summary>
+    public async Task<IReadOnlyList<TwitchRedemption>> GetUnfulfilledRedemptionsAsync(string broadcasterId, string rewardId, CancellationToken cancellation = default)
     {
-        var data = await DataAsync(HttpMethod.Get,
-            $"channel_points/custom_rewards/redemptions?broadcaster_id={Uri.EscapeDataString(broadcasterId)}&reward_id={Uri.EscapeDataString(rewardId)}&status=UNFULFILLED&first=50",
-            null, cancellation);
-        return data.Select(r => Text(r, "id")).ToArray();
+        var result = new List<TwitchRedemption>();
+        string? cursor = null;
+        for (int page = 0; page < 100; page++)
+        {
+            string path = $"channel_points/custom_rewards/redemptions?broadcaster_id={Uri.EscapeDataString(broadcasterId)}&reward_id={Uri.EscapeDataString(rewardId)}&status=UNFULFILLED&first=50"
+                + (cursor is null ? "" : "&after=" + Uri.EscapeDataString(cursor));
+            string json = await SendAsync(HttpMethod.Get, path, null, cancellation);
+            using var document = JsonDocument.Parse(json.Length == 0 ? "{}" : json);
+            var root = document.RootElement;
+            if (root.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
+                foreach (var r in data.EnumerateArray())
+                {
+                    string name = Text(r, "user_name");
+                    DateTimeOffset.TryParse(Text(r, "redeemed_at"), out var redeemedAt);
+                    result.Add(new TwitchRedemption(Text(r, "id"), rewardId, name.Length > 0 ? name : Text(r, "user_login"), Text(r, "user_input"), redeemedAt));
+                }
+            cursor = root.TryGetProperty("pagination", out var pagination) && pagination.ValueKind == JsonValueKind.Object ? Text(pagination, "cursor") : "";
+            if (string.IsNullOrEmpty(cursor)) break;
+        }
+        return result;
     }
 
     /// <summary>Subscribes the EventSub WebSocket session to this channel's reward redemptions.</summary>
@@ -152,9 +171,9 @@ public sealed class HelixClient
     private async Task<string> SendAsync(HttpMethod method, string path, JsonNode? body, CancellationToken cancellation)
     {
         bool refreshed = false;
+        string token = await accessToken(cancellation);
         for (int attempt = 0; ; attempt++)
         {
-            string token = refreshed ? await refreshAccessToken(cancellation) : await accessToken(cancellation);
             using var request = new HttpRequestMessage(method, new Uri(api, path));
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             request.Headers.TryAddWithoutValidation("Client-Id", clientId);
@@ -162,7 +181,7 @@ public sealed class HelixClient
             using var response = await http.SendAsync(request, cancellation);
             string text = await response.Content.ReadAsStringAsync(cancellation);
             if (response.IsSuccessStatusCode) return text;
-            if (response.StatusCode == HttpStatusCode.Unauthorized && !refreshed) { refreshed = true; continue; }
+            if (response.StatusCode == HttpStatusCode.Unauthorized && !refreshed) { refreshed = true; token = await refreshAccessToken(token, cancellation); continue; }
             if (response.StatusCode == HttpStatusCode.TooManyRequests && attempt < 3)
             {
                 var wait = TimeSpan.FromSeconds(1);

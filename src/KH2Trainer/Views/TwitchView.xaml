@@ -112,7 +112,7 @@
        <TextBlock Text="{Binding Description}" Style="{StaticResource Text.Small}" Margin="0,2,0,0"/>
        <WrapPanel Margin="0,4,0,0">
         <TextBlock Text="{Binding Info}" Style="{StaticResource Text.Small}" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
-        <Border Visibility="{Binding Enabled,Converter={StaticResource BoolVisibility}}">
+        <Border Visibility="{Binding ShowStatus,Converter={StaticResource BoolVisibility}}">
          <Border.Style>
           <Style TargetType="Border" BasedOn="{StaticResource Badge}">
            <Style.Triggers>
@@ -156,6 +156,9 @@
    <!-- SETUP -->
    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,6,0" Visibility="{Binding IsSetupTab,Converter={StaticResource BoolVisibility}}">
     <StackPanel Margin="0,0,0,24">
+     <Border Style="{StaticResource Banner.Warning}" Margin="0,0,0,14" Visibility="{Binding HasLoadProblem,Converter={StaticResource BoolVisibility}}">
+      <TextBlock Text="{Binding LoadProblem}" TextWrapping="Wrap"/>
+     </Border>
      <local:AdaptiveGrid MinColumnWidth="420" MaxColumns="2" ColumnSpacing="14" RowSpacing="14">
 
       <!-- Connection -->
@@ -273,11 +276,11 @@
       <Button Content="Sync now" Command="{Binding ResyncCommand}" Style="{StaticResource Button.Subtle}" Margin="0,0,4,0" ToolTip="Bring every reward on Twitch in line with this list."/>
       <Button Content="Reward dashboard" Command="{Binding OpenDashboardCommand}" Style="{StaticResource Button.Subtle}" ToolTip="Open your channel point rewards on Twitch, for example to upload icons."/>
      </StackPanel>
-     <TextBox Style="{StaticResource TextBox.Search}" Tag="Filter rewards" Width="240" Text="{Binding Filter,UpdateSourceTrigger=PropertyChanged,Delay=150}" AutomationProperties.Name="Filter rewards">
+     <TextBox Style="{StaticResource TextBox.Search}" Tag="Filter rewards" MinWidth="160" MaxWidth="280" HorizontalAlignment="Left" Text="{Binding Filter,UpdateSourceTrigger=PropertyChanged,Delay=150}" AutomationProperties.Name="Filter rewards">
       <TextBox.InputBindings><KeyBinding Key="Escape" Command="{Binding ClearFilterCommand}"/></TextBox.InputBindings>
      </TextBox>
-     <TextBlock Text="{Binding RewardSummary}" Style="{StaticResource Text.Small}" VerticalAlignment="Center" Margin="14,0,14,0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
     </DockPanel>
+    <TextBlock DockPanel.Dock="Top" Text="{Binding RewardSummary}" Style="{StaticResource Text.Small}" Margin="2,0,6,10"/>
     <Border DockPanel.Dock="Top" Style="{StaticResource Banner.Warning}" Margin="0,0,6,10" Visibility="{Binding OverLimit,Converter={StaticResource BoolVisibility}}">
      <TextBlock Text="{Binding LimitText}" TextWrapping="Wrap"/>
     </Border>

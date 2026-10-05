@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace KH2Trainer.Twitch;
 
 public sealed record OverlayEffect(string Key, string Title, string Viewers, string? Detail, double Remaining, double Duration, string Color, bool Image, bool Starting);
-public sealed record OverlayQueued(string Key, string Title, string Viewer, string Status, string Color, bool Image);
+public sealed record OverlayQueued(string Id, string Key, string Title, string Viewer, string Status, string Color, bool Image);
 public sealed record OverlayEvent(long Time, string Key, string Text, string Color, bool Image);
 public sealed record OverlayState(IReadOnlyList<OverlayEffect> Active, IReadOnlyList<OverlayQueued> Queue, IReadOnlyList<OverlayEvent> Events);
 
@@ -38,7 +38,8 @@ public sealed class OverlayServer : IAsyncDisposable
     }
 
     public int Port => ((IPEndPoint)listener.LocalEndpoint).Port;
-    public string Url => $"http://localhost:{Port}/";
+    /// <summary>127.0.0.1 rather than localhost: the server listens on IPv4, and "localhost" may try IPv6 first.</summary>
+    public string Url => $"http://127.0.0.1:{Port}/";
 
     public void Start()
     {
@@ -66,11 +67,17 @@ public sealed class OverlayServer : IAsyncDisposable
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(stop.Token);
                 timeout.CancelAfter(TimeSpan.FromSeconds(5));
                 var stream = client.GetStream();
-                string? requestLine = await ReadRequestLineAsync(stream, timeout.Token);
-                var parts = requestLine?.Split(' ');
+                var request = await ReadRequestAsync(stream, timeout.Token);
+                var parts = request?.Line.Split(' ');
                 if (parts is not { Length: >= 2 } || parts[0] is not ("GET" or "HEAD"))
                 {
                     await WriteAsync(stream, 405, "text/plain", "Method not allowed"u8.ToArray(), false, timeout.Token);
+                    return;
+                }
+                // Only local pages may read it: a web site cannot pass a matching Host header (DNS rebinding).
+                if (!IsLocalHost(request!.Value.Host))
+                {
+                    await WriteAsync(stream, 403, "text/plain", "Forbidden"u8.ToArray(), parts[0] == "HEAD", timeout.Token);
                     return;
                 }
                 bool head = parts[0] == "HEAD";
@@ -104,7 +111,10 @@ public sealed class OverlayServer : IAsyncDisposable
         _ => null,
     };
 
-    private static async Task<string?> ReadRequestLineAsync(NetworkStream stream, CancellationToken cancellation)
+    private bool IsLocalHost(string? host) =>
+        host is not null && (host.Equals($"localhost:{Port}", StringComparison.OrdinalIgnoreCase) || host == $"127.0.0.1:{Port}" || host == $"[::1]:{Port}");
+
+    private static async Task<(string Line, string? Host)?> ReadRequestAsync(NetworkStream stream, CancellationToken cancellation)
     {
         var buffer = new byte[8192];
         int length = 0;
@@ -114,16 +124,20 @@ public sealed class OverlayServer : IAsyncDisposable
             if (read == 0) break;
             length += read;
             string text = Encoding.ASCII.GetString(buffer, 0, length);
-            if (text.Contains("\r\n\r\n", StringComparison.Ordinal)) return text[..text.IndexOf("\r\n", StringComparison.Ordinal)];
+            int end = text.IndexOf("\r\n\r\n", StringComparison.Ordinal);
+            if (end < 0) continue;
+            var lines = text[..end].Split("\r\n");
+            string? host = lines.Skip(1).Where(l => l.StartsWith("Host:", StringComparison.OrdinalIgnoreCase)).Select(l => l[5..].Trim()).FirstOrDefault();
+            return (lines[0], host);
         }
         return null;
     }
 
     private static async Task WriteAsync(NetworkStream stream, int status, string type, byte[] body, bool head, CancellationToken cancellation)
     {
-        string reason = status switch { 200 => "OK", 404 => "Not Found", 405 => "Method Not Allowed", _ => "Error" };
+        string reason = status switch { 200 => "OK", 403 => "Forbidden", 404 => "Not Found", 405 => "Method Not Allowed", _ => "Error" };
         string header = $"HTTP/1.1 {status} {reason}\r\nContent-Type: {type}\r\nContent-Length: {body.Length}\r\n" +
-            "Cache-Control: no-store\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n";
+            "Cache-Control: no-store\r\nConnection: close\r\n\r\n";
         await stream.WriteAsync(Encoding.ASCII.GetBytes(header), cancellation);
         if (!head) await stream.WriteAsync(body, cancellation);
     }

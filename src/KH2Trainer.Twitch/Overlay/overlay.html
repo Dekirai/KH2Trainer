@@ -11,12 +11,14 @@
   :root { --scale: 1; --side: flex-end; }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: transparent; overflow: hidden; }
-  body { font: 600 calc(15px * var(--scale)) / 1.3 "Segoe UI", system-ui, sans-serif; color: #fff;
-         display: flex; flex-direction: column; align-items: var(--side); gap: calc(8px * var(--scale)); padding: calc(12px * var(--scale)); }
+  body { font: 600 calc(15px * var(--scale)) / 1.3 "Segoe UI", system-ui, sans-serif; color: #fff; padding: calc(12px * var(--scale)); }
+  #cards { display: flex; flex-direction: column; align-items: var(--side); gap: calc(8px * var(--scale)); }
   .card { width: calc(380px * var(--scale)); display: flex; gap: calc(10px * var(--scale)); align-items: center;
           padding: calc(10px * var(--scale)) calc(12px * var(--scale)); border-radius: calc(12px * var(--scale));
           background: rgba(14, 17, 23, .82); border-left: calc(4px * var(--scale)) solid var(--color, #5b9bff);
-          box-shadow: 0 4px 18px rgba(0, 0, 0, .35); animation: enter .35s ease-out; }
+          box-shadow: 0 4px 18px rgba(0, 0, 0, .35); }
+  /* Only cards that just appeared slide in; updates never replay the animation. */
+  .new { animation: enter .35s ease-out; }
   .icon { flex: none; width: calc(46px * var(--scale)); height: calc(46px * var(--scale)); border-radius: calc(10px * var(--scale));
           background: var(--color, #5b9bff) center / cover no-repeat; display: grid; place-items: center; font-size: calc(20px * var(--scale)); }
   .body { flex: 1; min-width: 0; }
@@ -30,10 +32,12 @@
   .queued { opacity: .85; padding-top: calc(6px * var(--scale)); padding-bottom: calc(6px * var(--scale)); }
   .queued .icon { width: calc(30px * var(--scale)); height: calc(30px * var(--scale)); font-size: calc(14px * var(--scale)); }
   .toast { background: rgba(30, 36, 48, .92); }
+  [hidden] { display: none !important; }
   @keyframes enter { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
 </style>
 </head>
 <body>
+<div id="cards"></div>
 <script>
   const params = new URLSearchParams(location.search);
   const root = document.documentElement.style;
@@ -41,74 +45,91 @@
   root.setProperty('--side', params.get('side') === 'left' ? 'flex-start' : 'flex-end');
   const showQueue = params.get('queue') !== '0';
   const symbols = { '#1F8B4C': '❤', '#C0392B': '☠', '#8E44AD': '★', '#D68910': '⚡' };
+  const container = document.getElementById('cards');
 
+  // All text goes through textContent, so viewer names and titles can never inject markup.
   function element(tag, className, text) {
     const node = document.createElement(tag);
     if (className) node.className = className;
     if (text !== undefined) node.textContent = text;
     return node;
   }
-  function icon(item) {
-    const node = element('div', 'icon');
-    if (item.image) node.style.backgroundImage = `url("/image/${encodeURIComponent(item.key)}")`;
-    else node.textContent = symbols[item.color] || '✦';
+  function card(item, kind) {
+    const node = element('div', `card ${kind} new`);
+    node.addEventListener('animationend', () => node.classList.remove('new'), { once: true });
+    node.style.setProperty('--color', item.color);
+    const icon = element('div', 'icon');
+    if (item.image) icon.style.backgroundImage = `url("/image/${encodeURIComponent(item.key)}")`;
+    else icon.textContent = symbols[item.color] || '✦';
+    node.append(icon);
     return node;
   }
-  function card(item, extraClass) {
-    const node = element('div', 'card' + (extraClass ? ' ' + extraClass : ''));
-    node.style.setProperty('--color', item.color);
-    node.dataset.key = (extraClass || 'active') + ':' + item.key + ':' + (item.viewer || item.viewers || item.time || '');
-    node.append(icon(item));
+  function setTitle(node, title, detail) {
+    node.textContent = title;
+    if (detail) { node.append(' · '); node.append(element('span', 'detail', detail)); }
+  }
+  function toastCard(event) {
+    const node = card(event, 'toast');
+    const body = element('div', 'body');
+    body.append(element('div', 'title', event.text));
+    node.append(body);
     return node;
+  }
+  function activeCard(effect) {
+    const node = card(effect, 'active');
+    const body = element('div', 'body'), bar = element('div', 'bar');
+    bar.append(element('div'));
+    body.append(element('div', 'title'), element('div', 'sub'), bar);
+    node.append(body, element('div', 'time'));
+    return node;
+  }
+  function updateActive(node, effect) {
+    setTitle(node.querySelector('.title'), effect.title, effect.detail);
+    node.querySelector('.sub').textContent = effect.starting ? 'Starting…' : effect.viewers;
+    const timed = effect.duration > 0;
+    node.querySelector('.bar').hidden = !timed;
+    node.querySelector('.bar > div').style.width = `${timed ? Math.max(0, Math.min(100, effect.remaining / effect.duration * 100)) : 0}%`;
+    const time = node.querySelector('.time');
+    time.hidden = !timed || effect.starting;
+    time.textContent = `${Math.ceil(effect.remaining)}s`;
+  }
+  function queuedCard(item) {
+    const node = card(item, 'queued');
+    const body = element('div', 'body');
+    body.append(element('div', 'title'), element('div', 'sub'));
+    node.append(body);
+    return node;
+  }
+  function updateQueued(node, item) {
+    node.querySelector('.title').textContent = item.title;
+    node.querySelector('.sub').textContent = `${item.viewer} · ${item.status}`;
   }
   function render(state) {
     const now = Date.now();
-    const nodes = [];
-    for (const event of state.events) {
-      if (now - event.time > 6000) continue;
-      const toast = card(event, 'toast');
-      const body = element('div', 'body');
-      body.append(element('div', 'title', event.text));
-      toast.append(body);
-      nodes.push(toast);
-      break; // Only the newest event is shown as a toast.
-    }
-    for (const effect of state.active) {
-      const node = card(effect);
-      const body = element('div', 'body');
-      const title = element('div', 'title', effect.title);
-      if (effect.detail) { title.append(' · '); title.append(element('span', 'detail', effect.detail)); }
-      body.append(title, element('div', 'sub', effect.starting ? 'Starting…' : effect.viewers));
-      if (effect.duration > 0) {
-        const bar = element('div', 'bar'), fill = element('div');
-        fill.style.width = `${Math.max(0, Math.min(100, effect.remaining / effect.duration * 100))}%`;
-        bar.append(fill); body.append(bar);
-      }
-      node.append(body);
-      if (effect.duration > 0 && !effect.starting) node.append(element('div', 'time', `${Math.ceil(effect.remaining)}s`));
-      nodes.push(node);
-    }
+    const wanted = [];
+    const toast = state.events.find(event => now - event.time <= 6000); // Only the newest event is shown as a toast.
+    if (toast) wanted.push({ key: `toast:${toast.time}:${toast.key}`, make: () => toastCard(toast) });
+    for (const effect of state.active) wanted.push({ key: `active:${effect.key}`, make: () => activeCard(effect), update: node => updateActive(node, effect) });
     if (showQueue && state.queue.length) {
-      nodes.push(element('div', 'heading', 'UP NEXT'));
-      for (const item of state.queue.slice(0, 5)) {
-        const node = card(item, 'queued');
-        const body = element('div', 'body');
-        body.append(element('div', 'title', item.title), element('div', 'sub', `${item.viewer} · ${item.status}`));
-        node.append(body);
-        nodes.push(node);
-      }
+      wanted.push({ key: 'heading', make: () => element('div', 'heading', 'UP NEXT') });
+      for (const item of state.queue.slice(0, 5)) wanted.push({ key: `queued:${item.id}`, make: () => queuedCard(item), update: node => updateQueued(node, item) });
     }
-    // Keep existing nodes (and their animation state) where the content key is unchanged.
-    const existing = new Map([...document.body.querySelectorAll('.card, .heading')].map(n => [n.dataset.key || n.textContent, n]));
-    const fragment = document.createDocumentFragment();
-    for (const node of nodes) {
-      const key = node.dataset.key || node.textContent;
-      const old = existing.get(key);
-      if (old && old.className === node.className) { old.replaceChildren(...node.childNodes); fragment.append(old); }
-      else fragment.append(node);
+    // Update cards in place; only new cards are created and only misplaced ones move.
+    const keys = new Set(wanted.map(w => w.key));
+    const existing = new Map();
+    for (const node of [...container.children]) {
+      if (keys.has(node.dataset.key)) existing.set(node.dataset.key, node);
+      else node.remove();
     }
-    for (const script of document.body.querySelectorAll('script')) fragment.append(script);
-    document.body.replaceChildren(fragment);
+    let previous = null;
+    for (const w of wanted) {
+      let node = existing.get(w.key);
+      if (!node) { node = w.make(); node.dataset.key = w.key; }
+      if (w.update) w.update(node);
+      const expected = previous ? previous.nextSibling : container.firstChild;
+      if (node !== expected) container.insertBefore(node, expected);
+      previous = node;
+    }
   }
   async function poll() {
     try {

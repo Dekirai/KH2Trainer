@@ -68,9 +68,10 @@ internal static class ApiTests
 
         // Refresh, validate and revoke.
         {
-            bool refreshWorks = true;
+            bool refreshWorks = true, twitchDown = false;
             var fake = new FakeHttp(request => request.Path switch
             {
+                "/oauth2/token" when twitchDown => FakeHttp.Json(HttpStatusCode.ServiceUnavailable, "{}"),
                 "/oauth2/token" when refreshWorks => FakeHttp.Json(HttpStatusCode.OK, """{"access_token":"a2","expires_in":3600,"scope":["channel:manage:redemptions"]}"""),
                 "/oauth2/token" => FakeHttp.Json(HttpStatusCode.BadRequest, """{"status":400,"message":"Invalid refresh token"}"""),
                 "/oauth2/validate" when request.Authorization == "OAuth good" =>
@@ -82,8 +83,10 @@ internal static class ApiTests
             var refreshed = await auth.RefreshAsync("cid", "r1", CancellationToken.None);
             check(refreshed.AccessToken == "a2" && refreshed.RefreshToken == "r1", "auth: a refresh keeps the refresh token when Twitch sends none");
             check(fake.Requests.Last().Form("grant_type") == "refresh_token" && fake.Requests.Last().Form("refresh_token") == "r1", "auth: the refresh request uses the refresh grant");
-            refreshWorks = false;
-            check(await Catch(() => auth.RefreshAsync("cid", "r1", CancellationToken.None)) is TwitchAuthException, "auth: a failed refresh asks to connect again");
+            twitchDown = true;
+            check(await Catch(() => auth.RefreshAsync("cid", "r1", CancellationToken.None)) is HttpRequestException, "auth: Twitch being down is a temporary problem, not a lost login");
+            twitchDown = false; refreshWorks = false;
+            check(await Catch(() => auth.RefreshAsync("cid", "r1", CancellationToken.None)) is TwitchAuthException, "auth: a rejected refresh token asks to connect again");
             var owner = await auth.ValidateAsync("good", CancellationToken.None);
             check(owner is { Login: "streamer", UserId: "42" } && owner.Scopes.Contains(TwitchAuth.Scope), "auth: validation returns the channel and scopes");
             check(await auth.ValidateAsync("stale", CancellationToken.None) is null, "auth: an invalid token validates as null");
@@ -130,14 +133,16 @@ internal static class ApiTests
                     FakeHttp.Json(HttpStatusCode.OK, """{"data":[{"id":"rw-1","title":"Heal Sora","cost":300,"is_paused":true},{"id":"rw-2","title":"Other","cost":5,"is_paused":false}]}"""),
                 "/helix/channel_points/custom_rewards" when request.Method == HttpMethod.Delete => new HttpResponseMessage(HttpStatusCode.NoContent),
                 "/helix/channel_points/custom_rewards" => FakeHttp.Json(HttpStatusCode.OK, """{"data":[{"id":"rw-9","title":"New","cost":100,"is_paused":false}]}"""),
+                "/helix/channel_points/custom_rewards/redemptions" when request.Method == HttpMethod.Get && request.Query("after") is null =>
+                    FakeHttp.Json(HttpStatusCode.OK, """{"data":[{"id":"red-1","user_name":"Ann","user_login":"ann","user_input":"hi","redeemed_at":"2026-01-01T10:00:00Z"}],"pagination":{"cursor":"page2"}}"""),
                 "/helix/channel_points/custom_rewards/redemptions" when request.Method == HttpMethod.Get =>
-                    FakeHttp.Json(HttpStatusCode.OK, """{"data":[{"id":"red-1"},{"id":"red-2"}]}"""),
+                    FakeHttp.Json(HttpStatusCode.OK, """{"data":[{"id":"red-2","user_name":"","user_login":"bob"}],"pagination":{}}"""),
                 "/helix/eventsub/subscriptions" => FakeHttp.Json(HttpStatusCode.Accepted, """{"data":[{"id":"sub-1","status":"enabled"}]}"""),
                 _ => FakeHttp.Json(HttpStatusCode.OK, """{"data":[]}"""),
             };
         });
         var delays = new List<TimeSpan>();
-        var helix = new HelixClient(new HttpClient(fake), "cid", _ => Task.FromResult(current), _ => { refreshes++; current = "t2"; return Task.FromResult(current); },
+        var helix = new HelixClient(new HttpClient(fake), "cid", _ => Task.FromResult(current), (_, _) => { refreshes++; current = "t2"; return Task.FromResult(current); },
             Api, (t, _) => { delays.Add(t); return Task.CompletedTask; });
 
         var user = await helix.GetUserAsync("42");
@@ -170,8 +175,10 @@ internal static class ApiTests
             "helix: fulfilling marks the redemption FULFILLED");
         await helix.UpdateRedemptionStatusAsync("42", "rw-1", "red-2", false);
         check(fake.Requests.Last().Body.Contains("CANCELED"), "helix: refunding marks the redemption CANCELED");
-        var open = await helix.GetUnfulfilledRedemptionIdsAsync("42", "rw-1");
-        check(open.SequenceEqual(["red-1", "red-2"]) && fake.Requests.Last().Query("status") == "UNFULFILLED", "helix: unfulfilled redemptions are listed");
+        var open = await helix.GetUnfulfilledRedemptionsAsync("42", "rw-1");
+        check(open.Select(r => r.Id).SequenceEqual(["red-1", "red-2"]) && fake.Requests.Last().Query("status") == "UNFULFILLED" && fake.Requests.Last().Query("after") == "page2",
+            "helix: unfulfilled redemptions are listed across pages");
+        check(open[0] is { UserName: "Ann", UserInput: "hi", RewardId: "rw-1" } && open[1].UserName == "bob", "helix: redemption details are read (login when the name is empty)");
         await helix.SubscribeRedemptionsAsync("42", "session-1");
         var subscribe = JsonNode.Parse(fake.Requests.Last().Body)!;
         check((string?)subscribe["type"] == EventSubMessage.RedemptionType && (string?)subscribe["transport"]!["session_id"] == "session-1"
@@ -228,16 +235,19 @@ internal static class ApiTests
             var second = e.Add();
             second.Send(FakeTransport.Welcome("s2"));
             first.Send(FakeTransport.Reconnect("wss://eventsub.test/reconnect?id=1"));
+            first.Send(FakeTransport.Redemption("m-old", "red-old", "rw-1", "Dora")); // Still delivered on the old socket during the handover.
             check(await Wait.ForAsync(() => first.Disposed) && second.Uri?.ToString() == "wss://eventsub.test/reconnect?id=1", "eventsub: follows the reconnect URL and closes the old socket");
             check(e.Sessions.Count == 1, "eventsub: the handover keeps the subscription without subscribing again");
+            check(e.Redemptions.Any(r => r.UserName == "Dora"), "eventsub: a redemption sent on the old socket during the handover is not lost");
             second.Send(FakeTransport.Redemption("m3", "red-3", "rw-1", "Cara"));
-            check(await Wait.ForAsync(() => e.Redemptions.Count == 3), "eventsub: redemptions arrive on the new socket");
+            check(await Wait.ForAsync(() => e.Redemptions.Count == 4), "eventsub: redemptions arrive on the new socket");
 
             // A dropped connection reconnects with back-off and subscribes again.
             var third = e.Add();
             third.Send(FakeTransport.Welcome("s3"));
             second.Close();
             check(await Wait.ForAsync(() => e.Sessions.Contains("s3")) && e.Delays.First() == TimeSpan.FromSeconds(2), "eventsub: a closed connection reconnects after a back-off");
+            check(await Wait.ForAsync(() => e.Resubscribed.Contains(true)) && e.Resubscribed.First() == false, "eventsub: reports a subscription after a connection loss, so missed redemptions can be fetched");
             check(e.States.Contains(EventSubState.Reconnecting), "eventsub: reports reconnecting");
 
             e.Stop.Cancel();
@@ -282,6 +292,7 @@ internal static class ApiTests
         public ConcurrentQueue<EventSubState> States { get; } = new();
         public ConcurrentQueue<string> Texts { get; } = new();
         public ConcurrentQueue<TimeSpan> Delays { get; } = new();
+        public ConcurrentQueue<bool> Resubscribed { get; } = new();
         public CancellationTokenSource Stop { get; } = new();
         public int FailSubscriptions { get; set; }
 
@@ -305,7 +316,8 @@ internal static class ApiTests
                 Redemptions.Enqueue,
                 (state, text) => { States.Enqueue(state); Texts.Enqueue(text); },
                 Endpoint,
-                (t, c) => { Delays.Enqueue(t); return Delays.Count > 4 ? Task.Delay(Timeout.Infinite, c) : Task.CompletedTask; });
+                (t, c) => { Delays.Enqueue(t); return Delays.Count > 4 ? Task.Delay(Timeout.Infinite, c) : Task.CompletedTask; },
+                Resubscribed.Enqueue);
             return Task.Run(() => client.RunAsync(Stop.Token));
         }
     }

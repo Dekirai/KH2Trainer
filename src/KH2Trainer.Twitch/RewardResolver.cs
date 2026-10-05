@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace KH2Trainer.Twitch;
 
 /// <summary>Combines catalog defaults with the streamer's settings.</summary>
@@ -21,7 +23,9 @@ public static class RewardResolver
         bool german = settings.Language == RewardLanguage.German;
         string text = effect.PromptFor(settings.Language);
         if (effect.IsTimed) text += german ? $" Dauer: {Duration(effect, settings)} s." : $" Duration: {Duration(effect, settings)} s.";
-        if (effect.Amount > 0) text += $" ({Amount(effect, settings):N0} {effect.AmountLabel})";
+        // Numbers follow the reward language, not the PC's regional settings.
+        var culture = CultureInfo.GetCultureInfo(german ? "de-DE" : "en-US");
+        if (effect.Amount > 0) text += $" ({Amount(effect, settings).ToString("N0", culture)} {effect.AmountLabelFor(settings.Language)})";
         return text.Length <= RewardSpec.MaxPromptLength ? text : text[..RewardSpec.MaxPromptLength];
     }
 
@@ -53,7 +57,7 @@ public static class RewardResolver
         bool Image(string key) => ImagePath(key, settings) != null;
         return new OverlayState(
             engine.ActiveEffects.Select(a => new OverlayEffect(a.Key, a.Title, a.Viewers, a.Detail, a.RemainingSeconds, a.DurationSeconds, Color(a.Key), Image(a.Key), !a.Established)).ToArray(),
-            engine.PendingEffects.Select(p => new OverlayQueued(p.Key, p.Title, p.Viewer, p.Status, Color(p.Key), Image(p.Key))).ToArray(),
+            engine.PendingEffects.Select(p => new OverlayQueued(p.RedemptionId, p.Key, p.Title, p.Viewer, p.Status, Color(p.Key), Image(p.Key))).ToArray(),
             engine.RecentEvents.Where(e => e.Kind is EffectEventKind.Started or EffectEventKind.Done or EffectEventKind.Extended).Take(5)
                 .Select(e => new OverlayEvent(e.Time.ToUnixTimeMilliseconds(), e.Key,
                     $"{e.Viewer}: {e.Title}{(e.Detail is { } detail ? " · " + detail : "")}", Color(e.Key), Image(e.Key))).ToArray());

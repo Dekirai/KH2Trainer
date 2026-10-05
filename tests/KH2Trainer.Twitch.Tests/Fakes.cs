@@ -27,7 +27,7 @@ internal sealed class FakeGame : IGameControl
         Set("loot.retained", 100); Set("targeting.search_scale", 1); Set("display.brightness_preview", 0); Set("audio.music", 80); Set("audio.voice", 90);
         Set("damage.player.general", 100); Set("damage.target.general", 100); Set("render.hide_captions", 0); Set("combat.movementcollision", 0);
         Set("practice.field_pause", 0); Set("time.actor_effect_freeze", 0); Set("player_damage_guard", 0); Set("combat.autoheal", 0);
-        Set("combat.fullmp", 0); Set("combat.formtimer", 0); Set("drive.result", 0); Set("drive.requested", 0);
+        Set("combat.fullmp", 0); Set("combat.formtimer", 0); Set("drive.result", 0); Set("drive.requested", 0); Set("drive.phase", 0);
     }
 
     public bool IsConnected { get; set; } = true;
@@ -41,6 +41,21 @@ internal sealed class FakeGame : IGameControl
     public bool FormsComplete { get; set; } = true;
     /// <summary>Simulated failure result for drive.trigger.</summary>
     public int? FormResult { get; set; }
+    /// <summary>Ticks (see <see cref="Pump"/>) a Drive switch takes, like the bridge's queue; 0 completes at once.</summary>
+    public int DriveSteps { get; set; }
+    private (int Target, int Remaining)? drive;
+
+    /// <summary>Advances a running Drive switch by one tick.</summary>
+    public void Pump()
+    {
+        if (drive is not { } running) return;
+        if (running.Remaining > 1) { drive = running with { Remaining = running.Remaining - 1 }; return; }
+        drive = null;
+        Set("drive.phase", 0);
+        if (FormResult is int failure && running.Target != 0) { Set("drive.result", failure); return; }
+        Set("drive.result", 2);
+        Set("player.form.id", running.Target);
+    }
 
     public void Set(string feature, double value) => Values[map.Get(feature).ValueSlot] = value;
     public double? Get(string feature) => Values.TryGetValue(map.Get(feature).ValueSlot, out double v) ? v : null;
@@ -62,6 +77,8 @@ internal sealed class FakeGame : IGameControl
         if (Hold is { } hold) await hold.Task;
         if (!IsConnected) throw new InvalidOperationException("Connect to a running game first.");
         if (Reject?.Invoke(feature.Id, args) == true) throw new InvalidOperationException("Rejected by the bridge.");
+        if (feature.Id is "drive.trigger" or "drive.revert" && Get("drive.phase") is > 0)
+            throw new InvalidOperationException("A Drive switch is already queued. Cancel its pending steps before another request.");
         Simulate(feature, args);
     }
 
@@ -89,12 +106,21 @@ internal sealed class FakeGame : IGameControl
         if (feature.Kind is FeatureKind.Number or FeatureKind.Toggle or FeatureKind.Choice && feature.ValueSlot >= 0) Values[feature.ValueSlot] = args[0];
         switch (feature.Id)
         {
+            case "drive.trigger" when DriveSteps > 0:
+                Set("drive.requested", args[0]); Set("drive.result", 1);
+                Set("drive.phase", Get("player.form.id") is > 0 ? 3 : 2); // An active form reverts first.
+                if (FormsComplete) drive = ((int)args[0], DriveSteps);
+                break;
             case "drive.trigger":
                 Set("drive.requested", args[0]);
                 Set("drive.result", FormResult ?? (FormsComplete ? 2 : 1));
                 if (FormsComplete && FormResult is null) Set("player.form.id", args[0]);
                 break;
+            case "drive.revert" when DriveSteps > 0:
+                if (Get("player.form.id") is > 0) { Set("drive.phase", 3); drive = (0, DriveSteps); }
+                break;
             case "drive.revert": Set("player.form.id", 0); break;
+            case "drive.cancel": drive = null; Set("drive.phase", 0); Set("drive.result", 3); break;
             case "player.heal": Set("player.hp", Get("player.hp.max") ?? 0); break;
             case "player.mp.restore": Set("player.mp", Get("player.mp.max") ?? 0); break;
             case "player.restore": Set("player.hp", Get("player.hp.max") ?? 0); Set("player.mp", Get("player.mp.max") ?? 0); break;

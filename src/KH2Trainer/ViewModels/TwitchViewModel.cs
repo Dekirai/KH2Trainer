@@ -97,6 +97,7 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
     private int selectedTab;
     private string filter = "", overlayStatus = "", syncError = "";
     private bool showEnabledOnly, syncing, shutDown;
+    private Task? shutdown;
     private string lastEventKey = "";
 
     public TwitchVm(ITwitchHost shell)
@@ -107,7 +108,8 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
         Settings = TwitchSettings.Load(settingsPath);
         var tokens = new TokenStore(Path.Combine(shell.UserFolder, "twitch-login.bin"), new DpapiProtector());
         Game = new TrainerGameControl(shell);
-        Service = new TwitchService(http, tokens, Settings, SaveSettings, redemption => Engine!.Submit(redemption), shell.Log);
+        Service = new TwitchService(http, tokens, Settings, SaveSettings, redemption => Engine!.Submit(redemption), shell.Log,
+            withdraw: id => _ = Engine!.CancelAsync(id, DateTimeOffset.UtcNow));
         Engine = new EffectEngine(Game, new FeatureMap(shell.Catalog), EffectCatalog.All,
             key => RewardResolver.Options(EffectCatalog.Find(key)!, Settings), () => RewardResolver.Engine(Settings), Service, shell.Log);
 
@@ -129,7 +131,7 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
             new("Refund the channel points", ConflictBehavior.Refund),
         ];
 
-        ConnectCommand = new AsyncCommand(Connect, () => Service.State is not (TwitchConnectionState.Connecting or TwitchConnectionState.WaitingForAuthorization) && HasClientId);
+        ConnectCommand = new AsyncCommand(() => Connect(interactive: true), () => Service.State is not (TwitchConnectionState.Connecting or TwitchConnectionState.WaitingForAuthorization) && HasClientId);
         CancelConnectCommand = new RelayCommand(Service.CancelConnect);
         DisconnectCommand = new AsyncCommand(() => Service.DisconnectAsync(forgetLogin: false), () => Service.IsConnected);
         LogoutCommand = new AsyncCommand(Logout, () => Service.State is TwitchConnectionState.Connected or TwitchConnectionState.Disconnected or TwitchConnectionState.Error);
@@ -153,6 +155,9 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
         syncTimer.Tick += async (_, _) => { syncTimer.Stop(); await SyncDirtyAsync(); };
         StartOverlay();
         RefreshSummary();
+        if (Settings.LoadProblem is { } problem) shell.Log("Twitch: " + problem);
+        // With a saved login the rewards go live without visiting this page; nothing is asked if the login expired.
+        if (Service.HasSavedLogin) _ = Connect(interactive: false);
     }
 
     internal TwitchSettings Settings { get; }
@@ -189,6 +194,16 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
         {
             string clean = (value ?? "").Trim();
             if (clean == Settings.ClientId) return;
+            // Twitch lets only the app that created a reward change or delete it.
+            if (Service.RewardsOnTwitch > 0 && MessageBox.Show(
+                    $"{Service.RewardsOnTwitch} rewards on your channel were created with the current Twitch app, and only that app can change or delete them. " +
+                    "Switch them off first (while connected) to remove them, or delete them in your reward dashboard.\n\nChange the Client ID anyway?",
+                    "Twitch", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            {
+                Changed();
+                return;
+            }
+            foreach (var reward in Settings.Rewards.Values) { reward.TwitchRewardId = null; reward.SyncedFingerprint = null; }
             Settings.ClientId = clean;
             SaveSettings();
             Changed();
@@ -221,6 +236,8 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
     public string ConnectLabel => Service.State == TwitchConnectionState.Connecting ? "Connecting…" : Service.State == TwitchConnectionState.Error ? "Try again" : "Connect to Twitch";
     public string EventSubText => Service.IsConnected ? Service.EventSubText : "";
     public string PauseLabel => Service.RewardsPaused ? "Resume rewards" : "Pause rewards";
+    public string? LoadProblem => Settings.LoadProblem;
+    public bool HasLoadProblem => Settings.LoadProblem != null;
 
     // Behaviour
     public IReadOnlyList<Option<RewardLanguage>> LanguageOptions { get; }
@@ -297,7 +314,7 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
             Changed();
         }
     }
-    public string OverlayUrl => overlay?.Url ?? $"http://localhost:{Settings.OverlayPort}/";
+    public string OverlayUrl => overlay?.Url ?? $"http://127.0.0.1:{Settings.OverlayPort}/";
     public string OverlayStatus { get => overlayStatus; private set => Set(ref overlayStatus, value); }
     public bool IsOverlayRunning => overlay != null;
 
@@ -361,13 +378,12 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
     /// <summary>Ends every effect and refunds what waits, for example when the game disconnects or the trainer resets.</summary>
     internal async Task StopAllAsync(string reason)
     {
-        if (Engine.ActiveEffects.Count == 0 && Engine.PendingEffects.Count == 0) return;
+        // Always ask the engine: it waits for an effect that is starting right now, which the lists do not show yet.
         try { await Engine.StopAllAsync(reason, DateTimeOffset.UtcNow); }
         catch (Exception error) { shell.Log("Twitch effects: " + error.Message); }
         RefreshLive();
     }
 
-    internal bool HasEffects => Engine.ActiveEffects.Count > 0 || Engine.PendingEffects.Count > 0;
 
     internal void Test(RewardVm reward)
     {
@@ -394,6 +410,7 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
         SaveSettings();
         RefreshSummary();
         if (showEnabledOnly) ApplyFilter();
+        foreach (var group in Groups) group.Refresh();
         dirty.Add(reward.Key);
         // Switching a reward on or off reaches Twitch right away.
         syncTimer.Stop();
@@ -417,17 +434,22 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
         var info = new FileInfo(picker.FileName);
         if (OverlayServer.ImageType(info.FullName) is null) { shell.Notify("Choose a PNG, JPG, GIF, BMP or WebP image.", true); return null; }
         if (info.Length > OverlayServer.MaxImageBytes) { shell.Notify("The image is larger than 8 MB. Choose a smaller one.", true); return null; }
+        if (RewardVm.Decode(info.FullName) is null) { shell.Notify("This image cannot be read. Choose another file.", true); return null; }
+        string target = Path.Combine(ImageFolder, reward.Key + info.Extension.ToLowerInvariant());
+        if (string.Equals(Path.GetFullPath(info.FullName), Path.GetFullPath(target), StringComparison.OrdinalIgnoreCase)) return target; // Already the reward's image.
+        string temporary = Path.Combine(ImageFolder, reward.Key + "." + Guid.NewGuid().ToString("N") + ".tmp");
         try
         {
-            // A copy keeps working when the original is moved or deleted.
+            // A copy keeps working when the original is moved or deleted. Copy first, so a failure keeps the old image.
             Directory.CreateDirectory(ImageFolder);
-            foreach (string old in Directory.EnumerateFiles(ImageFolder, reward.Key + ".*")) File.Delete(old);
-            string target = Path.Combine(ImageFolder, reward.Key + info.Extension.ToLowerInvariant());
-            File.Copy(info.FullName, target, true);
+            File.Copy(info.FullName, temporary, true);
+            foreach (string old in Directory.EnumerateFiles(ImageFolder, reward.Key + ".*").Where(f => !f.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase))) File.Delete(old);
+            File.Move(temporary, target, true);
             return target;
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
+            try { if (File.Exists(temporary)) File.Delete(temporary); } catch (Exception) { }
             shell.Notify("The image could not be copied: " + error.Message, true);
             return null;
         }
@@ -439,9 +461,9 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
         catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
     }
 
-    private async Task Connect()
+    private async Task Connect(bool interactive)
     {
-        try { await Service.ConnectAsync(); }
+        try { await Service.ConnectAsync(interactive); }
         finally { RefreshSummary(); foreach (var reward in byKey.Values) reward.RefreshStatus(); }
     }
 
@@ -501,6 +523,8 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
             nameof(IsConnected), nameof(IsError), nameof(ShowConnectButton), nameof(ConnectLabel), nameof(EventSubText), nameof(PauseLabel), nameof(HasClientId));
         RefreshSummary();
         RefreshCommands();
+        // Statuses depend on the connection ("On Twitch" versus "Created when you connect").
+        foreach (var reward in byKey.Values) reward.RefreshStatus();
     }
 
     private void RefreshCommands()
@@ -567,9 +591,9 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
 
     private void StartOverlay()
     {
-        if (!Settings.OverlayEnabled) { OverlayStatus = "The overlay is off."; return; }
         try
         {
+            if (!Settings.OverlayEnabled) { OverlayStatus = "The overlay is off."; return; }
             var server = new OverlayServer(Settings.OverlayPort, () => Overlay(), key => RewardResolver.ImagePath(key, Settings));
             server.Start();
             overlay = server;
@@ -579,8 +603,11 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
         {
             OverlayStatus = $"Port {Settings.OverlayPort} is in use ({error.Message}). Choose another port.";
         }
-        Changed(nameof(OverlayUrl), nameof(IsOverlayRunning));
-        CopyOverlayCommand?.Refresh(); OpenOverlayCommand?.Refresh();
+        finally
+        {
+            Changed(nameof(OverlayUrl), nameof(IsOverlayRunning));
+            CopyOverlayCommand?.Refresh(); OpenOverlayCommand?.Refresh();
+        }
     }
 
     /// <summary>The overlay reads from a server thread; the engine lives on the UI thread.</summary>
@@ -615,13 +642,16 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
     }
 
     /// <summary>Called when the trainer closes: ends effects, pauses rewards (if enabled) and stops the overlay.</summary>
-    internal async Task ShutdownAsync()
+    internal Task ShutdownAsync() => shutdown ??= ShutdownCoreAsync();
+
+    private async Task ShutdownCoreAsync()
     {
-        if (shutDown) return;
         shutDown = true;
         syncTimer.Stop();
+        // Stop receiving first, so nothing arrives after the queue was settled.
+        try { await Service.StopListeningAsync().WaitAsync(TimeSpan.FromSeconds(12)); } catch (Exception) { }
         try { await Engine.StopAllAsync("The trainer was closed", DateTimeOffset.UtcNow).WaitAsync(TimeSpan.FromSeconds(10)); } catch (Exception) { }
-        try { await Service.ShutdownAsync().WaitAsync(TimeSpan.FromSeconds(12)); } catch (Exception) { }
+        try { await Service.FlushAsync().WaitAsync(TimeSpan.FromSeconds(6)); } catch (Exception) { }
         if (overlay is { } running) { overlay = null; try { await running.DisposeAsync(); } catch (Exception) { } }
     }
 
@@ -803,6 +833,8 @@ public sealed class RewardVm : Observable
     public string Status => owner.Service.RewardStatus(Effect.Key);
     public bool StatusIsError => Status.StartsWith("Error", StringComparison.Ordinal);
     public bool StatusIsLive => Status.StartsWith("On Twitch", StringComparison.Ordinal);
+    /// <summary>Also shown for a switched-off reward that still exists on Twitch (for example a failed delete).</summary>
+    public bool ShowStatus => Enabled || StatusIsError || Reward.TwitchRewardId != null;
 
     public RelayCommand TestCommand { get; }
     public RelayCommand ChooseImageCommand { get; }
@@ -811,7 +843,7 @@ public sealed class RewardVm : Observable
     public RelayCommand ResetCommand { get; }
     public RelayCommand ToggleCommand { get; }
 
-    public void RefreshStatus() => Changed(nameof(Status), nameof(StatusIsError), nameof(StatusIsLive));
+    public void RefreshStatus() => Changed(nameof(Status), nameof(StatusIsError), nameof(StatusIsLive), nameof(ShowStatus), nameof(Enabled));
     public void RefreshTexts() => Changed(nameof(DisplayTitle), nameof(DefaultTitle), nameof(Description), nameof(DefaultPrompt), nameof(Duration), nameof(Info));
     public void RefreshDefaults() => Changed(nameof(SameEffectOptions), nameof(ConflictOptions), nameof(SameEffect), nameof(Conflict));
 
@@ -850,10 +882,15 @@ public sealed class RewardVm : Observable
     private void LoadImage()
     {
         string? path = RewardResolver.ImagePath(Effect.Key, owner.Settings);
-        if (path is null) { Image = null; RefreshImageCommands(); return; }
+        Image = path is null ? null : Decode(path);
+        RefreshImageCommands();
+    }
+
+    /// <summary>Loads an image into memory (the file stays free to replace or delete); null when it cannot be decoded.</summary>
+    internal static ImageSource? Decode(string path)
+    {
         try
         {
-            // Load into memory so the file stays free to replace or delete.
             var bitmap = new BitmapImage();
             bitmap.BeginInit();
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
@@ -862,13 +899,9 @@ public sealed class RewardVm : Observable
             bitmap.UriSource = new Uri(path);
             bitmap.EndInit();
             bitmap.Freeze();
-            Image = bitmap;
+            return bitmap;
         }
-        catch (Exception error) when (error is IOException or NotSupportedException or ArgumentException or UnauthorizedAccessException)
-        {
-            Image = null;
-        }
-        RefreshImageCommands();
+        catch (Exception) { return null; } // A damaged file must never stop the trainer from starting.
     }
 
     private void RefreshImageCommands() { ClearImageCommand?.Refresh(); ShowImageCommand?.Refresh(); }

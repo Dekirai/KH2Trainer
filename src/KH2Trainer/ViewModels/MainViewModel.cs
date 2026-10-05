@@ -359,7 +359,7 @@ public sealed class MainViewModel : Observable, IFeatureHost, ITwitchHost, IDisp
     public async Task Execute(int command, IReadOnlyList<double> arguments, string label)
     {
         // A full reset also ends Twitch effects, so they do not re-apply their values afterwards.
-        if (command == resetCommand && Twitch.HasEffects) await Twitch.StopAllAsync("All trainer changes were reset");
+        if (command == resetCommand) await Twitch.StopAllAsync("All trainer changes were reset");
         try { var result = await session.ExecuteAsync(command, arguments); Log($"{label}: {result.Message}"); if (!result.Success) throw new InvalidOperationException(result.Message); }
         catch (Exception e) { Log($"{label} failed: {e.Message}"); throw; }
     }

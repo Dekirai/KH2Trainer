@@ -78,12 +78,20 @@ public sealed class TwitchSettings
         return reward;
     }
 
+    /// <summary>
+    /// Set when the settings file existed but could not be read. The damaged file is kept next to it, and
+    /// reward IDs are unknown, so rewards found on Twitch are adopted instead of deleted.
+    /// </summary>
+    [JsonIgnore]
+    public string? LoadProblem { get; private set; }
+
     /// <summary>Loads settings; a missing or damaged file yields defaults so the trainer always starts.</summary>
     public static TwitchSettings Load(string path)
     {
+        if (!File.Exists(path)) return new TwitchSettings();
         try
         {
-            if (File.Exists(path) && JsonSerializer.Deserialize<TwitchSettings>(File.ReadAllText(path), Options) is { Version: 1 } settings)
+            if (JsonSerializer.Deserialize<TwitchSettings>(File.ReadAllText(path), Options) is { Version: 1 } settings)
             {
                 settings.ClientId ??= "";
                 settings.Rewards = new Dictionary<string, RewardSettings>(
@@ -93,11 +101,20 @@ public sealed class TwitchSettings
                 settings.OverlayPort = Math.Clamp(settings.OverlayPort, 1024, 65535);
                 return settings;
             }
+            return Damaged(path, "it was written by a different trainer version");
         }
-        catch (IOException) { }
-        catch (UnauthorizedAccessException) { }
-        catch (JsonException) { }
-        return new TwitchSettings();
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or NotSupportedException)
+        {
+            return Damaged(path, error.Message);
+        }
+    }
+
+    private static TwitchSettings Damaged(string path, string reason)
+    {
+        string backup = $"{path}.bad-{DateTime.Now:yyyyMMdd-HHmmss}";
+        try { File.Copy(path, backup, true); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { backup = path; }
+        return new TwitchSettings { LoadProblem = $"The Twitch settings could not be read ({reason}). Defaults are in use; the old file was kept as {Path.GetFileName(backup)}." };
     }
 
     public void Save(string path)

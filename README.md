@@ -165,7 +165,7 @@ Reward texts can be English or German. Twitch allows 50 custom rewards per chann
 
 ### Stream overlay
 
-The Setup tab starts a small local web page (default `http://localhost:17290/`, reachable only from
+The Setup tab starts a small local web page (default `http://127.0.0.1:17290/`, reachable only from
 this PC) for an OBS **Browser Source**: running effects with their remaining time, the queue and a
 note for each new redemption. Add `?side=left`, `?queue=0` or `?scale=1.5` to the URL to change it.
 

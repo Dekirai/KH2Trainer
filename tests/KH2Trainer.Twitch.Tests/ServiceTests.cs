@@ -21,6 +21,8 @@ internal sealed class FakeTwitch
     public string ClientId { get; set; } = "cid";
     public string BroadcasterType { get; set; } = "affiliate";
     public int PendingPolls { get; set; } = 1;
+    /// <summary>The token endpoint answers 503 (Twitch having a bad moment).</summary>
+    public bool RefreshUnavailable { get; set; }
     public bool DeviceRequested { get; private set; }
     public HashSet<string> AccessTokens { get; } = [];
     public HashSet<string> RefreshTokens { get; } = [];
@@ -85,6 +87,8 @@ internal sealed class FakeTwitch
                 return request.Form("client_id") == ClientId
                     ? FakeHttp.Json(HttpStatusCode.OK, """{"device_code":"dev","user_code":"WXYZ-1234","verification_uri":"https://www.twitch.tv/activate?device-code=WXYZ-1234","expires_in":1800,"interval":1}""")
                     : Error(HttpStatusCode.BadRequest, "invalid client");
+            case "/oauth2/token" when RefreshUnavailable:
+                return Error(HttpStatusCode.ServiceUnavailable, "Service Unavailable");
             case "/oauth2/token" when request.Form("grant_type") == "refresh_token":
                 if (!RefreshTokens.Contains(request.Form("refresh_token") ?? "")) return Error(HttpStatusCode.BadRequest, "Invalid refresh token");
                 return Token(IssueToken());
@@ -151,7 +155,7 @@ internal sealed class FakeTwitch
         if (!reward.Manageable) return Error(HttpStatusCode.Forbidden, "Not manageable");
         if (request.Method == HttpMethod.Get)
             return Data(Redemptions.Where(r => r.Value.RewardId == rewardId && r.Value.Status == request.Query("status"))
-                .Select(r => (JsonNode)new JsonObject { ["id"] = r.Key, ["status"] = r.Value.Status }).ToArray());
+                .Select(r => (JsonNode)new JsonObject { ["id"] = r.Key, ["status"] = r.Value.Status, ["user_name"] = "Viewer " + r.Key, ["user_input"] = "" }).ToArray());
         string id = request.Query("id") ?? "";
         if (Redemptions.TryGetValue(id, out var existing) && existing.Status != "UNFULFILLED") return Error(HttpStatusCode.NotFound, "Not Found");
         Redemptions[id] = (rewardId, (string)JsonNode.Parse(request.Body)!["status"]!);
@@ -174,6 +178,12 @@ internal sealed class FakeTwitch
 /// <summary>The Twitch service end to end against the fake Twitch.</summary>
 internal static class ServiceTests
 {
+    private static async Task<Exception?> Catch(Func<Task> action)
+    {
+        try { await action(); return null; }
+        catch (Exception error) { return error; }
+    }
+
     private static readonly TwitchEndpoints Endpoints = new(new Uri("https://id.test/"), new Uri("https://api.test/helix/"), new Uri("wss://eventsub.test/ws"));
 
     private sealed class Harness : IAsyncDisposable
@@ -186,6 +196,7 @@ internal static class ServiceTests
         public TwitchService Service { get; }
         public ConcurrentQueue<Redemption> Submitted { get; } = new();
         public ConcurrentQueue<string> Log { get; } = new();
+        public ConcurrentQueue<string> Withdrawn { get; } = new();
         public List<string> Authorizations { get; } = [];
         public int Saves;
 
@@ -196,7 +207,7 @@ internal static class ServiceTests
             configure?.Invoke(Settings);
             Tokens = new TokenStore(Path.Combine(Folder, "token.bin"), new PlainProtector());
             Service = new TwitchService(new HttpClient(Twitch.Http), Tokens, Settings, () => Interlocked.Increment(ref Saves), Submitted.Enqueue, Log.Enqueue,
-                () => prepared.TryDequeue(out var next) ? next : new FakeTransport(), Endpoints, (_, c) => Task.Delay(1, c));
+                () => prepared.TryDequeue(out var next) ? next : new FakeTransport(), Endpoints, (_, c) => Task.Delay(1, c), Withdrawn.Enqueue);
             Service.AuthorizationRequested += Authorizations.Add;
         }
 
@@ -241,7 +252,9 @@ internal static class ServiceTests
                 s.For("regen").Enabled = false;
             });
             var adopted = twitch.Add(h.Title("final"), cost: 1);
+            var lost = twitch.Add(h.Title("silence")); // Known to Twitch but not to the settings (for example a lost settings file).
             twitch.Redemptions["left-1"] = (adopted.Id, "UNFULFILLED");
+            twitch.Redemptions["left-2"] = (unused.Id, "UNFULFILLED");
             twitch.Redemptions["done-1"] = (adopted.Id, "FULFILLED");
             var socket = h.Socket("session-1");
 
@@ -256,11 +269,14 @@ internal static class ServiceTests
             check(heal!.Prompt == RewardResolver.Prompt(EffectCatalog.Find("heal")!, h.Settings), "service: the reward carries the default description");
             check(h.RewardId("final") == adopted.Id && twitch.Rewards[adopted.Id].Cost == 2500 && twitch.Rewards.Values.Count(r => r.Title == h.Title("final")) == 1,
                 "service: an existing reward of this app with the same title is adopted and updated instead of duplicated");
-            check(!twitch.Rewards.ContainsKey(unused.Id), "service: rewards of this app that are no longer enabled are deleted");
+            check(twitch.Rewards.ContainsKey(unused.Id) && twitch.Rewards[unused.Id].Paused && h.Log.Any(l => l.Contains("not in the trainer's list")),
+                "service: unknown rewards of this app are paused, never deleted");
+            check(h.RewardId("silence") == lost.Id && h.Settings.For("silence").Enabled, "service: a reward of this app with a trainer title is adopted again");
             check(twitch.Rewards.ContainsKey(foreign.Id), "service: rewards of other apps are never touched");
             check(twitch.Find(h.Title("regen")) is null && h.Service.RewardStatus("regen") == "Off", "service: disabled rewards are not created");
-            check(h.Service.RewardStatus("heal") == "On Twitch" && h.Service.RewardsOnTwitch == 2, "service: the reward status shows it is live");
-            check(twitch.Status("left-1") == "CANCELED" && twitch.Status("done-1") == "FULFILLED", "service: redemptions made while the trainer was offline are refunded");
+            check(h.Service.RewardStatus("heal") == "On Twitch" && h.Service.RewardsOnTwitch == 3, "service: the reward status shows it is live");
+            check(twitch.Status("left-1") == "CANCELED" && twitch.Status("left-2") == "CANCELED" && twitch.Status("done-1") == "FULFILLED",
+                "service: redemptions made while the trainer was offline are refunded");
             check(h.Saves > 0, "service: reward IDs are saved");
 
             check(await Wait.ForAsync(() => twitch.Subscriptions.Contains("session-1")), "service: subscribes to redemptions over EventSub");
@@ -284,10 +300,19 @@ internal static class ServiceTests
             await Task.Delay(50);
             check(twitch.Status("test") is null, "service: test runs never touch Twitch");
 
-            // Toggling and editing rewards syncs right away.
+            // Toggling and editing rewards syncs right away. Deleting refunds what still waits for the reward.
+            twitch.Redemptions["wait-1"] = (heal.Id, "UNFULFILLED");
+            twitch.Redemptions["wait-2"] = (heal.Id, "UNFULFILLED");
+            socket.Send(FakeTransport.Redemption("m5", "wait-2", heal.Id, "Ed"));
+            check(await Wait.ForAsync(() => h.Submitted.Any(r => r.Id == "wait-2")), "service: a redemption waits in the engine");
             h.Settings.For("heal").Enabled = false;
             await h.Service.SyncRewardAsync("heal");
             check(!twitch.Rewards.ContainsKey(heal.Id) && h.RewardId("heal") is null && h.Service.RewardStatus("heal") == "Off", "service: disabling a reward deletes it on Twitch");
+            check(twitch.Status("wait-1") == "CANCELED" && twitch.Status("wait-2") == "CANCELED" && h.Withdrawn.Contains("wait-2"),
+                "service: waiting redemptions are refunded before the delete (Twitch would mark them fulfilled) and withdrawn from the engine");
+            h.Service.Refund(h.Submitted.Single(r => r.Id == "wait-2"), "dropped by the engine");
+            await Task.Delay(50);
+            check(twitch.Http.Requests.Count(r => r.Method == HttpMethod.Patch && r.Query("id") == "wait-2") == 1, "service: the engine's later refund is not sent twice");
             h.Settings.For("regen").Enabled = true;
             await h.Service.SyncRewardAsync("regen");
             var regen = twitch.Find(h.Title("regen"));
@@ -305,6 +330,11 @@ internal static class ServiceTests
             h.Settings.For("regen").Title = null;
             await h.Service.SyncRewardAsync("regen");
             check(h.Service.RewardStatus("regen") == "On Twitch", "service: fixing the title recovers");
+            var orphan = twitch.Add(h.Title("slow-mo")); // This app's reward whose create answer got lost.
+            h.Settings.For("slow-mo").Enabled = true;
+            await h.Service.SyncRewardAsync("slow-mo");
+            check(h.RewardId("slow-mo") == orphan.Id && h.Service.RewardStatus("slow-mo") == "On Twitch" && orphan.Prompt == RewardResolver.Prompt(EffectCatalog.Find("slow-mo")!, h.Settings),
+                "service: a create that clashes with this app's own reward adopts it");
 
             // A reward deleted on Twitch meanwhile is recreated.
             twitch.Rewards.Remove(regen.Id);
@@ -319,7 +349,7 @@ internal static class ServiceTests
             await h.Service.SyncRewardAsync("heal");
             check(twitch.Find(h.Title("heal")) is { Paused: true }, "service: rewards enabled while paused start paused");
             await h.Service.SetPausedAsync(false);
-            check(twitch.Rewards.Values.All(r => !r.Paused), "service: resuming unpauses them");
+            check(twitch.Rewards.Values.Where(r => r.Id != unused.Id).All(r => !r.Paused), "service: resuming unpauses them (the unknown reward stays paused)");
 
             // An expired access token is refreshed transparently.
             twitch.AccessTokens.Clear();
@@ -343,6 +373,73 @@ internal static class ServiceTests
             await h.Service.ShutdownAsync();
             check(twitch.Rewards.Values.Where(r => r.Manageable).All(r => r.Paused), "service: closing the trainer pauses the rewards");
             check(await Wait.ForAsync(() => h.Service.EventSubState == EventSubState.Disconnected), "service: closing stops EventSub");
+        }
+
+        // Decisions made while disconnected are delivered later; an EventSub outage is caught up; a lost login stops the session.
+        {
+            var twitch = new FakeTwitch();
+            await using var h = new Harness(twitch, s => s.For("heal").Enabled = true);
+            var first = h.Socket("s1");
+            await h.Service.ConnectAsync();
+            string healId = h.RewardId("heal")!;
+            check(await Wait.ForAsync(() => twitch.Subscriptions.Contains("s1")), "service: listening");
+            twitch.Redemptions["d-1"] = (healId, "UNFULFILLED");
+            first.Send(FakeTransport.Redemption("m1", "d-1", healId, "Fay"));
+            check(await Wait.ForAsync(() => h.Submitted.Any(r => r.Id == "d-1")), "service: redemption received");
+            await h.Service.DisconnectAsync(forgetLogin: false);
+            h.Service.Fulfill(h.Submitted.Single(r => r.Id == "d-1"));
+            check(await Wait.ForAsync(() => h.Log.Any(l => l.Contains("after the next connect"))) && twitch.Status("d-1") == "UNFULFILLED",
+                "service: a decision made while disconnected waits");
+            var second = h.Socket("s2");
+            await h.Service.ConnectAsync();
+            check(twitch.Status("d-1") == "FULFILLED", "service: it is delivered on the next connect instead of being refunded as a leftover");
+
+            check(await Wait.ForAsync(() => twitch.Subscriptions.Contains("s2")), "service: listening again");
+            var third = h.Socket("s3");
+            twitch.Redemptions["missed-1"] = (healId, "UNFULFILLED");
+            second.Close();
+            check(await Wait.ForAsync(() => h.Submitted.Any(r => r.Id == "missed-1" && r.RewardKey == "heal")),
+                "service: redemptions made during an EventSub outage are caught up after it reconnects");
+            third.Send(FakeTransport.Redemption("m9", "missed-1", healId, "Gus"));
+            await Task.Delay(100);
+            check(h.Submitted.Count(r => r.Id == "missed-1") == 1, "service: a redemption is never handed over twice");
+
+            twitch.RefreshUnavailable = true; twitch.AccessTokens.Clear();
+            h.Settings.For("heal").Cost = 999;
+            var temporary = await Catch(() => h.Service.SyncRewardAsync("heal"));
+            check(temporary is HttpRequestException && h.Service.State == TwitchConnectionState.Connected, "service: a temporary refresh problem keeps the connection");
+            twitch.RefreshUnavailable = false; twitch.RefreshTokens.Clear();
+            var gone = await Catch(() => h.Service.SyncRewardAsync("heal"));
+            check(gone is TwitchAuthException && await Wait.ForAsync(() => h.Service.State == TwitchConnectionState.Error && h.Service.EventSubState == EventSubState.Disconnected),
+                "service: a lost login stops listening and asks to connect again");
+        }
+
+        // A silent start without a saved login asks for nothing.
+        {
+            await using var h = new Harness();
+            await h.Service.ConnectAsync(interactive: false);
+            check(h.Service.State == TwitchConnectionState.Disconnected && !h.Twitch.DeviceRequested && !h.Service.HasSavedLogin, "service: a silent start without a saved login asks nothing");
+        }
+
+        // Settings survive, limits are clamped, and a damaged file is kept instead of silently replaced.
+        {
+            string folder = Path.Combine(Path.GetTempPath(), "KH2TwitchTests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(folder);
+            string path = Path.Combine(folder, "twitch.json");
+            var saved = new TwitchSettings { ClientId = "abc", MaxWaitMinutes = 500, OverlayPort = 80 };
+            saved.For("heal").Enabled = true;
+            saved.Save(path);
+            var loaded = TwitchSettings.Load(path);
+            check(loaded.ClientId == "abc" && loaded.For("heal").Enabled && loaded.MaxWaitMinutes == 120 && loaded.OverlayPort == 1024 && loaded.LoadProblem is null,
+                "settings: round trip with clamped limits");
+            File.AppendAllText(path, "}");
+            var damaged = TwitchSettings.Load(path);
+            check(damaged.LoadProblem != null && damaged.Rewards.Count == 0 && Directory.GetFiles(folder, "twitch.json.bad-*").Length == 1,
+                "settings: a damaged file is kept as a backup and reported");
+            File.WriteAllText(path, "{\"Version\":2}");
+            check(TwitchSettings.Load(path).LoadProblem != null, "settings: a file from another version is reported instead of silently replaced");
+            check(TwitchSettings.Load(Path.Combine(folder, "missing.json")).LoadProblem is null, "settings: a missing file simply means defaults");
+            Directory.Delete(folder, true);
         }
 
         // A saved login is reused, an expired one refreshed, logging out revokes it.
