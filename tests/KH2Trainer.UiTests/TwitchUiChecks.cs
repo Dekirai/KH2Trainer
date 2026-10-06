@@ -70,7 +70,7 @@ internal static class TwitchUiChecks
         Check(vm.EnabledCount == 2 && rewards["heal"].Enabled && rewards["valor"].Enabled, "Enabled rewards must load from twitch.json.");
         Check(rewards["heal"].Status == "Created when you connect" && rewards["regen"].Status == "Off", "Offline reward status must explain what happens.");
         Check(rewards["valor"].HasImage && rewards["valor"].DisplayTitle == "Valor time!" && !rewards["heal"].HasImage, "Images and custom titles must load.");
-        Check(vm.IsOverlayRunning && vm.OverlayUrl == $"http://localhost:{port}/", "The overlay must start on the configured port.");
+        Check(vm.IsOverlayRunning && vm.OverlayUrl == $"http://127.0.0.1:{port}/", "The overlay must start on the configured port.");
         if (!vm.HasBuiltInClientId)
         {
             Check(vm.State == TwitchConnectionState.NotConfigured && vm.ShowClientIdStep && !vm.ConnectCommand.CanExecute(null),

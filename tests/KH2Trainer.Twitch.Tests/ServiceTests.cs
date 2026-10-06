@@ -23,6 +23,12 @@ internal sealed class FakeTwitch
     public int PendingPolls { get; set; } = 1;
     /// <summary>The token endpoint answers 503 (Twitch having a bad moment).</summary>
     public bool RefreshUnavailable { get; set; }
+    /// <summary>Redemption status updates answer 503.</summary>
+    public bool FailRedemptionUpdates { get; set; }
+    /// <summary>The next create is applied but its answer is lost (timeout).</summary>
+    public bool LoseNextCreateAnswer { get; set; }
+    /// <summary>Runs after every handled request (inside the fake's lock).</summary>
+    public Action<FakeRequest>? AfterRequest { get; set; }
     public bool DeviceRequested { get; private set; }
     public HashSet<string> AccessTokens { get; } = [];
     public HashSet<string> RefreshTokens { get; } = [];
@@ -67,7 +73,7 @@ internal sealed class FakeTwitch
             if (request.ClientId != ClientId) return Error(HttpStatusCode.Unauthorized, "Client ID and OAuth token do not match");
             if (request.Authorization is not { } auth || !auth.StartsWith("Bearer ") || !AccessTokens.Contains(auth[7..]))
                 return Error(HttpStatusCode.Unauthorized, "Invalid OAuth token");
-            return request.Path switch
+            var response = request.Path switch
             {
                 "/helix/users" => Data(new JsonObject { ["id"] = "42", ["login"] = "streamer", ["display_name"] = "Streamer", ["broadcaster_type"] = BroadcasterType }),
                 "/helix/channel_points/custom_rewards" => CustomRewards(request),
@@ -75,6 +81,13 @@ internal sealed class FakeTwitch
                 "/helix/eventsub/subscriptions" => Subscribe(request),
                 _ => Error(HttpStatusCode.NotFound, "Not Found"),
             };
+            AfterRequest?.Invoke(request);
+            if (LoseNextCreateAnswer && request.Method == HttpMethod.Post && request.Path == "/helix/channel_points/custom_rewards")
+            {
+                LoseNextCreateAnswer = false;
+                throw new TaskCanceledException("The request timed out.");
+            }
+            return response;
         }
     }
 
@@ -132,7 +145,13 @@ internal sealed class FakeTwitch
         }
         if (id is null || !Rewards.TryGetValue(id, out var existing)) return Error(HttpStatusCode.NotFound, "Not Found");
         if (!existing.Manageable) return Error(HttpStatusCode.Forbidden, "The ID in the Client-Id header must match the client ID used to create the custom reward.");
-        if (request.Method == HttpMethod.Delete) { Rewards.Remove(id); return new HttpResponseMessage(HttpStatusCode.NoContent); }
+        if (request.Method == HttpMethod.Delete)
+        {
+            // Like Twitch: deleting a reward marks its waiting redemptions as fulfilled.
+            foreach (var (key, value) in Redemptions.ToArray()) if (value.RewardId == id && value.Status == "UNFULFILLED") Redemptions[key] = (id, "FULFILLED");
+            Rewards.Remove(id);
+            return new HttpResponseMessage(HttpStatusCode.NoContent);
+        }
         var update = JsonNode.Parse(request.Body)!;
         if (update["title"] is { } newTitle && Rewards.Values.Any(r => r != existing && string.Equals(r.Title, (string?)newTitle, StringComparison.OrdinalIgnoreCase)))
             return Error(HttpStatusCode.BadRequest, "UPDATE_CUSTOM_REWARD_DUPLICATE_REWARD");
@@ -157,6 +176,7 @@ internal sealed class FakeTwitch
             return Data(Redemptions.Where(r => r.Value.RewardId == rewardId && r.Value.Status == request.Query("status"))
                 .Select(r => (JsonNode)new JsonObject { ["id"] = r.Key, ["status"] = r.Value.Status, ["user_name"] = "Viewer " + r.Key, ["user_input"] = "" }).ToArray());
         string id = request.Query("id") ?? "";
+        if (FailRedemptionUpdates) return Error(HttpStatusCode.ServiceUnavailable, "Service Unavailable");
         if (Redemptions.TryGetValue(id, out var existing) && existing.Status != "UNFULFILLED") return Error(HttpStatusCode.NotFound, "Not Found");
         Redemptions[id] = (rewardId, (string)JsonNode.Parse(request.Body)!["status"]!);
         return Data(new JsonObject { ["id"] = id });
@@ -197,6 +217,8 @@ internal static class ServiceTests
         public ConcurrentQueue<Redemption> Submitted { get; } = new();
         public ConcurrentQueue<string> Log { get; } = new();
         public ConcurrentQueue<string> Withdrawn { get; } = new();
+        /// <summary>Whether the engine still had the redemption waiting (false: its effect already runs).</summary>
+        public Func<string, bool> Waiting { get; set; } = _ => true;
         public List<string> Authorizations { get; } = [];
         public int Saves;
 
@@ -207,7 +229,7 @@ internal static class ServiceTests
             configure?.Invoke(Settings);
             Tokens = new TokenStore(Path.Combine(Folder, "token.bin"), new PlainProtector());
             Service = new TwitchService(new HttpClient(Twitch.Http), Tokens, Settings, () => Interlocked.Increment(ref Saves), Submitted.Enqueue, Log.Enqueue,
-                () => prepared.TryDequeue(out var next) ? next : new FakeTransport(), Endpoints, (_, c) => Task.Delay(1, c), Withdrawn.Enqueue);
+                () => prepared.TryDequeue(out var next) ? next : new FakeTransport(), Endpoints, (_, c) => Task.Delay(1, c), id => { Withdrawn.Enqueue(id); return Task.FromResult(Waiting(id)); });
             Service.AuthorizationRequested += Authorizations.Add;
         }
 
@@ -414,6 +436,65 @@ internal static class ServiceTests
                 "service: a lost login stops listening and asks to connect again");
         }
 
+        // Deleting rewards safely: running effects stay paid, a race to 404 does not block the delete, an unsent refund does.
+        {
+            var twitch = new FakeTwitch();
+            await using var h = new Harness(twitch, s => { s.For("heal").Enabled = true; s.For("final").Enabled = true; s.For("regen").Enabled = true; });
+            var socket = h.Socket("s1");
+            twitch.AfterRequest = r => { if (r.Path == "/helix/eventsub/subscriptions") twitch.Redemptions["gap-1"] = (twitch.Find(h.Title("heal"))!.Id, "UNFULFILLED"); };
+            await h.Service.ConnectAsync();
+            check(await Wait.ForAsync(() => h.Submitted.Any(r => r.Id == "gap-1")), "delete: a redemption made while connecting is caught up after the first subscription");
+            twitch.AfterRequest = null;
+
+            string finalId = h.RewardId("final")!;
+            twitch.Redemptions["run-1"] = (finalId, "UNFULFILLED");
+            socket.Send(FakeTransport.Redemption("m1", "run-1", finalId, "Hal"));
+            check(await Wait.ForAsync(() => h.Submitted.Any(r => r.Id == "run-1")), "delete: received");
+            h.Waiting = id => id != "run-1"; // Its Final Form is already running.
+            h.Settings.For("final").Enabled = false;
+            await h.Service.SyncRewardAsync("final");
+            check(!twitch.Rewards.ContainsKey(finalId) && twitch.Status("run-1") == "FULFILLED", "delete: a redemption whose effect already runs stays paid");
+
+            string healId = h.RewardId("heal")!;
+            twitch.Redemptions["g-1"] = (healId, "UNFULFILLED");
+            twitch.Redemptions["g-2"] = (healId, "UNFULFILLED");
+            bool raced = false;
+            twitch.AfterRequest = r =>
+            {
+                if (!raced && r.Method == HttpMethod.Get && r.Path.EndsWith("/redemptions")) { raced = true; twitch.Redemptions["g-1"] = (healId, "FULFILLED"); }
+            };
+            h.Settings.For("heal").Enabled = false;
+            await h.Service.SyncRewardAsync("heal");
+            twitch.AfterRequest = null;
+            check(!twitch.Rewards.ContainsKey(healId) && twitch.Status("g-2") == "CANCELED" && h.Service.RewardStatus("heal") == "Off",
+                "delete: a redemption resolved meanwhile does not block the delete");
+
+            string regenId = h.RewardId("regen")!;
+            twitch.Redemptions["j-1"] = (regenId, "UNFULFILLED");
+            socket.Send(FakeTransport.Redemption("m2", "j-1", regenId, "Ivy"));
+            check(await Wait.ForAsync(() => h.Submitted.Any(r => r.Id == "j-1")), "delete: received j-1");
+            twitch.FailRedemptionUpdates = true;
+            h.Service.Refund(h.Submitted.Single(r => r.Id == "j-1"), "not possible");
+            check(await Wait.ForAsync(() => h.Log.Any(l => l.Contains("could not refund Viewer") || l.Contains("could not refund Ivy"))), "delete: the refund could not be sent");
+            h.Settings.For("regen").Enabled = false;
+            await h.Service.SyncRewardAsync("regen");
+            check(twitch.Rewards.ContainsKey(regenId) && h.Service.RewardStatus("regen").StartsWith("Error") && twitch.Status("j-1") == "UNFULFILLED",
+                "delete: a refund that could not be sent keeps the reward until it can be (a delete would mark it fulfilled)");
+            twitch.FailRedemptionUpdates = false;
+            await h.Service.SyncRewardAsync("regen");
+            check(!twitch.Rewards.ContainsKey(regenId) && twitch.Status("j-1") == "CANCELED", "delete: the next sync refunds, then deletes");
+
+            twitch.LoseNextCreateAnswer = true;
+            h.Settings.For("slow-mo").Enabled = true;
+            var timeout = await Catch(() => h.Service.SyncRewardAsync("slow-mo"));
+            var created = twitch.Find(h.Title("slow-mo"));
+            check(timeout is null && created != null && h.RewardId("slow-mo") == created.Id, "create: a lost create answer adopts the reward Twitch made");
+
+            var untracked = twitch.Add(h.Title("silence")); // This app's reward, but the streamer switched Silence off and the settings are intact.
+            await h.Service.SyncAllAsync();
+            check(!h.Settings.For("silence").Enabled && !twitch.Rewards.ContainsKey(untracked.Id), "adopt: with intact settings a found reward follows its switch (off: deleted)");
+        }
+
         // A silent start without a saved login asks for nothing.
         {
             await using var h = new Harness();
@@ -436,6 +517,17 @@ internal static class ServiceTests
             var damaged = TwitchSettings.Load(path);
             check(damaged.LoadProblem != null && damaged.Rewards.Count == 0 && Directory.GetFiles(folder, "twitch.json.bad-*").Length == 1,
                 "settings: a damaged file is kept as a backup and reported");
+            saved.Save(path);
+            using (var locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                var unreadable = TwitchSettings.Load(path);
+                check(unreadable.LoadProblem != null && unreadable.LoadProblem.Contains("before it is replaced"), "settings: a locked file is reported");
+                locked.Dispose();
+                foreach (string backup in Directory.GetFiles(folder, "twitch.json.bad-*")) File.Delete(backup);
+                unreadable.Save(path);
+                var copies = Directory.GetFiles(folder, "twitch.json.bad-*");
+                check(copies.Length == 1 && TwitchSettings.Load(copies[0]).ClientId == "abc", "settings: the unreadable original is copied aside before the first save replaces it");
+            }
             File.WriteAllText(path, "{\"Version\":2}");
             check(TwitchSettings.Load(path).LoadProblem != null, "settings: a file from another version is reported instead of silently replaced");
             check(TwitchSettings.Load(Path.Combine(folder, "missing.json")).LoadProblem is null, "settings: a missing file simply means defaults");

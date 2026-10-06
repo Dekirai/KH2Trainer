@@ -28,7 +28,8 @@ public sealed class TwitchService : IRedemptionSink, IAsyncDisposable
     private readonly Action saveSettings;
     private readonly Action<Redemption> submit;
     private readonly Action<string> log;
-    private readonly Action<string>? withdraw;
+    /// <summary>Asks the engine to drop a waiting redemption; false when its effect already runs.</summary>
+    private readonly Func<string, Task<bool>>? withdraw;
     private readonly Func<IEventSubTransport> transports;
     private readonly TwitchEndpoints endpoints;
     private readonly SynchronizationContext? context;
@@ -53,7 +54,7 @@ public sealed class TwitchService : IRedemptionSink, IAsyncDisposable
 
     public TwitchService(HttpClient http, TokenStore tokens, TwitchSettings settings, Action saveSettings, Action<Redemption> submit,
         Action<string> log, Func<IEventSubTransport>? transports = null, TwitchEndpoints? endpoints = null, Func<TimeSpan, CancellationToken, Task>? delay = null,
-        Action<string>? withdraw = null)
+        Func<string, Task<bool>>? withdraw = null)
     {
         this.http = http; this.tokens = tokens; this.settings = settings; this.saveSettings = saveSettings; this.submit = submit; this.log = log; this.withdraw = withdraw;
         this.transports = transports ?? (() => new WebSocketTransport());
@@ -145,7 +146,8 @@ public sealed class TwitchService : IRedemptionSink, IAsyncDisposable
             await SyncAllAsync();
             string broadcaster = owner.UserId;
             var client = new EventSubClient(transports, (id, c) => api.SubscribeRedemptionsAsync(broadcaster, id, c), OnRedemption, OnEventSubState, endpoints.EventSub, Delay,
-                reconnected => { if (reconnected) Post(() => _ = RecoverMissedAsync(cancellation)); });
+                // After every subscription: redemptions made before it (during the sync, or a connection loss) are caught up.
+                afterOutage => Post(() => _ = RecoverMissedAsync(cancellation)));
             eventSub = Task.Run(() => client.RunAsync(cancellation));
             validation = Task.Run(() => ValidateRegularlyAsync(cancellation));
             SetState(TwitchConnectionState.Connected, $"Connected as {DisplayName}.");
@@ -209,6 +211,8 @@ public sealed class TwitchService : IRedemptionSink, IAsyncDisposable
         var adopted = new List<string>();
         try
         {
+            // Only after a lost or reset settings file are found rewards switched on; otherwise the switch decides.
+            bool fresh = settings.LoadProblem != null || !settings.Rewards.Values.Any(r => r.TwitchRewardId != null);
             var remote = await api.GetManageableRewardsAsync(broadcaster);
             var byId = remote.ToDictionary(r => r.Id, StringComparer.Ordinal);
             foreach (var reward in settings.Rewards.Values)
@@ -221,7 +225,7 @@ public sealed class TwitchService : IRedemptionSink, IAsyncDisposable
                 {
                     var setting = settings.For(effect.Key);
                     setting.TwitchRewardId = reward.Id; setting.SyncedFingerprint = null;
-                    if (!setting.Enabled) { setting.Enabled = true; log($"Twitch: found the reward {reward.Title} on your channel and switched it on again."); }
+                    if (!setting.Enabled && fresh) { setting.Enabled = true; log($"Twitch: found the reward {reward.Title} on your channel and switched it on again."); }
                     used.Add(reward.Id);
                     adopted.Add(effect.Key);
                 }
@@ -282,22 +286,23 @@ public sealed class TwitchService : IRedemptionSink, IAsyncDisposable
             string fingerprint = spec.Fingerprint();
             if (reward.TwitchRewardId is null)
             {
-                try
+                TwitchReward? created = null;
+                try { created = await api.CreateRewardAsync(broadcaster, spec); }
+                catch (Exception error) when (error is HttpRequestException or TaskCanceledException
+                    || error is TwitchApiException duplicate && duplicate.TwitchMessage.Contains("DUPLICATE", StringComparison.OrdinalIgnoreCase))
                 {
-                    var created = await api.CreateRewardAsync(broadcaster, spec);
+                    // The answer may have been lost although Twitch created it (or an earlier create did): adopt this app's reward with that title.
+                    var mine = await FindUntrackedAsync(api, broadcaster, spec.Title);
+                    if (mine is null) throw;
+                    reward.TwitchRewardId = mine.Id; reward.SyncedFingerprint = null; remote = null;
+                }
+                if (created != null)
+                {
                     reward.TwitchRewardId = created.Id; reward.SyncedFingerprint = fingerprint;
                     if (RewardsPaused) await api.UpdateRewardAsync(broadcaster, created.Id, null, true);
                     log($"Twitch: created reward {spec.Title}.");
                     SetRewardStatus(effect.Key, RewardsPaused ? "On Twitch (paused)" : "On Twitch");
                     return;
-                }
-                catch (TwitchApiException error) when (error.TwitchMessage.Contains("DUPLICATE", StringComparison.OrdinalIgnoreCase))
-                {
-                    // Maybe this app's own reward from a create whose answer got lost: adopt it instead.
-                    var used = settings.Rewards.Values.Select(r => r.TwitchRewardId).OfType<string>().ToHashSet(StringComparer.Ordinal);
-                    var mine = (await api.GetManageableRewardsAsync(broadcaster)).FirstOrDefault(r => !used.Contains(r.Id) && string.Equals(r.Title, spec.Title, StringComparison.OrdinalIgnoreCase));
-                    if (mine is null) throw;
-                    reward.TwitchRewardId = mine.Id; reward.SyncedFingerprint = null; remote = null;
                 }
             }
             if (reward.SyncedFingerprint != fingerprint || remote?.GetValueOrDefault(reward.TwitchRewardId!)?.IsPaused is bool paused && paused != RewardsPaused)
@@ -319,7 +324,17 @@ public sealed class TwitchService : IRedemptionSink, IAsyncDisposable
         }
     }
 
-    /// <summary>Refunds every redemption still waiting for a reward; ones the engine holds are withdrawn from it.</summary>
+    private async Task<TwitchReward?> FindUntrackedAsync(HelixClient api, string broadcaster, string title)
+    {
+        var used = settings.Rewards.Values.Select(r => r.TwitchRewardId).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        return (await api.GetManageableRewardsAsync(broadcaster)).FirstOrDefault(r => !used.Contains(r.Id) && string.Equals(r.Title, title, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Refunds every redemption still waiting for a reward before it is deleted. Ones the engine holds are
+    /// withdrawn from it; ones whose effect already runs stay (the delete marks them fulfilled, which they are).
+    /// Throws when something could not be settled, so the reward is not deleted yet.
+    /// </summary>
     private async Task RefundQueueAsync(HelixClient api, string broadcaster, string rewardId)
     {
         int refunded = 0;
@@ -327,12 +342,18 @@ public sealed class TwitchService : IRedemptionSink, IAsyncDisposable
         {
             if (decisions.TryGetValue(redemption.Id, out var decision))
             {
-                await DeliverAsync(redemption.Id, decision);
+                if (!await DeliverAsync(redemption.Id, decision))
+                    throw new TwitchApiException(HttpStatusCode.ServiceUnavailable, "A redemption could not be settled yet; the reward is removed on the next sync.");
                 continue;
             }
-            if (open.TryRemove(redemption.Id, out _)) { withdrawn[redemption.Id] = 0; withdraw?.Invoke(redemption.Id); }
-            await api.UpdateRedemptionStatusAsync(broadcaster, rewardId, redemption.Id, false);
-            refunded++;
+            if (open.ContainsKey(redemption.Id))
+            {
+                withdrawn[redemption.Id] = 0;
+                if (withdraw != null && !await withdraw(redemption.Id)) { withdrawn.TryRemove(redemption.Id, out _); continue; }
+                open.TryRemove(redemption.Id, out _);
+            }
+            try { await api.UpdateRedemptionStatusAsync(broadcaster, rewardId, redemption.Id, false); refunded++; }
+            catch (TwitchApiException error) when (error.Status == HttpStatusCode.NotFound) { /* Already resolved meanwhile. */ }
         }
         if (refunded > 0) log($"Twitch: refunded {refunded} waiting redemption(s) before deleting the reward.");
     }
@@ -533,7 +554,7 @@ public sealed class TwitchService : IRedemptionSink, IAsyncDisposable
         try { tokens.Save(clientId, value); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
         {
-            log("Twitch: the login could not be saved for the next start: " + error.Message);
+            Post(() => log("Twitch: the login could not be saved for the next start: " + error.Message)); // Can run on a background thread.
         }
     }
 

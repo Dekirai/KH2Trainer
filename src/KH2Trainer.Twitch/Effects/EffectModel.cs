@@ -185,6 +185,14 @@ public sealed class EffectContext
         else owned.Add(new OwnedValue(feature, value, original, restore, sustain));
     }
 
+    /// <summary>Takes ownership of a value without sending it now; <see cref="SustainAsync"/> applies it when the game allows.</summary>
+    public void Own(string featureId, double value, bool restore = true, bool sustain = true)
+    {
+        var feature = features.Get(featureId);
+        if (owned.Any(o => o.Feature.Id == featureId)) return;
+        owned.Add(new OwnedValue(feature, Math.Clamp(value, feature.Minimum, feature.Maximum), Read(featureId), restore, sustain));
+    }
+
     /// <summary>Re-applies owned values the game has reset. The new game value becomes the value to restore.</summary>
     public async Task SustainAsync()
     {

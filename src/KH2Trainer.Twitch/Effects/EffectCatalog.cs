@@ -325,7 +325,9 @@ public static class EffectCatalog
             Prompt = "Ends the current Drive Form immediately. Refunded if Sora is not in a form.",
             PromptDe = "Beendet die aktuelle Drive-Form sofort. Ohne Form gibt es die Punkte zurück.",
             Features = ["drive.revert", "player.form.id", "drive.phase"],
+            // Only checked when no Twitch form is running: then a revert in progress means Sora is already leaving the form.
             Check = ctx => !InForm(ctx) ? Readiness.Reject("Sora is not in a Drive Form.")
+                : ctx.Read("drive.phase") == 3 ? Readiness.Reject("Sora is already leaving the Drive Form.")
                 : ctx.Read("drive.phase") is > 0 ? Readiness.Wait("Waiting for the current Drive transformation to finish.") : Readiness.Ready,
             Start = ctx => ctx.RunAsync("drive.revert"),
         },
@@ -453,24 +455,30 @@ public static class EffectCatalog
             Title = "Ghost Walk", TitleDe = "Geistermodus",
             Prompt = "Sora walks through walls for a few seconds, then snaps back to the starting point.",
             PromptDe = "Sora läuft ein paar Sekunden durch Wände und springt danach zum Startpunkt zurück.",
-            Features = ["player.position.bookmark", "player.position.return", "combat.movementcollision", "drive.phase", "world.reload_room", "world.current_room", "world.current_world"],
+            Features = ["player.position.bookmark", "player.position.return", "combat.movementcollision", "drive.phase", "world.reload_room", "world.current_room", "world.current_world",
+                "player.position.x", "player.position.y", "player.position.z"],
             Check = NoDriveTransition,
             Start = async ctx =>
             {
                 ctx.State["world"] = ctx.Read("world.current_world") ?? -1;
                 ctx.State["room"] = ctx.Read("world.current_room") ?? -1;
+                foreach (string axis in new[] { "x", "y", "z" })
+                    if (ctx.Read("player.position." + axis) is double value) ctx.State[axis] = value;
                 await ctx.RunAsync("player.position.bookmark");
                 await ctx.SetAsync("combat.movementcollision", 1, sustain: false);
             },
             End = async ctx =>
             {
                 // Back to the start while walls are still off, then walls on again.
+                bool sameRoom = ctx.Read("world.current_world") == ctx.State["world"] && ctx.Read("world.current_room") == ctx.State["room"];
                 bool back = await TryRunAsync(ctx, "player.position.return");
+                // A pause, freeze or Drive Form drops the bookmark; the stored coordinates still work.
+                if (!back && sameRoom && ctx.State.ContainsKey("x") && ctx.State.ContainsKey("y") && ctx.State.ContainsKey("z"))
+                    back = await TryRunAsync(ctx, "player.position.x", ctx.State["x"]) && await TryRunAsync(ctx, "player.position.y", ctx.State["y"])
+                        && await TryRunAsync(ctx, "player.position.z", ctx.State["z"]);
                 await ctx.RestoreAsync();
-                // The bookmark was lost (for example a Drive Form changed the player): reload the room so Sora is never left inside a wall.
-                if (!back && ctx.SceneReady && ctx.Read("world.current_world") == ctx.State["world"] && ctx.Read("world.current_room") == ctx.State["room"]
-                    && await TryRunAsync(ctx, "world.reload_room"))
-                    ctx.Detail = "room reloaded";
+                // Last resort, so Sora is never left inside a wall.
+                if (!back && sameRoom && ctx.SceneReady && await TryRunAsync(ctx, "world.reload_room")) ctx.Detail = "room reloaded";
             },
         },
         new()
@@ -572,10 +580,17 @@ public static class EffectCatalog
         ctx.State["requestedBefore"] = ctx.Read("drive.requested") ?? -1;
         ctx.Detail = FormNames[form];
         ctx.Established = false; // The timer starts once Sora has actually transformed.
-        // Hold the form timer so the form lasts exactly as long as the reward says. Set first: if the
-        // transformation is refused, the engine takes it back and nothing has changed.
-        await ctx.SetAsync("combat.formtimer", 1);
+        // Hold the form timer so the form lasts exactly as long as the reward says. From base form it is set
+        // first (a refused transformation then changes nothing); in another form it would refill that form's
+        // timer on every refused attempt, so it is set only after the switch was accepted.
+        bool fromBase = ctx.State["from"] == 0;
+        if (fromBase) await ctx.SetAsync("combat.formtimer", 1);
         await ctx.RunAsync("drive.trigger", form);
+        if (!fromBase)
+        {
+            try { await ctx.SetAsync("combat.formtimer", 1); }
+            catch (Exception) { ctx.Own("combat.formtimer", 1); } // The switch is under way; the engine re-applies the hold.
+        }
         if (ctx.Read("drive.phase") is > 0 || ctx.Read("drive.result") == 1) ctx.State["busy"] = 1;
     }
 
@@ -614,11 +629,9 @@ public static class EffectCatalog
             await TryRunAsync(ctx, "drive.cancel");
             return;
         }
-        // A replacing form reverts by itself; a form the game already ended needs nothing.
-        if (ctx.EndReason == EndReason.Replaced || ctx.Read("player.form.id") != ctx.State["form"]) return;
-        // Kick Out of Drive Form is paid for only if the revert was accepted.
-        if (ctx.EndReason == EndReason.Interrupted) await ctx.RunAsync("drive.revert");
-        else await TryRunAsync(ctx, "drive.revert");
+        // A replacing form reverts by itself, Kick Out already sent the revert, and a form the game ended needs nothing.
+        if (ctx.EndReason is EndReason.Replaced or EndReason.Interrupted || ctx.Read("player.form.id") != ctx.State["form"]) return;
+        await TryRunAsync(ctx, "drive.revert");
     }
 
     /// <summary>

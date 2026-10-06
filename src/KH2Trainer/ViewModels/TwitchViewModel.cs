@@ -109,7 +109,7 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
         var tokens = new TokenStore(Path.Combine(shell.UserFolder, "twitch-login.bin"), new DpapiProtector());
         Game = new TrainerGameControl(shell);
         Service = new TwitchService(http, tokens, Settings, SaveSettings, redemption => Engine!.Submit(redemption), shell.Log,
-            withdraw: id => _ = Engine!.CancelAsync(id, DateTimeOffset.UtcNow));
+            withdraw: id => Engine!.CancelAsync(id, DateTimeOffset.UtcNow));
         Engine = new EffectEngine(Game, new FeatureMap(shell.Catalog), EffectCatalog.All,
             key => RewardResolver.Options(EffectCatalog.Find(key)!, Settings), () => RewardResolver.Engine(Settings), Service, shell.Log);
 
@@ -434,7 +434,12 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
         var info = new FileInfo(picker.FileName);
         if (OverlayServer.ImageType(info.FullName) is null) { shell.Notify("Choose a PNG, JPG, GIF, BMP or WebP image.", true); return null; }
         if (info.Length > OverlayServer.MaxImageBytes) { shell.Notify("The image is larger than 8 MB. Choose a smaller one.", true); return null; }
-        if (RewardVm.Decode(info.FullName) is null) { shell.Notify("This image cannot be read. Choose another file.", true); return null; }
+        if (RewardVm.Decode(info.FullName) is null)
+        {
+            // Windows decodes WebP only with its optional codec; OBS shows it either way.
+            if (!LooksLikeWebp(info.FullName)) { shell.Notify("This image cannot be read. Choose another file.", true); return null; }
+            shell.Notify("This PC cannot preview WebP images, but the stream overlay shows it.", false);
+        }
         string target = Path.Combine(ImageFolder, reward.Key + info.Extension.ToLowerInvariant());
         if (string.Equals(Path.GetFullPath(info.FullName), Path.GetFullPath(target), StringComparison.OrdinalIgnoreCase)) return target; // Already the reward's image.
         string temporary = Path.Combine(ImageFolder, reward.Key + "." + Guid.NewGuid().ToString("N") + ".tmp");
@@ -453,6 +458,17 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
             shell.Notify("The image could not be copied: " + error.Message, true);
             return null;
         }
+    }
+
+    private static bool LooksLikeWebp(string path)
+    {
+        try
+        {
+            var header = new byte[12];
+            using var file = File.OpenRead(path);
+            return file.Read(header, 0, 12) == 12 && header.AsSpan(0, 4).SequenceEqual("RIFF"u8) && header.AsSpan(8, 4).SequenceEqual("WEBP"u8);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return false; }
     }
 
     internal void DeleteImage(string? path)

@@ -362,7 +362,32 @@ internal static class EngineTests
             refused.Redeem("a", "final"); await refused.TickAsync(); await refused.TickAsync(1);
             refused.Game.Reject = (feature, _) => feature == "drive.revert";
             refused.Redeem("b", "revert"); await refused.TickAsync(1);
-            check(refused.Sink.IsRefunded("b") && !refused.Sink.IsFulfilled("b"), "interrupt: Kick Out is refunded when the game refuses the revert");
+            check(refused.IsWaiting("b") && refused.IsActive("final") && refused.Game.Get("combat.formtimer") == 1,
+                "interrupt: a refused revert is retried and the viewer's Final Form keeps running meanwhile");
+            refused.Game.Reject = null; await refused.TickAsync(4);
+            check(refused.Sink.IsFulfilled("b") && !refused.IsActive("final") && refused.Game.Get("player.form.id") == 0, "interrupt: the retry kicks Sora out");
+            refused.Redeem("c", "final"); await refused.TickAsync(1);
+            refused.Game.Reject = (feature, _) => feature == "drive.revert";
+            refused.Redeem("d", "revert"); await refused.TickAsync(62);
+            check(refused.Sink.IsRefunded("d") && !refused.Sink.IsFulfilled("d"), "interrupt: Kick Out is refunded when the game keeps refusing the revert");
+            refused.Game.Reject = null;
+
+            var twice = Create(features);
+            twice.Game.DriveSteps = 2;
+            twice.Redeem("a", "final"); await twice.TickAsync(); await twice.TickAsync(3);
+            twice.Redeem("b", "valor"); twice.Redeem("c", "revert"); twice.Redeem("d", "revert"); await twice.TickAsync(1);
+            check(twice.Sink.IsFulfilled("c") && twice.Sink.IsRefunded("d") && twice.Sink.Refunded.Single(r => r.Redemption.Id == "d").Reason.Contains("already leaving"),
+                "interrupt: a second Kick Out while Sora is already leaving the form is refunded");
+            await twice.TickAsync(8);
+            check(twice.IsActive("valor") && twice.Sink.IsFulfilled("b") && !twice.Sink.IsRefunded("b"), "interrupt: it does not kick the next viewer's form instead");
+
+            var native = Create(features);
+            native.Game.Set("player.form.id", 6); // The streamer is in Antiform on their own.
+            native.Game.Reject = (feature, _) => feature == "drive.trigger";
+            native.Redeem("a", "valor"); await native.TickAsync(); await native.TickAsync(10);
+            check(native.Game.Count("combat.formtimer") == 0 && native.IsWaiting("a"), "form: a refused switch from another form never refills that form's timer");
+            native.Game.Reject = null; await native.TickAsync(4);
+            check(native.Game.Get("player.form.id") == 1 && native.Game.Get("combat.formtimer") == 1, "form: the hold is set once the switch was accepted");
 
             var end = Create(features);
             end.Game.DriveSteps = 5;
@@ -405,6 +430,14 @@ internal static class EngineTests
 
         // The trainer's field freeze holds the game: other effects wait for it instead of failing.
         {
+            var stuck = Create(features);
+            stuck.Redeem("a", "freeze-frame"); await stuck.TickAsync();
+            stuck.Game.Reject = (feature, args) => feature == "practice.field_pause" && args[0] == 0;
+            await stuck.TickAsync(6);
+            check(stuck.Game.Get("practice.field_pause") == 1, "freeze: a refused release leaves the game frozen for now");
+            stuck.Game.Reject = null; await stuck.TickAsync(2);
+            check(stuck.Game.Get("practice.field_pause") == 0, "freeze: the release is retried while the game is still frozen");
+
             var h = Create(features);
             h.Redeem("a", "freeze-frame"); await h.TickAsync();
             h.Redeem("b", "heal"); await h.TickAsync(1);

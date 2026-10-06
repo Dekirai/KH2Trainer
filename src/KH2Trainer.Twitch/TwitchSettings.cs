@@ -84,6 +84,8 @@ public sealed class TwitchSettings
     /// </summary>
     [JsonIgnore]
     public string? LoadProblem { get; private set; }
+    /// <summary>The unreadable original still has to be copied aside before the first save replaces it.</summary>
+    private string? pendingBackup;
 
     /// <summary>Loads settings; a missing or damaged file yields defaults so the trainer always starts.</summary>
     public static TwitchSettings Load(string path)
@@ -91,7 +93,7 @@ public sealed class TwitchSettings
         if (!File.Exists(path)) return new TwitchSettings();
         try
         {
-            if (JsonSerializer.Deserialize<TwitchSettings>(File.ReadAllText(path), Options) is { Version: 1 } settings)
+            if (JsonSerializer.Deserialize<TwitchSettings>(ReadWithRetry(path), Options) is { Version: 1 } settings)
             {
                 settings.ClientId ??= "";
                 settings.Rewards = new Dictionary<string, RewardSettings>(
@@ -109,17 +111,43 @@ public sealed class TwitchSettings
         }
     }
 
+    /// <summary>A file briefly locked by a sync tool or virus scanner is read again before giving up.</summary>
+    private static string ReadWithRetry(string path)
+    {
+        for (int attempt = 1; ; attempt++)
+        {
+            try { return File.ReadAllText(path); }
+            catch (IOException) when (attempt < 5) { Thread.Sleep(100); }
+        }
+    }
+
     private static TwitchSettings Damaged(string path, string reason)
     {
         string backup = $"{path}.bad-{DateTime.Now:yyyyMMdd-HHmmss}";
-        try { File.Copy(path, backup, true); }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { backup = path; }
-        return new TwitchSettings { LoadProblem = $"The Twitch settings could not be read ({reason}). Defaults are in use; the old file was kept as {Path.GetFileName(backup)}." };
+        try
+        {
+            File.Copy(path, backup, true);
+            return new TwitchSettings { LoadProblem = $"The Twitch settings could not be read ({reason}). Defaults are in use; the old file was kept as {Path.GetFileName(backup)}." };
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            return new TwitchSettings
+            {
+                pendingBackup = backup,
+                LoadProblem = $"The Twitch settings could not be read ({reason}). Defaults are in use; the old file is copied to {Path.GetFileName(backup)} before it is replaced.",
+            };
+        }
     }
 
     public void Save(string path)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
+        if (pendingBackup != null)
+        {
+            // Never replace a file that could not be read without keeping a copy (throws while it is still locked).
+            if (File.Exists(path)) File.Copy(path, pendingBackup, true);
+            pendingBackup = null;
+        }
         string temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try { File.WriteAllText(temporary, JsonSerializer.Serialize(this, Options)); File.Move(temporary, path, true); }
         finally { if (File.Exists(temporary)) File.Delete(temporary); }

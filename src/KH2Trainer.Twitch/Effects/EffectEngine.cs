@@ -119,13 +119,7 @@ public sealed class EffectEngine
         bool changed = false;
         try
         {
-            while (incoming.TryDequeue(out var redemption))
-            {
-                changed = true;
-                if (!catalog.TryGetValue(redemption.RewardKey, out var definition)) { Refund(redemption, "This reward is not available."); continue; }
-                pending.Add(new Pending(redemption, definition, now));
-                Record(now, EffectEventKind.Redeemed, definition.Key, redemption.UserName, null, $"{redemption.UserName} redeemed {Title(definition.Key)}.");
-            }
+            changed |= AcceptIncoming(now);
 
             bool ready = IsGameReady;
             double step = lastTick is { } last ? Math.Max(0, (now - last).TotalSeconds) : 0;
@@ -153,7 +147,8 @@ public sealed class EffectEngine
                 changed = true;
                 continue;
             }
-            if (!ready || FieldPaused || now - item.LastTry < RestoreInterval) continue;
+            // Freeze Frame's own release must be retried while the field is still paused.
+            if (!ready || FieldPaused && item.Context.Definition.Group != "freeze" || now - item.LastTry < RestoreInterval) continue;
             item.LastTry = now;
             await item.Context.RestoreAsync();
             if (!item.Context.HasPendingRestores) { restoring.Remove(item); changed = true; }
@@ -302,30 +297,15 @@ public sealed class EffectEngine
             int index = pending.IndexOf(item);
             pending.Remove(item);
             changed = true;
-            if (conflict != null && definition.Interrupts)
-            {
-                // Ending the running effect is the whole job (a form's end reverts it). The viewer pays only if that worked.
-                if (await EndAsync(conflict, EndReason.Interrupted, now, $"{item.Redemption.UserName} interrupted it"))
-                {
-                    sink.Fulfill(item.Redemption);
-                    Record(now, EffectEventKind.Done, definition.Key, item.Redemption.UserName, null, $"{item.Redemption.UserName}: {Title(definition.Key)} done.");
-                }
-                else
-                {
-                    Refund(item.Redemption, "The game did not allow it right now.");
-                    Record(now, EffectEventKind.Failed, definition.Key, item.Redemption.UserName, null,
-                        $"{Title(definition.Key)} for {item.Redemption.UserName} did not work. Points refunded.");
-                }
-                continue;
-            }
             Active? replaced = null;
-            if (conflict != null)
+            if (conflict != null && !definition.Interrupts)
             {
                 await EndAsync(conflict, EndReason.Replaced, now, $"replaced by {Title(definition.Key)}");
                 replaced = conflict;
             }
             try
             {
+                // An interrupting effect (Kick Out) acts first; the running effect ends only once that was accepted.
                 await definition.Start(context);
             }
             catch (Exception error)
@@ -346,6 +326,13 @@ public sealed class EffectEngine
                 item.Status = $"The game refused it for now ({error.Message}). Trying again.";
                 pending.Insert(Math.Min(index, pending.Count), item);
                 if (definition.Group != null) blockedGroups.Add(definition.Group);
+                continue;
+            }
+            if (conflict != null && definition.Interrupts)
+            {
+                await EndAsync(conflict, EndReason.Interrupted, now, $"{item.Redemption.UserName} interrupted it");
+                sink.Fulfill(item.Redemption);
+                Record(now, EffectEventKind.Done, definition.Key, item.Redemption.UserName, null, $"{item.Redemption.UserName}: {Title(definition.Key)} done.");
                 continue;
             }
             if (definition.IsTimed || !context.Established)
@@ -391,17 +378,34 @@ public sealed class EffectEngine
         Changed?.Invoke();
     }
 
-    /// <summary>Refunds one waiting redemption.</summary>
-    public async Task CancelAsync(string redemptionId, DateTimeOffset now)
+    /// <summary>Refunds one waiting redemption. Returns false when it is not waiting (for example its effect already runs).</summary>
+    public async Task<bool> CancelAsync(string redemptionId, DateTimeOffset now)
     {
+        bool found;
         await gate.WaitAsync();
         try
         {
+            AcceptIncoming(now);
             var item = pending.FirstOrDefault(p => p.Redemption.Id == redemptionId);
+            found = item != null;
             if (item != null) Drop(item, "Removed by the streamer", now);
         }
         finally { gate.Release(); }
         Changed?.Invoke();
+        return found;
+    }
+
+    private bool AcceptIncoming(DateTimeOffset now)
+    {
+        bool any = false;
+        while (incoming.TryDequeue(out var redemption))
+        {
+            any = true;
+            if (!catalog.TryGetValue(redemption.RewardKey, out var definition)) { Refund(redemption, "This reward is not available."); continue; }
+            pending.Add(new Pending(redemption, definition, now));
+            Record(now, EffectEventKind.Redeemed, definition.Key, redemption.UserName, null, $"{redemption.UserName} redeemed {Title(definition.Key)}.");
+        }
+        return any;
     }
 
     /// <summary>Ends every running effect and refunds everything still waiting.</summary>
