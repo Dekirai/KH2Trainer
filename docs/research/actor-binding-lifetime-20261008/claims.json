@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-08",
+  "Domain": "native",
+  "sourceReport": "report.json",
+  "scope": "Function-addressed representation of the six existing findings. No new analysis or claim of complete function semantics.",
+  "claims": [
+    {
+      "addr": "0x1403A7A40",
+      "Domain": "native",
+      "SourceFinding": "common-constructor",
+      "Finding": "Calls the recorded base-constructor chain through 3D5840, 3D2DA0 and 3DA940 to 3B3200, where Actor+1472 is zeroed at 3B33A0 before the birth callback at 3B3969. After the chain returns, 3A7A40 publishes currentPlayer at 3A7AF4, calls 3C0620 at 3A7B16, and writes Actor+1472 and STATUS+616 at 3A7B1B and 3A7B32. Its entry is therefore earlier than these observed stores in this constructor family.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403A7A40]",
+        "evidence.json#functions[addr=0x1403D5840]",
+        "evidence.json#functions[addr=0x1403D2DA0]",
+        "evidence.json#functions[addr=0x1403DA940]",
+        "evidence.json#functions[addr=0x1403B3200]",
+        "verification.json"
+      ],
+      "Limitations": "Specific constructor ordering only. No transitive no-yield, callback-lock, universal lifetime boundary or complete semantic review is established."
+    },
+    {
+      "addr": "0x140405030",
+      "Domain": "native",
+      "SourceFinding": "separate-spawn-roots",
+      "Finding": "Calls 3A7A40 at 405056. The recorded normal factory 3A7CB0 calls this constructor at 3A7E62, while the separate Drive replacement body 40D000 calls it at 40D2AC. The general dispatcher 3DF930 reaches the factory by tail jumps at 3DFA51 and 3DFE25, so its frame need not remain in the downstream constructor stack.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140405030]",
+        "evidence.json#functions[addr=0x1403A7CB0]",
+        "evidence.json#functions[addr=0x14040D000]",
+        "evidence.json#functions[addr=0x1403DF930]",
+        "verification.json"
+      ],
+      "Limitations": "Specific caller relationships only. Other constructors call 3A7A40 directly; this does not establish a universal spawn boundary, all callers or thread affinity."
+    },
+    {
+      "addr": "0x1404158C0",
+      "Domain": "native",
+      "SourceFinding": "rescue",
+      "Finding": "Calls the player-parking helper 3A80E0 at 4158DD before allocation, then calls 3A7A40 at 4159B9 and contains the Mickey specialization also present in 415670. The recorded rescue path registers 3FCA90 in 3FC7A0, invokes 3FCEC0 through that callback, and reaches 4158C0 at 3FD0F3.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404158C0]",
+        "evidence.json#functions[addr=0x140415670]",
+        "evidence.json#functions[addr=0x1403FCEC0]",
+        "evidence.json#functions[addr=0x1403FCA90]",
+        "evidence.json#functions[addr=0x1403FC7A0]",
+        "verification.json"
+      ],
+      "Limitations": "The parking helper's complete body is outside this evidence set. No direct code caller of 415670 was returned, which does not exclude indirect use. This claim does not establish all rescue transitions or worker affinity."
+    },
+    {
+      "addr": "0x14040D000",
+      "Domain": "native",
+      "SourceFinding": "drive-yields",
+      "Finding": "The Drive task callback 40CF10 tail-jumps to this body at 40CF17 after registration by 40CAA0 through 14F8A0. The body calls 150080 at 40D0C2 and 150060 at 40D151/40D16A before the constructor call at 40D2AC, then calls 150060 again at 40D495/40D4AE. These recorded wait-helper calls place cooperative waits on both sides of construction.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040D000]",
+        "evidence.json#functions[addr=0x14040CF10]",
+        "evidence.json#functions[addr=0x14040CAA0]",
+        "../status-bootstrap-20261007/report.md",
+        "verification.json"
+      ],
+      "Limitations": "Wait semantics additionally use the existing scheduler study. Registration and these calls do not prove universal OS-thread affinity or a no-yield constructor closure. No lock spanning the whole task is justified."
+    },
+    {
+      "addr": "0x1403BF300",
+      "Domain": "native",
+      "SourceFinding": "deferred-destruction",
+      "Finding": "Traverses the pending actor list, calls 3B4E80 at 3BF336 and an indirect virtual destructor at 3BF34B, then clears the pending list and moves actors marked with flag 80000h from the active list into it. The task registration in 3BF810 installs this routine and cleanup callback 3BF4C0; that cleanup calls this pass once at 3BF4C6 and tail-jumps to it again at 3BF4D1.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403BF300]",
+        "evidence.json#functions[addr=0x1403BF810]",
+        "evidence.json#functions[addr=0x1403BF4C0]",
+        "verification.json"
+      ],
+      "Limitations": "Specific deferred-list behavior only. This does not prove every allocation reaches a virtual destructor or exclude bulk heap release. Native work precedes the virtual destructor callback."
+    },
+    {
+      "addr": "0x14041EA20",
+      "Domain": "native",
+      "SourceFinding": "mutex-candidate",
+      "Finding": "Passes index 1 to 12FFD0 at 41EA3F, retains its return value in RBX, invokes 0FDBB0 at 41EA4A, calls the general spawn dispatcher 3DF930 at 41EAA9, and passes the retained value to the IDA-named ReleaseMutex helper at 41EB04. This is a candidate native mutex region around this one spawn call.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041EA20]",
+        "evidence.json#functions[addr=0x1403DF930]",
+        "verification.json"
+      ],
+      "Limitations": "Full mutex helper bodies and import resolution are outside the 20-body set. Eleven other direct 3DF930 callers remain. No shared mutual exclusion or complete function semantics is claimed."
+    }
+  ]
+}

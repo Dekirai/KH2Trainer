@@ -1,0 +1,45 @@
+STATUS observation coordinator, 2026-10-08
+
+Implemented, not integrated. Three new source files add the statically bound
+Runtime, isolated synthetic tests and a separate production compile unit.
+TrainerBridge, test runner, README, release and game process remain untouched.
+
+RetailRuntime::Start requires an independently confirmed GameThread, fresh
+bridge instance and exactly module + 0x2a17290 for the retail STATUS pool.
+It permanently claims one retained thread identity before accessing components.
+The Observer and typed Entrypoints are private static objects. Each Identity
+specialization has no constructible Runtime objects and cannot be rebound.
+
+Order: Contract.Prepare -> exact static candidates/ranges -> Originals.Prepare
+-> Bindings -> Observer.Bind -> Router.Prepare -> Contract.Original -> Commit
+-> Contract.FiveGates -> Drain.Begin. Start never polls or arms. Later fresh
+frames poll retained threads and arm only after Ready and no active wrapper.
+The retained owner and drain handles remain alive after Arm.
+
+Fault is permanent. Published original trampolines, handlers and wrappers remain
+resident and keep forwarding. Owned Resume debt is serviced even on Fault and
+with an invalid scan budget. Until that debt clears, neither Observer.Fault nor
+Observer.Inspect is called: the suspended thread could own their SRW lock.
+Only unpublished original batches may retry cleanup. Diagnostics are owner-only
+cached samples; foreign callers receive Invalid/WrongThread.
+
+Validation: production MSVC x64 /std:c++17 /O2 /W4 compile PASS, no warnings;
+synthetic suite 90 checks, 0 failures. It covers all five candidate mappings,
+ordering, publication failures, active-ticket deferral, fault forwarding,
+resume-maintenance decisions, cleanup retry and rejected foreign-thread access.
+Contract, batch, router and drain are doubles in that suite. Observer and typed
+forwarders execute normally. These are not end-to-end runtime tests: no real
+gate, trampoline, game image or suspended stack is exercised by this suite.
+
+Integration remains separate. The host must continue Fault maintenance even
+after trainer disable; OnFrame currently returns early under g_disabled.
+Runtime readiness does not admit Journal/IPC operations. Actor lifetime and
+native rebinding protection must be established separately. Existing closure,
+trusted-code and thread-control limits still apply. Conservative stack matches
+may defer forever; a timeout cannot make them clean.
+
+Hashes, exact dependency versions, evidence anchors and test logs are in
+report.json. Root reviewed the final source and independently repeated the
+production compile and 90/0 suite without warnings. The additional independent
+agent review found no blocking issue within the documented contract; see
+independent-review.json. Native installation and gameplay remain untested.

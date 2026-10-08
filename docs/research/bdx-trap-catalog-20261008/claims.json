@@ -1,0 +1,487 @@
+{
+  "Domain": "native",
+  "claims": [
+    {
+      "addr": "0x14041c9f0",
+      "Finding": "Native descriptor 0:0 (No-op adapter): The captured native adapter returns immediately without reading its declared operands. The VM still consumes the declared operand count.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041c9f0]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": " Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041ca00",
+      "Finding": "Native descriptor 0:1 (No-op adapter): The captured native adapter returns immediately without reading its declared operands. The VM still consumes the declared operand count.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041ca00]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": " Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041ca10",
+      "Finding": "Native descriptor 0:2 (No-op adapter): The captured native adapter returns immediately without reading its declared operands. The VM still consumes the declared operand count.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041ca10]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": " Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041ca50",
+      "Finding": "Native descriptor 0:3 (Read native tick factor): Returns the float at RVA 0x717480 as @FLT. No operands.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041ca50]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": " Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041cab0",
+      "Finding": "Native descriptor 0:4 (Add vectors): Adds all four components of operand 0 and operand 1. Returns @ADR to shared result storage at RVA 0x2AEA798.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041cab0]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "The adapter replaces NaN components in the referenced input vector(s) with zero before calculating the result. This writes to the input memory. A later invocation overwrites the result. Arguments are encoded native pointers; valid allocation and lifetime are required. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041cc00",
+      "Finding": "Native descriptor 0:5 (Subtract vectors): Subtracts operand 1 from operand 0, across all four components. Returns @ADR to shared result storage at RVA 0x2AEA7B0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041cc00]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "The adapter replaces NaN components in the referenced input vector(s) with zero before calculating the result. This writes to the input memory. A later invocation overwrites the result. Arguments are encoded native pointers; valid allocation and lifetime are required. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041cf70",
+      "Finding": "Native descriptor 0:6 (Vector length): Returns sqrt(x*x + y*y + z*z) as @FLT; w is ignored.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041cf70]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "Arguments are encoded native pointers; valid allocation and lifetime are required. This adapter does not sanitize NaN values. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041cfa0",
+      "Finding": "Native descriptor 0:7 (Normalize vector and retain length): Normalizes the input xyz components when the computed length is nonzero. Stores the original length in w and returns that length as @FLT.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041cfa0]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "Arguments are encoded native pointers; valid allocation and lifetime are required. This changes the input vector and does not sanitize NaN values. A zero-length vector keeps xyz unchanged and writes zero to w. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041d1a0",
+      "Finding": "Native descriptor 0:8 (No-op adapter): The captured native adapter returns immediately without reading its declared operands. The VM still consumes the declared operand count.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041d1a0]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": " Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041dbf0",
+      "Finding": "Native descriptor 0:16 (Random integer): Updates the shared DWORD seed at RVA 0x7535C0 by multiplying it by 69069 modulo 2^32. For unsigned n > 0, returns seed / ceil(2^32 / n) as @INT.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041dbf0]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "n = 0 reaches an integer divide fault after updating the seed and the return tag. This describes the native path, not a recommended call. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041dc40",
+      "Finding": "Native descriptor 0:17 (Random float scaled): Updates the same shared seed, converts the unsigned 32-bit result to float, multiplies by 2^-32 and by operand 0, and returns @FLT.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041dc40]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "Float rounding can produce a fraction of 1.0. The decompiler shows a misleading signed cast; the instructions zero-extend through EDX before CVTSI2SS from RDX. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041dc80",
+      "Finding": "Native descriptor 0:18 (Random float between): Updates the shared seed and calculates a + (b - a) * (float(seed) * 2^-32) using scalar float instructions. Returns @FLT.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041dc80]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "The seed conversion is unsigned. Float rounding can reach an endpoint; no strictly open upper interval is promised. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041d1b0",
+      "Finding": "Native descriptor 0:21 (Horizontal angle difference): Returns the wrapped difference atan2(b.x, b.z) - atan2(a.x, a.z) as @FLT.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041d1b0]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "Arguments are encoded native pointers; valid allocation and lifetime are required. This adapter does not include the vector NaN sanitization loop. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041ca70",
+      "Finding": "Native descriptor 0:22 (Integer absolute value): Calculates a 32-bit absolute value using CDQ, XOR and SUB, then returns @INT.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041ca70]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "INT_MIN wraps to the same bit pattern 0x80000000. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041ca90",
+      "Finding": "Native descriptor 0:23 (Float absolute value): Converts float to double, clears the double sign bit and converts back to float, returning @FLT.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041ca90]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "NaN payloads and signaling behavior follow those floating-point conversions; this is not a raw float-bit sign mask. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041ca20",
+      "Finding": "Native descriptor 0:24 (No-op adapter): The captured native adapter returns immediately without reading its declared operands. The VM still consumes the declared operand count.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041ca20]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": " Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041ca30",
+      "Finding": "Native descriptor 0:25 (No-op adapter): The captured native adapter returns immediately without reading its declared operands. The VM still consumes the declared operand count.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041ca30]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": " Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041ca40",
+      "Finding": "Native descriptor 0:26 (No-op adapter): The captured native adapter returns immediately without reading its declared operands. The VM still consumes the declared operand count.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041ca40]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": " Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041dd00",
+      "Finding": "Native descriptor 0:27 (Write native timing scalar): Copies operand 0 as float to RVA 0x717424 through the shared tail at RVA 0x1545B0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041dd00]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "The adapter performs no value-range validation. This does not establish all consumers of that global. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041d220",
+      "Finding": "Native descriptor 0:35 (Scale vector in place): Multiplies all four components of operand 0 by float operand 1 in place. No VM return slot.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041d220]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "Arguments are encoded native pointers; valid allocation and lifetime are required. No NaN sanitization loop. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041cd50",
+      "Finding": "Native descriptor 0:36 (Scale vector): Multiplies all four components of operand 0 by float operand 1. Returns @ADR to shared result storage at RVA 0x2AEA7C8.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041cd50]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "The adapter replaces NaN components in the referenced input vector(s) with zero before calculating the result. This writes to the input memory. A later invocation overwrites the result. Arguments are encoded native pointers; valid allocation and lifetime are required. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041ce70",
+      "Finding": "Native descriptor 0:37 (Divide vector): Multiplies all four components by the float reciprocal of operand 1. Returns @ADR to shared result storage at RVA 0x2AEA7E0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041ce70]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "Arguments are encoded native pointers; valid allocation and lifetime are required. No zero-divisor check or NaN sanitization loop. A later invocation overwrites the result. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041d250",
+      "Finding": "Native descriptor 0:42 (Horizontal vector angle): Returns atan2(x, z) as @FLT.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041d250]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "The adapter replaces NaN components in the referenced input vector(s) with zero before calculating the result. This writes to the input memory. Arguments are encoded native pointers; valid allocation and lifetime are required. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041e5e0",
+      "Finding": "Native descriptor 0:43 (Wrap angle): For a finite float, calls the angle wrapper at RVA 0x3B6F20. For a non-finite float, returns zero. Result tag @FLT.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e5e0]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "The helper uses separate positive and nonpositive branches with fmodf and float approximations of pi and 2*pi. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041d2d0",
+      "Finding": "Native descriptor 0:45 (Advance along direction): Normalizes a copy of operand 1, scales it by float operand 2 and the global tick factor at RVA 0x717480, then adds all four resulting components to operand 0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041d2d0]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "The adapter replaces NaN components in the referenced input vector(s) with zero before calculating the result. This writes to the input memory. Arguments are encoded native pointers; valid allocation and lifetime are required. The copied w component also participates in scale and add. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041e6c0",
+      "Finding": "Native descriptor 0:57 (Set global bit): Sets bit (index & 31) in the DWORD array at RVA 0x9ABCB0, indexed by unsigned index >> 5.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e6c0]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "No bounds check is present in the adapter or its shared tail. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041e6d0",
+      "Finding": "Native descriptor 0:58 (Clear global bit): Clears bit (index & 31) in the DWORD array at RVA 0x9ABCB0, indexed by unsigned index >> 5.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e6d0]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "No bounds check is present in the adapter or its shared tail. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041e6e0",
+      "Finding": "Native descriptor 0:59 (Read global bit): Reads bit (index & 31) from the DWORD array at RVA 0x9ABCB0, indexed by unsigned index >> 5. Returns @INT.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e6e0]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "No bounds check is present in the captured helper. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041e710",
+      "Finding": "Native descriptor 0:60 (No-op adapter): The captured native adapter returns immediately without reading its declared operands. The VM still consumes the declared operand count.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e710]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": " Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041d490",
+      "Finding": "Native descriptor 0:78 (Interpolate vectors): Returns a*(1-t) + b*t across all four components, with a=operand 0, b=operand 1 and t=float operand 2. Returns @ADR to RVA 0x7535C8.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041d490]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "The adapter replaces NaN components in the referenced input vector(s) with zero before calculating the result. This writes to the input memory. The result buffer is shared with other vector calls, including 0:82, 0:83 and 0:102. Arguments are encoded native pointers; valid allocation and lifetime are required. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041d570",
+      "Finding": "Native descriptor 0:82 (Vector cross product): Returns the xyz cross product of operand 0 and operand 1 with w=0, as @ADR to shared storage at RVA 0x7535C8.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041d570]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "The adapter replaces NaN components in the referenced input vector(s) with zero before calculating the result. This writes to the input memory. This storage is reused by other vector calls. Arguments are encoded native pointers; valid allocation and lifetime are required. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041d740",
+      "Finding": "Native descriptor 0:84 (Angle from vector dot product): Calculates the xyz dot product without normalizing the vectors, then returns 0 for dot >= 1, pi for dot <= -1, otherwise acos(dot), as @FLT.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041d740]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "The adapter replaces NaN components in the referenced input vector(s) with zero before calculating the result. This writes to the input memory. With masked floating-point exceptions, an unordered/NaN dot product reaches acosf; unmasked COMISS can fault before that. Arguments are encoded native pointers; valid allocation and lifetime are required. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041e5c0",
+      "Finding": "Native descriptor 0:86 (Write object field +8): Writes the low 32 bits of operand 1 to decoded operand 0 plus 8. No VM return slot.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e5c0]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "Arguments are encoded native pointers; valid allocation and lifetime are required. No object-type or null guard is present in this adapter. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041d8b0",
+      "Finding": "Native descriptor 0:91 (Dot product of normalized vectors): Sanitizes input vectors, normalizes local copies of xyz and returns their xyz dot product as @FLT.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041d8b0]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "The adapter replaces NaN components in the referenced input vector(s) with zero before calculating the result. This writes to the input memory. Normalization acts on copies after sanitization. Arguments are encoded native pointers; valid allocation and lifetime are required. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041e740",
+      "Finding": "Native descriptor 0:92 (Add object byte +9): Adds the low byte of operand 1 to decoded operand 0 plus 9, with byte wraparound. No VM return slot.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e740]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "Arguments are encoded native pointers; valid allocation and lifetime are required. The semantic object type is not established. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041e760",
+      "Finding": "Native descriptor 0:93 (Add object byte +10): Adds the low byte of operand 1 to decoded operand 0 plus 10, with byte wraparound. No VM return slot.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e760]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "Arguments are encoded native pointers; valid allocation and lifetime are required. The semantic object type is not established. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041e780",
+      "Finding": "Native descriptor 0:94 (Add object byte +11): Adds the low byte of operand 1 to decoded operand 0 plus 11, with byte wraparound. No VM return slot.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e780]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "Arguments are encoded native pointers; valid allocation and lifetime are required. The semantic object type is not established. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041e7a0",
+      "Finding": "Native descriptor 0:95 (Write object byte +14): Writes the low byte of operand 1 to decoded operand 0 plus 14. No VM return slot.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e7a0]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "Arguments are encoded native pointers; valid allocation and lifetime are required. The semantic object type is not established. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041e7c0",
+      "Finding": "Native descriptor 0:96 (Add object byte +8): Adds the low byte of operand 1 to decoded operand 0 plus 8, with byte wraparound. No VM return slot.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e7c0]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "Arguments are encoded native pointers; valid allocation and lifetime are required. The semantic object type is not established. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14041d980",
+      "Finding": "Native descriptor 0:102 (Direction to angles): Produces (atan2(-y, sqrt(x*x+z*z)), atan2(x,z), 0, 1). Returns @ADR to shared storage at RVA 0x7535C8.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041d980]",
+        "helpers.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "The adapter replaces NaN components in the referenced input vector(s) with zero before calculating the result. This writes to the input memory. Other vector calls overwrite the same storage. Arguments are encoded native pointers; valid allocation and lifetime are required. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14042b230",
+      "Finding": "Native descriptor 1:3 (Current Actor pointer): Returns the current Actor pointer through RVA 0x3B3E80, encoded as @ADR.",
+      "Evidence": [
+        "../actor-scale-contract-20261007/evidence.json#functions[addr=0x14042b230]",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "No operand. A returned address does not establish a stable Actor lifetime. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x14042e220",
+      "Finding": "Native descriptor 1:6 (Register movement entry): The descriptor declares 12 operands, but adapter RVA 0x42E220 also reads low DWORDs from scratch slots 12, 13, 14 and 15. Callee RVA 0x3CA0E0 uses the values from slots 12 through 14.",
+      "Evidence": [
+        "../bdx-rebind-operands-20261008/evidence.json#functions[addr=0x14042e220]",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "These reads remain within the native 16-slot scratch buffer. The dispatcher only initializes the 12 declared slots for this call; the additional values are uninitialized scratch contents or values left by an earlier native call. This is not proof of a live crash. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x140431a70",
+      "Finding": "Native descriptor 2:9 (Actor STATUS rebind): Adapter RVA 0x431A70 calls RVA 0x411350. Operand 0 encodes a wrapper whose +4 field encodes an Actor; operand 1 supplies the parameter ID. No return-value slot.",
+      "Evidence": [
+        "../actor-rebind-context-20261008/evidence.json#functions[addr=0x140431a70]",
+        "../bdx-rebind-operands-20261008/evidence.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "The third declared operand is unused by this adapter. The selected retail event-0 paths initialize this wrapper, conditional on successful native setup. General runtime argument validity and object lifetime remain unproved. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    },
+    {
+      "addr": "0x140431aa0",
+      "Finding": "Native descriptor 2:95 (Actor STATUS rebind): Adapter RVA 0x431AA0 calls RVA 0x4112B0. Operand 0 encodes a wrapper whose +4 field encodes an Actor; operand 1 supplies the parameter ID. No return-value slot.",
+      "Evidence": [
+        "../actor-rebind-context-20261008/evidence.json#functions[addr=0x140431aa0]",
+        "../bdx-rebind-operands-20261008/evidence.json",
+        "verification.json",
+        "catalog-data.json"
+      ],
+      "Limitations": "The selected retail event-0 paths initialize this wrapper, conditional on successful native setup. General runtime argument validity and object lifetime remain unproved. Original binary only; no complete transitive behavior or valid runtime-call guarantee."
+    }
+  ]
+}

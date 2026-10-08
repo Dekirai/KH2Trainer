@@ -1,0 +1,465 @@
+{
+  "schema": 1,
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "annotations": {
+    "4:2": {
+      "handlerRva": 4404352,
+      "declaredOperandCount": 0,
+      "hasReturnSlot": true,
+      "name": "Test result-context pointer",
+      "summary": "Returns whether global pointer RVA0x2A11478 is nonnull as @INT.",
+      "notes": "This tests pointer presence only; it does not validate the pointed object or its lifetime.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433480] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403ac220]"
+    },
+    "4:3": {
+      "handlerRva": 4404416,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "name": "Begin mission result message7",
+      "summary": "Normally forwards operand0 to the mission result path as message7. For descriptor type30, a matching handler with a non-FFFF state condition can select message156 instead.",
+      "notes": "The result path stops the timer, changes mission flags and may queue presentation phases or immediately dispatch and tear down the mission. Not a universal win primitive; downstream effects depend on current descriptors and handlers.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404334c0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403a33c0]"
+    },
+    "4:5": {
+      "handlerRva": 4404848,
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "name": "Set mission counter",
+      "summary": "Passes integer value operand0 and counter index operand1 to the clamping counter setter.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433670] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fbae0]"
+    },
+    "4:6": {
+      "handlerRva": 4404864,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "name": "Increment mission counter",
+      "summary": "Adds1 to the counter selected by operand0, using DWORD addition before the clamping setter.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Signed overflow is not prevented: INT_MAX+1 becomes INT_MIN before clamping.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433680] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb2b0]"
+    },
+    "4:7": {
+      "handlerRva": 4404640,
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "name": "Restart mission timer",
+      "summary": "Uses seconds operand0 and timer index operand1. Positive seconds configure countdown; nonpositive seconds choose count-up using the widget maximum. Starts phase1 and clears pause bit2.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Seconds are multiplied by60 with DWORD arithmetic. Other pause bits and widget warning bit8 are preserved.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404335a0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb9a0]"
+    },
+    "4:8": {
+      "handlerRva": 4405056,
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "name": "Set mission gauge",
+      "summary": "Passes float operand0 and gauge index operand1 to the absolute gauge setter. Any nonzero mission+1696 owner mask blocks this setter.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433740] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fbcb0]"
+    },
+    "4:9": {
+      "handlerRva": 4405072,
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "name": "Add to mission gauge",
+      "summary": "Adds float operand0 to the selected gauge. When global step717480<2, mission filename substrings can halve the delta before addition and the absolute setter.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. PO01_MS501, TT12_WORK_BOX and HB32_FM_VEX halve it; TR04_MS104 does so for negative delta and TR07_MS203 otherwise; EH15_MS104 does so for delta>=-5. The tests are sequential; filenames and float comparisons matter. This is not a generic unscaled add.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433750] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb3a0]"
+    },
+    "4:10": {
+      "handlerRva": 4405088,
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "name": "Set normalized mission gauge",
+      "summary": "Multiplies float operand0 by the selected gauge signed-integer maximum, then calls the absolute setter.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. No finite/range validation occurs before the multiply; mission owner-mask gating still applies through the absolute setter.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433760] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fbd90]"
+    },
+    "4:12": {
+      "handlerRva": 4405104,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": true,
+      "name": "Read normalized mission gauge",
+      "summary": "Returns selected gauge float current / float(signed maximum) as @FLT; returns0 when the mission/widget predicate fails.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. No maximum-zero guard; division can produce NaN or infinity under masked floating-point exceptions.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433770] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb690]"
+    },
+    "4:13": {
+      "handlerRva": 4404688,
+      "declaredOperandCount": 0,
+      "hasReturnSlot": false,
+      "name": "Set timer pause bit2",
+      "summary": "ORs pause mask RVA0xABB854 with2.",
+      "notes": "Global App timer pause ownership is a bitmask. This neither allocates a trainer lease nor preserves independent owners through later lifecycle operations.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404335d0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140157130]"
+    },
+    "4:14": {
+      "handlerRva": 4404496,
+      "declaredOperandCount": 0,
+      "hasReturnSlot": false,
+      "name": "Restart registered mission widgets",
+      "summary": "When a mission exists, deactivates the registry first if mission flag1 is set, invokes vtable+16 for each registered widget lacking flag0x10, then sets mission flag1.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Timer activation restarts the global timer. Counter/gauge activation reaches HUD resources. The registry loop trusts the stored count.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#code_ranges[addr=0x140433510] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb1c0]"
+    },
+    "4:15": {
+      "handlerRva": 4404512,
+      "declaredOperandCount": 0,
+      "hasReturnSlot": false,
+      "name": "Deactivate or suppress mission widgets",
+      "summary": "If mission flag1 is set, invokes registered widget vtable+24 and clears mission flag1. Otherwise sets mission flag2, which suppresses initial task activation.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#code_ranges[addr=0x140433520] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb4d0]"
+    },
+    "4:16": {
+      "handlerRva": 4404432,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "name": "Begin mission result message16",
+      "summary": "Forwards operand0 through the current mission result path with message16.",
+      "notes": "No mission-null check in this immediate adapter/helper chain. The path can consume score helpers, stop the timer, enter presentation phases and dispatch transitions; it is not a reversible field update.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404334d0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403a3440]"
+    },
+    "4:17": {
+      "handlerRva": 4404656,
+      "declaredOperandCount": 4,
+      "hasReturnSlot": false,
+      "name": "Configure mission timer",
+      "summary": "Passes start operand0, maximum/flags operand1 and threshold operand2 to selected timer vtable+48; index is operand3.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. A nonzero maximum replaces maximum after stripping bit30 and copies that bit into widget flag2; zero preserves both. Start/threshold always change. Counter/combo configuration also stores current=start; timer/gauge base configuration does not immediately store current.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404335b0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fbe40]"
+    },
+    "4:18": {
+      "handlerRva": 4404896,
+      "declaredOperandCount": 4,
+      "hasReturnSlot": false,
+      "name": "Configure mission counter",
+      "summary": "Passes start operand0, maximum/flags operand1 and threshold operand2 to selected counter vtable+48; index is operand3.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. A nonzero maximum replaces maximum after stripping bit30 and copies that bit into widget flag2; zero preserves both. Start/threshold always change. Counter/combo configuration also stores current=start; timer/gauge base configuration does not immediately store current.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404336a0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fbbf0]"
+    },
+    "4:19": {
+      "handlerRva": 4405152,
+      "declaredOperandCount": 4,
+      "hasReturnSlot": false,
+      "name": "Configure mission gauge",
+      "summary": "Passes start operand0, maximum/flags operand1 and threshold operand2 to selected gauge vtable+48; index is operand3.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. A nonzero maximum replaces maximum after stripping bit30 and copies that bit into widget flag2; zero preserves both. Start/threshold always change. Counter/combo configuration also stores current=start; timer/gauge base configuration does not immediately store current.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404337a0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fbd10]"
+    },
+    "4:51": {
+      "handlerRva": 4405424,
+      "declaredOperandCount": 4,
+      "hasReturnSlot": false,
+      "name": "Configure mission combo",
+      "summary": "Passes start operand0, maximum/flags operand1 and threshold operand2 to selected combo vtable+48; index is operand3.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. A nonzero maximum replaces maximum after stripping bit30 and copies that bit into widget flag2; zero preserves both. Start/threshold always change. Counter/combo configuration also stores current=start; timer/gauge base configuration does not immediately store current.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404338b0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fba20]"
+    },
+    "4:20": {
+      "handlerRva": 4404880,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "name": "Decrement mission counter",
+      "summary": "Adds-1 to the counter selected by operand0, using DWORD arithmetic before the clamping setter.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433690] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb2b0]"
+    },
+    "4:24": {
+      "handlerRva": 4404704,
+      "declaredOperandCount": 0,
+      "hasReturnSlot": false,
+      "name": "Clear timer pause bit2",
+      "summary": "ANDs pause mask RVA0xABB854 with~2.",
+      "notes": "Other pause bits are retained. This is a raw bit clear, not an ownership-aware resume operation.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404335e0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140157110]"
+    },
+    "4:25": {
+      "handlerRva": 4405296,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "name": "Add one mission combo",
+      "summary": "Adds1 to combo index0 and sets its float expiry allowance from operand0, forwarded in XMM1 then XMM2.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Current uses DWORD addition and clamp; a new peak can invoke threshold HUD behavior and raise the stored threshold. The allowance is decremented by global step717480 in the mission task, not by a proven wall-clock seconds unit.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#code_ranges[addr=0x140433830] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb250]"
+    },
+    "4:26": {
+      "handlerRva": 4404720,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": true,
+      "name": "Read mission timer ticks",
+      "summary": "Returns global timer value RVA0xABB860 when the selected timer passes the mission/widget predicate, otherwise0.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. All indexed timer objects forward to the same global App timer value.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404335f0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb790]"
+    },
+    "4:27": {
+      "handlerRva": 4405312,
+      "declaredOperandCount": 0,
+      "hasReturnSlot": false,
+      "name": "Reset current mission combo",
+      "summary": "For combo index0, clears expiry allowance, sets current=min(maximum,0), and clears flag8. Peak+80 is retained.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433840] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb910]"
+    },
+    "4:28": {
+      "handlerRva": 4405184,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": true,
+      "name": "Read normalized gauge threshold",
+      "summary": "Returns float(signed threshold) / float(signed maximum) for the selected gauge as @FLT, or0 when predicates fail.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Zero maximum is not rejected.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404337c0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb6f0]"
+    },
+    "4:29": {
+      "handlerRva": 4404928,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": true,
+      "name": "Read mission counter",
+      "summary": "Returns selected counter+56 as @INT, otherwise0 when predicates fail.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404336c0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb640]"
+    },
+    "4:30": {
+      "handlerRva": 4405328,
+      "declaredOperandCount": 0,
+      "hasReturnSlot": true,
+      "name": "Read mission combo peak",
+      "summary": "Returns combo index0 peak at+80 as @INT, otherwise0 when predicates fail.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433850] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb750]"
+    },
+    "4:31": {
+      "handlerRva": 4405360,
+      "declaredOperandCount": 0,
+      "hasReturnSlot": true,
+      "name": "Read current mission combo",
+      "summary": "Returns combo index0 current at+56 as @INT, otherwise0 when predicates fail.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433870] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb600]"
+    },
+    "4:33": {
+      "handlerRva": 4405392,
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "name": "Add mission combo amount",
+      "summary": "Adds integer operand0 to combo index0 and replaces float expiry allowance from operand1, forwarded through XMM1/XMM2.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Addition wraps DWORD before clamp. New peak updates can invoke threshold HUD behavior and raise threshold; no promise of seconds or safe infinite duration.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433890] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb250]"
+    },
+    "4:34": {
+      "handlerRva": 4405232,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": true,
+      "name": "Test gauge threshold flag",
+      "summary": "Returns whether selected gauge flag8 is set, after mission/flag1 checks.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404337f0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb8c0]"
+    },
+    "4:35": {
+      "handlerRva": 4405488,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": true,
+      "name": "Read record rank byte",
+      "summary": "Decodes operand0 pointer and returns its byte0 as @INT.",
+      "notes": "The adapter itself performs the byte read. The related comparison helper treats byte0 as a rank. No null, provenance, bounds or lifetime check follows decoding.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404338f0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140437c80]"
+    },
+    "4:36": {
+      "handlerRva": 4405536,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": true,
+      "name": "Read record value",
+      "summary": "Decodes operand0 pointer and returns its DWORD+4 as @INT.",
+      "notes": "The adapter itself performs the DWORD read. No null, provenance, bounds or lifetime check follows decoding; the field is compared unsigned by4:37.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433920] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140437c80]"
+    },
+    "4:37": {
+      "handlerRva": 4405584,
+      "declaredOperandCount": 3,
+      "hasReturnSlot": true,
+      "name": "Update ranked record if better",
+      "summary": "Decodes record operand0; compares rank operand1 and unsigned value operand2. Lower rank is rejected. Equal ranks4/6 accept a smaller value; equal other ranks accept a larger value. Accepted updates store byte0 and DWORD4 and return1; rejected updates return0.",
+      "notes": "No pointer validation or input rank bound. A larger accepted rank is truncated to one byte on storage. No save-to-disk behavior is established by this helper.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433950] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140437c80]"
+    },
+    "4:38": {
+      "handlerRva": 4405664,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": true,
+      "name": "Get global ranked record address",
+      "summary": "Returns encoded address RVA0x9AD664 + sign_extend(operand0)*8 as @ADR.",
+      "notes": "Index is unchecked. The helper establishes address arithmetic only; record count, valid runtime provenance and persistence are not proven here.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404339a0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403e6690]"
+    },
+    "4:39": {
+      "handlerRva": 4404816,
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "name": "Set mission watch value",
+      "summary": "Writes integer operand0 to selected watch+64 using index operand1 after mission/flag1 checks.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Watch activation passes this field to the HUD helper. This setter does not restart the App timer.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433650] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fbeb0]"
+    },
+    "4:40": {
+      "handlerRva": 4404752,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": true,
+      "name": "Read rounded mission timer seconds",
+      "summary": "Returns uint32(timerTicks+59)/60 using DWORD wrap and unsigned division, tagged @INT for selected timer, or0 when predicates fail.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. The MUL/SHR quotient is unsigned despite the @INT tag. For ticks=-60 the wrapped numerator is0xFFFFFFFF and the result is71582788. It rounds upward only within an appropriate nonnegative timer range; invalid/overflowed ticks must not be interpreted as real positive time.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433610] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb7e0]"
+    },
+    "4:41": {
+      "handlerRva": 4404960,
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "name": "Add mission counter amount",
+      "summary": "Adds integer operand0 to counter current using index operand1, then calls the native clamping setter.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. DWORD overflow happens before clamp; no checked arithmetic.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404336e0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb2b0]"
+    },
+    "4:42": {
+      "handlerRva": 4405712,
+      "declaredOperandCount": 2,
+      "hasReturnSlot": true,
+      "name": "Increment global record counter",
+      "summary": "Uses indices operand0/operand1 at pointer[0x750740]+3*operand0+operand1. Increments the byte only below99 and returns it. Also conditionally queues achievement147 when the rounded-timer helper result>0 and mission counter1 is zero.",
+      "notes": "Not a read-only query. The original pointer initializer is0x1409AD874. Indices are unchecked; preexisting bytes>=99 stay unchanged. Achievement latch79CAC5 bit8 is set even if achievement-context79CAC8 is null. No achievement delivery or save-file persistence is proven.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404339d0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140406bf0]"
+    },
+    "4:43": {
+      "handlerRva": 4405408,
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "name": "Raise mission combo peak",
+      "summary": "Raises selected combo peak+80 only when operand0 is greater, then performs threshold HUD handling and can raise a nonzero threshold to the new peak. Index is operand1.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Current and expiry allowance are not updated by this helper.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404338a0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fbdf0]"
+    },
+    "4:44": {
+      "handlerRva": 4404976,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "name": "Deactivate and inhibit mission counter",
+      "summary": "For selected counter, invokes vtable+24 if active flag4 is set, then sets flag0x10 so registry activation skips it.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. The action is more than hiding text: timer deactivation sets global pause bit2, and other widgets release/update HUD handles.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404336f0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb510]"
+    },
+    "4:45": {
+      "handlerRva": 4404832,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "name": "Deactivate and inhibit mission watch",
+      "summary": "For selected watch, invokes vtable+24 if active flag4 is set, then sets flag0x10 so registry activation skips it.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. The action is more than hiding text: timer deactivation sets global pause bit2, and other widgets release/update HUD handles.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433660] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb5b0]"
+    },
+    "4:49": {
+      "handlerRva": 4404800,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "name": "Deactivate and inhibit mission timer",
+      "summary": "For selected timer, invokes vtable+24 if active flag4 is set, then sets flag0x10 so registry activation skips it.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. The action is more than hiding text: timer deactivation sets global pause bit2, and other widgets release/update HUD handles.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433640] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fb560]"
+    },
+    "4:46": {
+      "handlerRva": 4404992,
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "name": "Set counter threshold helper id",
+      "summary": "Writes operand0 to selected counter+52 using index operand1.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Threshold-on handlers call1DE0C0 with this nonzero field when active and flag8 was clear; the numeric ID domain is not validated here.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433700] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fbc60]"
+    },
+    "4:47": {
+      "handlerRva": 4404784,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "name": "Set timer warning state",
+      "summary": "Calls selected timer vtable+32, reaching HUD warning behavior and setting flag8.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. This does not itself expire the global timer or dispatch message74.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433630] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fc030]"
+    },
+    "4:48": {
+      "handlerRva": 4405008,
+      "declaredOperandCount": 3,
+      "hasReturnSlot": false,
+      "name": "Replace mission counter decimal digit",
+      "summary": "For counter index operand2, computes DWORD10^operand0, replaces that signed-division decimal position using operand1, then calls the clamping counter setter.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Position>=32 produces divisor0 after the counted loop and reaches IDIV with no guard. Negative position behaves as position0. Digits are not restricted to0..9; products/addition wrap. Conditional static fault path, not a demonstrated retail-script crash.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433710] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fbb30]"
+    },
+    "4:50": {
+      "handlerRva": 4405024,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "name": "Set counter threshold state",
+      "summary": "If selected counter flag8 is clear, calls its vtable+32 threshold-on handler.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433720] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fbf50]"
+    },
+    "4:52": {
+      "handlerRva": 4405456,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "name": "Set combo threshold state",
+      "summary": "If selected combo flag8 is clear, calls its vtable+32 threshold-on handler.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404338d0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fbf00]"
+    },
+    "4:53": {
+      "handlerRva": 4405472,
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "name": "Set combo threshold helper id",
+      "summary": "Writes operand0 to selected combo+52 using index operand1.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404338e0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fba90]"
+    },
+    "4:54": {
+      "handlerRva": 4404576,
+      "declaredOperandCount": 0,
+      "hasReturnSlot": false,
+      "name": "Set mission flag bit0",
+      "summary": "Calls the shared bit helper with selector0, setting bit0 in global RVA0x2A10500.",
+      "notes": "No ownership tracking. Paired4:55 is not restricted to this bit.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433560] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403a5810]"
+    },
+    "4:55": {
+      "handlerRva": 4404592,
+      "declaredOperandCount": 0,
+      "hasReturnSlot": true,
+      "name": "Test any mission flag",
+      "summary": "Calls the shared flag test with selector0. Selector0 returns whether any bit in global RVA0x2A10500 is nonzero, as @INT.",
+      "notes": "It does not test only bit0 despite4:54 setting that bit.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433570] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403a57f0]"
+    },
+    "4:56": {
+      "handlerRva": 4404384,
+      "declaredOperandCount": 0,
+      "hasReturnSlot": false,
+      "name": "Mark result context bit0x20",
+      "summary": "If global pointer RVA0x2A11478 is nonnull, ORs its first DWORD with0x20.",
+      "notes": "Presence is checked; pointee validity and lifetime are not established by this helper.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1404334a0] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403abf10]"
+    },
+    "4:57": {
+      "handlerRva": 4405280,
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "name": "Set or clear gauge threshold state",
+      "summary": "Uses boolean operand0 and gauge index operand1 to invoke vtable+32 or+40 respectively after mission/flag1 checks.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Numeric gauge current is unchanged; HUD handlers and an optional1DE0C0 call are reachable.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433820] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fbfd0]"
+    },
+    "4:58": {
+      "handlerRva": 4405040,
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "name": "Clear counter threshold state",
+      "summary": "If selected counter flag8 is set, calls its vtable+40 threshold-off handler.",
+      "notes": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract.",
+      "evidence": "bdx-bank4-calls-20261008/evidence.json#functions[addr=0x140433730] + bdx-bank4-calls-20261008/evidence.json#functions[addr=0x1403fbf50]"
+    }
+  }
+}

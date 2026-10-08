@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "version": "0.12.13",
+  "status": "VERIFIED_OFFLINE_CATALOG_INTEGRATION",
+  "result": "1063 original descriptors across the 11 recorded banks, 158 annotated entries; 913 records and 54 descriptions added to the frozen v0.12.12 catalog. All 104 previous descriptions are unchanged.",
+  "changes": [
+    "Structural records for banks 1/2 and 3/4/5/6/7/8/10 added with original flags and handler identity.",
+    "41 Bank9, 4 timer-related, 2 Actor-query and 7 Bank1/2 descriptions transferred exactly from their reviewed sources.",
+    "15 NULL holes, 6 nonnull RET-only targets and 3 branch stubs remain distinct; context banks 3/9 do not imply live availability.",
+    "No API, decoder, viewmodel, XAML/view codebehind or native Bridge implementation change."
+  ],
+  "verification": {
+    "originalDescriptors": 1063,
+    "originalRegistrySlots": 11,
+    "compiledProbeChecks": 13884,
+    "compiledProbeFailures": 0,
+    "coreTestsPassed": 3287,
+    "coreTestsFailed": 0,
+    "uiChecks": 94,
+    "uiRenders": 8,
+    "uiBindingErrors": 0,
+    "uiWindows": 0
+  },
+  "evidence": [
+    "metadata-checks.json",
+    "compiled-probe.json",
+    "core-tests.txt",
+    "ui-bdx-report.json",
+    "source-comparison.json",
+    "implementation.json",
+    "independent-review.json",
+    "review-bank12.json",
+    "review-other-banks.json",
+    "review-bank9.json",
+    "review-timer.json",
+    "review-query.json"
+  ],
+  "scope": [
+    "The complete recorded structural inventory does not prove native safe bounds or complete handler semantics.",
+    "104 old annotated rows remain exactly unchanged; most new structural records intentionally have no semantic name.",
+    "Context-dependent registration, invalid pointers, allocation/resource failure and transitive effects retain their source limitations.",
+    "1:367 shared-output and conditional float32 non-progress notes retain masked-exception/stable-RN-even conditions and do not assert an observed retail hang.",
+    "Actor+4 self-link notes for 2:9/95 remain intact; no Event27 rebind witness is added.",
+    "The compiled probe uses the actual unchanged catalog source and current embedded JSON. Core/UI suites were run by root; no broad unchanged decoder-oracle rerun was needed.",
+    "Eight offscreen renders use synthetic data. No game start, attach, injection, original native instruction, runtime script, save or mod write."
+  ],
+  "reproduction": [
+    "py -3 -B docs/research/bdx-bank-inventory-implementation-20261008/verify.py --check",
+    "powershell -File docs/research/bdx-bank-inventory-implementation-20261008/run-probe.ps1 -Check -OutputDirectory artifacts/bdx-bank-inventory-study-recheck"
+  ]
+}

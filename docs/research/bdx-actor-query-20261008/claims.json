@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "Domain": "native",
+  "claims": [
+    {
+      "addr": "0x14042bb40",
+      "Finding": "Descriptor 1:367 declares 3 operands and a return slot. Its adapter decodes wrapper+4 Actor, passes operand1 float in XMM2 and operand2 boolean in R9B, calls 3B8510 and unconditionally returns encoded 756B48 with @ADR, discarding the helper status.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14042bb40]"
+      ],
+      "Limitations": "Bounded normal immediate path. No live game, original-code execution, full transitive geometry semantics, universal lifetime guarantee or retail extreme-input witness."
+    },
+    {
+      "addr": "0x1403b8510",
+      "Finding": "The immediate helper copies Actor state before checking the scalar, rejects nonpositive/unordered scalar on masked COMISS/JBE, advances a binary32 counter by 100 capped at the limit, and only copies the output after the optional flag break. Its first RN-even positive arithmetic fixed point is 2^31; limits above that can leave the loop condition true indefinitely under normally returning helpers and no flag break.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b8510]",
+        "model.json",
+        "evidence.json#functions[addr=0x14042bb40]"
+      ],
+      "Limitations": "Bounded normal immediate path. No live game, original-code execution, full transitive geometry semantics, universal lifetime guarantee or retail extreme-input witness. The scalar loop model assumes relevant SSE exceptions are masked and rounding remains nearest-even."
+    },
+    {
+      "addr": "0x1403b5b40",
+      "Finding": "Selects Actor+112 when 3DA520 finds a decoded nonnull Actor+1696 link, else Actor+1648. No pointer lifetime validation is established.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b5b40]",
+        "evidence.json#functions[addr=0x1403da520]"
+      ],
+      "Limitations": "Bounded normal immediate path. No live game, original-code execution, full transitive geometry semantics, universal lifetime guarantee or retail extreme-input witness."
+    },
+    {
+      "addr": "0x1401a8e60",
+      "Finding": "Copies four DWORDs in order when source and destination differ, returning the destination. No NaN sanitation or independent result allocation occurs.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401a8e60]"
+      ],
+      "Limitations": "Bounded normal immediate path. No live game, original-code execution, full transitive geometry semantics, universal lifetime guarantee or retail extreme-input witness."
+    },
+    {
+      "addr": "0x14042b7b0",
+      "Finding": "Descriptor 1:147 returns the same shared 756B48 buffer after copying the vector selected by 3B5B40, establishing a concrete competing writer for 1:367 results.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14042b7b0]"
+      ],
+      "Limitations": "Bounded normal immediate path. No live game, original-code execution, full transitive geometry semantics, universal lifetime guarantee or retail extreme-input witness."
+    },
+    {
+      "addr": "0x14016fec0",
+      "Finding": "The query body receives the local structure, changes local fields and calls four transitive query helpers.3B8510 ignores its native return value and bases its break decision on local byte 116 bit0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14016fec0]"
+      ],
+      "Limitations": "Bounded normal immediate path. No live game, original-code execution, full transitive geometry semantics, universal lifetime guarantee or retail extreme-input witness."
+    }
+  ]
+}

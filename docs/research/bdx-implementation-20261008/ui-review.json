@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-08",
+  "reviewer": "drain_audit_v2",
+  "status": "ACCEPTED_BOUNDED_UI_INTEGRATION",
+  "blockingFindings": [],
+  "sourceHashes": {
+    "src/KH2Trainer/Views/AssetExplorerView.xaml": "42eef288591227d7afc2916e00f56a00e3f6fa61e8e6aa3ca4d1608002e1bcc1",
+    "src/KH2Trainer/Views/AssetExplorerView.xaml.cs": "3b3960643a07734753cb1117db0c13b47b77e95e86e3bd28803518db83df4304",
+    "src/KH2Trainer/ViewModels/AssetScriptViewModel.cs": "d4ae28a9d8fdaa7c8fdc67090843fb0e55cac5c8027cdfac8484d86f4e28c734",
+    "src/KH2Trainer/ViewModels/AssetExplorerViewModel.cs": "19a06653a55360e0a7fc31ae726ce9bd27c691d18a1ab2fd2044d5076aaca7c5",
+    "tests/KH2Trainer.UiTests/BdxInspectionUiChecks.cs": "9413356300791bc0821bc99c1f81e986e91f3fa995f4131f2df5c855a35915d1",
+    "tests/KH2Trainer.UiTests/Program.cs": "e5b42288bad4046b6dcc882e42d3e9e38f023a706f1bc9ae7915886ea3782786"
+  },
+  "independentRun": {
+    "command": "dotnet run --project tests/KH2Trainer.UiTests/KH2Trainer.UiTests.csproj -c Release --artifacts-path artifacts/review-bdx-ui-20261008/build -p:SkipNativeBridgeBuild=true -- --fixture artifacts/review-bdx-ui-20261008/run",
+    "exitCode": 0,
+    "buildDiagnostics": "No warnings/errors emitted. Isolated managed outputs; existing native bridge only embedded, never executed.",
+    "fullSuiteSuccess": true,
+    "bdxChecks": 48,
+    "bdxRenders": 3,
+    "bindingErrors": 0,
+    "windowCount": 0,
+    "report": "artifacts/review-bdx-ui-20261008/run/report.json",
+    "reportSha256": "48f83961d1c3a13ada01b4c6c59caa49ef2cd54c2837caf2bd859edc634574f2"
+  },
+  "reviewedBehavior": [
+    "Loose .bdx and BAR type 3 are routed using explicit metadata before testing ambiguous BAR-like name bytes. Type 3 survives synthetic payload names and repeated navigation. Unknown payloads require explicit Inspect BDX.",
+    "Run serializes operations through Busy; command admission and source/asset selection controls are disabled during supported UI operations. Cancel remains admitted.",
+    "ClearScript resets document, events, rows, selection, details, filter and increments generation when source/selection/navigation changes. New-source failures and malformed scripts do not retain old script rows.",
+    "Explicit InspectScript captures generation before asynchronous package resolution; LoadScript checks generation/disposal before decoding and after await, plus token cancellation before publication. Late results cannot publish into a replaced selection through this path.",
+    "Automatic LoadScript runs only after ShowPage establishes the new payload, then captures its generation before decode. General browser page publication before this point relies on existing Busy/UI-thread serialization; it is not claimed as a general thread-safe public API.",
+    "Inspection uses existing AssetArchiveReader and offline BdxInspector only. This path has no execution, live VM, bridge call, source write or game attachment.",
+    "Tab selection, filtering, details, raw words, conditional edge descriptions, original trap metadata and shadowed events are bound consistently. Deferred scrolling uses the current selection and explicit item scrolling with recycled containers.",
+    "Three fresh 780px renders independently viewed: dark backgrounds, usable event picker/search/details and no overlapping controls; far Event27 synthetic row is visible after navigation. Details intentionally scroll within bounded height."
+  ],
+  "limits": [
+    "Synthetic offscreen WPF tests; no actual window interaction, game execution or retail event reachability test.",
+    "Cancellation fixture deterministically cancels at Busy transition; selection fixtures replace before awaiting explicit inspection, including HED resolution. These are not exhaustive scheduler/interleaving tests.",
+    "Viewmodel mutable state assumes the normal WPF UI thread; concurrent arbitrary calls from worker threads are outside this review contract.",
+    "Underlying decoder/native contract already reviewed independently under artifacts/review-bdx-inspection-20261008/review.json; this receipt addresses integration rather than repeating its opcode proof."
+  ],
+  "renderHashes": {
+    "script-780.png": "98e836cb8a2d4610e73d44974328b76633520065cb6d6c1f9479e04909f700ee",
+    "script-error-780.png": "a0a3211582cc76f8642fe81b76c6adacf22a240518c66e20f902841d13514311",
+    "script-event-780.png": "10c76703954b85013d057ca091c49eb7a9e8aaa0474f03681e2181d2f763a705"
+  }
+}

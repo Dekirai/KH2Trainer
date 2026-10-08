@@ -1,0 +1,726 @@
+{
+  "Domain": "native",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "claims": [
+    {
+      "addr": "0x140288150",
+      "Finding": "Bank 9:0 (Create OBJ3D model object): Allocates and constructs a 1408-byte gm::OBJ3D, initializes its model from operand 0, attaches the current AFBE90 camera, and returns an encoded ADR pointer.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288150]",
+        "evidence.json#functions[addr=0x14027bb10]",
+        "evidence.json#functions[addr=0x14027c260]",
+        "evidence.json#functions[addr=0x14025dc50]",
+        "evidence.json#functions[addr=0x14024b720]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Requires the current AFB420 allocator and valid resource/model context. Allocation failure still reaches the virtual model initializer; no safe NULL result path is established. The object is registered in the native task/list system."
+    },
+    {
+      "addr": "0x1402881d0",
+      "Finding": "Bank 9:1 (Request OBJ3D removal): Invokes operand 0 object's virtual slot +48; the captured OBJ3D implementation marks deletion flag 2 after confirming list membership.",
+      "Evidence": [
+        "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402881d0]",
+        "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14024c590]",
+        "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14024c180]",
+        "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14024b7e0]",
+        "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027bfe0]"
+      ],
+      "Limitations": "This is a deletion-mark and task-removal request; the later object collector ordering is outside this bounded closure. It does not synchronously free the object. A stale pointer can already fault when the adapter reads its vtable."
+    },
+    {
+      "addr": "0x1402881f0",
+      "Finding": "Bank 9:2 (Accumulate OBJ3D target-position delta): Adds operand 1 vector minus the object's current position (+1072) into pending displacement (+1120). The normal object update later applies and clears that displacement.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1402881f0]",
+        "evidence.json#functions[addr=0x14013fd20]",
+        "evidence.json#functions[addr=0x14013fce0]",
+        "evidence.json#functions[addr=0x14027ce30]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Sanitizes four NaN components in the caller's vector to zero in place; infinities remain. Multiple calls before update accumulate multiple deltas rather than replacing the pending target."
+    },
+    {
+      "addr": "0x1402882a0",
+      "Finding": "Bank 9:3 (Read OBJ3D position into shared vector): Copies the object's +1072 position vector into the shared 16-byte buffer at 0x14073D458 and returns that buffer as ADR.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1402882a0]",
+        "evidence.json#functions[addr=0x14027bb10]",
+        "evidence.json#functions[addr=0x14027ce30]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Borrowed shared result: subsequent 9:3, 9:31 or 9:34 calls overwrite it. This operation does not apply pending displacement or validate object lifetime."
+    },
+    {
+      "addr": "0x1402882f0",
+      "Finding": "Bank 9:4 (Select OBJ3D motion and start time): Passes operand 1 motion selector and operand 2 float start position to gm::MOTION at object+1264. On success it sets current/start time and clears end-crossing flag 2.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1402882f0]",
+        "evidence.json#functions[addr=0x14027e460]",
+        "evidence.json#functions[addr=0x14027e0e0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Operand 2 is carried in XMM2 even though the adapter pseudocode omits it. The helper traverses BAR records (nested types 9 and 16) and does not safely reject every missing nested record; arbitrary selectors are not validated here. Time units remain native motion units."
+    },
+    {
+      "addr": "0x140288360",
+      "Finding": "Bank 9:5 (Select OBJ3D render queue flag): Stores bool(operand 1) in object DWORD+32. The normal task update uses value 1 to select one of two ordinary object queues when flags 0x10/0x20 are absent.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288360]",
+        "evidence.json#functions[addr=0x14024c180]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "This is a queue-selection field, not a proven general visibility, pause, or collision toggle. Existing object flags and virtual predicates still control queue insertion."
+    },
+    {
+      "addr": "0x1402885f0",
+      "Finding": "Bank 9:6 (Create task-backed VM_THREAD): Allocates gm::VM_THREAD from AFB420, creates a base VM from global 0x142A25048, and starts operand 1 event with one VM operand copied from operand 2. Task ordering uses DWORD(operand 0+25000). Returns ADR.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1402885f0]",
+        "evidence.json#functions[addr=0x140292ed0]",
+        "evidence.json#functions[addr=0x140292d10]",
+        "evidence.json#functions[addr=0x140293220]",
+        "evidence.json#functions[addr=0x1403e1970]",
+        "evidence.json#functions[addr=0x14027ba80]",
+        "evidence.json#functions[addr=0x14027bb00]",
+        "evidence.json#functions[addr=0x1402930c0]",
+        "evidence.json#functions[addr=0x140293150]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "The 80-byte thread object is native task-owned. VM/resource/task/allocator preconditions are external; creation has unchecked allocations. Operand 2 includes its original eight-byte VM value/tag. No OS-thread creation is shown."
+    },
+    {
+      "addr": "0x140288330",
+      "Finding": "Bank 9:7 (Read motion end-crossing flag): Returns INT ((object DWORD+1272 >> 1) & 1), the embedded motion's sticky end-crossing flag.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288330]",
+        "evidence.json#functions[addr=0x14027e190]",
+        "evidence.json#functions[addr=0x14027e460]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Motion update sets this flag when current time reaches/exceeds length, then can wrap, add a resource-provided offset, or clamp. A selected motion clears it. It does not necessarily mean playback has stopped."
+    },
+    {
+      "addr": "0x140288720",
+      "Finding": "Bank 9:8 (Reset transition-table append count): Writes zero to the caller-provided transition table's first DWORD.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288720]",
+        "evidence.json#functions[addr=0x140292db0]",
+        "evidence.json#functions[addr=0x140293040]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Does not clear any of the 32 name/record slots used by lookup. Old named entries remain visible unless the caller clears them separately. The pointer is a table, not a VM_THREAD."
+    },
+    {
+      "addr": "0x140288740",
+      "Finding": "Bank 9:9 (Append named VM transition record): Appends name pointer (operand 1), payload pointer (operand 2), unsigned priority (operand 3), event (operand 4), and exit event (operand 5) to the table in operand 0, then increments its signed DWORD count.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288740]",
+        "evidence.json#functions[addr=0x140292fa0]",
+        "evidence.json#functions[addr=0x140293040]",
+        "evidence.json#functions[addr=0x1402932c0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Descriptor argc stays 6. The adapter also copies scratch operands 6..15 into a local array, but immediate callee 292FA0 reads only array element 0 (= operand 5); the ten extra values have no observed downstream use in that callee. No capacity/count guard or string/payload copy; lookup scans exactly 32 records regardless of count."
+    },
+    {
+      "addr": "0x1402886d0",
+      "Finding": "Bank 9:10 (Attach transition table to VM_THREAD): Stores the decoded operand 1 table pointer in VM_THREAD+16.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1402886d0]",
+        "evidence.json#functions[addr=0x140293040]",
+        "evidence.json#functions[addr=0x1402930c0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Borrowed pointer only; no copy, capacity check, queue reset, or ownership transfer is established. Table strings and payloads must remain usable through later named-event processing."
+    },
+    {
+      "addr": "0x140288650",
+      "Finding": "Bank 9:11 (Request named VM transition immediately): Finds operand 1 name in the attached table, resets both queue indices, and requests the matching transition. It replaces an active transition only when the new unsigned priority is at least as high.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288650]",
+        "evidence.json#functions[addr=0x140293380]",
+        "evidence.json#functions[addr=0x140293040]",
+        "evidence.json#functions[addr=0x1402932c0]",
+        "evidence.json#functions[addr=0x14026ad10]",
+        "evidence.json#functions[addr=0x14026add0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Lookup examines 32 slots and may return NULL, which the transition starter dereferences. A rejected lower-priority request still discards queued indices. Nonzero new events can run the old record's exit event and replace the active child VM."
+    },
+    {
+      "addr": "0x140288690",
+      "Finding": "Bank 9:12 (Queue named VM transition): Looks up operand 1 name and stores its record pointer in a four-slot ring at VM_THREAD+40, advancing the producer index modulo four.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288690]",
+        "evidence.json#functions[addr=0x1402931e0]",
+        "evidence.json#functions[addr=0x140293040]",
+        "evidence.json#functions[addr=0x1402930c0]",
+        "evidence.json#functions[addr=0x1402932c0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "No full-ring check, lookup-success guard, or record ownership. A missing name can queue NULL; four unconsumed pushes can make producer equal consumer. The updater starts queued records after active-child completion."
+    },
+    {
+      "addr": "0x140288380",
+      "Finding": "Bank 9:13 (Find registered OBJ3D by ID): Searches the AFA780 object list for the first object whose DWORD+64 equals operand 0, returning ADR or NULL.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288380]",
+        "evidence.json#functions[addr=0x14024c500]",
+        "evidence.json#functions[addr=0x14024c690]",
+        "evidence.json#functions[addr=0x14024b7e0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Returns a borrowed pointer; does not exclude deletion-marked objects or reserve their lifetime. The numeric ID namespace is not established as the actor/STATUS namespace."
+    },
+    {
+      "addr": "0x1402883b0",
+      "Finding": "Bank 9:14 (Check OBJ3D list membership and deletion flag): Returns INT 1 only for a non-NULL pointer found in AFA780 with object flag 2 clear; otherwise returns 0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1402883b0]",
+        "evidence.json#functions[addr=0x14024c640]",
+        "evidence.json#functions[addr=0x14024b7e0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "A momentary list-membership check does not pin the object, prevent ABA reuse, or validate arbitrary pointer types. No global lifetime barrier is provided."
+    },
+    {
+      "addr": "0x140288820",
+      "Finding": "Bank 9:15 (Set indexed AFC0C4 bit): Sets bit (operand 0 & 31) in DWORD array AFC0C4[uint32(operand 0)>>5].",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288820]",
+        "evidence.json#functions[addr=0x140243bc0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "No index bound. The captured initializer clears only the first DWORD; this study does not infer a larger supported capacity or a gameplay meaning for these bits."
+    },
+    {
+      "addr": "0x140288850",
+      "Finding": "Bank 9:16 (Clear indexed AFC0C4 bit): Clears bit (operand 0 & 31) in DWORD array AFC0C4[uint32(operand 0)>>5].",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288850]",
+        "evidence.json#functions[addr=0x140243bc0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "No index bound, ownership check or synchronization. Only the first DWORD's initialization is established; do not treat arbitrary indices as a safe flag bank."
+    },
+    {
+      "addr": "0x140288880",
+      "Finding": "Bank 9:17 (Read indexed AFC0C4 bit): Returns INT for bit (operand 0 & 31) in DWORD array AFC0C4[uint32(operand 0)>>5].",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288880]",
+        "evidence.json#functions[addr=0x140243bc0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "No index bound. Flags are shared native state; their wider gameplay names and safe index set remain open."
+    },
+    {
+      "addr": "0x140288700",
+      "Finding": "Bank 9:18 (Retire VM_THREAD child and clear transition binding): Queues the child VM referenced by VM_THREAD+72 for later destruction, then clears that pointer, table+16 and active-record+24.",
+      "Evidence": [
+        "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288700]",
+        "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402931b0]",
+        "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14026ad30]",
+        "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402930c0]",
+        "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140292e60]",
+        "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140293150]",
+        "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1403e1910]",
+        "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1403e15a0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403e1410]"
+      ],
+      "Limitations": "Does not directly free the child VM, thread, base VM+8, or clear queue indices/slots. The thread updater can request task termination and calls the global VM retirement-queue drain. Thread cleanup queues the base VM then frees the thread through its task allocator. Later VM destruction can execute exit script code."
+    },
+    {
+      "addr": "0x140288480",
+      "Finding": "Bank 9:19 (Assign OBJ3D camera pointer): Stores decoded operand 1 directly in object+1344.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288480]",
+        "evidence.json#functions[addr=0x14027cbc0]",
+        "evidence.json#functions[addr=0x14027c3e0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Borrowed camera reference; no lifetime or type check. Captured rendering/projection paths use a global fallback when NULL, but a non-NULL stale camera is not made safe."
+    },
+    {
+      "addr": "0x1402888b0",
+      "Finding": "Bank 9:20 (Create task-backed CAMERA): Allocates and constructs a 2368-byte gm::CAMERA with task ordering 65000 and returns ADR, or NULL when the outer allocation fails.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1402888b0]",
+        "evidence.json#functions[addr=0x140271d00]",
+        "evidence.json#functions[addr=0x140151e50]",
+        "evidence.json#functions[addr=0x140272070]",
+        "evidence.json#functions[addr=0x140272090]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Constructor registers its update and cleanup callbacks and copies current projection state. Requires valid AFB420 allocator and current task context. Constructor-internal failures are not fully handled here."
+    },
+    {
+      "addr": "0x140288920",
+      "Finding": "Bank 9:21 (Request CAMERA removal): Sets bit 1 in camera DWORD+2352. The camera task observes it and requests termination; cleanup invokes the deleting destructor.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288920]",
+        "evidence.json#functions[addr=0x140272070]",
+        "evidence.json#functions[addr=0x140272090]",
+        "evidence.json#functions[addr=0x140272010]",
+        "evidence.json#functions[addr=0x140271f90]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Asynchronous removal request. No detachment of borrowed OBJ3D camera references is performed by this adapter."
+    },
+    {
+      "addr": "0x140288940",
+      "Finding": "Bank 9:22 (Set CAMERA eye position): Sanitizes and copies operand 1 vector to camera+2152, the eye/position input consumed by the camera's look-at rebuild.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288940]",
+        "evidence.json#functions[addr=0x140272480]",
+        "evidence.json#functions[addr=0x14019dec0]",
+        "evidence.json#functions[addr=0x14019c910]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Four NaNs are replaced by zero in the caller's vector. Does not immediately rebuild matrices; the normal camera task or 9:24 does that. No pointer/lifetime validation."
+    },
+    {
+      "addr": "0x1402889c0",
+      "Finding": "Bank 9:23 (Set CAMERA look-at target): Sanitizes and copies operand 1 vector to camera+2168, the target input consumed by the camera's look-at rebuild.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1402889c0]",
+        "evidence.json#functions[addr=0x140272480]",
+        "evidence.json#functions[addr=0x14019dee0]",
+        "evidence.json#functions[addr=0x14019c910]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Mutates NaNs in the input vector in place; does not immediately rebuild matrices. Coincident eye/target and invalid resources are not guarded by this adapter."
+    },
+    {
+      "addr": "0x140288a40",
+      "Finding": "Bank 9:24 (Rebuild CAMERA matrices): Invokes camera virtual slot +8; captured gm::CAMERA target 272480 rebuilds view/projection-derived matrices and related vectors.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288a40]",
+        "evidence.json#functions[addr=0x140272480]",
+        "evidence.json#functions[addr=0x14019c910]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "This also uses shared camera bank 1 as working state. No lifetime pin or synchronization is established; it is not a destructor or a pure accessor."
+    },
+    {
+      "addr": "0x140288aa0",
+      "Finding": "Bank 9:25 (Bind SELECTBODY source and schedule group rebuild): Fetches group AFBE58[operand 0+1], selects the source record via 151C80 for selector 0 or 151CC0(selector-1) otherwise, and requests a rebuild using operand 1 rotation vector. Returns the group ADR.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288aa0]",
+        "evidence.json#functions[addr=0x14025c850]",
+        "evidence.json#functions[addr=0x140151c80]",
+        "evidence.json#functions[addr=0x140151cc0]",
+        "evidence.json#functions[addr=0x14025d5a0]",
+        "evidence.json#functions[addr=0x14025c7d0]",
+        "evidence.json#functions[addr=0x14025cc50]",
+        "evidence.json#functions[addr=0x14025c860]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Operand 2 is a positive number of elements per cooperative yield, default 10, not a duration. A source pointer equal to the current one makes the helper a no-op, including rotation/chunk changes. Group/source indexing and per-source element count lack proven capacity guards. The vector's four NaNs are zeroed in place."
+    },
+    {
+      "addr": "0x140288b80",
+      "Finding": "Bank 9:26 (Unbind SELECTBODY source): Requests source=NULL, default rotation and chunk size 10 through the same group-binding helper.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288b80]",
+        "evidence.json#functions[addr=0x14025d5a0]",
+        "evidence.json#functions[addr=0x14025cc50]",
+        "evidence.json#functions[addr=0x14025d290]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "When source changes it clears attachment/scaling state. An outstanding build task is invalidated by replacing its stored task pointer, not synchronously joined. Repeated NULL binding can be a no-op; group objects are not freed by this adapter."
+    },
+    {
+      "addr": "0x140288bb0",
+      "Finding": "Bank9:27 (Attach SELECTBODY objects to an OBJ3D transform): Stores group target, joint selector, rotation vector and optional camera. Across 300 non-NULL object slots, it applies attachment fields only when the target is non-NULL. An absent camera uses the group camera as its effective camera; the object camera is overwritten only when that effective camera is non-NULL.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288bb0]",
+        "evidence.json#functions[addr=0x14025cb70]",
+        "evidence.json#functions[addr=0x14027c3e0]",
+        "evidence.json#functions[addr=0x1401a7af0]",
+        "evidence.json#functions[addr=0x1401aae60]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Operand order: group, target OBJ3D, selector, rotation-vector ADR, camera ADR. A NULL target does not clear existing object attachments here; use9:28 for that operation. Selector0x10000 selects the whole object transform; ordinary selectors use model joint matrices. Borrowed references and unbounded joint selection remain caller responsibilities."
+    },
+    {
+      "addr": "0x140288c60",
+      "Finding": "Bank 9:28 (Clear SELECTBODY attachment and restore callbacks): Clears group target/camera overrides and each non-NULL object's attachment/rotation fields, restores group screen-offset callbacks, and assigns the group's camera.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288c60]",
+        "evidence.json#functions[addr=0x14025d160]",
+        "evidence.json#functions[addr=0x14027cdf0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Scans 300 object slots. Offset values are passed through WORD-sized object fields; this is not group destruction or a guarantee that any previous external target remains alive."
+    },
+    {
+      "addr": "0x140288400",
+      "Finding": "Bank 9:29 (Set OBJ3D scale vector): Sanitizes and copies operand 1 to object+1104, the three-axis scale input used to build its transform.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288400]",
+        "evidence.json#functions[addr=0x14027cb50]",
+        "evidence.json#functions[addr=0x1401aa7d0]",
+        "evidence.json#functions[addr=0x14013fcc0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Four input NaNs are zeroed in place. Scale reaches the transform at a later rebuild/update; no resource, pointer or lifetime guard."
+    },
+    {
+      "addr": "0x140288c80",
+      "Finding": "Bank 9:30 (Set SELECTBODY scale override): Stores a group scale override and applies it to each non-NULL object among 300 slots, updating scale fields +1104/+1720 and clearing +1704.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288c80]",
+        "evidence.json#functions[addr=0x14025d6c0]",
+        "evidence.json#functions[addr=0x14025c670]",
+        "evidence.json#functions[addr=0x14025cc50]",
+        "evidence.json#functions[addr=0x14027cb50]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "For objects whose +2264 record exists with byte+8 <= 3, scales are multiplied by float bits 0x3F7D70A4 (approximately 0.99). The helper keeps the override for subsequently built group objects. Input NaNs are zeroed in place."
+    },
+    {
+      "addr": "0x1402884c0",
+      "Finding": "Bank 9:31 (Transform vector by OBJ3D or joint matrix): Transforms operand 2 vector with the matrix selected by operand 1 and returns the result through shared ADR buffer 73D458.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1402884c0]",
+        "evidence.json#functions[addr=0x14027ca30]",
+        "evidence.json#functions[addr=0x1401a7af0]",
+        "evidence.json#functions[addr=0x14013f850]",
+        "evidence.json#functions[addr=0x14013f900]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Selector 0x10000 uses object+160. Other selectors with bit 0x10000 set leave identity; selectors without it enter model/joint lookup without an index guard. Input NaNs are zeroed in place. Result is overwritten by 9:3/31/34."
+    },
+    {
+      "addr": "0x140288a60",
+      "Finding": "Bank 9:32 (Set CAMERA field of view in radians): Sets camera projection FOV using operand 1 float angle and operand 2 mode: zero selects horizontal FOV; nonzero selects vertical FOV. Derives the other angle and projection distance using tan(angle/2) and atan.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288a60]",
+        "evidence.json#functions[addr=0x14019dde0]",
+        "evidence.json#functions[addr=0x140471bec]",
+        "evidence.json#functions[addr=0x140471be6]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Writes projection fields in camera+16. Uses native 512/416 dimensions and projection scale fields; no finite-angle, zero-divisor or pointer validation. Later matrix rebuild remains separate."
+    },
+    {
+      "addr": "0x140288590",
+      "Finding": "Bank 9:33 (Rebuild OBJ3D projection and pose transform): Runs virtual projection update, evaluates the motion pose when a motion resource is present, then invokes the object transform rebuild.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288590]",
+        "evidence.json#functions[addr=0x14027c170]",
+        "evidence.json#functions[addr=0x14027cbc0]",
+        "evidence.json#functions[addr=0x14027e240]",
+        "evidence.json#functions[addr=0x14027cb50]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Does not advance motion time or apply/clear pending position displacement; those occur in 27CE30. Derived object virtual targets can differ from the captured gm::OBJ3D targets."
+    },
+    {
+      "addr": "0x140288d00",
+      "Finding": "Bank 9:34 (Read SELECTBODY source extents into shared vector): Computes three source-record extents from packed nibbles minus absolute signed-byte offsets, multiplied by 10; sets w=max(x,y,z), returning shared ADR buffer 73D458.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288d00]",
+        "evidence.json#functions[addr=0x14025d300]",
+        "evidence.json#functions[addr=0x14052e520]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Requires a non-NULL bound source record at group+2424. This is a packed-source extent calculation, not the group's world position. Result shares storage with 9:3/31; negative component extents are possible."
+    },
+    {
+      "addr": "0x140288d70",
+      "Finding": "Bank 9:35 (Set SELECTBODY object flag 4): Sets or clears bit 4 of each non-NULL group object's DWORD+80 according to bool(operand 1), across 300 slots.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288d70]",
+        "evidence.json#functions[addr=0x14025d730]",
+        "evidence.json#functions[addr=0x14025d580]",
+        "evidence.json#functions[addr=0x14025d590]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "The bit is in the object/model rendering parameter area. This bounded closure does not establish a universal visibility or collision meaning."
+    },
+    {
+      "addr": "0x140288d50",
+      "Finding": "Bank 9:36 (Select motion across SELECTBODY objects): Invokes motion selection with operand 1 selector and float start position 0 on each non-NULL object among 300 slots.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288d50]",
+        "evidence.json#functions[addr=0x14025d520]",
+        "evidence.json#functions[addr=0x14027e460]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Shares the nested BAR/resource preconditions and missing-record hazards of 9:4. Group/object lifetime is not validated."
+    },
+    {
+      "addr": "0x140288da0",
+      "Finding": "Bank 9:37 (Dispatch model backend slot 120 across group): For each non-NULL group object with a non-NULL model, forwards operand 1 to model helper 1A7CF0 and backend virtual slot +120.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288da0]",
+        "evidence.json#functions[addr=0x14025d350]",
+        "evidence.json#functions[addr=0x1401a7cf0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Passes backend, model's +832 context and the DWORD selector. The backend implementation and selector meaning remain open; no animation/material/visibility name is inferred."
+    },
+    {
+      "addr": "0x140288dc0",
+      "Finding": "Bank 9:38 (Dispatch model backend slot 112 across group): For each non-NULL group object with a non-NULL model, forwards operand 1 to model helper 1A8A90 and backend virtual slot +112.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288dc0]",
+        "evidence.json#functions[addr=0x14025d7a0]",
+        "evidence.json#functions[addr=0x1401a8a90]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Passes backend, model's +832 context and the DWORD selector. Backend semantics remain an explicit analysis boundary."
+    },
+    {
+      "addr": "0x1402885b0",
+      "Finding": "Bank 9:39 (Dispatch OBJ3D model backend slot 120): Forwards operand 1 through the object's model+72 to helper 1A7CF0 and backend virtual slot +120.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1402885b0]",
+        "evidence.json#functions[addr=0x1401a7cf0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Unlike 9:37, this adapter does not check whether the model pointer is NULL. Backend selector semantics are not established."
+    },
+    {
+      "addr": "0x1402885d0",
+      "Finding": "Bank 9:40 (Dispatch OBJ3D model backend slot 112): Forwards operand 1 through the object's model+72 to helper 1A8A90 and backend virtual slot +112.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1402885d0]",
+        "evidence.json#functions[addr=0x1401a8a90]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Unlike 9:38, this adapter does not check whether the model pointer is NULL. Backend selector semantics are not established."
+    },
+    {
+      "addr": "0x14025c860",
+      "Finding": "Four SELECTBODY registry slots are created according to a mask. The original classification table [0,0,1,1] selects 300 object allocations in groups0/1 and64 in groups2/3. All300 pointer slots are initially zero; a group CAMERA is separately task-owned.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14025c860]",
+        "evidence.json#functions[addr=0x14025c780]",
+        "evidence.json#functions[addr=0x14025c7e0]",
+        "evidence.json#functions[addr=0x140271d00]",
+        "report.txt",
+        "semantic-anchors.json"
+      ],
+      "Limitations": "The group destructor only releases the group allocation. This does not establish safe teardown ordering with its camera, pooled objects or cooperative rebuild task."
+    },
+    {
+      "addr": "0x14025cc50",
+      "Finding": "SELECTBODY rebuild traverses source counts (signed WORDs at source+8 and+10), indexes the group's pointer slots without a capacity guard in this body, and yields via150060. The task-pointer identity check invalidates an older build after replacement.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14025cc50]",
+        "evidence.json#functions[addr=0x14025d290]",
+        "evidence.json#functions[addr=0x14025d5a0]",
+        "evidence.json#functions[addr=0x140150060]",
+        "evidence.json#functions[addr=0x140135470]",
+        "report.txt",
+        "semantic-anchors.json"
+      ],
+      "Limitations": "The identity check is not an ownership pin across a yield. Group/source lifetime and surrounding scheduler teardown remain external preconditions; no live fault witness is claimed."
+    },
+    {
+      "addr": "0x140288740",
+      "Finding": "Descriptor9:9 declares6 operands while its adapter reads scratch0..15. The11-DWORD local array holds operands5..15, but leaf292FA0 reads only its first DWORD. Native pointer results from decode travel in64-bitRCX/RDX/R8 despite incorrect Hex-Rays integer types.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140288740]",
+        "evidence.json#functions[addr=0x140292fa0]",
+        "report.txt",
+        "semantic-anchors.json"
+      ],
+      "Limitations": "Extra reads can touch stale VM scratch cells but are not proven to influence this append operation. This finding does not justify changing argc to16 or importing the separate1:6 consumer semantics."
+    },
+    {
+      "addr": "0x140293040",
+      "Finding": "Named-transition lookup scans32 records of32bytes starting at table+8 and ignores the append count. Resetting count via292DB0 leaves old names; appending lacks a32-row limit.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140293040]",
+        "evidence.json#functions[addr=0x140292db0]",
+        "evidence.json#functions[addr=0x140292fa0]",
+        "report.txt",
+        "semantic-anchors.json"
+      ],
+      "Limitations": "Caller storage length, C-string termination, initialization and all payload lifetimes remain unverified. NULL lookup results are not rejected by immediate starter2932C0."
+    },
+    {
+      "addr": "0x14027ce30",
+      "Finding": "Normal OBJ3D update advances motion then applies pending displacement before transform rebuild. Explicit9:33 only rebuilds projection/pose/transform and does not apply displacement or advance the clock.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14027ce30]",
+        "evidence.json#functions[addr=0x14027c170]",
+        "evidence.json#functions[addr=0x14027cb50]",
+        "evidence.json#functions[addr=0x14027e190]",
+        "report.txt",
+        "semantic-anchors.json"
+      ],
+      "Limitations": "Derived vtables may alter those calls; semantics are established for captured gm::OBJ3D implementations."
+    },
+    {
+      "addr": "0x14019dde0",
+      "Finding": "Camera FOV computation uses tan(angle/2), atan, dimensions512 and416 and projection scale fields. Its output layout is distance+64, horizontal angle+68, vertical angle+72 within camera projection at+16.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14019dde0]",
+        "evidence.json#functions[addr=0x140471bec]",
+        "evidence.json#functions[addr=0x140471be6]",
+        "report.txt",
+        "semantic-anchors.json"
+      ],
+      "Limitations": "Radian unit follows the original tanf/atanf import contract. No global camera-control or scene-validity guard is established."
+    },
+    {
+      "addr": "0x14025c780",
+      "Finding": "Persistent Bank9 descriptor-table storage is separate from mode-owned allocator objects. SELECTBODY deletion releases its2544-byte block; OBJ3D and CAMERA deleting destructors use currentAFB420. VM_THREAD task cleanup uses the allocator stored in its task.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14025c780]",
+        "evidence.json#functions[addr=0x14027bfe0]",
+        "evidence.json#functions[addr=0x140272010]",
+        "evidence.json#functions[addr=0x140293150]",
+        "report.txt",
+        "semantic-anchors.json"
+      ],
+      "Limitations": "No global barrier, allocator-lifetime proof, concurrent safety, or automatic detachment of borrowed references is established."
+    },
+    {
+      "addr": "0x14026ace0",
+      "Finding": "Previously verified registry context: Bank9 is originally NULL and the installer points it at the static writable image table73D080. Clearing this pointer does not drain object tasks or generic VM exit events.",
+      "Evidence": [
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x14026ace0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x14026acc0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json",
+        "docs/research/bdx-trap-registry-20261008/report.txt",
+        "report.txt"
+      ],
+      "Limitations": "Reused registry result, not newly expanded into a complete scheduler/resource closure.41 is a structural table extent, not a native dispatch guard."
+    },
+    {
+      "addr": "0x1403e15a0",
+      "Finding": "3E1910 appends a VM to the global retirement queue using its encoded +68 link. The thread updater2930C0 calls3E15A0, which runs3E1410 before allocator Free for each saved-next node, then clears the global queue endpoints. 3E1410 may execute the VM exit event before teardown.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1910]",
+        "evidence.json#functions[addr=0x1403e15a0]",
+        "evidence.json#functions[addr=0x1402930c0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403e1410]",
+        "reused-evidence.json",
+        "report.txt"
+      ],
+      "Limitations": "No duplicate-retirement guard, global queue locking or reentrant-callback closure is established. This is not a no-callback destruction boundary."
+    }
+  ]
+}

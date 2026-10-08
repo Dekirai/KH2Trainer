@@ -1,0 +1,127 @@
+ALLOCATOR-BESITZER UND REGIONEN — 8. Oktober 2026
+
+Ergebnis
+========
+Mehrere kn::MemoryAllocator-Instanzen leben im normalen nativen Initialisierungspfad gleichzeitig. Das ist jetzt anhand konkreter Besitzerketten belegt, zusätzlich zum vorherigen isolierten Allocator-Test. Neben getrennten statischen und dynamischen Regionen gibt es echte Verschachtelung: Der Payload eines Eltern-Allocators enthält einen vollständigen Kindallocator.
+
+Die ausgewählten Cleanup-Pfade geben diese Kindarena als normalen Parent-Block oder als ganze Region zurück. Sie rufen dabei keinen eigenen Allocator-Destruktor für das Kind auf. Das erklärt, warum aus der nativen Überlappung allein noch kein realer Fehler mit dem gemeinsamen Semaphore folgt. Die tatsächlichen normalen Aufrufer der globalen Ersatzroutine 19C560 bleiben unbelegt.
+
+Einige abgeleitete Zeiger bleiben nach der Rückgabe ihrer Region stehen. Ein nichtnull Global, eine passende Vtable oder eine plausible Kapazität beweisen deshalb keine lebende Instanz. Aus diesen Owner-Ketten folgt weiterhin keine gemeinsame sichere Actor-/STATUS-Grenze.
+
+Belegumfang
+===========
+Original: KINGDOM HEARTS II FINAL MIX.exe
+SHA-256: 9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed
+Bevorzugte Bildbasis: 0x140000000. Kurze Adressen im Text sind RVAs.
+
+49 vollständige neue IDA-Erfassungen: 1.780 Instruktionszeilen, 7.961 Originalbytes. Darin liegen 11 ausdrücklich geprüfte Paddingbytes außerhalb der von IDA gelieferten Instruktionszeilen. Zusätzlich werden 20 ausgewählte Bodies aus vorherigen Forschungsordnern erneut gegen die Original-EXE geprüft. Neu erfasst bedeutet nicht automatisch zuvor unbekannt.
+
+Die 32 Bytes der TASK_MANAGER-Tabelle 5B13E8 werden separat geprüft. Sämtliche paginierten ASM-Zeilen, Vollkörperbytes und ausgewählten eingehenden IDA-Referenzen liegen in evidence.json. verify.py liest ausschließlich die PE-Datei, decodiert selbst mit Capstone und prüft Argumente, Aufrufreihenfolgen, Offsets, Nullsetzungen, Größenarithmetik und die tatsächlich referenzierten IAT-Namen.
+
+Es gab weder einen Spielstart noch Prozesszugriff, Injection, UI-Aktion, Produktänderung oder neuen Releasebuild.
+
+1. Statische Instanzen und TASK_MANAGER
+======================================
+14ED40 -> 14F600(8CC5B0, 0x20000) -> 39DC50:
+- 14ED63 erzeugt einen Taskmanager samt eigenem Allocator und speichert den Manager in 9BA888.
+- 14ED6F startet unmittelbar danach die Resource-Arena. 39DC50 erstellt sie über 29F3400/0x8000 und speichert 29F33E8.
+- Zwischen diesen beiden direkten Schritten wird die erste Instanz nicht zerstört. Beide Konstruktionen benutzen AC0FD8.
+
+14F600 erstellt zuerst den Allocator in der übergebenen Region. Danach fordert es 72 Payloadbytes für den Manager an. Durch Align16 plus 48 Bytes Verwaltungsdaten belastet das den Allocator mit 128 Bytes. Manager+8 speichert den Allocator; die primäre Tabelle liegt bei 5B13E8. Ihr Allocate-Forwarder 14F740 benutzt Manager+8.
+
+TASK_MANAGER-Slot0 zeigt auf 14F590. Dieser setzt eine Basistabelle und ruft bei Delete-Bit1 CRTfree auf das Managerobjekt auf. Er zerstört den gespeicherten Allocator nicht. Ein tatsächlicher nativer Aufruf dieses Destruktors auf den eingebetteten Managern ist nicht belegt. Das ist insbesondere keine Freigabeanleitung für Mods.
+
+Weitere konkrete Managerregionen:
+- 1512B0: 9A0730 / 0x8000.
+- 2B4F00(0): B0D550 / 0x10000, Titelkontext.
+- 1E18F0(0): AD94D0 / 0x10000, Modus 2.
+- 243A10(0): 0x30000 Nutzbytes aus 9A8800, über 2530C0 mit Alignment 16 beschafft.
+
+Separat besitzt 41F920 den Debugallocator über 2AEAA00/0x8000, gespeichert in 2AEA9C0. Der direkte Aufrufer liegt bei 41FCEE in kh2_DebugRootInitialize. Die gesamte Debuginitialisierung wird hier nicht als geschlossen behauptet.
+
+2. Eigene Regionen und geliehene Aliase
+=======================================
+Titel:
+150A20 reserviert 0x400000, konstruiert 900650 und erreicht nach dem ovl_title.rel-Kontext 2B4F00(0). 150910 ruft 2B4F00(1), dann 39D400(900650), weitere Ressourcenbereinigung und schließlich 900650=NULL auf. Die vielen Subsystem-Cleanup-Funktionen von 2B4F00 bleiben außerhalb dieser vollständigen transitive Analyse.
+
+Gemeinsames Paar 9006C8 / 9006D0:
+- Normaler statischer Zweig: 900730/0x38000 und 938730/0x68000. Beide zusammen enden exakt bei 9A0730.
+- Modus 2: C8 ist ein Alias auf 9A8780, D0=NULL.
+- Fremdallocator an 150AF0: C8 übernimmt ihn, Flag 9006B1 wird 1. Dieser frühe Zweig schreibt D0 nicht.
+
+150C50 löscht beide Aliase und das Flag. Es poppt C8 nur, wenn Flag=0 und der native Modusfilter dies verlangt:
+  (((uint32(mode)-1) & 0xFFFFFFFA) != 0 || mode == 5)
+Der Modusfilter und der Eigentumszustand müssen gemeinsam betrachtet werden. Ein einzelner Zeiger eignet sich nicht als Besitzindikator.
+
+Geschlossene Fremdregionen:
+- 38DFE0 reserviert 0x100000, speichert BF2A28 und übergibt es an 150B70. Dieser teilt es in 0x98000 und 0x68000; beide Aliase stehen auf geliehenem Eigentum. 38DFA0 bereinigt Subsysteme, lässt 150C50 die Aliase löschen und poppt anschließend die gemeinsame BF2A28-Region.
+- 5280A0 reserviert 0xA0000, speichert 2B561E0 und verleiht es per 150AF0. 528050 löscht zuerst die Aliase, poppt danach die eigene Region und nullt 2B561E0.
+
+3. Nachgewiesene Eltern-/Kind-Allocators
+======================================
+Modus 2:
+151A50 erzeugt 9A8780 über 0xCE0000 Bytes. 1E18F0(0) erreicht 1E13B0; 1E2060 bindet AE94F0 an 9A8780. 212290 fordert über 1E1FA0 genau 0x100000 Bytes vom Parent an. AF75E0 hält den Rohblock, AF75E8 den darin konstruierten Kindallocator.
+
+212210 gibt AF75E0 über 1E2030 und Parent-Slot+16 frei. Der Körper nullt AF75E0, lässt AF75E8 aber stehen. 1E18F0(1) erreicht diese Freigabe vor 1E2020, das AE94F0 löscht. Danach poppt 151980 die äußere Region und nullt 9A8780.
+
+212300 ist ein konkreter Verbraucher von AF75E8: Es kopiert den Zeiger in ein Objekt an +48. Ein Aufruf dieses Verbrauchers nach der Kindfreigabe ist nicht bewiesen. Die beiden statischen Tatsachen sind getrennt: Der Alias bleibt stehen, und ein Verbraucher existiert.
+
+Modus 4:
+151D30 erstellt zuerst 9A8800 über 0xF00000. Eine zweite Reservierung mit 0x1E0000 wird in drei unabhängige Instanzen geteilt:
+  9A8808: offset 0x000000, Größe 0x040000
+  9A8810: offset 0x040000, Größe 0x180000
+  9A8818: offset 0x1C0000, Größe 0x020000
+Die Teilgrößen decken die zweite Region vollständig und ohne gegenseitige Überschneidung ab.
+
+243BC0 ruft 2513E0 vor 253CB0 auf. Dadurch ist AFB420=9A8800 der Parent. 253CB0 fordert 0x3AF5C0 (3.864.000) Payloadbytes an und erstellt darin AFBA60. 253C60 gibt AFBA60 über Parent-Slot+16 zurück und nullt den Zeiger. 243A10(1) führt diese Kindfreigabe vor 2513D0 aus, das den Parent-Alias löscht.
+
+151C20 poppt die zweite Region über 9A8808 und danach die erste über 9A8800. Es nullt 9A8810, 9A8808 und 9A8800, aber nicht 9A8818. Der Getter 151E60 liefert diesen letzten Alias; er hat keine aufgezeichneten IDA-Xrefs. Das belegt keinen tatsächlich ausgeführten Zugriff nach Freigabe.
+
+Die direkten Kindfreigaben sind keine Kinddestruktoren. Für die übergeordneten Cleanup-Callbacks wird weder vollständige Seiteneffektfreiheit noch eine allgemeine Synchronisierung behauptet.
+
+4. Feldarena und Größenverträge
+==============================
+9BA920 wird in 152680 wiederholt ersetzt. Der temporäre Zweig verwendet 0x380000 und kann durch 150060 die Ausführung an einen anderen Fiber abgeben. Danach folgen Taskcleanup, 19FFD0, Regions-Pop, weitere Bereinigung und Nullsetzung, bevor der Loop erneut reserviert.
+
+Der anschließende dynamische Zweig berechnet:
+  2 * uint32([2A0F7B0] + [2A0F7B4])
+Das ADD EDI,ECX verwirft einen etwaigen 32-Bit-Überlauf bereits vor ADD RDI,RDI. Anschließend wird wieder 9BA920 konstruiert. Ein tatsächlich zu großer Originalwert wurde nicht belegt.
+
+152450 akzeptiert eine beliebige Regionsgröße und einen Bufferparameter. Er reserviert/konstruiert ohne zusätzliche Größenkontrolle; seine ausgewählte Referenzmenge enthält keinen normalen direkten Caller.
+
+19E4F0 fordert drei Blöcke an:
+- bufferBytes -> AC1C58,
+- count * 144 -> AC1C60,
+- count * 1864 -> AC1C68.
+Count liegt in AC1C54. Bei 256 und 0x100000 ergibt das 1.562.624 Nutzbytes bzw. 1.562.768 Bytes einschließlich dreier 48-Byte-Blockoverheads. Die 128-Byte-Instanzpräfixregion kommt separat hinzu. Das ist keine Rechnung über alle Allokationen des Modus. Die nachfolgenden Initialisierer sind hier keine vollständige neue Closure.
+
+Weitere ungeprüfte Voraussetzungen:
+- 14F600 dereferenziert Konstruktor- und Allocate-Ergebnis ohne Nullprüfung.
+- 150B70 berechnet firstSize als uint32(total-0x68000), ohne Untergrenze. Der erfasste direkte Caller benutzt das passende 0x100000; ein schädlicher Retail-Aufruf ist nicht belegt.
+- 2530C0 berechnet a3+a4-1 modulo 2^32 und übergibt sign_extend_64(int32(uint32(a3+a4-1))) an Allocate. MOVSXD RDX,EAX bei 2530DA sign-erweitert das Ergebnis; gesetztes Bit31 ergibt damit eine große 64-Bit-Bitfolge. Die Aufrundungsmaske ist ~(uint64_t)(uint32_t)(a4-1). Überlauf, Allocationfehler und gültiges Alignment werden nicht geprüft. Der konkrete Managerpfad verwendet 16.
+- Die Kapazitäts-/Used-Getter 19C510/19C520 liefern Felddifferenz bzw. Zähler ohne Synchronisierung oder Lebenszeitprüfung. Sie sind kein Besitzbeweis.
+
+5. Globaler Semaphore und weiterhin offene Zerstörung
+====================================================
+Die wiederverifizierten Konstruktoren 19C3A0 und 19BFB0 verwenden AC0FD8. 19BFB0 erhält Instanz, Anfang und Ende separat und enthält nicht den Regionsgrößenvergleich von 19C3A0. Seine ausgewählte Xrefmenge besteht nur aus .pdata.
+
+19C560 ruft zunächst den Slot0 des bisherigen AC0FD0 mit Delete-Bit1 auf. Erst danach prüft es die neue Region und setzt einen neuen oder NULL-Owner. In der frischen IDA-Xrefaufnahme besitzt 19C560 lediglich .pdata; die direkten Referenzen auf AC0FD0 liegen nur in dieser Funktion.
+
+19C050 und 19C0C0 schließen den gemeinsamen Semaphorewrapper und nullen AC0FD8 ohne Instanzzähler. 19C050 hat ebenfalls nur .pdata. 19C0C0 ist über die Vtable und den this-adjusting Thunk 19C0AC erreichbar. Diese Targets sind konkret; welche normalen Retailobjekte tatsächlich den Destruktor aufrufen, ist damit noch nicht geklärt.
+
+Die neue native Überlappung widerlegt eine Ein-Instanz-Annahme. Sie beweist allein keinen ausgeführten Semaphorefehler: Die geschlossenen Owner-Freigaben zerstören den Kindallocator nicht einzeln. Dynamische Destruktorcaller, Shutdown, Exceptions und globale Aliasschreiber bleiben offen.
+
+6. Nutzen für weitere Implementierung
+=====================================
+Eine Diagnoseansicht könnte Besitzerregion, Unterarena, Blockoverhead und Modus getrennt darstellen. Dafür müssten Beobachtungszeitpunkt und Lebenszeit erst verlässlich zugelassen werden. Rohzeiger und die beiden Größengetter reichen nicht.
+
+Externe Mod-APIs sollten geprüfte 64-Bit-Größen, passende Alignmentgrenzen und einen expliziten Besitzer-/Generationsvertrag verwenden. Besonders wichtig ist die Rücknahme von Actor-/STATUS-Beobachtungen vor Parent-Free, Regions-Pop oder Rekonstruktion. Diese Runde liefert die konkreten Fälle, aber noch keinen universellen sicheren Hookpunkt und keinen Thread-Exklusivitätsbeweis.
+
+verification.json enthält zusätzlich den vollständigen direkten CALL/JMP-Ausschnitt aller erfassten und wiederverwendeten Bodies: bereits erfasste Ziele, nicht expandierte direkte Ziele, dynamische Ziele und IAT-Imports bleiben explizit unterscheidbar. Dies verhindert, dass ein vollständiger Funktionskörper als vollständige Subsystem-Closure missverstanden wird.
+
+Prüfung
+=======
+python -B docs/research/allocator-ownership-20261008/verify.py --check
+
+report.json enthält 17 adressierte Claims mit konkreten Evidence-Verweisen und Grenzen. manifest.json bindet alle eigenen Artefakte und die wiederverwendeten Evidenzquellen per SHA-256.
+

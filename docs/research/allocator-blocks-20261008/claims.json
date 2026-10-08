@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-08",
+  "Domain": "native",
+  "claims": [
+    {
+      "addr": "0x14019C3A0",
+      "Domain": "native",
+      "Finding": "Constructor aligns the supplied region to 16 bytes, reserves a 128-byte prefix, and requires end > aligned base+176. A 177-byte region can be constructed but cannot fit an ordinary minimum 64-byte block. Multiple instances reuse the global AC0FD8 semaphore wrapper without an instance count in this body.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14019C3A0]",
+        "verification.json",
+        "AllocatorProbe.cpp",
+        "probe.log"
+      ],
+      "Limitations": "Valid caller-provided memory and native helper contracts remain prerequisites. Simulated helper creation failure is not a live Windows failure."
+    },
+    {
+      "addr": "0x14019C2B0",
+      "Domain": "native",
+      "Finding": "Allocation rounds payload to 16 bytes and adds 48 bytes: a 32-byte linked header and two 8-byte trailer markers. It prefers the cached predecessor gap, then first-fit from the sentinel; gaps use DWORD arithmetic. Wait result and size overflow are unchecked, including a reproduced UINT64_MAX wrap to a 48-byte block.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14019C2B0]",
+        "verification.json",
+        "AllocatorProbe.cpp",
+        "probe.log"
+      ],
+      "Limitations": "Executed privately with recorded dependencies. No real retail oversized request or malformed caller is established."
+    },
+    {
+      "addr": "0x14019C470",
+      "Domain": "native",
+      "Finding": "Locked Free unlinks the block, updates accounting/cursor, fills DWORDs with EFACCAFE and then clears header+8. NULL still waits/releases. Freed addresses can be immediately reused. No owner/trailer validation appears in this body.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14019C470]",
+        "verification.json",
+        "AllocatorProbe.cpp",
+        "probe.log"
+      ],
+      "Limitations": "The free dependency 3A08F0 is recorded by a stub in the probe; its actual traversal is separately analyzed. This semaphore is not a universal Actor lifetime lock."
+    },
+    {
+      "addr": "0x14019C230",
+      "Domain": "native",
+      "Finding": "This complete body performs the unlink/accounting/poison operation without allocator semaphore calls. Its incoming references are pdata/chained-unwind records; CHAININFO is not evidence of an EH finally handler.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14019C230]",
+        "verification.json",
+        "AllocatorProbe.cpp",
+        "probe.log"
+      ],
+      "Limitations": "No direct retail caller is recorded; isolated invocation establishes body behavior only."
+    },
+    {
+      "addr": "0x14019C510",
+      "Domain": "native",
+      "Finding": "The capacity getter returns allocator end(+72) minus block-region start(+64), without acquiring a lock. It is independent of used bytes and largest contiguous free gap.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14019C510]",
+        "verification.json",
+        "AllocatorProbe.cpp",
+        "probe.log"
+      ],
+      "Limitations": "A live caller must separately ensure lifetime and a consistent snapshot."
+    },
+    {
+      "addr": "0x14019C520",
+      "Domain": "native",
+      "Finding": "The used-byte getter returns QWORD+80 without acquiring a lock. Allocation adds rounded payload plus 48-byte overhead and free subtracts the stored DWORD block extent.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14019C520]",
+        "evidence.json#functions[addr=0x14019C2B0]",
+        "evidence.json#functions[addr=0x14019C470]",
+        "verification.json",
+        "AllocatorProbe.cpp",
+        "probe.log"
+      ],
+      "Limitations": "This is allocator accounting, not raw payload use or system-process memory consumption."
+    },
+    {
+      "addr": "0x14019C530",
+      "Domain": "native",
+      "Finding": "Reset rebuilds the sentinel and clears used/cached fields without semaphore, per-block free dependency, or poisoning; it allows prior addresses to be reused.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14019C530]",
+        "verification.json",
+        "AllocatorProbe.cpp",
+        "probe.log"
+      ],
+      "Limitations": "No recorded direct code references; actual retail invocation and concurrent validity remain unproved."
+    },
+    {
+      "addr": "0x14019C6E0",
+      "Domain": "native",
+      "Finding": "The sixth primary vtable method clears only cached predecessor+88. The following allocation falls back to a sentinel-first search.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14019C6E0]",
+        "evidence.json#functions[addr=0x14019C2B0]",
+        "verification.json",
+        "AllocatorProbe.cpp",
+        "probe.log"
+      ],
+      "Limitations": "No allocator lifetime or synchronization guarantee is added."
+    },
+    {
+      "addr": "0x14019C050",
+      "Domain": "native",
+      "Finding": "The nondeleting destructor resets vtables, destroys and nulls the shared AC0FD8 wrapper when present, and cleans its CThread subobject at this+8. It does not acquire the allocator semaphore or reference-count peer instances.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14019C050]",
+        "verification.json",
+        "AllocatorProbe.cpp",
+        "probe.log"
+      ],
+      "Limitations": "Artificial overlapping allocator instances confirm the local effect; actual unsafe retail overlap is not established."
+    },
+    {
+      "addr": "0x14019C0C0",
+      "Domain": "native",
+      "Finding": "The scalar-deleting destructor performs the same shared-wrapper and thread cleanup, additionally calls j_j_free(this) iff flag bit0 is set, and returns this.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14019C0C0]",
+        "verification.json",
+        "AllocatorProbe.cpp",
+        "probe.log"
+      ],
+      "Limitations": "Free and CloseHandle are recording stubs in the private probe. Destruction does not establish all object owners have stopped."
+    },
+    {
+      "addr": "0x14019C0AC",
+      "Domain": "native",
+      "Finding": "The secondary-vtable entry subtracts eight from RCX and tail-jumps to the scalar-deleting destructor, preserving the flag argument.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14019C0AC]",
+        "evidence.json#functions[addr=0x14019C0C0]",
+        "verification.json",
+        "AllocatorProbe.cpp",
+        "probe.log"
+      ],
+      "Limitations": "The pdata reference also pointing at this address is a preceding function EndAddress, not a code call."
+    },
+    {
+      "addr": "0x14019C560",
+      "Domain": "native",
+      "Finding": "Global allocator replacement calls the old AC0FD0 virtual deleting destructor first, then constructs/publishes the supplied region. A too-small new region publishes null after the old instance has already been destroyed.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14019C560]",
+        "verification.json",
+        "AllocatorProbe.cpp",
+        "probe.log"
+      ],
+      "Limitations": "Only pdata references were recorded; no complete live caller/lifetime contract or semantic return value is established."
+    },
+    {
+      "addr": "0x1400FDA70",
+      "Domain": "native",
+      "Finding": "Semaphore-wrapper destruction ignores NULL wrappers; otherwise it calls imported CloseHandle on wrapper+8 and j_j_free(wrapper). The PE import identity is independently verified.",
+      "Evidence": [
+        "helper-evidence.json#functions[addr=0x1400FDA70]",
+        "verification.json",
+        "AllocatorProbe.cpp",
+        "probe.log"
+      ],
+      "Limitations": "Wrapper validity is assumed; CloseHandle outcome is unused and kernel/resource behavior is replaced in the probe."
+    },
+    {
+      "addr": "0x1400FD950",
+      "Domain": "native",
+      "Finding": "CThread destruction sets its vtable, closes and nulls nonzero handle fields +24 and +8, and clears DWORD+48 when +8 was nonzero. As Allocator+8 subobject these map to allocator+32,+16,+56.",
+      "Evidence": [
+        "helper-evidence.json#functions[addr=0x1400FD950]",
+        "verification.json",
+        "AllocatorProbe.cpp",
+        "probe.log"
+      ],
+      "Limitations": "Return-register contents have no demonstrated semantic contract; asynchronous thread completion is not established."
+    }
+  ]
+}

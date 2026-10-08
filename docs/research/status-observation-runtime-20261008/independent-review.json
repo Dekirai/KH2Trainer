@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "reviewer": "/root/drain_audit_v2",
+  "date": "2026-10-08",
+  "status": "Accepted as a bounded observation coordinator prerequisite; live installer and gameplay behavior are not established by this review.",
+  "scope": "Independent read-only review of the frozen coordinator, its tests, production compile-only source and component contracts. Only this receipt was created. No game process operation or product edit.",
+  "reviewedInputs": [
+    {"path":"src/KH2Trainer.Bridge/StatusObservationRuntime.h","sha256":"9c6390f3fa62043f5e3e33b897c96661a0d2ea197efed60c46c86e6615e0ec0b"},
+    {"path":"tests/KH2Trainer.Bridge.Tests/StatusObservationRuntimeTests.cpp","sha256":"bf27e349607dc9b71eb581cbf375ba691923a85d36dc5e313f1de0ef3b0f8973"},
+    {"path":"tests/KH2Trainer.Bridge.Tests/StatusObservationRuntimeProductionCompile.cpp","sha256":"d5e46984e35a732d5cc4e525c3c4b7a1f5d246105be3a527e2c1da8dc71c2f3f"},
+    {"path":"src/KH2Trainer.Bridge/StatusBootstrapContract.h","sha256":"5a275ac972c539e3996a59b331488e100efe51dec13c8814f053226f9f60eadd"},
+    {"path":"src/KH2Trainer.Bridge/StatusOriginalTrampolines.h","sha256":"bc25e0f130e85f423aab272328231e98c63bad5818f39fb5be85b28b46241cae"},
+    {"path":"src/KH2Trainer.Bridge/StatusThreadDrain.h","sha256":"f001f2448feab948855f3ba78cddbcb3582a00faa55e3042d41c2944fe414c98"},
+    {"path":"src/KH2Trainer.Bridge/StatusObserverSupport.h","sha256":"98277fd5c5df27b3f49b0bf259549d544432a4a70c2e900cebb127c314cee042"},
+    {"path":"src/KH2Trainer.Bridge/StatusEntryPlan.h","sha256":"8077246092503a65390c52828cc8aca77f169564669fc9eefa97b9b1e70f6a9c"},
+    {"path":"src/KH2Trainer.Bridge/StatusBreakpointRouter.h","sha256":"b04ddd9c37053170d93c3a2a5858337922beebd7944ef5056b63c67c96934234"},
+    {"path":"tests/KH2Trainer.Bridge.Tests/bin/StatusObservationRuntimeTests.exe","sha256":"1afc34f15653628184b32a7561b36eaadbc47ca2d43043d71d5d3d0f20ad46b6"},
+    {"path":"artifacts/status-runtime-independent-run.txt","sha256":"186819549444431165638c2ddc2c7666e88e063759d27d9d4fa925f7bba2d957"},
+    {"path":"docs/research/status-rebuild-ownership-20261007/evidence.json","sha256":"97970af23079622afb090d21e9c29d63ffc470acb8f0bd898e401675372c8897"}
+  ],
+  "blockingFindingsWithinBoundedContract": [],
+  "independentExecution": {
+    "command":"tests/KH2Trainer.Bridge.Tests/bin/StatusObservationRuntimeTests.exe",
+    "exitCode":0,
+    "stdout":"Status observation coordinator synthetic checks: 90; failures: 0",
+    "checks":90,
+    "failures":0,
+    "rebuiltByReviewer":false,
+    "limit":"Reviewer independently executed the current root-built binary. Root build log records the production branch compile without the test macro and a passing run. Repeated execution does not add distinct tests."
+  },
+  "verifiedMechanics": [
+    "Start permanently claims the singleton before component access and retains the owner thread handle. OnOwner requires both the matching thread ID and a nonsignaled retained object; the owner cannot be reacquired by a recycled DWORD ID.",
+    "Start orders Contract.Prepare, validated five candidates, Originals.Prepare/Bindings, Observer.Bind, Router.Prepare, Original verification, Router.Commit, FiveGates verification and Drain.Begin. Observer bindings exist before any committed breakpoint can redirect into a typed wrapper. Start does not Poll or Arm within its preparation frame.",
+    "All five full native root extents are compared against StatusEntryPlan, with integer overflow checks. The candidate order maps exactly to Initialize, Rebuild, Coefficient, Reset and Release wrappers. Candidate and root arrays have static storage.",
+    "Once original bindings escape, the published flag prevents freeing them even if a later Bind, Commit or drain operation fails. Failed unpublished cleanup may retry from Fault ticks. Partial commit keeps the already bound forwarding path available.",
+    "Sample avoids Observer.Inspect while ResumePending. ServiceFault returns before Observer.Fault or cleanup while ResumePending. Fail uses those guarded helpers. InspectOnOwner returns a cached diagnostic and takes no Observer lock. Tick tests pending debt immediately after Poll before later Observer calls.",
+    "Fault ticks continue drain maintenance even for zero or excessive caller budgets, normalizing such budgets to one. Resume repayment cannot clear Fault, replace the first failure reason or rearm observation. Observer fault propagation is deferred until the pending suspension is repaid.",
+    "The fresh gate callback requires exact context identity, retained owner identity, nonfault phase, router verification and FiveGates contract verification. A subsequent gate restoration cannot recover confidence after permanent Fault.",
+    "Arming requires drain readiness and an Observer SRW-protected zero in-flight count. An entrant between readiness and arming is counted before its native mutation. Readiness is checked again after arming; loss faults the coordinator.",
+    "All typed wrappers continue forwarding once after coordinator fault. No mutable wrapper dispatch pointer, journal API, Actor lifetime authority or IPC transaction endpoint is exposed by this component."
+  ],
+  "poolEvidence": {
+    "reusedEvidence":"docs/research/status-rebuild-ownership-20261007/evidence.json, function 0x1403C0840",
+    "originalExeSha256":"9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+    "originalFileHashIndependentlyMatched":true,
+    "originalBodyBytesIndependentlyMatched":31,
+    "decodedLeaRva":"0x3c0844",
+    "decodedTargetRva":"0x2a17290",
+    "callRva":"0x3c084b",
+    "calleeRva":"0x3c1880",
+    "result":"The recorded LEA RCX displacement was independently evaluated against matching original PE bytes. The coordinator requires the exact resulting global pool address.",
+    "freshIdaFunctions":0
+  },
+  "testEvidenceLimits": [
+    "The 90 coordinator checks substitute Contract, Originals, Router and Drain. They exercise the real Observer and typed wrappers plus own-process thread identity handles; they do not run the combined native patch/suspend installer.",
+    "The source covers preparation order, every installation failure stage, partial-commit forwarding, five target mappings, in-flight deferral, permanent gate failure, deferred fault propagation during resume debt, invalid-budget fault maintenance and unpublished cleanup retry.",
+    "The owner-exit test replaces its test-only retained handle with a signaled event. It checks the retained-handle liveness predicate; it does not force actual operating-system thread-ID reuse.",
+    "The production compile-only source provides preprocessing/type/linkage evidence for real component composition, not execution evidence for the retail image."
+  ],
+  "remainingIntegrationRequirements": [
+    "A caller must supply an independently confirmed game-thread identity, a fresh nonzero bridge instance and the verified retail module base. Start must run outside DllMain and engine/Actor/STATUS metadata locks.",
+    "Polling must continue on the retained owner in later fresh frames, including after Fault until any resume debt is repaid. Diagnostics are cached observations and cannot authorize transactions.",
+    "Published wrappers, original trampolines, handler state and metadata must remain resident for process lifetime. Supported use is the single RetailRuntime identity.",
+    "The bounded native closure and foreign thread-control, stack switching, exception/APC, transient modification and trusted system-export assumptions remain those of the reviewed constituent contracts.",
+    "Actor lifetime, journal authorization, IPC integration and live gameplay validation remain separate work. This receipt does not establish that the reported Drive Form crash is fixed."
+  ]
+}

@@ -1,0 +1,260 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-08",
+  "Domain": "native",
+  "scope": "Bounded BDX trap registry, structural data extents, context-dependent banks3/9 and associated shared VM lifetime.44 full fresh IDA captures; no runtime bounds or global quiescence proof.",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "evidence": "docs/research/bdx-trap-registry-20261008/evidence.json",
+  "verification": "docs/research/bdx-trap-registry-20261008/verification.json",
+  "registrySnapshot": "docs/research/bdx-trap-registry-20261008/registry-snapshot.json",
+  "claims": [
+    {
+      "addr": "0x1403e1720",
+      "Domain": "native",
+      "Title": "Registry extent is a structural snapshot, not a checked bank count",
+      "Finding": "The eleven original pointer slots at 753490.. 7534E7 include NULL banks3/9. The following 7534E8 object has its own label and is consumed by 02B6B0. Setter 3E1720 sign-extends its index and stores directly, without bounds. The native dispatcher likewise contains no bank<11 guard.",
+      "Evidence": [
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403e1720]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x14002b6b0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x14041b400]",
+        "docs/research/bdx-trap-registry-20261008/registry-snapshot.json",
+        "docs/research/bdx-trap-registry-20261008/verification.json"
+      ],
+      "Limitations": "No authoritative C array extent is present in IDA. Eleven identifies the disclosed original data cluster; arbitrary alias writes and live pointers remain open."
+    },
+    {
+      "addr": "0x14041b400",
+      "Domain": "native",
+      "Title": "Native group A trusts bank, index, descriptor and argument count",
+      "Finding": "41C4AA.. 41C518 selects registry[unsigned16(opcode)>>6], adds16*unsigned16(nextword), reads argc asU16 at +8, pops that many VM values and calls the descriptor pointer without a bank/index bound, NULL check or sentinel search. Return flag0x40000000 pushes operandVector[0], not RAX.",
+      "Evidence": [
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x14041b400]",
+        "docs/research/bdx-trap-registry-20261008/registry-snapshot.json",
+        "docs/research/bdx-trap-registry-20261008/verification.json"
+      ],
+      "Limitations": "Representable bank 0.. 1023 and index0.. 65535 are encoding ranges, not valid catalogue bounds. No malformed script was executed; runtime stack/object preconditions are not established."
+    },
+    {
+      "addr": "0x14041b400",
+      "Domain": "native",
+      "Title": "A NULL record is not a general descriptor terminator",
+      "Finding": "Original bank 0 descriptor 10 at 752EA0 is16 zero bytes between nonzero descriptors 9/11. Native dispatch indexes directly and does not scan to a sentinel. The catalogue must retain an interior unavailable slot.",
+      "Evidence": [
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x14041b400]",
+        "docs/research/bdx-trap-registry-20261008/registry-snapshot.json",
+        "docs/research/bdx-trap-registry-20261008/verification.json"
+      ],
+      "Limitations": "Only this concrete counterexample and the captured indexing body are established; no safe invocation of a NULL descriptor is implied."
+    },
+    {
+      "addr": "0x14026ace0",
+      "Domain": "native",
+      "Title": "Bank 9 installs a static41-record descriptor table",
+      "Finding": "26ACE0 passes static image address 73D080 to 3E1720 with bank9. The captured structural records run through 73D300 (index 40, handler 2885D0), ending before 73D310 where the following initialized data family starts. No count is passed or stored by the setter.",
+      "Evidence": [
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x14026ace0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403e1720]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x14001a6d0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x14001a720]",
+        "docs/research/bdx-trap-registry-20261008/registry-snapshot.json",
+        "docs/research/bdx-trap-registry-20261008/verification.json"
+      ],
+      "Limitations": "41 is a disclosed original-record capture bound, not a checked runtime count or a source-language array-type proof. The image table is writable and has no terminal NULL descriptor."
+    },
+    {
+      "addr": "0x1403e1710",
+      "Domain": "native",
+      "Title": "Bank 3 has a separate direct setter and static variant",
+      "Finding": "3E1710 writes 7534A8. 1F9AA0 initializes shared VM state then installs 72F1A0; 1F9A80 clears this slot before generic VM cleanup.",
+      "Evidence": [
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403e1710]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1401f9aa0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1401f9a80]",
+        "docs/research/bdx-trap-registry-20261008/registry-snapshot.json",
+        "docs/research/bdx-trap-registry-20261008/verification.json"
+      ],
+      "Limitations": "This round identifies the Bank 3 variant but does not independently inventory every Bank 3 descriptor. Bank 3 and9 are context registrations; mutual exclusion is not proved."
+    },
+    {
+      "addr": "0x1403e16b0",
+      "Domain": "native",
+      "Title": "VM initialization replaces shared allocator and discards shared list pointers",
+      "Finding": "3E16B0 stores its allocator at2A250A0 and sets2A25090/2A25098 to zero, without freeing a prior list, testing emptiness, touching registry slots or synchronizing readers.",
+      "Evidence": [
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403e16b0]",
+        "docs/research/bdx-trap-registry-20261008/registry-snapshot.json",
+        "docs/research/bdx-trap-registry-20261008/verification.json"
+      ],
+      "Limitations": "Caller coordination is a prerequisite. This does not prove the initializer is called with an occupied list or that a runtime leak occurs."
+    },
+    {
+      "addr": "0x140243bc0",
+      "Domain": "native",
+      "Title": "Bank 9 startup follows allocator alias initialization and task registration",
+      "Finding": "243BC0 calls 2513E0 before 26ACE0 at 243D5F. 2513E0 copies 151E40/9A8800 into AFB420; 26ACE0 initializes shared VM state with that alias before installing 73D080. 243A10 zero branch registers 244230, which invokes 243BC0.",
+      "Evidence": [
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x140243bc0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1402513e0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x140151e40]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x14026ace0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x140243a10]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x140244230]",
+        "docs/research/bdx-trap-registry-20261008/registry-snapshot.json",
+        "docs/research/bdx-trap-registry-20261008/verification.json"
+      ],
+      "Limitations": "The table belongs to image storage; allocator alias and callback ordering do not prove object validity or global ownership. Transitive task/fiber behavior is not re-proved here."
+    },
+    {
+      "addr": "0x14026acc0",
+      "Domain": "native",
+      "Title": "Bank 9 cleanup clears registration before generic VM teardown",
+      "Finding": "26ACC0 calls 3E1720(9, NULL), then 3E1620. Both 2438F0 and 243A10(a1==1) call 19FFD0 before this wrapper and clear AFB420 through 2513D0 afterwards.",
+      "Evidence": [
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x14026acc0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403e1720]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403e1620]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1402438f0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x140243a10]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1402513d0]",
+        "docs/research/bdx-trap-registry-20261008/registry-snapshot.json",
+        "docs/research/bdx-trap-registry-20261008/verification.json"
+      ],
+      "Limitations": "The exact native call ordering is established. This is not an early global boundary before all subsystem cleanup, nor a transitive proof of the many other cleanup callees."
+    },
+    {
+      "addr": "0x140288150",
+      "Domain": "native",
+      "Title": "Bank 9 handler 0 depends on a live allocator and object allocation",
+      "Finding": "288150 allocates 1408 bytes through AFB420 virtual+8, constructs through 27BB10 ifnonnull, then unconditionally dereferences the resulting object for virtual+128. It stores 25DC50 atobject+1344 and returns the encoded object in operand 0 with its pointer tag.",
+      "Evidence": [
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x140288150]",
+        "docs/research/bdx-trap-registry-20261008/registry-snapshot.json",
+        "docs/research/bdx-trap-registry-20261008/verification.json"
+      ],
+      "Limitations": "Constructor, virtual implementation and allocator internals remain external semantic boundaries. A present table does not establish successful allocation or safe use; no observed crash is claimed."
+    },
+    {
+      "addr": "0x1402881d0",
+      "Domain": "native",
+      "Title": "Bank 9 handler 1 directly dereferences its decoded operand",
+      "Finding": "2881D0 decodesoperand 0 and calls object vtable+48 without a local NULL/lifetime check.",
+      "Evidence": [
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1402881d0]",
+        "docs/research/bdx-trap-registry-20261008/registry-snapshot.json",
+        "docs/research/bdx-trap-registry-20261008/verification.json"
+      ],
+      "Limitations": "Target identity and object lifetime depend on runtime arguments. The virtual target is not semantically closed here."
+    },
+    {
+      "addr": "0x1402885d0",
+      "Domain": "native",
+      "Title": "Bank 9 last captured handler also consumes an unchecked object",
+      "Finding": "Descriptor40 at 73D300 points to 2885D0. The wrapper decodesoperand 0, readsobject+72 and forwards it with operand 1 low DWORD to 1A8A90.",
+      "Evidence": [
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1402885d0]",
+        "docs/research/bdx-trap-registry-20261008/registry-snapshot.json",
+        "docs/research/bdx-trap-registry-20261008/verification.json"
+      ],
+      "Limitations": "The wrapper body is closed; 1A8A90 semantics and object validity are not. Its presence supports the structural descriptor extent without asserting a native bound."
+    },
+    {
+      "addr": "0x1401f9aa0",
+      "Domain": "native",
+      "Title": "Bank 3 mode owns an allocator alias separately from the static table",
+      "Finding": "1F9AA0 gets AE94F0 through 1E2050, initializes shared VM state and registers 72F1A0. 1E2060 initializes AE94F0 from 9A8780/151AD0. 1E13B0 calls 1E2060 before 1F9AA0.",
+      "Evidence": [
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1401f9aa0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1401e2050]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1401e2060]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x140151ad0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1401e13b0]",
+        "docs/research/bdx-trap-registry-20261008/registry-snapshot.json",
+        "docs/research/bdx-trap-registry-20261008/verification.json"
+      ],
+      "Limitations": "This is a captured normal ordering, not a full mode scheduler or heap-owner proof."
+    },
+    {
+      "addr": "0x1401f9a80",
+      "Domain": "native",
+      "Title": "Bank 3 cleanup also unregisters before exit-event capable teardown",
+      "Finding": "1F9A80 clearsBank 3 before 3E1620. Both 1E12C0 and 1E18F0(a1==1) invoke it before 1E2020 clears AE94F0. Ordinary allocator wrappers 1E1FA0/1E1FC0/1E2030 use that alias.",
+      "Evidence": [
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1401f9a80]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1401e12c0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1401e18f0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1401e2020]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1401e1fa0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1401e1fc0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1401e2030]",
+        "docs/research/bdx-trap-registry-20261008/registry-snapshot.json",
+        "docs/research/bdx-trap-registry-20261008/verification.json"
+      ],
+      "Limitations": "Their incoming callers are recorded as xrefs, not all semantically analyzed. No global exclusivity or concurrent-use safety is inferred."
+    },
+    {
+      "addr": "0x1403e1620",
+      "Domain": "native",
+      "Title": "Generic VM teardown frees contexts before resetting global list and allocator",
+      "Finding": "3E1620 saves each encoded next link, calls 3E1410, frees that context via the current 2A250A0 virtual slot +16, then clears head/tail and resets the allocator to 9BA888 after the walk.",
+      "Evidence": [
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403e1620]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403e1410]",
+        "docs/research/bdx-trap-registry-20261008/registry-snapshot.json",
+        "docs/research/bdx-trap-registry-20261008/verification.json"
+      ],
+      "Limitations": "No all-thread join, lock, reader count, generation or safe reentrant callback protocol is supplied by this body."
+    },
+    {
+      "addr": "0x1403e1410",
+      "Domain": "native",
+      "Title": "VM destructor can execute a stored exit event using the current registry",
+      "Finding": "If context+64 is nonzero, 3E1410 calls 41B320 and 41B400 with root 753490 before child/work/stack/reference cleanup. The Bank 3/9 unregister wrappers clear their slot before entering this logic through 3E1620.",
+      "Evidence": [
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403e1410]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403e1530]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403e1620]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x14026acc0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1401f9a80]",
+        "docs/research/bdx-trap-registry-20261008/registry-snapshot.json",
+        "docs/research/bdx-trap-registry-20261008/verification.json"
+      ],
+      "Limitations": "No script witness establishes an exit event calling the removed bank. This is a conditional lifecycle obligation, not a reproduced crash claim."
+    },
+    {
+      "addr": "0x1403e1c80",
+      "Domain": "native",
+      "Title": "Update uses the shared registry without a local lifetime barrier",
+      "Finding": "3E1C80 sets current-context globals, invokes 41B400 with 753490, clears the globals and visits/releases child contexts. Neither it nor the captured setters includes a registry lock, snapshot or reader-drain protocol.",
+      "Evidence": [
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403e1c80]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403e1720]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403e1710]",
+        "docs/research/bdx-trap-registry-20261008/registry-snapshot.json",
+        "docs/research/bdx-trap-registry-20261008/verification.json"
+      ],
+      "Limitations": "Absence of local synchronization does not prove concurrent mutation occurs. Scheduling, external hooks and computed aliases are outside this study."
+    },
+    {
+      "addr": "0x1403a1840",
+      "Domain": "native",
+      "Title": "Shared VM initializer/cleanup is reused outside bank-specific wrappers",
+      "Finding": "3A1840 initializes 2A250A0 from 9BA888, allocates and starts common event 7, updates and destroys the context, then calls 3E1620. 39CA10 also supplies an allocator to 3E16B0; 39C830 calls 3E1620. The helpers themselves leave Bank 3/9 unchanged.",
+      "Evidence": [
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403a1840]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x14039ca10]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x14039c830]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403e16b0]",
+        "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403e1620]",
+        "docs/research/bdx-trap-registry-20261008/registry-snapshot.json",
+        "docs/research/bdx-trap-registry-20261008/verification.json"
+      ],
+      "Limitations": "Transitive callees can perform additional changes. Global registry/allocator state cannot be treated as independent per-script ownership without further scheduling proof."
+    }
+  ],
+  "limitations": [
+    "No live game/script execution, injection, attachment, UI operation or IDB modification.",
+    "Structural11-slot and41-descriptor extents are explicit catalogue policy, never native checked bounds.",
+    "Direct xref census cannot exclude computed aliases, mutable descriptor contents or external patches.",
+    "All handler semantics and all scheduling/mode transitions are not closed in this study."
+  ]
+}

@@ -1,0 +1,11 @@
+APP EXECUTION CONTEXT — INDEPENDENT REVIEW
+
+ACCEPTED_BOUNDED_STATIC_RESEARCH; no blocking findings.
+
+Independent original-PE byte and Capstone verification: 29 contiguous native bodies plus two chunked bodies (6 spans), 1871 listed instructions / 8308 bytes; 269 data spans. Exact isolated CLR reproduction: 597 MethodDefs, 439 IL bodies, 507 fixup groups. The target assembly was never loaded or executed. Frozen manifest and source hashes verified.
+
+The real event registration and native thread creation establish separate UI, App and timing contexts. The report correctly distinguishes a pause request, an exit request and successful completion of two worker handles from a global Actor/STATUS lifetime barrier. Assembly correctly overrides the misleading 11D070 pseudocode.
+
+The synchronous Control.Invoke / native worker polling cycle is conditional static evidence, not a demonstrated deadlock. The worker must already have passed the myFormClosed guard while the UI enters shutdown; a normal user-close ordering alone does not establish that interleaving. The report does not claim observed reachability.
+
+The CLR inventory is not represented as 439 semantically reviewed bodies. External CRT/CLR/Win32 behavior, callbacks, parked fibers and other Actor writers remain explicit limits. Full details, commands, source hashes and primary Microsoft references are in the adjacent JSON receipt. No product edits or game actions.

@@ -1,0 +1,136 @@
+{
+  "date": "2026-10-08",
+  "scope": "Production cleanup correction and private synthetic regression; no new native lifetime guarantee.",
+  "version": "0.12.9",
+  "liveGame": false,
+  "gameOrSaveWrites": false,
+  "problem": "TrainerFrame marked active movement leases ReleasePending after host expiry, but CompleteRelease called the host-gated gameplay observation. It could never restore while the heartbeat remained expired.",
+  "change": "Only CompleteRelease uses InspectNative after the same Actor identity and movement readiness checks. Native code pins, game-thread affinity, disabled state, player role, scene, input and control gates remain required. Acquire/Reapply, snapshots and dispatch remain host-gated.",
+  "limitations": [
+    "Existing Actor observer execution and lifetime assumptions are unchanged; this correction does not prove them for all threads, constructors, rebinds or bulk free paths.",
+    "The mapping must remain resident as in the existing bridge. This is a heartbeat-disconnect fix, not recovery after loss of shared memory or disabled/faulted bridge execution.",
+    "Menu, cutscene, loading, transitions, input locks and unavailable identity defer cleanup. Different external values are preserved. Same-value native movement writes remain invisible to value ownership.",
+    "Partial writes or an observer fault remain uncertain; no speculative retry or original-value recapture is added.",
+    "Private tests execute trainer guard, role and journal code against synthetic memory. Actor observer installation provenance and native callback forwarding use fixture hooks. No live installer, gameplay test or game injection was performed.",
+    "STATUS field transaction prerequisites remain uninstalled; no new feature or character compatibility expansion is included."
+  ],
+  "regression": [
+    "Real TrainerBridge, movement journal, Actor lifetime, PlayerRole and GameplayState path acquires a valid lease before disconnect; it then checks successful cleanup for Sora, Roxas and rescue Mickey with missing, stale and future heartbeats.",
+    "Offline Acquire and Reapply reject before writes; twelve independent native blockers defer cleanup and their removal permits cleanup without heartbeat recovery.",
+    "External scalar replacement and observed Actor death preserve values instead of restoring stale originals.",
+    "Gameplay observation tests compare both views under a fresh host and separately verify retained native guards with missing/stale host admission."
+  ],
+  "tests": [
+    {
+      "suite": "GameplayStateGuardTests",
+      "checks": 1066,
+      "failures": 0,
+      "log": "docs/research/movement-cleanup-20261008/native-GameplayStateGuardTests.txt",
+      "sha256": "1e53b1221761a792726292d2948f0d224923a656c932c70aa7b5b9f079e96b65"
+    },
+    {
+      "suite": "MovementTransactionTests",
+      "checks": 440,
+      "failures": 0,
+      "log": "docs/research/movement-cleanup-20261008/native-MovementTransactionTests.txt",
+      "sha256": "3c644b63c0df297400a7c497ec9c2859cbc514fdc9a97de87e83cd6d9d9eae03"
+    },
+    {
+      "suite": "CombatGuardTests",
+      "checks": 2024,
+      "failures": 0,
+      "log": "docs/research/movement-cleanup-20261008/native-CombatGuardTests.txt",
+      "sha256": "c22f9b5f556eb738502c5333040e1abbeb76d52b802d932d7b8a85b674692b38"
+    },
+    {
+      "suite": "PlayerBridgeTests",
+      "checks": 641,
+      "failures": 0,
+      "log": "docs/research/movement-cleanup-20261008/native-PlayerBridgeTests.txt",
+      "sha256": "db846e988c687e81bca70356b4b42167e910343fd8cfa9781f7f216283477511"
+    }
+  ],
+  "focusedChecks": 4171,
+  "failures": 0,
+  "independentReviews": [
+    {
+      "path": "docs/research/movement-cleanup-20261008/movement-cleanup-independent-review.json",
+      "sha256": "58d7ff52bb44b47b293c22a837a5ede1b86f1a1637d016d115c03ce9c43adb26"
+    },
+    {
+      "path": "docs/research/movement-cleanup-20261008/heartbeat-release-independent-review.json",
+      "sha256": "bb9351dc308198bb23055e4688833aa0f8dfbc034c920a054079d18c7c8298bd"
+    }
+  ],
+  "independentEvidenceCopies": [
+    {
+      "originalPath": "artifacts/movement-cleanup-regression/fixed-CombatGuardTests-compile.txt",
+      "packagedPath": "docs/research/movement-cleanup-20261008/independent-regression/fixed-CombatGuardTests-compile.txt",
+      "sha256": "ccaf5605b6db491c324a672a4b16383a82dd6c4301964129af6ff54f306eeb86"
+    },
+    {
+      "originalPath": "artifacts/movement-cleanup-regression/fixed-CombatGuardTests-run.txt",
+      "packagedPath": "docs/research/movement-cleanup-20261008/independent-regression/fixed-CombatGuardTests-run.txt",
+      "sha256": "0276e4dd1bbd3ce8b87374cdb309cf45c420eab62c98161e63b059a361992130"
+    },
+    {
+      "originalPath": "artifacts/movement-cleanup-regression/fixed-GameplayStateGuardTests-compile.txt",
+      "packagedPath": "docs/research/movement-cleanup-20261008/independent-regression/fixed-GameplayStateGuardTests-compile.txt",
+      "sha256": "92fa663a7daca2d79b1b9989255964976cab1d66c2e95c45026c9e4658fb5f78"
+    },
+    {
+      "originalPath": "artifacts/movement-cleanup-regression/fixed-GameplayStateGuardTests-run.txt",
+      "packagedPath": "docs/research/movement-cleanup-20261008/independent-regression/fixed-GameplayStateGuardTests-run.txt",
+      "sha256": "cde59e9e564919ed23a9195fd66bbfc28c32800f619643703a1193ea0bef46be"
+    },
+    {
+      "originalPath": "artifacts/movement-cleanup-regression/fixed-MovementTransactionTests-compile.txt",
+      "packagedPath": "docs/research/movement-cleanup-20261008/independent-regression/fixed-MovementTransactionTests-compile.txt",
+      "sha256": "432eddb2aec4350df80b621f9390924a51d64f9130886c342c46024d7881580b"
+    },
+    {
+      "originalPath": "artifacts/movement-cleanup-regression/fixed-MovementTransactionTests-run.txt",
+      "packagedPath": "docs/research/movement-cleanup-20261008/independent-regression/fixed-MovementTransactionTests-run.txt",
+      "sha256": "d115912c2bae29809990a9f42b6c46a23fc0bd954fb9587d1c27a1b4a3fb74f0"
+    },
+    {
+      "originalPath": "artifacts/movement-cleanup-regression/fixed-PlayerBridgeTests-compile.txt",
+      "packagedPath": "docs/research/movement-cleanup-20261008/independent-regression/fixed-PlayerBridgeTests-compile.txt",
+      "sha256": "2763725297a78192e0bc25072940c6940ff98af02129c4c4bab50ab8e5612cb1"
+    },
+    {
+      "originalPath": "artifacts/movement-cleanup-regression/fixed-PlayerBridgeTests-run.txt",
+      "packagedPath": "docs/research/movement-cleanup-20261008/independent-regression/fixed-PlayerBridgeTests-run.txt",
+      "sha256": "e36d0a0f63d94f62e79cfa10f00a7efd06d9bd31e9f246332d03a8ecafa82dd9"
+    },
+    {
+      "originalPath": "artifacts/movement-cleanup-regression/regressed-CombatGuardTests-compile.txt",
+      "packagedPath": "docs/research/movement-cleanup-20261008/independent-regression/regressed-CombatGuardTests-compile.txt",
+      "sha256": "b679be66ad271a1859533ff3937d50327c8526ee9cdb4f680ed4f0ddb476a492"
+    },
+    {
+      "originalPath": "artifacts/movement-cleanup-regression/regressed-CombatGuardTests-run.txt",
+      "packagedPath": "docs/research/movement-cleanup-20261008/independent-regression/regressed-CombatGuardTests-run.txt",
+      "sha256": "1e5de21502ce6b352dfdb221e09d4f18cad5252a59fd1bd66a9db121f5239a79"
+    },
+    {
+      "originalPath": "artifacts/movement-cleanup-regression/result.json",
+      "packagedPath": "docs/research/movement-cleanup-20261008/independent-regression/result.json",
+      "sha256": "936f83bb8275be59ca5c60b81db24dccb82d492ec43971331b8ee4cbc2899314"
+    },
+    {
+      "originalPath": "artifacts/movement-cleanup-regression/run.ps1",
+      "packagedPath": "docs/research/movement-cleanup-20261008/independent-regression/run.ps1",
+      "sha256": "a38e5cdff62f103f57d875cfa7400a00ead30db06d29fc9e0388d49357eb73eb"
+    }
+  ],
+  "reproduction": "Restore independent-regression/run.ps1 to artifacts/movement-cleanup-regression/run.ps1 in the extracted Source.zip repository before running it. It creates isolated fixed/regressed sources and synthetic executables; it does not modify product sources. Expected mutant result: 22 restoration failures.",
+  "sourceHashes": {
+    "src/KH2Trainer.Bridge/GameplayStateSupport.inl": "c99b3265de75cc806638e8b734a08ba2c187e603c408e651dc95d8121e710f1b",
+    "src/KH2Trainer.Bridge/MovementTransactionSupport.inl": "14b4d8746e07811b865e0e7447082124e9a9e11a6cc16be83127d5d1328124f5",
+    "tests/KH2Trainer.Bridge.Tests/GameplayStateGuardTests.cpp": "ec82370655946719f2be7d2111b3f0e5f25e86deb967625ee61c2f79a3e8908d",
+    "tests/KH2Trainer.Bridge.Tests/MovementTransactionTests.cpp": "72dc74793c419a4511bbc44600d06d4197175befc1e6dba2e680bee49139348d",
+    "tests/KH2Trainer.Bridge.Tests/CombatGuardTests.cpp": "b82593533cea90866c5064b4f068f02cd6014079e98dd856824cd1516d055482",
+    "tests/KH2Trainer.Bridge.Tests/PlayerBridgeTests.cpp": "b3bcff83adf3782d9d599709a57eaa7f8550761c21e9f4bf4984eef628255a2d"
+  }
+}

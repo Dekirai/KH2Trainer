@@ -1,0 +1,210 @@
+FUNCTION 0x140411300 sub_140411300 size=76
+140411300: mov [rsp+arg_0], rbx
+140411305: push rdi
+140411306: sub rsp, 20h
+14041130a: mov rdi, rcx
+14041130d: mov rbx, rdx
+140411310: mov rcx, rdx; pointer
+140411313: call kh2_Ptr32_EncodeNullable
+140411318: mov rcx, rbx
+14041131b: mov [rdi+0D38h], eax
+140411321: call sub_1403BA720
+140411326: test al, al
+140411328: jz short loc_140411341
+14041132a: cmp dword ptr [rbx+4DCh], 1
+140411331: jnz short loc_140411341
+140411333: mov rcx, rbx; pointer
+140411336: call kh2_Ptr32_EncodeNullable
+14041133b: mov [rdi+0D40h], eax
+140411341: mov rbx, [rsp+28h+arg_0]
+140411346: add rsp, 20h
+14041134a: pop rdi
+14041134b: retn
+
+FUNCTION 0x1403ba720 sub_1403BA720 size=46
+1403ba720: push rbx
+1403ba722: sub rsp, 20h
+1403ba726: mov rbx, rcx
+1403ba729: call sub_1403BFB70
+1403ba72e: test al, al
+1403ba730: jz short loc_1403BA746
+1403ba732: test dword ptr [rbx+120h], 10080000h
+1403ba73c: jnz short loc_1403BA746
+1403ba73e: mov al, 1
+1403ba740: add rsp, 20h
+1403ba744: pop rbx
+1403ba745: retn
+1403ba746: xor al, al
+1403ba748: add rsp, 20h
+1403ba74c: pop rbx
+1403ba74d: retn
+
+FUNCTION 0x1403bfb70 sub_1403BFB70 size=65
+1403bfb70: push rbx
+1403bfb72: sub rsp, 20h
+1403bfb76: mov rbx, rcx
+1403bfb79: xor eax, eax
+1403bfb7b: nop dword ptr [rax+rax+00h]
+1403bfb80: test rax, rax
+1403bfb83: jnz short loc_1403BFB8E
+1403bfb85: mov rax, cs:qword_142A171C8
+1403bfb8c: jmp short loc_1403BFB99
+1403bfb8e: mov ecx, [rax+0A90h]; encoded
+1403bfb94: call kh2_Ptr32_DecodeNullable
+1403bfb99: test rax, rax
+1403bfb9c: jz short loc_1403BFBAB
+1403bfb9e: cmp rax, rbx
+1403bfba1: jnz short loc_1403BFB80
+1403bfba3: mov al, 1
+1403bfba5: add rsp, 20h
+1403bfba9: pop rbx
+1403bfbaa: retn
+1403bfbab: add rsp, 20h
+1403bfbaf: pop rbx
+1403bfbb0: retn
+
+FUNCTION 0x14002cc80 sub_14002CC80 size=21
+14002cc80: mov rax, cs:off_140755360
+14002cc87: add rax, 8000h
+14002cc8d: mov cs:qword_142AF8BB8, rax
+14002cc94: retn
+
+FUNCTION 0x14002cd40 sub_14002CD40 size=21
+14002cd40: mov rax, cs:off_140756A70
+14002cd47: add rax, 8000h
+14002cd4d: mov cs:qword_142AF8C78, rax
+14002cd54: retn
+
+FUNCTION 0x14002cd10 sub_14002CD10 size=18
+14002cd10: mov rax, 0FFFFFFFFFFh
+14002cd1a: and cs:qword_140756AA8, rax
+14002cd21: retn
+
+FUNCTION 0x14002cdd0 sub_14002CDD0 size=18
+14002cdd0: mov rax, 0FFFFFFFFFFh
+14002cdda: and cs:qword_1407571B0, rax
+14002cde1: retn
+
+FUNCTION 0x14042bb40 sub_14042BB40 size=105
+14042bb40: mov [rsp+arg_0], rbx
+14042bb45: push rdi
+14042bb46: sub rsp, 30h
+14042bb4a: mov ebx, [rcx+10h]
+14042bb4d: mov rdi, rcx
+14042bb50: movaps [rsp+38h+var_18], xmm6
+14042bb55: movss xmm6, dword ptr [rcx+8]
+14042bb5a: mov ecx, [rcx]; encoded
+14042bb5c: call kh2_Ptr32_DecodeNullable
+14042bb61: test ebx, ebx
+14042bb63: setnz bl
+14042bb66: mov ecx, [rax+4]; encoded
+14042bb69: call kh2_Ptr32_DecodeNullable
+14042bb6e: mov rcx, rax
+14042bb71: lea rdx, dword_140756B48
+14042bb78: movzx r9d, bl
+14042bb7c: movaps xmm2, xmm6
+14042bb7f: call sub_1403B8510
+14042bb84: lea rcx, dword_140756B48; pointer
+14042bb8b: call kh2_Ptr32_EncodeNullable
+14042bb90: mov rbx, [rsp+38h+arg_0]
+14042bb95: movaps xmm6, [rsp+38h+var_18]
+14042bb9a: mov [rdi], eax
+14042bb9c: mov dword ptr [rdi+4], 52444140h
+14042bba3: add rsp, 30h
+14042bba7: pop rdi
+14042bba8: retn
+
+FUNCTION 0x140431ec0 sub_140431EC0 size=68
+140431ec0: mov [rsp+arg_0], rbx
+140431ec5: push rdi
+140431ec6: sub rsp, 20h
+140431eca: mov rdi, rcx
+140431ecd: mov ecx, [rcx+8]; encoded
+140431ed0: call kh2_Ptr32_DecodeNullable
+140431ed5: mov ecx, [rax+4]; encoded
+140431ed8: call kh2_Ptr32_DecodeNullable
+140431edd: mov ecx, [rdi]; encoded
+140431edf: mov rbx, rax
+140431ee2: call kh2_Ptr32_DecodeNullable
+140431ee7: mov ecx, [rax+4]; encoded
+140431eea: call kh2_Ptr32_DecodeNullable
+140431eef: mov rdx, rbx
+140431ef2: mov rcx, rax
+140431ef5: mov rbx, [rsp+28h+arg_0]
+140431efa: add rsp, 20h
+140431efe: pop rdi
+140431eff: jmp sub_140411300
+
+FUNCTION 0x14042e690 sub_14042E690 size=7
+14042e690: mov ecx, [rcx]
+14042e692: jmp sub_1401629B0
+
+FUNCTION 0x14042e6a0 sub_14042E6A0 size=7
+14042e6a0: mov ecx, [rcx]
+14042e6a2: jmp sub_140162A00
+
+FUNCTION 0x14042c530 sub_14042C530 size=7
+14042c530: mov ecx, [rcx]
+14042c532: jmp sub_1403BF2C0
+
+FUNCTION 0x14042c540 sub_14042C540 size=7
+14042c540: mov ecx, [rcx]
+14042c542: jmp sub_1403BF2E0
+
+FUNCTION 0x14042eca0 sub_14042ECA0 size=5
+14042eca0: jmp sub_1403FE290
+
+FUNCTION 0x14042ecd0 sub_14042ECD0 size=5
+14042ecd0: jmp sub_140437170
+
+FUNCTION 0x14042ece0 sub_14042ECE0 size=5
+14042ece0: jmp sub_140437130
+
+FUNCTION 0x14042c610 nullsub_1897 size=3
+14042c610: retn 0
+
+FUNCTION 0x14042fff0 sub_14042FFF0 size=5
+14042fff0: jmp sub_1403AB690
+
+FUNCTION 0x140430000 sub_140430000 size=5
+140430000: jmp sub_1403AB4A0
+
+FUNCTION 0x140430540 nullsub_1901 size=3
+140430540: retn 0
+
+FUNCTION 0x1404304f0 nullsub_1899 size=3
+1404304f0: retn 0
+
+FUNCTION 0x140430ff0 sub_140430FF0 size=7
+140430ff0: mov ecx, [rcx]
+140430ff2: jmp sub_1403FDF00
+
+FUNCTION 0x140431000 sub_140431000 size=7
+140431000: mov ecx, [rcx]
+140431002: jmp sub_1403FDF60
+
+FUNCTION 0x14042c9d0 nullsub_1898 size=3
+14042c9d0: retn 0
+
+FUNCTION 0x1404304e0 sub_1404304E0 size=5
+1404304e0: jmp sub_1403BD290
+
+FUNCTION 0x140430500 nullsub_1900 size=3
+140430500: retn 0
+
+FUNCTION 0x140430d90 sub_140430D90 size=5
+140430d90: jmp sub_140177960
+
+FUNCTION 0x140430670 sub_140430670 size=5
+140430670: jmp sub_1403ABF20
+
+FUNCTION 0x140430680 sub_140430680 size=5
+140430680: jmp sub_1403ABF40
+
+FUNCTION 0x140431d90 nullsub_1902 size=3
+140431d90: retn 0
+
+FUNCTION 0x1404331d0 sub_1404331D0 size=7
+1404331d0: mov ecx, [rcx]
+1404331d2: jmp sub_1403EDCA0
+

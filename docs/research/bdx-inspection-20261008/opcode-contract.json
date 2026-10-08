@@ -1,0 +1,160 @@
+{
+  "schema": 1,
+  "nativeSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "header": {
+    "name": "16 raw bytes; not a magic signature",
+    "fields": [
+      {
+        "offset": 16,
+        "type": "signed32",
+        "role": "declared work bytes"
+      },
+      {
+        "offset": 20,
+        "type": "signed32",
+        "role": "declared stack bytes"
+      },
+      {
+        "offset": 24,
+        "type": "signed32",
+        "role": "declared temporary bytes"
+      }
+    ],
+    "eventRows": "From byte28, signed32 ID and signed32 PC, stride8. Stop at first PC0 regardless ID; first matching event ID wins. ID0 with nonzero PC is ordinary.",
+    "minimumBytes": 36,
+    "pcFileOffset": "16 + 2 * signed32 PC, computed wide for reader bounds",
+    "headerEnd": "28+8*(nonterminating rows+1)",
+    "nativeLimits": "No captured native file bound, maximum row count, allocation-size guard, or overlap guard. Offline bounds are extra reader policy."
+  },
+  "instructionGroups": [
+    {
+      "group": 0,
+      "widthWords": "3 if mode<2, otherwise2",
+      "operandEncoding": "mode0: little-endian I32 bits; mode1: little-endian float32 bits; mode2/3: U16 byte/word offset selected by sub",
+      "flow": "Normal next. mode2/sub>3 pushes @ADR/0. mode3/sub>3 has NULL load; no normal continuation assumed. High sub bits are ignored for immediates."
+    },
+    {
+      "group": 1,
+      "widthWords": "2",
+      "operandEncoding": "U16 offset; selector=sub",
+      "flow": "Normal next for selectors0..3. Selector3 writes native scratch initialized from script; >3 passes NULL to store helper."
+    },
+    {
+      "group": 2,
+      "widthWords": "3",
+      "operandEncoding": "U16 byte count, U16 destination offset; selector=sub",
+      "flow": "Normal next requires valid pointers. Selector3 uses retained native scratch, not fresh script address. >3 supplies NULL; zero-byte CRT behavior is outside normal valid-pointer contract."
+    },
+    {
+      "group": 3,
+      "widthWords": "2",
+      "operandEncoding": "U16 byte offset from popped decoded address",
+      "flow": "Normal next subject to valid address. Mode/sub bits do not change width."
+    },
+    {
+      "group": 4,
+      "widthWords": "1",
+      "operandEncoding": "Embedded sub=word>>6; zero means DWORD store, nonzero byte count",
+      "flow": "Normal next subject to valid addresses. Bits4/5 ignored."
+    },
+    {
+      "group": 5,
+      "widthWords": "1",
+      "operandEncoding": "mode=(word>>4)&3; sub=word>>6",
+      "flow": "mode0 valid sub0,2..11; mode1 valid1,2,5..11; all other combinations status5. Always pops operand and restores/pushes result before normal exit."
+    },
+    {
+      "group": 6,
+      "widthWords": "1",
+      "operandEncoding": "mode/sub selectors",
+      "flow": "mode0 sub0..11 arithmetic/logic; sub>11 retains left operand after pop2/push1 and continues. mode1 valid0..4; mode1>4 or mode>=2 status5."
+    },
+    {
+      "group": 7,
+      "widthWords": "2",
+      "operandEncoding": "Signed16 relative offset",
+      "flow": "sub0 branch only;1/2 condition-dependent target and next;sub>2 status5 after operand read. Target=int32(PC+2+relative). Bits4/5 ignored."
+    },
+    {
+      "group": 8,
+      "widthWords": "2",
+      "operandEncoding": "Signed16 relative offset; sub frame size in DWORDs",
+      "flow": "Call target=int32(PC+2+relative); conditional return continuationPC+2. Bits4/5 ignored; native frame-4 storesreturnPC and frame-8 stores sub, no minimum guard."
+    },
+    {
+      "group": 9,
+      "widthWords": "1",
+      "operandEncoding": "sub control selector",
+      "flow": "0=status1 with stored PC+1 (possible resume);1=status2 exit;2=dynamic return from VM stack, zero returnPC status3;3/5/6/7/8/9 continue;4 or>9 status5. Bits4/5 ignored."
+    },
+    {
+      "group": 10,
+      "widthWords": "2",
+      "operandEncoding": "bank=word>>6, next unsigned16 index",
+      "flow": "Descriptor address=table[bank]+16*index. argc=flags&0xffff; flag0x40000000 returns operandVector[0]. Native continuation conditional on callback returning and preserving relevant VM state."
+    },
+    {
+      "group": 11,
+      "widthWords": "3",
+      "operandEncoding": "little-endian signed32 relative bit pattern; sub frame size inDWORDs",
+      "flow": "Call target=int32(PC+3+relative), conditional returncontinuationPC+3. No ushort wrap. Bits4/5 ignored."
+    },
+    {
+      "group": 12,
+      "widthWords": "1",
+      "operandEncoding": "none",
+      "flow": "status5 terminal"
+    },
+    {
+      "group": 13,
+      "widthWords": "1",
+      "operandEncoding": "none",
+      "flow": "status5 terminal"
+    },
+    {
+      "group": 14,
+      "widthWords": "1",
+      "operandEncoding": "none",
+      "flow": "status5 terminal"
+    },
+    {
+      "group": 15,
+      "widthWords": "1",
+      "operandEncoding": "none",
+      "flow": "status5 terminal"
+    }
+  ],
+  "trapMetadata": [
+    {
+      "bank": 2,
+      "index": 9,
+      "descriptor": "0x140756bf0",
+      "arguments": 3,
+      "returnValue": false,
+      "adapter": "0x140431a70",
+      "native": "0x140411350"
+    },
+    {
+      "bank": 2,
+      "index": 95,
+      "descriptor": "0x140757150",
+      "arguments": 2,
+      "returnValue": false,
+      "adapter": "0x140431aa0",
+      "native": "0x1404112b0"
+    }
+  ],
+  "cfgPolicy": [
+    "Start at the first nonterminating row per eventID. Never search unvisited bytes for trap-like words.",
+    "Mark branch alternatives, call continuation, yield resume and native continuation separately.",
+    "Return has an unknown stack-dependent edge, not sequential fallthrough.",
+    "Reject or diagnose out-of-payload/header targets, truncated operands, overlapping interpretations and budget exhaustion.",
+    "A static path is conditional; it does not prove runtime reachability, callback behavior, pointer/tag validity, or motion-event provenance.",
+    "Stored opcodes/operands are shown; runtime compatibility corrections and self-modification may alter executed values/code."
+  ],
+  "prototypePolicyDifferences": [
+    "The research prototype rejects any negative/out-of-body declared entryPC; product may retain that row with diagnostic and omit its edge.",
+    "Prototype uses64MiB/4096events; product limits are independent bounded user-interface policy.",
+    "Prototype exposes explicit null-target error/boundary markers that product normalizes as diagnostics/terminal absence."
+  ]
+}

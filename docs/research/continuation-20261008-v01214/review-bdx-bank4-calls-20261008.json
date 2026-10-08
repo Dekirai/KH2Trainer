@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "status": "accepted_after_correction",
+  "date": "2026-10-08",
+  "reviewer": "drain_audit_v2",
+  "study": "docs/research/bdx-bank4-calls-20261008",
+  "studyManifestSha256": "97057b0fd176c11c929178ae1ed1f1d5d8fcf80b55892961d9e10373ca3679e5",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "scope": "Read-only review of all 51 annotation texts and adapters, descriptor ABI metadata, full captured original bytes and selected mission/widget/timer/achievement/lifetime helper chains. Not a complete transitive program proof.",
+  "sourceSha256": {
+    "evidence.json": "e5b4b0ae754982ba6d99b3b8fd94768ae0c8987140d5500890f3440f6a287230",
+    "annotations.json": "b78d0afe8bc74e23540f6301933a79b333668bff77cd953f72f4d644def8893a",
+    "report.json": "2184f3139ce0c810223bde81561fc53cc4c673b682d440ea70354c68e445280a",
+    "report.txt": "17166fe41d61bcdc5a447164db8c2d230228623109dc6f035d7bb2137401713b",
+    "claims.json": "e13f649ad64a66bf783ec783bfed3ad24bfabf9b8202f323b9173061a81b8440",
+    "verify.py": "ab492071a9ad0bd1ecec84b1028ce4ff48cd37b1845af4efcdcf7e42898805f6",
+    "arithmetic-model.json": "974c88b6e3a9637d476daff9cfcc5595fa5e5ec35d31727d3c186991fa516954"
+  },
+  "independentChecks": {
+    "success": true,
+    "checks": 16724,
+    "functions": 172,
+    "functionInstructions": 3473,
+    "bodyBytes": 12599,
+    "listedInstructionBytes": 12412,
+    "separateCodeRanges": 3,
+    "separateCodeInstructions": 6,
+    "separateCodeBytes": 26,
+    "structuralDescriptors": 59,
+    "semanticAnnotations": 51,
+    "reviewerSemanticAnchors": 54,
+    "unsignedTimerArithmeticCases": 523,
+    "decimalDivisorCases": 89
+  },
+  "producerCheck": {
+    "command": "py -3 -B docs/research/bdx-bank4-calls-20261008/verify.py --check",
+    "success": true,
+    "functions": 172,
+    "instructions": 3473,
+    "bodyBytes": 12599,
+    "positiveXrefs": 74,
+    "authorSemanticAnchors": 31,
+    "authorUnsignedTimerCases": 20
+  },
+  "resolvedFindings": [
+    {
+      "id": "bank4-40-unsigned-divide",
+      "severity": "P2",
+      "status": "resolved",
+      "sites": [
+        "0x1403fb81d",
+        "0x1403fb820",
+        "0x1403fb825",
+        "0x1403fb827"
+      ],
+      "originalIssue": "4:40 was described as signed division after timerTicks+59. Native MUL/SHR instead divides the wrapped DWORD as unsigned.",
+      "correction": "4:40 now states uint32(timerTicks+59)/60; ticks=-60 yields71582788. 4:42 distinguishes this numeric helper predicate from real positive elapsed/countdown time. Producer anchors/model and matching claims were updated."
+    }
+  ],
+  "acceptedFindings": [
+    "4:48 constructs 10^position with DWORD LEA/ADD operations and uses signed IDIV without a zero-divisor guard; every completed loop for position>=32 yields divisor zero. Negative positions leave divisor one. No actual target execution or retail reachability witness is claimed.",
+    "Counter/combo updates wrap DWORD arithmetic before signed comparisons and clamping. Counter and gauge boundary messages and threshold virtual callbacks occur before their final current-value stores; arbitrary callback effects remain a lifetime boundary.",
+    "4:42 is mutating: after its timer-result/counter/latch predicates it may enqueue achievement147, sets latch bit8 even with null achievement context, then increments an unchecked indexed byte only below99. No completed achievement or persistence guarantee is claimed.",
+    "Mission result paths can stop the timer, change flags/HUD, stage result phases or dispatch immediately. Cleanup calls script/resource release helpers before nulling the mission global; reconstruction reuses static storage, so pointer equality is not a generation.",
+    "59 structural rows include two NULL holes. 51 annotations preserve declared operands and return tags. Three bounded branch ranges remain separate from the172 IDA function definitions; end_exclusive/observed_line_count make their scope explicit.",
+    "Float argument forwarding for gauge and combo paths, record rank signedness/value unsignedness, native unchecked indexes and shared App-timer ownership limits agree with the inspected code."
+  ],
+  "remainingBlockingFindings": [],
+  "limits": [
+    "The verifier checks all captured bodies, but independent semantic reading focuses on the described subsystem and selected direct helpers; arbitrary scripts, Actor callbacks, CRT/OS services and resource/allocator internals remain open.",
+    "No retail-script census, malformed-input live witness, game action, save write, injection, Bridge modification or runtime safety certification occurred.",
+    "The independent probe reuses the reviewer-authored Bank3 PE reader and separately decodes Bank4 instructions/checks metadata with Capstone; its parser dependency is pinned in checks.json.",
+    "The source snapshots are comparison evidence for existing Bridge gates. No new Bridge path was implemented or certified by this review."
+  ],
+  "artifacts": {
+    "review-bdx-bank4-calls-20261008.py": "ddf0a4cf69b25d2e9fa21edaf43ee42c420e3cf95237ec85e50c452cb4732b8d",
+    "review-bdx-bank4-calls-20261008.checks.json": "7dd0be58f475b5b3852e91df26553631656c4c2889c6c9419f4ce5d97b36e64a"
+  }
+}

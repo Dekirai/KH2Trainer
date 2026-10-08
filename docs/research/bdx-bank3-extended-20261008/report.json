@@ -1,0 +1,376 @@
+{
+  "schema": 1,
+  "domain": "native",
+  "title": "Bank 3 extended: Gummi player durability, movement attenuation, directional reactions and orientation",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "scope": {
+    "newAnnotations": 17,
+    "selectedDescriptorIndices": [
+      13,
+      14,
+      15,
+      16,
+      44,
+      97,
+      98,
+      99,
+      100,
+      101,
+      102,
+      103,
+      104,
+      105,
+      106,
+      107,
+      160
+    ],
+    "wholeBankSemanticCompletion": false,
+    "gameExecuted": false
+  },
+  "findings": [
+    "PLAYER and PLAYER_STATE RTTI, early global publication and late clear delimit borrowed references.",
+    "Durability threshold and transient input/damage/component flags are distinct queries.",
+    "Movement attenuation has 32-bit wrap, linear consumer work, and wider effects than one reaction.",
+    "Strict extent selectors return the wrong extremum on some equal-component cases.",
+    "Directional impulses include random spin and context-sensitive vibration scheduling; they do not themselves apply damage.",
+    "Orientation code changes precede convergence; point conversion returns shared scratch."
+  ],
+  "limitations": [
+    "No live game execution, runtime memory inspection, injection or product changes.",
+    "Other Bank3 descriptors remain unannotated; this is a bounded semantic closure with all selected bodies and explicit unexpanded boundaries.",
+    "Arbitrary descriptor overrides, resource loader/allocator internals, effect callbacks and OS/CRT internals are external boundaries.",
+    "No current player readiness lease, global thread exclusion, exception-reentrancy proof or safe UI button implementation is provided.",
+    "Time scalar units and physical-controller button mapping are not inferred; malformed resources or arbitrary pointers are not validated."
+  ],
+  "claims": [
+    {
+      "addr": "0x1402289c0",
+      "claim": "3:44 Get current Gummi player reference: Returns the encoded gb::PLAYER pointer currently stored at AF0540 as ADR; a NULL global becomes encoded zero. The constructor publishes this pointer before subsequent component/resource initialization completes. Both captured cleanup paths clear it only after earlier effect/component cleanup calls. The result is borrowed and does not retain or validate a player. Bank installation and static descriptor storage do not establish the player's lifetime.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1402289c0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fd150]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fc8f0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fbf80]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fcdb0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1404ad240]"
+      ]
+    },
+    {
+      "addr": "0x1402289f0",
+      "claim": "3:97 Query low Gummi player durability: Returns INT 1 when float32(int32(player-state maximum))*float32(0.3) is greater than or equal to the current float durability. The embedded gb::PLAYER_STATE starts at player+1392; its current/max fields are +8/+12. Requires a live gb::PLAYER reference: operand 0 is decoded, then its +4 encoded object link is decoded, with no NULL, type, generation or lifetime check. The threshold is inclusive. The native damage helper subtracts a signed integer amount, clamps nonpositive results to zero and sets a damage category. This query itself does not subtract damage, validate maximum/current values, or apply an alive/state gate. With masked floating exceptions, unordered comparisons return false.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1402289f0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140226260]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140225c30]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140225d00]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140225e60]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ff340]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ff4f0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fecd0]"
+      ]
+    },
+    {
+      "addr": "0x140228a30",
+      "claim": "3:98 Query Gummi damage-update pulse: Returns INT from player+5132 mask 0x2. In captured state-2 updates, the native updater clears this bit, transfers pending mask 0x1 into it, and clears the pending bit. Requires a live gb::PLAYER reference: operand 0 is decoded, then its +4 encoded object link is decoded, with no NULL, type, generation or lifetime check. Captured damage entry paths set pending mask 0x1 after their rejection gates and before subtracting durability. This is a cached update pulse, not a permanent damaged/alive status or an event queue. Queries outside those updates can observe a retained bit.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140228a30]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ffdb0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fd1e0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ff340]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ff4f0]"
+      ]
+    },
+    {
+      "addr": "0x140228a70",
+      "claim": "3:99 Query cached Gummi component activity: Returns INT from player+5132 mask 0x200. The state-2 priority-19000 task refreshes it from the player's component list: type 1 has a linked entry with +156 bit 1, or type 13 returns true from descriptor virtual slot +64. Requires a live gb::PLAYER reference: operand 0 is decoded, then its +4 encoded object link is decoded, with no NULL, type, generation or lifetime check. The query does not run that list traversal itself. Component type numbers, linked-entry meaning and arbitrary slot overrides are not generalized into a universal shooting/readiness claim. Cached value timing depends on the native task/update order.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140228a70]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ffe60]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fd040]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fd160]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fd720]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fb580]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140229c50]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140229d20]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1402028c0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401f2460]"
+      ]
+    },
+    {
+      "addr": "0x140228ab0",
+      "claim": "3:100 Query Gummi input-maneuver start pulse: Returns INT from player+5132 mask 0x40. In the captured state-2 input updater, that bit is cleared then set together with mask 0x80 when controller DWORD+8 has mask 0x400 and the existing 0x80 latch is clear. Requires a live gb::PLAYER reference: operand 0 is decoded, then its +4 encoded object link is decoded, with no NULL, type, generation or lifetime check. That start path copies a lateral direction, sets a timed movement impulse and rotation, may start a protection timer, and invokes an effect helper. This query only reads the cached start bit; no particular physical button, invulnerability duration or persistent maneuver-active meaning is assumed.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140228ab0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ffdc0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fe860]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fd1e0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ffe80]"
+      ]
+    },
+    {
+      "addr": "0x140228af0",
+      "claim": "3:101 Increment Gummi movement attenuation counter: Increments the DWORD at player+5128 with native 32-bit wraparound. Requires a live gb::PLAYER reference: operand 0 is decoded, then its +4 encoded object link is decoded, with no NULL, type, generation or lifetime check. The constructor zeros this field. Signed values <=0 produce scale 1; positive values drive repeated float32 subtraction of config+16 divided by 1..N, then an ordered lower/upper clamp. Consumers include lateral movement, roll target and selected reactions. No overflow, practical work limit or balancing check is present; a huge positive counter makes the consumer loop very expensive. This is not an object-retention operation.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140228af0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ff2b0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fc8f0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ff930]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ffe80]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fd930]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140200ce0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140200b80]"
+      ]
+    },
+    {
+      "addr": "0x140228b10",
+      "claim": "3:102 Decrement Gummi movement attenuation counter: Decrements the DWORD at player+5128 with native 32-bit wraparound. Requires a live gb::PLAYER reference: operand 0 is decoded, then its +4 encoded object link is decoded, with no NULL, type, generation or lifetime check. There is no zero/underflow check. For example, decrementing zero yields 0xFFFFFFFF, interpreted as -1 by the scale helper and therefore scale 1. Positive values affect lateral movement, roll target and selected reactions through the harmonic float32 calculation. Arbitrary repeated decrements can wrap into a huge positive and expensive value.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140228b10]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ff2c0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ff930]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ffe80]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fd930]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140200ce0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140200b80]"
+      ]
+    },
+    {
+      "addr": "0x140228b30",
+      "claim": "3:103 Read Gummi movement attenuation counter: Returns the raw DWORD at player+5128 as INT. Requires a live gb::PLAYER reference: operand 0 is decoded, then its +4 encoded object link is decoded, with no NULL, type, generation or lifetime check. The consumers interpret this DWORD as signed. It counts attenuation requests only by caller convention: the native increment/decrement helpers do not enforce balance or bounds. The computed factor is not returned by this call.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140228b30]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ff920]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ff930]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ff2b0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ff2c0]"
+      ]
+    },
+    {
+      "addr": "0x140228b60",
+      "claim": "3:104 Select strictly smaller Gummi ship extent: Returns X if X is strictly below both Y and Z, otherwise Y if Y is strictly below both X and Z, otherwise Z, as FLOAT. Requires a live gb::PLAYER reference: operand 0 is decoded, then its +4 encoded object link is decoded, with no NULL, type, generation or lifetime check. Player component selector +1304 chooses AEF4B0 for 1, AEF4D8 for 2, otherwise AEF488; record+8 must point to valid compact ship data. Each component is (its 4-bit extent minus abs(signed 8-bit axis offset))*10, W=0. No nonnegative extent or resource validity check is present. This is a strict selection algorithm, not a robust min/max helper. In particular X=Y=10,Z=20 returns 20. The captured integer-derived finite components cannot be NaN, though the comparison structure would send unordered alternatives to its fallback.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140228b60]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ffba0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fb350]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140206170]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14052e520]"
+      ]
+    },
+    {
+      "addr": "0x140228be0",
+      "claim": "3:105 Select strictly larger Gummi ship extent: Returns X if X is strictly above both Y and Z, otherwise Y if Y is strictly above both X and Z, otherwise Z, as FLOAT. Requires a live gb::PLAYER reference: operand 0 is decoded, then its +4 encoded object link is decoded, with no NULL, type, generation or lifetime check. Player component selector +1304 chooses AEF4B0 for 1, AEF4D8 for 2, otherwise AEF488; record+8 must point to valid compact ship data. Each component is (its 4-bit extent minus abs(signed 8-bit axis offset))*10, W=0. No nonnegative extent or resource validity check is present. This is a strict selection algorithm, not a robust min/max helper. In particular X=Y=20,Z=10 returns 10. Distinct extrema behave as expected; tied extrema do not necessarily do so.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140228be0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ffba0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fb350]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140206170]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14052e520]"
+      ]
+    },
+    {
+      "addr": "0x140228c60",
+      "claim": "3:106 Apply Gummi collision reaction: Uses operand 1 vector to start reaction mask 0x400: config+28 sets impulse magnitude, config+32 sets total/remaining duration, and config+36 converted from degrees to radians supplies the spin magnitude. Vibration record 5 is requested. Requires a live gb::PLAYER reference: operand 0 is decoded, then its +4 encoded object link is decoded, with no NULL, type, generation or lifetime check.  The call is skipped for player state +1496 == 5. Otherwise it requires valid player/config/vector/orientation and vibration resources. It does not subtract durability itself. Both helpers convert XYZ as a direction into the current Gummi orientation basis, normalize it, set local Z to zero and normalize again. Zero-length normalization remains zero; finite/input/duration validation is absent. Both also set angular motion with randomized sign around cross(player-up,normalized-input), update a shared PRNG, and request a vibration task. The up/basis vector comes from player+56, transformed through Scroll when player+504 bit 2 is set. The update path entered with positive remaining duration consumes the impulse and clears flags on expiry; nonpositive or NaN remaining duration can bypass that path. Execution is not an external-thread-safe API. If mask 0x400020 is clear and the +1500 timer is not positive, config+108 starts that timer and sets mask 0x20. Native contact handlers call this after their separate damage attempt, but direct script use bypasses those caller gates.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140228c60]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fd7e0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140200440]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e9f80]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140142080]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e6f80]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e8140]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401404c0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ffe80]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fda40]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14020fdc0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14019ae60]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14019b1d0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140213d70]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140220390]"
+      ]
+    },
+    {
+      "addr": "0x140228ca0",
+      "claim": "3:107 Apply attenuated Gummi reaction: Uses operand 1 vector to start reaction mask 0x800: the counter-derived scale multiplies config+40, config+44 sets total/remaining duration, and config+48 converted from degrees to radians supplies the spin magnitude. Vibration record 3 is requested. Requires a live gb::PLAYER reference: operand 0 is decoded, then its +4 encoded object link is decoded, with no NULL, type, generation or lifetime check.  The call is skipped for player state +1496 == 5. Otherwise it requires valid player/config/vector/orientation and vibration resources. It does not subtract durability itself. Both helpers convert XYZ as a direction into the current Gummi orientation basis, normalize it, set local Z to zero and normalize again. Zero-length normalization remains zero; finite/input/duration validation is absent. Both also set angular motion with randomized sign around cross(player-up,normalized-input), update a shared PRNG, and request a vibration task. The up/basis vector comes from player+56, transformed through Scroll when player+504 bit 2 is set. The update path entered with positive remaining duration consumes the impulse and clears flags on expiry; nonpositive or NaN remaining duration can bypass that path. Execution is not an external-thread-safe API. This entry does not set the additional +1500 protection timer used by reaction 3:106. The counter can also affect ordinary movement and roll; it is not private to this reaction.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140228ca0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140200ce0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ff930]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140200440]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e9f80]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140142080]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e6f80]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e8140]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401404c0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ffe80]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fda40]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14020fdc0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14019ae60]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14019b1d0]"
+      ]
+    },
+    {
+      "addr": "0x140228900",
+      "claim": "3:13 Query Gummi orientation code 0: Returns INT 1 exactly when the global orientation object's current DWORD+148 equals 0. The native orientation updater maps that code to target yaw 0 radians. The pointer names a static orientation block at AEA1A0, not a retained scene object. Reset initializes code 0; pending +152 is committed by the registered priority-29000 update before angle convergence. This tests the committed code, not whether the smooth turn has finished. Coordinate handedness and gameplay-facing direction names are not inferred.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140228900]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e8ed0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e98c0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e8ee0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e8f40]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e94a0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ea120]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ea150]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ea0d0]"
+      ]
+    },
+    {
+      "addr": "0x140228930",
+      "claim": "3:14 Query Gummi orientation code 2: Returns INT 1 exactly when the global orientation object's current DWORD+148 equals 2. The native orientation updater maps that code to target yaw +pi radians. The pointer names a static orientation block at AEA1A0, not a retained scene object. Reset initializes code 0; pending +152 is committed by the registered priority-29000 update before angle convergence. This tests the committed code, not whether the smooth turn has finished. Coordinate handedness and gameplay-facing direction names are not inferred.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140228930]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e8ed0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e98c0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e8ee0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e8f40]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e94a0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ea120]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ea150]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ea0d0]"
+      ]
+    },
+    {
+      "addr": "0x140228960",
+      "claim": "3:15 Query Gummi orientation code 1: Returns INT 1 exactly when the global orientation object's current DWORD+148 equals 1. The native orientation updater maps that code to target yaw -pi/2 radians. The pointer names a static orientation block at AEA1A0, not a retained scene object. Reset initializes code 0; pending +152 is committed by the registered priority-29000 update before angle convergence. This tests the committed code, not whether the smooth turn has finished. Coordinate handedness and gameplay-facing direction names are not inferred.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140228960]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e8ed0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e98c0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e8ee0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e8f40]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e94a0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ea120]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ea150]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ea0d0]"
+      ]
+    },
+    {
+      "addr": "0x140228990",
+      "claim": "3:16 Query Gummi orientation code 3: Returns INT 1 exactly when the global orientation object's current DWORD+148 equals 3. The native orientation updater maps that code to target yaw +pi/2 radians. The pointer names a static orientation block at AEA1A0, not a retained scene object. Reset initializes code 0; pending +152 is committed by the registered priority-29000 update before angle convergence. This tests the committed code, not whether the smooth turn has finished. Coordinate handedness and gameplay-facing direction names are not inferred.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140228990]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e8ed0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e98c0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e8ee0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e8f40]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e94a0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ea120]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ea150]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ea0d0]"
+      ]
+    },
+    {
+      "addr": "0x140229120",
+      "claim": "3:160 Transform point into Gummi orientation space: Copies operand 0's 16-byte vector to shared scratch 72FE50, transforms XYZ through the cached inverse matrix at orientation+64 with W forced to 1, copies the result back to scratch, and returns its encoded ADR. The input pointer is decoded without NULL or lifetime validation. The temporary output prevents the helper's output initialization from destroying the supplied scratch input. The returned scratch is shared and overwritten by later users; it is not a new vector or retained storage. A distinct nonoverlapping input is unchanged. The cached basis combines the gb::SCROLL matrix and smoothed yaw; matrix validity and update timing are prerequisites.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140229120]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e8ed0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e9f80]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e9270]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e94a0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e7f00]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14013f900]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14013f3a0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401a8e60]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1404ad240]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1404ad270]"
+      ]
+    },
+    {
+      "addr": "0x1401fc8f0",
+      "claim": "The 5136-byte PLAYER object has a descriptor whose original RTTI names gb::OBJ::VTABLE<gb::PLAYER>, and embeds gb::PLAYER_STATE at +1392. Publication at AF0540 occurs before later initialization. Destruction clears the global after earlier effect/component callbacks, so neither non-NULL global nor static Bank3 table proves complete readiness or a lifetime lease.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fc8f0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fcf00]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fbf80]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fcdb0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140225c30]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fd150]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json"
+      ]
+    },
+    {
+      "addr": "0x1401ff930",
+      "claim": "The signed-positive attenuation counter controls a sequential float32 harmonic subtraction, lower compare with 0.1 then MINSS(1,value). NaN may propagate under masked exceptions. Counter<=0 skips config access and returns1. Positive work is linear in the count; there is no practical iteration cap. Four recorded consumers affect roll, lateral movement, and reaction types800/1000.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ff930]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fd930]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ffe80]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140200ce0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140200b80]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json"
+      ]
+    },
+    {
+      "addr": "0x14020fd60",
+      "claim": "The resource loader requests gumibattle/vibration.bar and publishes through callback20FE10 into AF7438. Type47 occurrence lookup and the reaction's configured occurrence must succeed;20FDC0 still dereferences missing rows.19AE60 borrows that payload in global state and replaces it on later requests. It creates one priority15000 task in either of two recognized scheduler contexts; an unrecognized context reaches the task+104 write with NULL. This is a concrete external-thread/context boundary, not an arbitrary-thread native API.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14020fd60]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14020fe10]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14020fdc0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1403a6420]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14019ae60]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14019b1d0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14019b640]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14039b760]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401500b0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json"
+      ]
+    },
+    {
+      "addr": "0x1401fd1e0",
+      "claim": "The captured PLAYER update consumes transient damage and maneuver state, applies reaction duration and movement, and calls orientation/visual helpers. State2 has damage pulse processing; state3 also consumes movement; other state branches differ. Time fields use154430's native global scalar, not a proven seconds unit. The additional tasks at priorities19000/22600 and orientation29000 all register on AD9478; those priorities do not establish thread exclusion, global barriers, callback closure or a safe live-injection point.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fd1e0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401ffe80]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fd930]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140200650]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fda40]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fd160]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fd040]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401fd100]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e8ee0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14014f770]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140154430]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e13b0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json"
+      ]
+    },
+    {
+      "addr": "0x1401f9aa0",
+      "claim": "Bank3 is installed by storing static table72F1A0 into registry7534A8. Uninstall clears this slot before global VM retirement. This contextual table binding is distinct from PLAYER/component/resource readiness or lifetime; selected annotations do not establish any native index bounds.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401f9aa0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401f9a80]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1403e1710]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json"
+      ]
+    },
+    {
+      "addr": "0x1401e94a0",
+      "claim": "The global orientation block's current code is a committed destination independent of turn convergence. Its current matrix combines gb::SCROLL+28 with a Y-axis rotation, and +64 receives a rigid inverse. Point and direction calls intentionally use different translation/W behavior; the mode0 helper keeps incoming R8 intact across setup and uses it in1E9270, despite decompiler omission at the call site.",
+      "evidence": [
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e94a0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e7f00]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14013f850]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401aad20]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140141270]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14013f3a0]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e9f80]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x1401e9270]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x14013f900]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json#functions[addr=0x140229120]",
+        "docs/research/bdx-bank3-extended-20261008/evidence.json"
+      ]
+    }
+  ]
+}

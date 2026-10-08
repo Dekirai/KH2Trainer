@@ -1,0 +1,115 @@
+APP EXECUTION CONTEXT — 2026-10-08
+
+Result
+The normal outer App path is closed through actual PE/CLR metadata, event registration, native thread creation and virtual dispatch. The WinForms window/message loop and the gameplay App update execute in different registered contexts. A second native worker performs timing/presentation work. This closes the former outer-dispatch gap; it does not prove exclusive ownership of all Actor/STATUS operations.
+
+Evidence: original KINGDOM HEARTS II FINAL MIX.exe SHA256
+9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed.
+All six-digit hexadecimal code/data identifiers below are RVAs added to140000000. Structure offsets after '+' are decimal unless written0x. MethodDefs are metadata tokens, not native addresses.
+
+1. Entry, CLR transition and App lifetime
+
+The PE entry5669CE jumps through import57BBF0 (_CorExeMain). The original COR header flags are0 and its entry token is0600012A. That MethodDef names WinMainCRTStartup, has native RVA4393D0, and carries STAThreadAttribute.4393D0 calls43A8C8 then tail-jumps4391D8. The normal CRT path calls143720 at4392D9.143720 calls through original cell62BA70; that cell binds App entry14F1E0. This is an indirect original binding, not a direct CALL14F1E0 and not proof the live cell cannot change.
+
+4391D8 contains native CRT initialization, reentry/failure branches, initializer/TLS callbacks, exit handling and an out-of-line SEH filter.143720 has an out-of-line crash-filter call to1435D0. Their full IDA item lists and exact chunks are retained under evidence.json.chunkedFunctions. They are intentionally excluded from the contiguous full-body coverage list. Their transitive CRT, exception-filter and minidump behavior is not exhaustively re-reviewed here. Alternate wrappers4391C4/439368 are separately captured; the COR entry selects4393D0.
+
+14F1E0 constructs an App on its stack with101690. The base constructor publishes global79CF00 at101812. Only afterwards does14F1E0 install MyApp vtable5B1190 at14F215/14F221. Therefore publication itself is not a complete-construction barrier. The known update cell5B11B0 is slot+0x20 of that table. The App frame encloses call105420 at14F4A7. On normal return14F1E0 chooses status, releases provider1064D0, then destroys the App via101860.
+
+105420 runs the managed host only when79CFA0 is already nonzero or initialization leaves8CC420==1. Its .nep bridge579BF0 jumps through747C60, with alternate export cell747C58. The original cells contain060000BC. The CLR fixup groups, flags and tokens are read directly from the file. Treating those raw token cells as executable pointers would be incorrect.
+
+2. Actual window and worker registration
+
+ManageRun (060000BC, IL RVA38ADC0) performs:
+  Application.EnableVisualStyles();
+  Application.SetCompatibleTextRenderingDefault(false);
+  form = BaseSimpleForm.createInstance(app, title);
+  Application.Run(form);
+
+The API contract runs the message loop on the calling thread. createInstance reuses its static instance when nonnull; otherwise it constructs BaseSimpleForm. The constructor retains the native App pointer, initializes state, creates components and the window handle, and registers real event delegates. In particular, IL00E6/00F1 registers OnShown; IL012E/0139 registers OnFormClosing; IL0145/0150 registers timer1_Tick. Full IL, tokens, original body bytes and exception regions are retained in clr-evidence.json and readable selected listings.
+
+OnShown (0600020F) calls native MethodDef060001B2 at IL0015 with the Form HWND, stored App pointer and0. That MethodDef has RVA11D070. Its assembly forwards HWND and App around singleton acquisition into11D0A0(device, HWND, App). Hex-Rays' no-argument pseudocode for11D070 loses this register forwarding; assembly is authoritative.
+
+11D0A0 stores the App in device+1000 and HWND in+1008. At11D341, _beginthreadex starts127ED0 with device as argument and flag0. At11D37E it starts129110 with flag4 (suspended), sets priority15, then calls ResumeThread. Returned handles are stored in+784 and+792. Both creation calls are import-verified. A thread name is not used to establish this provenance.
+
+The worker chains are:
+  App:127ED0 ->121D90 -> App vtable+0x20 ->14EB70 ->14FC20(root9BA888).
+  Timing:129110 ->1287D0 -> timing/presentation operations and optional device+728 callback.
+
+The earlier actor-task-context study closes root9BA888 through nested module/Field fibers to716868. That study's parked-fiber states still apply. A registered OS worker is not equivalent to one always-active lifetime stack.
+
+3. Update and cleanup return protocol
+
+104E60 returns1.121D90 then loops over:
+  app.slot8();                         // original14ED40 initialization
+  optional widget startup(app.slot16());
+  repeat:
+    input object slot8(0, app+24); input object slot8(1, app+92);
+    conditional window/graphics processing;
+    reason = device+1068; device+1068 =0;
+    if reason !=0: app.slot48();       // original14EEB0 resize
+    result = app.slot32();             // original14EB70 update
+    if result==0: repeat;
+    if result==1: app.slot24(); optional widget slot8(); repeat;
+    optional widget slot24();
+  while app.slot40()==0;               // original14EB00 returns1 after cleanup
+
+These are original bindings; no live vtable validation was performed.14EB70 calls14FC20 before its final signed App+4752 check. If that value is nonnegative it returns2, otherwise0. Posting exit256 therefore does not prove the current root dispatch has already returned.14EB00's full body is captured, but all of its cleanup callees and their failure/yield behavior remain separate dependencies.
+
+4. Pause and window behavior
+
+Managed suspend06000223 pauses sound if suspendFlg was false, calls native127EB0, then sets suspendFlg.127EB0 only stores byte1 into device+776. Managed resume06000224 returns immediately when forceSuspending is true; otherwise125A10 clears device+776 and sound is resumed when appropriate. Neither native setter contains an acknowledgement, wait, join or Actor-lifetime lock.
+
+OnResize ignores requests under ignoreOnResize. When resize reason2 already matches the framebuffer size it returns. Otherwise normal/maximized state invokes resume, while the remaining minimized state invokes suspend, subject to those earlier guards. OnResizeBegin is an immediate return. OnResizeEnd conditionally requests native resize. OnDeactivate changes cursor/panel visibility; its captured body does not directly suspend the device.
+
+The timing loop1287D0 watches stop+808. Pause+776 can first cause a GPU fence Signal/SetEventOnCompletion/WaitForSingleObject(INFINITE), then a Sleep10 loop until stop or resume. It still runs SteamPlatformTick after its pause counter exceeds60. Before the pause section, ordinary timing work may signal semaphore+768 and call optional device+728 at128C4D. Thus there is no demonstrated universal stop of native callbacks, Actor activity or all other workers. The GPU wait can also delay reaching the stop check.
+
+Managed WndProc0600020C handles sizing aspect correction, input device-change messages, overlay cursor visibility and WM_APP+1. The latter synchronously executes managed AnyMessage and writes a boolean result through LPARAM.1042E0 is the native caller that pauses sound/device, SendMessageA(0x8001), waits while its result remains-1, then resumes; selected message IDs can request App exit. Its separate exact-name WaitTitleProject.exe process termination branch is statically present; it was not executed or tested.
+
+5. Normal exit path and remaining failure boundaries
+
+After121D90 returns,127ED0 calls579BC0 before_endthreadex(0). The exact exit fixup is747C30 ->060000AA (with companion747C28). It is not the neighboring texture-animation dialog token060000CF.060000AA calls BaseSimpleForm.ExitApplication0600020A:
+  if theInstance==null or theInstance.myFormClosed: return;
+  if InvokeRequired: Control.Invoke(exitApplication delegate);
+  else: exitApplication();
+The delegate sets appClosed=true and starts a WinForms Timer. The Timer Tick stops itself then calls Form.Close(). Control.Invoke is synchronous by its API contract; the delegate itself schedules the later close rather than waiting for the worker.
+
+OnFormClosing checks user-close reason3 when appClosed is false. Native IsReBoot38C970 is exactly signed App+4760>=0; a true result cancels. Otherwise it force-suspends around a confirmation dialog and cancels if result2, then clears forceSuspending and resumes. If cancellation is false it stores myFormClosed=true BEFORE DXInput.exit and GX.exit11AD80.
+
+11AD80 then:
+  set device+760 to-1 if it was nonnegative;
+  set global App+4752 to256;
+  if App handle+784 exists, poll GetExitCodeThread while result259, Sleep100;
+  CloseHandle(+784), clear+784;
+  set timing stop+808 to1;
+  similarly poll/close/clear timing handle+792;
+  free semaphore wrapper+768 (the field is not cleared in this body).
+
+The successful valid-handle path waits for these two workers. Both GetExitCodeThread return values are ignored; neither polling loop has a timeout. The initial output values are not established by this body when the API fails. CloseHandle success is also not tested. The code is therefore not evidence of fail-safe global shutdown after invalid/stale handles or API failure.
+
+Marking myFormClosed before waiting lets a later worker exit helper skip its UI call. This is a normal ordering observation, not an atomic handshake. A worker that already passed the boolean check and then blocks in synchronous Invoke while the UI is in the worker polling path forms a potential blocking cycle. This is a conditional static scheduling concern; the study does not prove that the race occurs in a reachable retail run, its frequency, or a sufficient live fix. Do not use this concern as a claim that normal exit always deadlocks.
+
+If the input HWND is null,11D0A0 registers native WndProc10EB40 and tries to create AxaSimpleWindow. Registration/window-creation failure continues with null HWND. This is a fallback branch, not the shown managed Form path. Its WM_DESTROY repeats the two-worker polling/free sequence and posts WM_QUIT. Initialization closes preexisting thread handles before replacement without an earlier join; repeated-init reachability is unproved. New _beginthreadex returns are not explicitly checked before subsequent setup/priority/resume, and OnShown merely uses the returned device byte to choose panel resizing.
+
+6. Trainer consequences
+
+The actual App-worker entry/dispatch chain is useful provenance for a future command gate. It does not license commands from arbitrary WinForms events or injected workers. Such a gate still needs live module/object/vtable validation, actual Actor binding and lifetime serialization, and closure of relevant worker callbacks. Pause/minimize, an exit flag, an idle active stack and a closed handle are insufficient quiescence signals. Earlier suspended-fiber evidence remains relevant.
+
+No production code, installer, IPC, UI control, process action, live test, injection or save changed in this study. In particular, this package does not solve or ship a new Drive Form feature.
+
+7. Reproduction and limits
+
+From the repository root:
+  py -3 docs/research/app-execution-context-20261008/verify.py --rebuild-clr
+
+The verifier reopens the exact original PE, validates its full SHA256, checks29 contiguous native bodies plus six chunks of two additional functions, decodes original x86 instructions independently with Capstone, checks recorded incoming-reference operands, original vtable/indirect pointers, native import identities, COR header/fixup records, IL byte coverage/branch bounds and selected native/managed edges. --rebuild-clr runs our MetadataDump utility, which uses PEReader/MetadataReader; it never Assembly.Loads or invokes the target binary. It reproduces all JSON metadata and IL. .NET SDK8 and Python3 with Capstone5 are prerequisites.
+
+31 captured native functions contain1,871 instructions and8,308 bytes. The contiguous subset is29 functions/1,737 instructions/7,833 bytes. Two discontiguous exports add134 instructions/475 bytes. There are269 data spans/4,372 bytes and266 incoming references. One trailing INT3 byte in1287D0 is explicitly classified as padding. Native/CLR boundaries and unassigned instruction references are classified separately from ordinary caller edges.
+
+The CLR inventory contains597 MethodDefs,439 IL bodies/32,859 IL bytes/13,565 instructions and507 fixup groups. This is byte/metadata inventory, not439 claims of semantic completion. Twenty-one managed bodies were selected for this context study. Generic TypeSpec names are not fully pretty-printed; raw signature bytes remain available. The utility provides IL rather than a decompiled C# source file. Pseudocode above is a bounded human reconstruction; complete native Hex-Rays output and selected full IL are in the listings.
+
+Claims are function-addressed in claims.json with86 resolvable evidence references. No central coverage state or parser is changed. External framework contracts below supplement original-file findings; external implementation and every transitive callback/failure branch were not audited.
+
+Sources
+Application.Run(Form): https://learn.microsoft.com/dotnet/api/system.windows.forms.application.run
+WinForms synchronous Control.Invoke: https://learn.microsoft.com/en-us/dotnet/desktop/winforms/controls/how-to-make-thread-safe-calls
+_beginthreadex flags/return behavior: https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/beginthread-beginthreadex?view=msvc-170

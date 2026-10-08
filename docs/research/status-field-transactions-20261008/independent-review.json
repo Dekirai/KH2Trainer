@@ -1,0 +1,29 @@
+{
+  "date": "2026-10-08",
+  "reviewer": "root",
+  "scope": "Independent source/test review and fresh MSVC production compile plus synthetic suite execution.",
+  "sourceHashes": {
+    "src/KH2Trainer.Bridge/StatusFieldTransactionSupport.h": "7a3a931cdfdb9f7261d8d4f8e9f0ab7615b4af916c22ba30a6be3375c2de2fb8",
+    "tests/KH2Trainer.Bridge.Tests/StatusFieldTransactionTests.cpp": "b2edc8229037b344f6f9ad11a9b2781bdc22ad403fbde7c83defb1b24fa62445"
+  },
+  "checks": 1976,
+  "failures": 0,
+  "log": "independent-native-tests.txt",
+  "conclusion": "No blocking issue found inside the stated provider and complete-writer-observation contract.",
+  "reviewed": [
+    "All native reads and stores are inside Observer.WithMetadata; in-flight observed originals exclude transactions.",
+    "Admission validates selected widths/values, allocation identity, field revisions, exact expected bits, Actor role/backlinks and writable pages before the first store.",
+    "Ownership, originals, client high-water token and immutable receipt are reserved before mutation. A duplicate cannot repeat a write after acknowledgement.",
+    "Manual same-value stores advance selected revisions. Native rebuild, same-address reuse and field changes prevent stale restoration.",
+    "Float32 original bits including negative zero are preserved; NaN/Inf adoption is rejected and intervening mismatches are preserved.",
+    "Pending release keeps ownership while the Actor is off-current or uncontrollable. Native supersession can be resolved without reading stale Actor data.",
+    "Partial-store exceptions retain uncertainty and prevent retry. Receipt/lease/client capacity refuses new work without evicting live state."
+  ],
+  "remainingIntegration": [
+    "Actor-provider token pin is metadata only; prove actual lifetime stability and lock order for the entire transaction.",
+    "Install and continuously validate writer observation with a completed old-thread drain.",
+    "Route every participating direct field write through the ledger and add typed IPC/host timing integration."
+  ],
+  "liveGame": false,
+  "runtimeInstalled": false
+}

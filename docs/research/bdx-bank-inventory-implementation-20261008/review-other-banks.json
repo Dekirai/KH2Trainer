@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "date": "2026-10-08",
+  "reviewer": "status_fields_v2",
+  "status": "ACCEPTED_BOUNDED_STRUCTURAL_INVENTORY",
+  "blockers": [],
+  "subject": "docs/research/bdx-bank-other-inventory-20261008",
+  "subjectHashes": {
+    "capture.json": "7c8db7f3f139ca135f9f09511419cd7d3e4880625fb4eaa494724d0864a69346",
+    "claims.json": "8b178a94335a25efa128b5d35b572b435253d938400c9c6af084cedf4b61baec",
+    "descriptors.json": "b748f8088e136655e90876d633aef1a262589d3146f7fb797e75f53322ee48ab",
+    "evidence.json": "ceca8131b3eaff7dd271b6f79d4963095205ab571cdc10b5e1254ba765b7163c",
+    "handler-lookups.json": "af81af37b3780720ee4d6021ff025741c3c5ebe0b07ef82efba37419ce1a668e",
+    "manifest.json": "9042b411f6ad01da001d3256da61401262e8c66d1652f61ff677da51d8eedaed",
+    "report.txt": "57d12f3c5314098918b3cc7e9e08997a27fc09da45fd377b5ca53e6c568368c8",
+    "verification.json": "dba824109de1a1989dc865d45ca2a258b20ca39065ca4fc755ddc1d60600403b",
+    "verify.py": "a8bba5904b3f086b572078fb31061f8577b5ad51b874894ef31ffcfb4ba116be"
+  },
+  "independentChecks": {
+    "artifact": "artifacts/review-bdx-bank-other-inventory-20261008/independent-checks.json",
+    "sha256": "91cd1afac6cf85a0338fd8c2bea0669abf494d44fabf0fc7c37c33ca2fe052cc",
+    "peReader": {
+      "path": "docs/research/bdx-bank12-inventory-20261008/verify.py",
+      "sha256": "33c52715b7bd3ba6c355be3dc4837e22892c70e2eee32158e112fbc95e97a193"
+    },
+    "descriptors": 451,
+    "nonnullTargets": 446,
+    "nullRecords": 5,
+    "fullBoundaryBodies": 9,
+    "boundaryInstructions": 40,
+    "boundaryBytes": 226,
+    "codeRanges": 3,
+    "rangeInstructions": 6,
+    "rangeBytes": 26,
+    "positiveXrefsVerifiedAgainstOriginal": 33,
+    "claims": 12,
+    "validClaimReferences": 12
+  },
+  "review": [
+    "Reran study verify.py --check successfully, including after the final metadata correction. Manifest entries and external dependency hashes match current files.",
+    "An independently written PE section reader checked every stored handler pointer, flags, padding and descriptor RVA. All seven original registry slots agree; Bank 3 remains original NULL and its separate table is correctly described as context-dependent.",
+    "The bounded counts 179/59/35/72/37/9/60 end before distinct original data: separate 32-bit constants for Bank 3, non-code pointer for Bank 5, and initialized data beginning 0x60 for the remaining banks. Nine original consumers support the stated separation. No runtime size guard or source-language array extent is asserted.",
+    "NULL holes 4:0/1 and 7:20/22/23 are retained and later records remain present. Descriptive names are intentionally empty.",
+    "The three absent IDA functions are correctly retained as explicit code ranges: 433510 -> 3FB1C0, 433520 -> 3FB4D0, and 433830 loads XMM1 from operand 0, zeroes R8D, sets ECX=1 and jumps 3FB250. Bytes, instruction boundaries and branch targets were independently decoded. No canonical function was invented.",
+    "Every saved positive table/boundary xref is supported by an original stored QWORD or RIP-relative instruction operand. All group counts match their arrays and have more=false; absence of other IDB xrefs is not treated as exhaustive.",
+    "All twelve claims match the original selected instructions, and each Evidence fragment resolves through the unchanged coverage resolver. The nine complete bodies also pass its strict body parser."
+  ],
+  "resolvedObservations": [
+    {
+      "issue": "Ambiguous +30 offset notation",
+      "resolution": "Author changed this to +0x30."
+    },
+    {
+      "issue": "Unsupported #tables[bank=...] descriptor evidence selectors",
+      "resolution": "Author uses the plain evidence.json reference. Bank/index remain explicit in each descriptor."
+    }
+  ],
+  "finalMetadataDiff": {
+    "changed": [
+      "descriptors.json",
+      "manifest.json",
+      "report.txt",
+      "verify.py"
+    ],
+    "method": "Reconstructed previous descriptor strings, verifier line and report spelling from current files; their SHA256 hashes equal the prior independently checked snapshot. All other files remain byte-identical.",
+    "effect": "Only +0x30 notation and plain evidence.json references changed; no numerical, native or claim change."
+  },
+  "limits": [
+    "Structural inventory review only; no complete native semantics for all 446 targets, lifetime guarantee or live availability claim.",
+    "Existing IDB snapshot reports auto_analysis_ready=false. Independent original-byte validation supports the records without implying exhaustive autoanalysis.",
+    "No product changes, game execution, script execution, process attachment, UI, injection, save or mod writes. Only independent review artifacts were written."
+  ]
+}

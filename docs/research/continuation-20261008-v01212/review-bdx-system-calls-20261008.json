@@ -1,0 +1,118 @@
+{
+  "success": true,
+  "reviewer": "status_barrier",
+  "date": "2026-10-08",
+  "subject": "Independent bounded review of BDX system-call annotations",
+  "sourceDirectory": "docs/research/bdx-system-calls-20261008",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "sourceHashes": {
+    "annotations.json": "dd745368859aa68e5aa3ee5be50fd88edf1be7a38f35922993fbf88548d9d1a6",
+    "evidence.json": "90e7ac7b33d854651ace6c173348381fdb2c4ac91d6045b3a8b8b2c2d4214002",
+    "report.txt": "f5bae6726203ce0613da47d04eb1c4d15d2c4956926d3d696df8660a4e91a946",
+    "report.json": "7b93345f9b23a1f45275fc6c9127691fd7fc5c035390d2b6b378fe689cbfc1f6",
+    "verification.json": "abff6ad10aa08c6c283d0df9ea2db3224f45c6bced33f7a924577465b240be2a",
+    "manifest.json": "782dd2a35e95f1af62f862971ca890b3686d11de55b6bcd20e5c5406455adc5a"
+  },
+  "reviewFiles": {
+    "review_bytes.py": "0cb58a34a0aeccba539b10d59de6e3379e4f95d3d8c70fe2f52ff0784fcc1f45",
+    "byte-review.json": "dd9ff0153d7e67f8c4a43151d995ae3ab2860d4a2681df4f814b2d5b7db02c3c"
+  },
+  "scope": {
+    "annotationsReviewed": [
+      "0:9",
+      "0:11",
+      "0:12",
+      "0:14",
+      "0:15",
+      "0:19",
+      "0:20",
+      "0:28",
+      "0:29",
+      "0:30",
+      "0:31",
+      "0:32",
+      "0:47",
+      "0:48",
+      "0:55",
+      "0:56",
+      "0:63",
+      "0:64",
+      "0:65",
+      "0:69",
+      "0:70",
+      "0:73",
+      "0:77",
+      "0:80",
+      "0:81",
+      "0:87",
+      "0:88",
+      "0:89",
+      "0:97",
+      "0:100",
+      "0:101",
+      "0:103",
+      "0:104"
+    ],
+    "functionsByteChecked": 140,
+    "instructionsIndependentlyDecoded": 4804,
+    "descriptorsChecked": 33,
+    "independentSemanticAnchors": 53,
+    "originalFloatConstants": 5,
+    "semanticReview": "All 33 annotation texts reviewed against captured adapter/helper code; selected side-effect and conversion paths traced. This does not close every transitive native callback or prove whole-program reachability."
+  },
+  "checks": [
+    {
+      "command": "py -3 -B artifacts/review-bdx-system-calls-20261008/review_bytes.py",
+      "success": true,
+      "checks": 10019
+    },
+    {
+      "command": "py -3 -B docs/research/bdx-system-calls-20261008/verify.py --check",
+      "success": true,
+      "functions": 140,
+      "instructions": 4804,
+      "semanticAnchors": 82,
+      "annotations": 33,
+      "verifiedXrefs": 114,
+      "referencedImportSites": 2,
+      "originalImportIdentities": 368
+    }
+  ],
+  "findings": [
+    {
+      "id": "screen-effect-plus24-type",
+      "severity": "annotation correction",
+      "status": "resolved before final review",
+      "descriptor": "0:29",
+      "before": "Both +20 and +24 were described as float rate/duration.",
+      "after": "Field +20 is a float rate; +24 is a signed DWORD duration/count, zero replaced by one. The updater converts elapsed float with CVTTSS2SI and uses signed JGE.",
+      "sites": [
+        "0x1403f78c6",
+        "0x1403f78c9",
+        "0x14015f1a0",
+        "0x14015f1b2",
+        "0x14015f431",
+        "0x14015f43c",
+        "0x14015f442"
+      ],
+      "resolution": "Author updated generator, annotation, claim and report and added four byte-checked semantic anchors. Final texts and original instructions agree."
+    }
+  ],
+  "confirmed": [
+    "Fade adapters 0:31/32 set hidden R8B=1; 0:87/88 clear R8D. Duration conversion is float/2 then CVTTSS2SI. Helper doubles in ECX and converts zero-extended RCX, so negative values cannot be described as an ordinary signed duration. Zero and wrapping cases remain explicit.",
+    "Fade state 1 uses a two-pass delay before state 2. State 4 reaches native callbacks; this is not a synchronous no-callback color setter.",
+    "Timer helpers clamp countdown at zero and call native 3AABE0 with (74,0) at the captured limit path. Count-up overflow above 215999 returns before that limit test. The number 74 is not relabeled as a BDX event or time unit.",
+    "Child-VM creation uses a nonzero subset-mask match for prior-child destruction. Teardown runs the exit script through 3E1410 before the allocator virtual free. The creator has an unchecked allocation-failure path; no lifetime or safety guarantee follows from the descriptor.",
+    "Grouped flag reads retain the exact signed-shift/index formula and 65535 sentinel. Flag action records can recurse and trigger follow-up native code. Queued flag lookup retains NULL-key and unchecked-result limits.",
+    "Inventory result semantics distinguish outer policy success from actual insertion; removal paths differ by item type. Completion queries can allocate or mutate state. Resource-list presence does not establish a global I/O fence, and resource repacking can relocate/free records.",
+    "Input masks are mapped bitsets, not physical scan codes. Allocation/free use the current owner. Sound annotation retains explicit native arguments. Blend outputs are task-driven integer values, with no unsupported wall-clock guarantee."
+  ],
+  "limits": [
+    "No game, script, native game function, process attachment, injection, UI operation or save mutation was performed.",
+    "The original PE reader is reused from a separate frozen registry study. Byte checks and Capstone decoding are independent of the reviewed study verifier; this is not a second independently implemented PE parser.",
+    "All listed instruction spans and recorded body/chunk bytes were checked. Full argument validity, external callbacks, allocator ownership, runtime state and concurrency remain outside this review.",
+    "No new RNG analysis or universal reachability claim. The annotation descriptions remain bounded to the captured native paths.",
+    "No unresolved blocking finding remains in this reviewed scope."
+  ],
+  "changesByReviewer": "Only files in artifacts/review-bdx-system-calls-20261008. No study, product, central coverage or version edits."
+}

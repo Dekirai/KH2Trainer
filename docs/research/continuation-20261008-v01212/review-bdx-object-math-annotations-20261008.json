@@ -1,0 +1,198 @@
+{
+  "schema": 1,
+  "date": "2026-10-08",
+  "reviewer": "status_fields_v2",
+  "status": "ACCEPTED_BOUNDED_MATH_ANNOTATIONS",
+  "subject": "docs/research/bdx-object-calls-20261008/annotations.json",
+  "subjectHashes": {
+    "annotations.json": "ed1183bdf914f598fa6c5ff58ce8f2a066cb8fab087b98b538648a1d8910d369",
+    "claims.json": "04298467a1650707fe1919a8b209d2b9d1e89d69b21eb06fb73a31d2e31a81f1",
+    "imported-evidence.json": "b19d1b8fadcc214110c549473872b1f203126e5553b5bbbb2b8757778d4e7f94",
+    "evidence.json": "94ca09468ef2e5ccbfca75507a2b8814c490e347a3730f208e5d18a0469c3f3c",
+    "extended-evidence.json": "79b8b1f930463c6fa011c4b296f495c9d36bc5f475994dd03f362fb2e354fa7a",
+    "support-evidence.json": "33da734370450134982a2e3db9b20a50b9fbc601b3f8c80b9339e6c090dcf1ee",
+    "effect-update-evidence.json": "03b6c30a280bb835c3776d17fe776586411c2b3224d1eee57ea67c79d253b0c3",
+    "vector-scale-evidence.json": "50a183974fb24273d910787764d379693257bcb090ff494969d176afdb4f81c5",
+    "additional-bytes.json": "031647887e7325dfc4e023f286e60f8963a9b0bd2ea8b4af66831a92b851ff53",
+    "verify.py": "76673bb202b318d0161ac53e4da9e732b994547d49fefe2b6a10b24b95c4e229",
+    "verification.json": "2d75ea0f424a1fc2bcf7b8dfc31d3397312588dd13815a6546b64661048ba336"
+  },
+  "semanticScope": [
+    "0:13",
+    "0:46",
+    "0:54",
+    "0:68",
+    "0:83",
+    "0:90"
+  ],
+  "blockers": [],
+  "resolvedFindings": [
+    {
+      "id": "MATH-W",
+      "correction": "Replaced unconditional final w=0 claim with local direction w=0 before matrix multiplication. IEEE nonfinite products can make the final w NaN."
+    },
+    {
+      "id": "MATH-SCALE-BODY",
+      "correction": "Added complete13FCC0 body in vector-scale-evidence.json, closing the scale helper used by0:90."
+    }
+  ],
+  "checks": [
+    {
+      "call": "0:13",
+      "result": "PASS",
+      "sites": [
+        "41D050",
+        "41D05B",
+        "3B769A",
+        "3B76BF",
+        "1AAD5C",
+        "141270"
+      ],
+      "finding": "Operand1 moves through XMM2 into3B7680, then XMM1 into the Y rotation helper1AAD20/141270. The four-component matrix transform and shared2AEA7F8 result agree with the annotation. Four input floats are NaN-sanitized in place."
+    },
+    {
+      "call": "0:68",
+      "result": "PASS",
+      "sites": [
+        "41D14E",
+        "41D159",
+        "3B760A",
+        "3B762F",
+        "1AACBC",
+        "1411B0"
+      ],
+      "finding": "The omitted decompiler argument is present in XMM2.1AAC80/1411B0 preserve the X basis and rotate Y/Z. Shared7535C8 and full-vector input sanitization are supported."
+    },
+    {
+      "call": "0:46",
+      "result": "PASS_AFTER_PRECISION_FIX",
+      "sites": [
+        "41D44E",
+        "3B7226",
+        "3B72D5",
+        "3B7300",
+        "3B7308",
+        "3B7314",
+        "3B7348",
+        "3B739C",
+        "13F900"
+      ],
+      "finding": "XMM3 carries the rate. The native step multiplies717480 and follows COMISS/JA, sign-flip and MAXSS. For an ordinary finite angle and finite nonnegative step, this selects min(angle,step). Normalization leaves a zero cross axis without a fallback; Rodrigues then degenerates to cos(theta) times the xyz identity. The revised text correctly places w=0 on the local pre-transform vector, not as an unconditional final-result invariant."
+    },
+    {
+      "call": "0:54",
+      "result": "PASS",
+      "sites": [
+        "41E3E5",
+        "41E3F2",
+        "1AAEB2",
+        "1AAF3F",
+        "1AAFCC",
+        "1A90EA",
+        "1A9111",
+        "13F850",
+        "13F900"
+      ],
+      "finding": "Child+16 rotation feeds the matrix builder. Original basis constants and complete helpers prove successive X,Y,Z left multiplications; starting at identity this transforms +Z using Rz*Ry*Rx. The repeated float wrap can stall for either infinity or sufficiently large finite values. No rotation-data sanitizer is present in this adapter."
+    },
+    {
+      "call": "0:83",
+      "result": "PASS",
+      "sites": [
+        "41D672",
+        "41D6DE",
+        "41D6EC",
+        "3B7593",
+        "3B7598",
+        "3B75A3",
+        "3B701D",
+        "3B7025",
+        "3B7031"
+      ],
+      "finding": "Argument order, XMM3 angle, wrap, normalized local xyz axis, full four-component transform and shared7535C8 result agree. The zero-axis caveat is necessary and is present."
+    },
+    {
+      "call": "0:90",
+      "result": "PASS_AFTER_EVIDENCE_COMPLETION",
+      "sites": [
+        "41D826",
+        "41D850",
+        "41D882",
+        "41D891",
+        "41D896",
+        "1AA7EC",
+        "1AA807",
+        "1AA822",
+        "13FCC0"
+      ],
+      "finding": "Only operand0 and operand1 are read. The matrix destination remains in the native stack frame; translation copy points to matrix+48. Newly captured13FCC0 is a complete20-byte/7-instruction SIMD scalar multiply with no escaping pointer. The adapter publishes no result and does not draw; input NaN replacement remains an external mutation. Original descriptor declares5 consumed operands and no return slot."
+    }
+  ],
+  "independentValidation": {
+    "originalExeSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+    "method": "Independent PE section reader plus Capstone; compared all primary body bytes and every saved instruction boundary; external shared tails checked against captured additional spans. Not the production verifier implementation.",
+    "functions": 95,
+    "instructions": 3264,
+    "primaryBytes": 13490,
+    "additionalCapturedRegionsAndConstants": 16,
+    "externalTailOccurrences": 4,
+    "uniqueExternalTails": [
+      {
+        "addr": "0x1402c2ff0",
+        "size": 5
+      },
+      {
+        "addr": "0x1402c2fc0",
+        "size": 5
+      },
+      {
+        "addr": "0x1402c2830",
+        "size": 8
+      }
+    ],
+    "descriptorChecks": [
+      {
+        "call": "0:13",
+        "descriptor": "0x140752ed0",
+        "argc": 2,
+        "returnSlot": true
+      },
+      {
+        "call": "0:46",
+        "descriptor": "0x1407530e0",
+        "argc": 3,
+        "returnSlot": false
+      },
+      {
+        "call": "0:54",
+        "descriptor": "0x140753160",
+        "argc": 1,
+        "returnSlot": true
+      },
+      {
+        "call": "0:68",
+        "descriptor": "0x140753240",
+        "argc": 2,
+        "returnSlot": true
+      },
+      {
+        "call": "0:83",
+        "descriptor": "0x140753330",
+        "argc": 3,
+        "returnSlot": true
+      },
+      {
+        "call": "0:90",
+        "descriptor": "0x1407533a0",
+        "argc": 5,
+        "returnSlot": false
+      }
+    ]
+  },
+  "limits": [
+    "This reviews six math annotations semantically, not all27 new annotations. Other body bytes were checked without claiming complete semantic review.",
+    "No native game instruction execution, injection, live pointer validity, rendering, save or UI actions.",
+    "The supplied verifier was read and its static/illustrative scope is accurate. Its receipt was inspected; the full checker was not rerun because independent PE checks already addressed this bounded review.",
+    "The study manifest did not yet exist at this annotation-review point. This receipt pins listed source hashes and does not claim final whole-package manifest acceptance."
+  ]
+}

@@ -1,0 +1,187 @@
+{
+  "schema": 1,
+  "Domain": "native",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "title": "Timer audience operation: conditional BTLNPC Voice request",
+  "scope": "Original N_EX650_BTL10/tt_audience_c 1:262 operand slice [wrapper,8,3], conditional object factory/descriptor binding, auxiliary resource gate, priority setter and deferred Voice request queue. Static offline evidence only.",
+  "conclusion": "The resolved BTLNPC slot requests Voice ID8 at signed priority3. Original objentry flags72=1 prevent the shown .a.* resource acquisition and Voice binding, so the call returns without action if that NULL component state persists. The actual live instance, later writers, scheduler and sound backend remain open.",
+  "claims": [
+    {
+      "addr": "0x1403df930",
+      "Finding": "The original 00objentry.bin record for N_EX650_BTL10 is ID 2149 (0x865), type byte +4 = 9, and flags DWORD +72 = 1. Subject to the factory's ID, resource-budget and allocation gates, type 9 selects case 0x1403DFAD9, allocates 3400 bytes, and reaches 0x140406940. That constructor finally stores encoded descriptor 0x140750588. Its vtable is 0x1405CC860; RTTI names YS::BTLOBJ::VTABLE<YS::BTLNPC>, and slot +0xA0 contains 0x140406810.",
+      "Evidence": [
+        "retail-witnesses.json",
+        "evidence.json#functions[addr=0x1403df930]",
+        "evidence.json#functions[addr=0x140406940]",
+        "evidence.json#functions[addr=0x140410940]",
+        "evidence.json#functions[addr=0x1403d2da0]",
+        "evidence.json#functions[addr=0x1403a1f00]",
+        "evidence.json"
+      ],
+      "Limitations": "This binds an original data record to one conditional factory path. A script/model filename alone does not prove the identity, existence, successful construction or lifetime of a live Actor. RTTI is the descriptor's template type; it is not a runtime Actor observation.",
+      "EvidenceSections": {
+        "evidence.json": [
+          "data"
+        ]
+      }
+    },
+    {
+      "addr": "0x1403e0440",
+      "Finding": "The native initialization sequence at 0x14039CAF0 calls 0x1403E0440. The latter passes the configured literal 00objentry.bin through 0x1403E5FA0 and registers its returned table via 0x1403E0E00. Lookup 0x1403E0F10 searches up to three registered tables in order, using imported bsearch over signed count at +4, records at +8, stride 96, and comparator 0x1401E2300. ID 2149 follows the non-alias path in 0x1403DFEB0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039caf0]",
+        "evidence.json#functions[addr=0x1403e0440]",
+        "evidence.json#functions[addr=0x1403e5fa0]",
+        "evidence.json#functions[addr=0x1403e0e00]",
+        "evidence.json#functions[addr=0x1403e0f10]",
+        "evidence.json#functions[addr=0x1401e2300]",
+        "evidence.json#functions[addr=0x1403dfeb0]",
+        "evidence.json",
+        "evidence.json"
+      ],
+      "Limitations": "The selected original file contains 1900 strictly increasing IDs and a unique selected model row. The full loader, all other table registrants, runtime precedence, overrides and bsearch invalid-argument paths are not closed. No guarantee that a live lookup uses this row.",
+      "EvidenceSections": {
+        "evidence.json": [
+          "data",
+          "imports"
+        ]
+      }
+    },
+    {
+      "addr": "0x14042bde0",
+      "Finding": "BDX bank 1 index 262 has declared operand count 3 and no VM return-slot flag. Its adapter decodes operand0 as a wrapper, decodes wrapper DWORD+4 as Actor, decodes Actor DWORD0 as descriptor, and tail-dispatches descriptor.vtable+0xA0 with RCX=descriptor, RDX=Actor, R8D=operand1 and R9D=operand2. The selected BTLNPC thunk moves Actor/request/priority into the 0x1403DAD90 ABI.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14042bde0]",
+        "evidence.json#functions[addr=0x140406810]",
+        "evidence.json"
+      ],
+      "Limitations": "No wrapper, Actor, descriptor, slot or lifetime validation is supplied by this adapter. Declared operand count is metadata, not proof of safe memory, tag or arity validation. Pointer-encoding helper semantics are reused from prior analysis rather than newly closed here.",
+      "EvidenceSections": {
+        "evidence.json": [
+          "data"
+        ]
+      }
+    },
+    {
+      "addr": "0x1403dad90",
+      "Finding": "The selected virtual operation reads the encoded pointer at Actor+2996 (0xBB4). A NULL decoded pointer returns immediately. Otherwise it calls 0x1403CE580(component, requestID, priority, Actor). The callee accepts the new request when both pendingID<0 and currentHandle==0, or when signed newPriority>=signed existingPriority. Acceptance stores pendingID at component+12, priority at +16 and encoded Actor at +28; rejection preserves these fields.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403dad90]",
+        "evidence.json#functions[addr=0x1403ce580]",
+        "verification.json"
+      ],
+      "Limitations": "The comparison is signed, equal priority replaces an existing request, and idle admission ignores old priority. This is a deferred Voice request for this resolved descriptor slot. It does not imply every other descriptor has this meaning or establish thread safety/lifetime.",
+      "EvidenceSections": {
+        "verification.json": [
+          "model"
+        ]
+      }
+    },
+    {
+      "addr": "0x1403da940",
+      "Finding": "The captured initialization/binding path initializes Actor+2996 to NULL and prepares an embedded YS::VOICE_EE at Actor+3000. It binds that pointer only through a non-NULL Actor+2344 resource containing a BAR type-34 entry with a non-NULL decoded payload. The base resource block is Actor+2320: 0x1403E63D0 clears resource+24, and 0x1403E6120 skips assigning it when objentry byte+72 bit0 is set. The original selected row has that bit set. These stores therefore supply no Voice binding for this original row; if Actor+2996 remains NULL when the BDX operation runs, the operation is a no-op.",
+      "Evidence": [
+        "retail-witnesses.json",
+        "evidence.json#functions[addr=0x1403b3200]",
+        "evidence.json#functions[addr=0x1403e63d0]",
+        "evidence.json#functions[addr=0x1403e6120]",
+        "evidence.json#functions[addr=0x1403e0ab0]",
+        "evidence.json#functions[addr=0x1403da940]",
+        "evidence.json#functions[addr=0x1403dad90]",
+        "evidence.json"
+      ],
+      "Limitations": "Conditional on the original row being selected and no other call, override or later writer changing the resource/component fields. The entire constructor's transitive callees and all Actor+2996 writers are not closed. This is not an observed runtime no-op or a guarantee that the character is always silent.",
+      "EvidenceSections": {
+        "evidence.json": [
+          "data"
+        ]
+      }
+    },
+    {
+      "addr": "0x1403e0ab0",
+      "Finding": "When the bit permits acquisition, the auxiliary filename builder formats the complete row model string as obj/%s.a.%s, with locale-dependent .a.fm and .a.us branches. It independently returns NULL if row byte+72 bit0 is set. The original selected MDLX has exactly BAR types 4, 7 and 3, with no type 34; the Voice-binding check uses the separate Actor+2344 auxiliary resource, not this MDLX's type-3 script.",
+      "Evidence": [
+        "retail-witnesses.json",
+        "evidence.json#functions[addr=0x1403e0ab0]",
+        "evidence.json#functions[addr=0x1403e6120]",
+        "evidence.json#functions[addr=0x1403da940]",
+        "evidence.json"
+      ],
+      "Limitations": "Absence of type34 in MDLX alone is not evidence of absent Voice; the decisive selected-path condition is objentry bit0 and the separate resource binding. No all-archive .a.* absence census or exact sound-bank contents claim.",
+      "EvidenceSections": {
+        "evidence.json": [
+          "data"
+        ]
+      }
+    },
+    {
+      "addr": "0x1403ce260",
+      "Finding": "For a bound Voice, update 0x1403CE260 consumes a nonnegative pending request: it calls 0x1401DE500 on an existing nonzero handle, clears that handle, marks pendingID=-1, obtains Actor position through 0x1403B5B40, calls component.vtable+8, and stores the returned handle. VOICE_EE's slot+8 is 0x1403CE560, which forwards resource pointer +32, requestID, position and flags +24 to 0x1401DE230. BTLNPC descriptor slots +0x28 and +0x40 reach two captured update callers of 0x1403CE260.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ce260]",
+        "evidence.json#functions[addr=0x1403ce560]",
+        "evidence.json#functions[addr=0x1403b5b40]",
+        "evidence.json#functions[addr=0x1403da520]",
+        "evidence.json#functions[addr=0x1404066b0]",
+        "evidence.json#functions[addr=0x1404066e0]",
+        "evidence.json#functions[addr=0x1403dad10]",
+        "evidence.json#functions[addr=0x1403dac30]",
+        "evidence.json"
+      ],
+      "Limitations": "The external handle helper's full stop/release semantics, actual update scheduling and transitive position/lifetime predicates are not established here. Calling the request setter itself does not immediately execute this update or guarantee playback.",
+      "EvidenceSections": {
+        "evidence.json": [
+          "data"
+        ]
+      }
+    },
+    {
+      "addr": "0x1401de230",
+      "Finding": "The VOICE_EE forward target has a disable-byte gate, signed free-count>16 gate and signed request-count<=24 gate. On admission it selects a 56-byte pool element, invokes 0x1401DEB50, records the resource pointer, requested ID and low 16 bits of flags, and returns the element's handle. 0x1401DEB50 assigns a handle/state and appends the element through the encoded next pointer and global head/tail. Rejection returns zero.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401de230]",
+        "evidence.json#functions[addr=0x1401deb50]"
+      ],
+      "Limitations": "This closes the native path to a queued Voice-associated request, not waveform decoding, sound-bank ID8 selection, actual audible playback, or audio backend completion. Camera/spatial helper meanings are not inferred from analyst names."
+    },
+    {
+      "addr": "0x14042bde0",
+      "Finding": "The exact original N_EX650_BTL10.mdlx payload contains the previously analyzed tt_audience_c script (SHA f0c8b6a2f315b78190404607a290d9b8fb9b60cee85fd874d91279bda8aa4efc). Its bounded Event0 model stores incoming Actor into Work+4 at PC862 before its first unknown native call. Its Message74/Event10 model reaches 1:262 at PC73 with operand slice [Work+0,8,3] only when the preceding 1:39 result is 1. The leading 74 in stackBefore is preserved deeper stack state, not a fourth operand.",
+      "Evidence": [
+        "selected-script.json",
+        "retail-witnesses.json",
+        "../timer-message74-handlers-20261008/script-analysis.json",
+        "evidence.json#functions[addr=0x14042bde0]"
+      ],
+      "Limitations": "All 81 selected Event0/Event10 instruction byte ranges are rechecked against the original-archive-pinned script; the frozen symbolic model is reused, not rerun across unknown native effects. Work binding retention, Actor identity, message delivery and the 1:39 value are conditional, not observed."
+    }
+  ],
+  "chain": [
+    "script Event10 PC73 -> 1:262 adapter 0x14042BDE0",
+    "wrapper DWORD+4 -> Actor; Actor DWORD0 -> descriptor",
+    "original row type9 -> factory 0x1403DF930 case9 -> constructor 0x140406940",
+    "descriptor 0x140750588 -> vtable 0x1405CC860 +0xA0 -> 0x140406810",
+    "0x1403DAD90: Decode Actor+2996; NULL returns",
+    "0x1403CE580: priority admission and pending request stores",
+    "conditional update 0x1403CE260 -> VOICE_EE slot+8 0x1403CE560 -> 0x1401DE230 -> request pool append 0x1401DEB50"
+  ],
+  "openWork": [
+    "Enumerate and prove actual runtime registered objentry precedence and all Actor+2996/resource+2344 writers before asserting a concrete instance no-op.",
+    "Close external/native constructor side effects and model/BDX association at actual spawn, including failures and overrides.",
+    "Trace the actual engine dispatch to descriptor update slots +0x28/+0x40 if guaranteed scheduling is needed.",
+    "Trace the request-pool consumer and actual voice-bank entry8 only for a proven non-NULL Voice binding; no waveform or spoken line is identified here."
+  ],
+  "reproduction": [
+    "py -3 -B docs/research/timer-audience-operation-20261008/verify.py --check",
+    "dotnet run --project docs/research/timer-audience-operation-20261008/retail-probe/RetailProbe.csproj --configuration Release -- \"E:\\SteamLibrary\\steamapps\\common\\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-\" \"<new-output.json>\"",
+    "Compare the freshly decoded probe JSON structurally with retail-witnesses.json; pass a new output path to keep frozen evidence unchanged."
+  ],
+  "limits": [
+    "No native game code execution, process attachment or live instance inspection.",
+    "IDA auto_analysis_ready=false; no exhaustive xref, writer or caller census.",
+    "34 full paginated native listings and all 8199 primary bytes checked; 377 trailing switch-table bytes are explicitly data, not disassembly.",
+    "RTTI justifies Voice/BTLNPC descriptor naming; user-facing action or audible-result names are not guessed.",
+    "Original archives are read only. Raw game payloads are not packaged; only selected evidence bytes, identities and portable reader sources are included.",
+    "No product changes or completion claim for whole-game analysis."
+  ]
+}

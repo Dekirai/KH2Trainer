@@ -1,0 +1,178 @@
+{
+  "date": "2026-10-08",
+  "reviewer": "/root/status_fields_v2",
+  "mode": "Read-only source/native-evidence boundary review; no implementation, game process access or new IDA capture",
+  "verdict": "The existing callbacks can supply conditional identity metadata but do not yet prove a stable native Actor lifetime/binding for an entire STATUS field transaction. Do not promote a composition of Ready/Resolve/Pin to that proof.",
+  "proved": {
+    "nativeBirth": "47-body actor lifetime evidence establishes the supported constructor chains and exact ACTION+8 notification at 3B3969/return3B396D. The notification is mid-construction.",
+    "nativeDeath": "Sora/Roxas4049E0 and Mickey414DD0 call native cleanup then152570 free. 2E2D60 performs several cleanup calls before tail-jumping3B3D60;3B3D60 conditionally calls3C07E0 for nonnull Actor+1472 before later cleanup.",
+    "sourceObserver": "ActorLifetime NotifyDeath acquires Actor SRW, validates and retires the watch, releases SRW in finally, then wrapper forwards the original. Pin increments only Watch.pins. Resolve and Pin each release their own lock before returning.",
+    "statusScope": "WithMetadata holds the STATUS lock and requires no tracked original in flight. For the five properly installed and bootstrap-drained roots, a new Before cannot proceed until this transaction unlocks; an already tracked native writer blocks admission. The originals run outside the STATUS lock.",
+    "currentLockOrder": "Journal.WithMetadata -> ActorProvider callback -> public actor_lifetime metadata lock is Status then Actor. No normal Actor-to-Status nested lock call was found in the inspected ActorLifetimeSupport source because native originals are forwarded only after Actor SRW release."
+  },
+  "directNativeEvidence": [
+    {
+      "body": "0x1403B3200",
+      "locations": [
+        "0x1403B3251",
+        "0x1403B33A0",
+        "0x1403B3969"
+      ],
+      "observation": "XOR R14D,R14D; MOV [RSI+5C0h],R14 zeros Actor+1472 before the ACTION birth callback. A mutex entered only by NotifyBirth cannot exclude these earlier writes.",
+      "source": "docs/research/actor-lifetime-20261007/evidence.json"
+    },
+    {
+      "body": "0x1403A7A40",
+      "locations": [
+        "0x1403A7AF4",
+        "0x1403A7B16",
+        "0x1403A7B1B",
+        "0x1403A7B32"
+      ],
+      "observation": "Current-player global is set before STATUS acquisition; after3C0620 returns, MOV [RSI+5C0h],RAX assigns Actor+1472, then MOV [RBX+268h],EAX writes packed STATUS+616. Those binding stores are outside the five STATUS observer bodies.",
+      "source": "docs/research/actor-lifetime-20261007/evidence.json"
+    },
+    {
+      "body": "0x1403C04E0",
+      "locations": [
+        "0x1403C058A",
+        "0x1403C0590",
+        "0x1403C05A9",
+        "0x1403C05F7"
+      ],
+      "observation": "DEC R9D followed by MOV FreeCount,R9D happens before CALL Initialize; existing allocations increment refcount+612 directly. Therefore STATUS SRW is not a universal lock over every pool metadata operation. This alone is not proof of a bad concurrent commit on an already validated allocation; the outer allocation/thread contract still needs analysis.",
+      "source": "docs/research/status-rebuild-ownership-20261007/evidence.json"
+    },
+    {
+      "body": "0x1403B3D60",
+      "locations": [
+        "0x1403B3D6D",
+        "0x1403B3D77",
+        "0x1403B3D79"
+      ],
+      "observation": "Reads Actor+1472, skips STATUS release if null, otherwise calls3C07E0. This specific path may be delayed at the STATUS gate, but cleanup has already begun in callers and not every Actor or heap release is proved to reach it.",
+      "source": "docs/research/actor-lifetime-20261007/evidence.json"
+    },
+    {
+      "body": "0x1401524E0",
+      "locations": [
+        "0x1401524E4",
+        "0x140152541",
+        "0x14015254D",
+        "0x140152554",
+        "0x140152559"
+      ],
+      "observation": "Clears ready byte before cleanup/resource release and clears field heap pointer after calls19FFD0/39D400/39CCA0. Sampling ready before a possible concurrent entry does not serialize that entry.",
+      "source": "docs/research/actor-lifetime-20261007/evidence.json"
+    },
+    {
+      "body": "0x1401524A0",
+      "locations": [
+        "0x1401524AB",
+        "0x1401524B7",
+        "0x1401524BE",
+        "0x1401524C3"
+      ],
+      "observation": "Another native release sequence calls19FFD0/39D400/39CCA0 and clears heap pointer; this body itself does not show a descriptor destructor loop or STATUS root.",
+      "source": "docs/research/actor-lifetime-20261007/evidence.json"
+    },
+    {
+      "body": "0x140152680 / 0x140152A90",
+      "locations": [
+        "0x1401527F7",
+        "0x140152803",
+        "0x14015280A",
+        "0x140152B40",
+        "0x140152B4C",
+        "0x140152B53"
+      ],
+      "observation": "Stored gameplay ASM has additional inline19FFD0/39D400/39CCA0 cleanup call sequences. Observing only1524E0 and1524A0 would not by itself cover these other recorded paths.",
+      "source": "docs/research/gameplay_state_evidence.json"
+    }
+  ],
+  "notProved": [
+    "The actor-lifetime contract threadBoundary states serialized engine-thread lifecycle as a prerequisite. The recorded caller/body evidence is not a complete proof that every supported Actor construction, binding store, dead-list mutation and heap teardown executes only on that same OS thread with no overlapping earlier call.",
+    "The birth point is later than Actor initialization and active-list insertion. An observed foreign-thread fault occurs after earlier native stores; detecting it cannot undo a transaction already raced by those stores.",
+    "Per-class death hooks do not prove every bulk heap release invokes those hooks. Live membership and ready/closing samples can reject an already unready scene but are not mutual exclusion against a teardown beginning after the sample.",
+    "Five-root STATUS bootstrap draining says nothing by itself about an older Actor constructor or bulk heap-release call outside that closure.",
+    "STATUS pool identity/refcount/backlink validation does not pin the Actor heap. Metadata Pin prevents watch eviction, not native destruction or Actor+1472 rebinding.",
+    "No exhaustive alias/write census for Actor+1472, STATUS+616, current-player/list membership and bulk allocator release was supplied by the reviewed records.",
+    "An intact sampled code/vtable check does not prove no foreign removal/reinstallation or bypass occurred between samples."
+  ],
+  "minimalProviderRecommendation": {
+    "preconditions": "Require a genuine proved actor lifecycle/binding execution boundary, intact supported native code/tables, Actor and STATUS bridge instances matched, and the completed STATUS entry/bootstrap contract. Until that evidence exists, keep activation unavailable; adding another mutex alone does not prove native serialization.",
+    "stableMetadataGuard": "For implementation, prefer one Actor metadata transaction guard entered inside the existing STATUS WithMetadata callback, held until all validation, pin bookkeeping, field comparison/stores and journal completion finish. Preserve order Status -> Actor. Locked provider helpers must not recursively call public Ready/Resolve/Pin/Unpin because SRW is not recursive.",
+    "whyCurrentProviderApiInsufficient": "Current Journal ActorProvider exposes three short callbacks only. A sequence of callbacks that independently lock/unlock Actor metadata cannot hold that metadata stable across the enclosing STATUS commit. Add a higher-order guarded transaction or equivalent explicit begin/finally-end scope, rather than leaving Actor lock held accidentally by inspect without a guaranteed exit.",
+    "noNativeAcrossLock": "Keep native original forwarding outside both metadata locks. Taking Actor lock around the full native destructor would introduce an Actor -> STATUS edge through3C07E0 and can deadlock against Status -> Actor; it also violates existing wrapper exception/forwarding contracts.",
+    "protectionScope": "A full metadata guard can exclude observed death notifications starting during the transaction and reject already retired watches. It still does not exclude unobserved bulk freeing or a constructor writing before its mid-body notification. Those need proved thread serialization or earlier covering native boundaries.",
+    "inspect": "Under the stable scope: verify lifetime observer integrity and issued generation; distinguish known retired tokens from missing/unknown observer state; obtain exact watch address; compare current-player identity; validate live list, actual role, Actor+1472 and pool/backlinks; inspect native control/scene gates. Do not infer role from Sora save identity.",
+    "transientStates": "With intact lifetime metadata, menus/loading/no current player are temporary admission blockers, not proof of retirement or observer failure. For current known identity use Current with controllable=false and Unknown role as needed; for a known live noncurrent watch use OffCurrent without dereferencing stale actor memory. Reserve Unavailable for actual identity/observation uncertainty because Journal.Refresh makes it sticky Uncertain.",
+    "pin": "Pin/unpin the exact watch record within the guard, solely to retain its serial. Do not increase native STATUS refcount or claim a native Actor reference. Pinned missing records indicate lost confidence."
+  },
+  "nextNativeResearch": [
+    "Trace all callers and thread/task context of3B3200,3A7A40,405030,415670/4158C0,3BF300,152570 and the field heap release family. Distinguish direct game-thread/cooperative-task execution from worker/resource callbacks.",
+    "Inspect complete19FFD0/39D400/39CCA0 allocator/resource semantics and enumerate callers, including inline152680/152A90 paths, before selecting any common early teardown boundary.",
+    "Build a bounded direct/alias writer census for Actor+1472 and STATUS+616 plus relevant current/list writes; tie a supported contract to actual native entry boundaries or prove these writes occur only on the serialized engine thread.",
+    "If a field-heap epoch observer is needed, invalidate identity before the first actual free/reuse and protect a whole current transaction against entry. Hook coverage and old-call/fiber draining must be proved independently; do not invent a native generation field."
+  ],
+  "additionalIntegrationIssue": {
+    "source": "src/KH2Trainer.Bridge/GameplayStateSupport.inl HostReady/InspectUnsafe",
+    "observation": "Inspect currently requires a nonzero host heartbeat no older than5000ms. Reusing it unchanged as provider.controllable also blocks pending cleanup after host expiry, even in otherwise playable native state.",
+    "recommendation": "Separate new-command host admission from the same native control/role/scene gates used for acknowledged deferred cleanup. Do not bypass native gates or make unavailable Actor state current just to finish cleanup."
+  },
+  "evidenceScope": "Relevant stored ASM was read directly in addition to report summaries. Existing actor-lifetime verification.json reports47 complete bodies/2514 instructions/11522 original bytes; gameplay_state_verification reports PASS. Those verifiers were not rerun in this read-only review. No new native coverage or universal concurrency proof is claimed.",
+  "files": [
+    {
+      "path": "src/KH2Trainer.Bridge/ActorLifetimeSupport.inl",
+      "sha256": "af75f86b8179cc12047dab5b8aff1e9a6c3f4fb57a3b7bfa74b8e6a263132671"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/PlayerRoleSupport.inl",
+      "sha256": "bb9fc7439879e0a6bc9cb86192043179d032995a9fe62aeb2721bbb178beb5f5"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/StatusObserverSupport.h",
+      "sha256": "98277fd5c5df27b3f49b0bf259549d544432a4a70c2e900cebb127c314cee042"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/StatusFieldTransactionSupport.h",
+      "sha256": "7a3a931cdfdb9f7261d8d4f8e9f0ab7615b4af916c22ba30a6be3375c2de2fb8"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/GameplayStateSupport.inl",
+      "sha256": "c722ea76aba94480afef31cda5cf960145d713fd54bce401c107d7fa4628f3c6"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/TrainerBridge.cpp",
+      "sha256": "f052b69a69254b82f2442ffd0f6e4c36767c02ca4ddcd46daa62789d7d1fff35"
+    },
+    {
+      "path": "docs/research/actor-lifetime-20261007/evidence.json",
+      "sha256": "7416fc1b4d5898e3e758e4f9265248cb3e3475e24c425a9b47b1f7bf1a6f7deb"
+    },
+    {
+      "path": "docs/research/actor-lifetime-20261007/contract.json",
+      "sha256": "7eedc527fc596394870a6f8536b23cad7b836d24609956401060b9276fc29e90"
+    },
+    {
+      "path": "docs/research/actor-lifetime-20261007/verification.json",
+      "sha256": "27627888b71f17cdd970e7aea258ba23926d6904f9bc134d1971c763a505301c"
+    },
+    {
+      "path": "docs/research/status-rebuild-ownership-20261007/evidence.json",
+      "sha256": "97970af23079622afb090d21e9c29d63ffc470acb8f0bd898e401675372c8897"
+    },
+    {
+      "path": "docs/research/status-bootstrap-20261007/report.md",
+      "sha256": "9980947af877538607d618604c604e310de5d5620acfc44b9b1db53818c116e2"
+    },
+    {
+      "path": "docs/research/gameplay_state_evidence.json",
+      "sha256": "937933ae5d1f116fbaf3dbe56d0b70dca19db11546c366ce26a61776f60239ee"
+    },
+    {
+      "path": "docs/research/gameplay_state_verification.json",
+      "sha256": "30cd2f2fc025e8ed2b5e87db2d72c12f1989b86ca7d883a6bc76eeb21efd93aa"
+    }
+  ]
+}

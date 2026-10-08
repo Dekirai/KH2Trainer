@@ -1,0 +1,198 @@
+{
+  "schema": 1,
+  "Domain": "native",
+  "claims": [
+    {
+      "addr": "0x14016fec0",
+      "Finding": "Clears state+116 bit2 and sets contact WORDs+98/+100 to FFFF sentinels, queries moving and static collision contexts, then tests floor candidates. The static context comes from ABD448 without a null check. A chosen moving candidate can cause another static correction. The 136-byte local query is not an isolated pure operation because callees change shared context filters.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14016fec0]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x1401638f0",
+      "Finding": "Traverses the ABCCC0 moving list through encoded DWORD+20 links. Skips node flags+16 mask2, matching state+128 identity, mask1 and contexts whose tested basis length is too small. A nonzero correction updates state movement+16 to result+48 minus start. No cycle or generation check is present in this loop.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401638f0]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x140163750",
+      "Finding": "Traverses the same moving list but omits the mask1 skip used by 1638F0. Among candidates with state+116 bit0 clear, saves the strictly lowest result Y below initial 10000000 and restores the saved 136-byte state. Other hits can reduce the separately returned height. This is an ordered selection rule, not proof that the retained pointer remains live.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140163750]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x140163690",
+      "Finding": "Copies the query state at offsets0..95 as six 16-byte vectors, WORDs96/98/100/102, DWORDs104/108/112/116, QWORD120 and DWORDs128/132: 136 bytes total, including a borrowed moving-object pointer.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140163690]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x140173ef0",
+      "Finding": "Tests squared XYZ lengths of context basis vectors+100/+116/+132 against binary32 0.01 and returns true if one is strictly smaller. This does not establish matrix invertibility or finite components in every case.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140173ef0]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x1401752e0",
+      "Finding": "Reads state+32 as the collision sphere radius, subtracts state+108 from start Y, derives displacement and computes CVTTSS2SI(length/radius)+1 substeps without a finite/radius bound. Transforms endpoints when context+229 is zero, builds quantized candidate bounds, sets shared filters92=15/96=4/228=1/231=0, and performs bounded correction retries. BDX1:367 writes its stepped scalar to this radius field; it is not merely a movement-distance parameter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401752e0]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x1401745c0",
+      "Finding": "Writes shared collision context DWORD+92 mask, DWORD+96 comparison value, BYTE+228 equality/inverse selector and BYTE+231 special flag. No prior value is saved or restored by this function.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401745c0]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x1401741c0",
+      "Finding": "Recursively collects polygons from 32-byte nodes and 20-byte active leaf records using inclusive signed-WORD AABB overlap, attribute filtering and a category switch. Stores at most1023 WORD indices from a zero initial count. ChildFFFF ends the child list; other child WORDs are sign-extended before recursion. No node count, cycle or ownership validation appears. The recorded extent includes a64-byte switch table and3-byte padding after RET, separately verified as data.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401741c0]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x140174640",
+      "Finding": "Applies sphere-face and edge/vertex correction passes selected by state flags and polygon attributes. Attribute mask0x100000 skips a polygon. State+32 supplies radius-dependent offsets; alternate branches use state+36 and+108. With mode bit0 clear, a correction count reaching10 takes the -1 fallback. Input polygon count and resource indices rely on upstream data, and no universal malformed-input safety is established.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140174640]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x140175190",
+      "Finding": "Increments the retry counter, invokes174640 again, restores the supplied previous point on -1 and copies the sphere center on zero. A further retry is made only while the incremented counter is at most5. This bound limits this correction recursion, not arbitrary hierarchy traversal.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140175190]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x140172840",
+      "Finding": "Constructs a Y-directed floor segment from state result+48, absolute movementY+20 and offset+108, with an additional0..100 clamp for category0. Writes the same shared filters as1752E0, calls173B30, records hit height or10000000, updates state+116 bit1 and calls172640 to decide result acceptance.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140172840]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x140172640",
+      "Finding": "Invalid polygonFFFF sets state+116 bit0 and polygon96FFFF. With mode bit0 clear, an ordered contact above (offset108-dimension36)+(startY+positiveMovementY)+field132-1 sets bit0 without copying; the other branch copies the contact. With mode bit0 set, a plane-side classifier and low-nibble attribute2 affect acceptance. An exact620/ABB920==3 special case also exists. Bit0 is therefore not a universal query-success flag.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140172640]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x140173b30",
+      "Finding": "Builds a segment AABB, inherits shared context filters, collects up to1023 candidates, resolves triangle/quad vertex pointers, and tests directed intersections. Chooses only a strictly smaller squared XYZ distance than the current binary32 threshold, initially1e14; equal hits keep the first. Returns false and polygonFFFF when no candidate qualifies. No separate output initialization on that miss is established.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140173b30]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x14018b4d0",
+      "Finding": "For ordered finite scalars, rejects nonnegative plane-direction dot products, computes intersection fraction and accepts the inclusive0..1 interval before polygon-edge testing. COMISS/JAE and COMISS/JA do not reject unordered NaNs when SSE invalid exceptions are masked; downstream behavior remains data-dependent. The routine is not a finite-input validator.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14018b4d0]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x14018b760",
+      "Finding": "Checks cyclic triangle order1,2,0 or quad order1,2,3,0, rejecting an edge when dot(cross(point-vertex,next-vertex),normal)>binary32 0.01. The current caller provides3 or4 vertices. The helper itself accepts nonpositive counts immediately and does not bound arbitrary larger counts or normalize the normal.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14018b760]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x1401795d0",
+      "Finding": "Computes dot(sphereCenter,planeXYZ)+planeW and stores it through the third argument, then tests it between zero and sphere radius+16. Geometry interpretation requires the expected plane normalization; this helper does not normalize it.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401795d0]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x140179150",
+      "Finding": "Reads the distance through R9 into XMM2 before1A8F90, projects center minus scaled plane normal, stores the result and calls18B760. Hex-Rays omits the implicit XMM2 scalar argument in its rendered1A8F90 call; assembly establishes it.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140179150]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x140178cb0",
+      "Finding": "Implements sphere-to-polygon edge/vertex proximity fallback and uses a compiler-style one-time initialization path involving ABE780 and439F50/4399B0/439EF0. The full CRT initialization, teardown and concurrency closure is outside this study; the path cannot be described as global-state-free math.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140178cb0]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x140184970",
+      "Finding": "Quantizes a six-float AABB using indexed margin values1/10/20/100 and scales1/0.1/0.05/0.01. It only applies the lower clamp branch to lower endpoints and the upper clamp branch to upper endpoints, converts with CVTTSS2SI and stores low16 bits. The signed input index and nonfinite/out-of-range values are not validated by this helper; this is not symmetric saturation.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140184970]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x1401842d0",
+      "Finding": "Performs all six AABB separation comparisons as signed16-bit JL/JG tests. Touching faces count as overlap. Unsigned-looking decompiler types do not change these signed native comparisons.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401842d0]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x14018b3b0",
+      "Finding": "Classifies dot(vertex-point,normal) as1 below binary32 -0.001,2 within the inclusive tolerance band, otherwise0 for ordered values. Masked unordered COMISS takes both JBE branches and returns2. This is not a NaN-rejecting plane test.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14018b3b0]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x1401729d0",
+      "Finding": "Builds a temporary polygon from context+32 vertex storage using WORD vertex indices1/2/3 and optional4. Fourth indexFFFF chooses count3; otherwise count4. No index extent or lifetime validation is present.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401729d0]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x140183990",
+      "Finding": "Passes the two adjacent 16-byte segment endpoints to184850 and returns the output AABB pointer.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140183990]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    },
+    {
+      "addr": "0x140184850",
+      "Finding": "For ordered finite endpoint coordinates, writes XYZ component minima at0/4/8 and maxima at12/16/20 to form a six-float segment AABB. It does not validate pointers or sanitize nonfinite coordinates.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140184850]"
+      ],
+      "Limitations": "Bounded static claim for the pinned executable. Complete recorded bytes do not imply complete semantics, validated resource ownership, live reachability or successful game execution."
+    }
+  ]
+}

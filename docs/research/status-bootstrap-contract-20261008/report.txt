@@ -1,0 +1,98 @@
+STATUS normal-call runtime contract
+2026-10-08
+
+Outcome
+StatusBootstrapContract.h supplies the missing runtime byte/import/configuration
+check for the bounded STATUS bootstrap design. It does not install hooks, drain
+threads, arm the observer or enable a game reward.
+
+Contract::Prepare(moduleBase) is called on the main KH2 image before publication,
+outside DllMain, observer locks and thread suspension. It validates the fixed
+retail image identity, resolves named imports through the Windows loader and pins
+both the declaring modules and resolved export owners for process lifetime.
+Prepare requires all original entry bytes. Rebinding or any observed failure
+permanently faults the object.
+
+Contract::Verify(EntryMode::Original) is valid while prepared. After the installer
+publishes all five owned CC entry gates, Verify(EntryMode::FiveGates) changes the
+contract to Gated. Thereafter only FiveGates is valid. Verification performs
+read-only memory checks, without module lookup, allocation or loader operations.
+The drain GateCheck must combine this result with Router::Verify. This component
+does not independently prove handler routing, trampoline integrity or old-writer
+quiescence. Observer adoption remains a separate synchronized operation.
+
+Exact native pins
+Twenty-five normal closure bodies are reused from the original-byte-verified
+status-bootstrap-20261007 evidence. One fresh IDA capture adds the two-byte
+_guard_dispatch_icall_nop function at RVA 5669F0: JMP RAX. There are 5,517 pinned
+body bytes total. The five root definitions are identical to StatusEntryPlan;
+tests compare their RVAs, full sizes and every original byte.
+
+Only the first byte of the five roots may change to CC in FiveGates mode. Every
+other byte, including the local switch tables and all helper bodies, must match.
+The PE relocation table has no relocation intersecting these code pins. The
+dispatch pointer at RVA 57BCA0 does have a DIR64 relocation and must equal the
+actual loaded image base plus 5669F0. The original DllCharacteristics is 8160,
+with GUARD_CF absent. A different dispatch or CFG configuration is rejected;
+the code never substitutes or bypasses another dispatch implementation.
+
+Import boundary
+The original PE import table, rather than inferred symbol names, gives:
+57B2D8 KERNEL32.dll EnterCriticalSection
+57B2D0 KERNEL32.dll LeaveCriticalSection
+57B150 KERNEL32.dll WaitForSingleObjectEx
+57B280 KERNEL32.dll SetEvent
+57B2C0 KERNEL32.dll ResetEvent
+57BB80 api-ms-win-crt-utility-l1-1-0.dll bsearch
+
+ResolveApis uses LoadLibraryExW with LOAD_LIBRARY_SEARCH_SYSTEM32 and the exact
+declaring DLL/export pairs. Windows resolves forwarders and API-set mappings.
+GetModuleHandleExW(FROM_ADDRESS|PIN) retains concrete export owners. This relies
+on the trusted Windows loader/OS/CRT contract; executable MEM_IMAGE pages are
+mapping checks, not proof against replacement or inline-modified system code.
+
+Native wait configuration
+Both pinned helpers (439FC8 and 43A028) first test hHandle at RVA 2AF9B50.
+When nonzero, they use only the event APIs. Therefore encoded callback slots and
+cookie are deliberately irrelevant in this branch. The initial nonzero handle
+must remain exactly the same. No event-to-CV or CV-to-event transition is adopted.
+
+When hHandle is zero, the runtime checks both callbacks using the exact native
+formula ROR64(encoded XOR cookie, cookie & 63):
+  cookie RVA 7591F8; SleepConditionVariableCS slot RVA 2AF9B58;
+  WakeAllConditionVariable slot RVA 2AF9B60.
+The target module preference matches the native initializer: the loaded
+api-ms-win-core-synch-l1-2-0.dll contract, otherwise kernel32.dll. Both exports
+must resolve and their decoded values must match. Cookie and encoded slot bits
+are frozen after Prepare; even re-encoding identical targets with a new cookie
+faults. Two configuration samples reject an observed concurrent change.
+
+Verification does not claim to detect a foreign ABA mutation between samples.
+The recorded no-fiber normal closure, stable native initialization, intact API
+implementations and no external thread/context/stack interference are required.
+Exceptional/custom callbacks and special user APC intervention remain outside
+the normal contract. The non-alertable native event fallback only excludes
+ordinary alertable-wait APC dispatch.
+
+Tests and reproducibility
+run-tests.ps1 separately compiles the production branch without test macros and
+the synthetic suite with MSVC /O2 /W4 /MT. Result: 11,238 checks, zero failures,
+no compiler warnings. Tests cover every original code byte and every gated tail
+byte, all incomplete CC masks, every rotation count, all six imports, dispatch,
+header/CFG changes, configuration drift, event branch behavior, unreadable spans,
+permanent failure and actual OS/CRT export resolution in the own test process.
+The synthetic image contains copied bytes on non-executable private memory;
+those game instructions are never executed. No game process was opened.
+
+  py -3 -B docs/research/status-bootstrap-contract-20261008/generate_pins.py --check
+  py -3 -B docs/research/status-bootstrap-contract-20261008/verify.py
+  .\docs\research\status-bootstrap-contract-20261008\run-tests.ps1
+
+Keep RootRanges output in process-lifetime metadata before stack polling.
+Copies of root addresses on an active caller stack can conservatively defer the
+raw stack scan. The getter supplies configured ranges, not a readiness permit.
+
+Primary API references
+https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-getmodulehandleexw
+https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw
+https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-queueuserapc2

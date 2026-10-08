@@ -1,0 +1,38 @@
+Actor binding and lifetime: bounded static study, 2026-10-08
+
+Result
+The 20-body round does not prove a native stable-lifetime guarantee usable by the STATUS journal. The playable base constructor at 3A7A40 is an earlier common candidate for the observed constructor family. It encloses the nested Actor+1472 zero and later current-player/STATUS publication. A birth callback or STATUS allocation wrapper alone does not cover this full interval.
+
+Exact order
+3A7A40 calls 3D5840, which calls 3D2DA0, then 3DA940, then 3B3200.
+3B3251 zeros R14D.
+3B33A0 stores zero to Actor+1472.
+3B3969 invokes the indirect birth callback.
+After the base constructors return:
+3A7AF4 publishes currentPlayer.
+3A7B16 calls STATUS allocation 3C0620.
+3A7B1B stores Actor+1472.
+3A7B32 stores encoded Actor into STATUS+616.
+
+Separate outer paths
+Normal spawn: 3DF930 tail-jumps to 3A7CB0, which calls 405030 and then 3A7A40.
+Drive: 40CAA0 registers 40CF10, which tail-jumps to 40D000. That routine calls 405030. It also calls cooperative wait helpers before and after construction. An SRW lock must not span the whole task.
+Rescue: 3FC7A0 registers 3FCA90, which calls 3FCEC0, then 4158C0. The latter calls the player-parking helper 3A80E0 before allocation, then inlines the Mickey specialization after 3A7A40. The separate 415670 specialization has no direct code caller in returned xrefs.
+Cleanup: 3BF810 registers 3BF300 and cleanup 3BF4C0. The first routine deletes actors from the pending list through virtual destructors, then moves newly marked actors from the active list to the pending list. The cleanup routine runs that pass twice.
+
+Native scheduling and worker limits
+Existing separately verified scheduler research shows direct tasks and cooperative fibers, with no join of every OS thread. Motion workers have a possible path into a synchronously executed BDX script. This round did not identify a shipped worker event entering these constructors, and did not prove that such a path cannot exist.
+41EA20 surrounds its 3DF930 call with calls to 12FFD0(1), 0FDBB0 and the IDA-named ReleaseMutex helper. The full mutex helper/import contract is outside this 20-body round. Eleven other direct 3DF930 callers remain. No common mutex or single-thread ownership follows.
+The 3DF930 tail calls also mean its frame cannot be the only bootstrap marker for downstream construction.
+
+Practical boundary
+A short STATUS-to-Actor metadata guard can cover validation and commit only when native actor lifetime is already guaranteed. Metadata Pin and ActorGeneration do not prevent native free, early constructor stores or rebinding. Earlier observation of native mutations, complete binding/current-player/bulk-teardown coverage, and a drain of earlier calls are still required. This study does not approve production activation.
+
+Evidence
+20 complete bodies, 2,437 instructions and 11,267 original body bytes.
+96 xref source spans covering 648 bytes. Every returned xref source was independently decoded or checked as a relative data pointer.
+136 embedded bytes form two verified DWORD switch tables; every target points to a recorded instruction.
+Retail SHA256: 9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed
+Run: py -3 -B docs/research/actor-binding-lifetime-20261008/verify.py
+Verification passed with zero failures. See report.json for exact sites and unclosed boundaries.
+No game, live process, UI or save actions. No product or central runner changes.

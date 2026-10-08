@@ -1,0 +1,19 @@
+Portable independent BDX native-call catalog review
+
+Purpose
+Reproduce the independent numeric Original-PE comparison and exercise the actual compiled Core catalog resource/API. This directory contains the exact original probe and oracle, with path-only adaptation of its project/verifier. historical-review.json/.txt preserve the original review receipt byte-for-byte, including its original artifact paths and source hashes. Those paths are provenance, not dependencies of this portable run.
+
+Prerequisites
+Python 3 standard library, .NET 8 SDK with Windows targeting support, this source repository, and the original KINGDOM HEARTS II FINAL MIX.exe. The game PE is not redistributed. Its mandatory SHA-256 is 9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed. The selected 1:6 body evidence is read from sibling research package bdx-rebind-operands-20261008/evidence.json.
+
+Reproduction (from repository root, PowerShell)
+  py -3 -B docs/research/bdx-native-catalog-implementation-20261008/core-review/check_data.py --original 'PATH/TO/KINGDOM HEARTS II FINAL MIX.exe'
+  dotnet run --project docs/research/bdx-native-catalog-implementation-20261008/core-review/Review.csproj -c Release --artifacts-path artifacts/bdx-native-catalog-portability-build -- docs/research/bdx-native-catalog-implementation-20261008/core-review/descriptor-oracle.json docs/research/bdx-native-catalog-implementation-20261008/core-review/api-run.json
+
+The optional --original argument defaults to the original author's E: Steam installation. It accepts an absolute path, or a path relative to the current working directory. check_data.py resolves all repository inputs from its own location and regenerates descriptor-oracle.json/data-review.json here. The C# project references the actual Core.csproj via a path relative to this directory; its source file is unchanged. The C# executable reads the oracle and writes its run receipt to the two explicit command-line paths. Build output is isolated in artifacts/, outside this research package.
+
+Expected results
+150 original-byte-matched descriptors, eleven bank snapshot states, 44 annotations (the count does not independently prove every annotation), and 2,559,890 public API checks. Every 16-bit index is exercised in thirteen banks, with sample indices across all 1,024 representable banks. This is a static metadata/API test and does not run the game or native callbacks.
+
+Scope and provenance
+See historical-review.json for the original review and its limitations. See portability-inputs.json for exact original/ported file hashes and the only adaptations: ProjectReference depth, repository root depth, and configurable external original-PE path. portability-receipt.json records the fresh path-validation run and verifies that regenerated oracle and results remain byte-identical to their source artifacts. Source/API semantics were not changed. The parent research package owns its manifest; this subdirectory does not alter it.

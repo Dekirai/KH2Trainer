@@ -1,0 +1,240 @@
+{
+  "schema": 1,
+  "date": "2026-10-08",
+  "status": "frozen_bounded_static_evidence",
+  "title": "Actor/STATUS binding writers and current-player parking",
+  "original_sha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "image_base": "0x140000000",
+  "session": {
+    "id": "cc60e602",
+    "path": "artifacts/ida/KH2_round_20261007_lifetime.i64",
+    "adopted_existing_worker_pid": 46464,
+    "auto_analysis_ready": true,
+    "mutation": false,
+    "closed": false
+  },
+  "decision": "Five STATUS entry observers do not encompass native Actor-to-STATUS rebinding. Keep the new STATUS runtime uninstalled and Journal admission unavailable until binding mutation and Actor lifetime synchronization have their own supported proof.",
+  "findings": [
+    {
+      "id": "rebind_shared",
+      "function": "0x1404112b0",
+      "classification": "native Actor/STATUS rebind",
+      "stores": [
+        "0x1404112d7",
+        "0x1404112ee"
+      ],
+      "summary": "Releases old Actor+0x5c0 through 3C07E0 if non-null, calls 3C06B0, stores the returned STATUS pointer into Actor+0x5c0, then stores EncodeNullable(Actor) into STATUS+0x268 if non-null.",
+      "boundary": "The Release observer has already returned before the later binding stores. In 3C06B0, a cache-hit path increments +0x264 at 3C07CA and returns without Init/Rebuild. Thus a five-writer inFlight counter alone does not cover the outer rebinding interval.",
+      "script_thunk": "0x140431aa0"
+    },
+    {
+      "id": "rebind_new",
+      "function": "0x140411350",
+      "classification": "native Actor/STATUS rebind",
+      "stores": [
+        "0x140411377",
+        "0x14041138e"
+      ],
+      "summary": "Releases old Actor+0x5c0, calls 3C0280 to allocate/initialize enemy STATUS, writes the Actor pointer slot, then encodes the Actor into the new STATUS backlink.",
+      "boundary": "Observed initialization returns before the pointer/backlink stores.",
+      "script_thunk": "0x140431a70"
+    },
+    {
+      "id": "construct_player",
+      "function": "0x1403a7a40",
+      "stores": [
+        "0x1403a7af4",
+        "0x1403a7b1b",
+        "0x1403a7b32"
+      ],
+      "summary": "Publishes the current-player global before fetching STATUS via 3C0620 and before writing the Actor slot and encoded STATUS backlink. Reading the global alone does not establish completion of this constructor."
+    },
+    {
+      "id": "construct_other",
+      "function": "0x1403c2db0",
+      "stores": [
+        "0x1403c2e56",
+        "0x1403c2e6d"
+      ],
+      "summary": "After the common 3D5840 construction path, obtains STATUS via 3C02E0 and writes Actor+0x5c0 plus encoded STATUS+0x268. These stores occur after the observed STATUS rebuild/initialization routines return.",
+      "limit": "Exact playable role is not established by this census."
+    },
+    {
+      "id": "zero_actor_slot",
+      "function": "0x1403b3200",
+      "stores": [
+        "0x1403b33a0"
+      ],
+      "summary": "Known common Actor initialization clears its +0x5c0 slot with zeroed, preserved R14. Full body is included."
+    },
+    {
+      "id": "zero_backlink",
+      "function": "0x1403c0010",
+      "stores": [
+        "0x1403c01f5"
+      ],
+      "summary": "STATUS initialization stores the null EncodeNullable result in +0x268. This known writer is inside the existing Initialize observer root."
+    },
+    {
+      "id": "park_restore",
+      "functions": [
+        "0x1403a80e0",
+        "0x1403a8140"
+      ],
+      "stores": [
+        "0x1403a812b",
+        "0x1403a8132",
+        "0x1403a8163",
+        "0x1403a816d"
+      ],
+      "summary": "3A80E0 moves CurrentPlayer to global 2A11268 and clears CurrentPlayer. 3A8140 copies that parked pointer back and clears 2A11268. OffCurrent is therefore not positive retirement evidence.",
+      "limit": "The two exported bodies prove parking/restoration; transitive callees and concurrent lifetime exclusion are not established here."
+    },
+    {
+      "id": "direct_current_stores",
+      "functions": [
+        "0x1403a7120",
+        "0x1403a7a40",
+        "0x1403a80e0",
+        "0x1403a8140",
+        "0x1403a8f30"
+      ],
+      "stores": [
+        "0x1403a7133",
+        "0x1403a7af4",
+        "0x1403a8132",
+        "0x1403a8163",
+        "0x1403a8f43"
+      ],
+      "summary": "These five direct stores are present in the recorded 186 direct IDA xrefs to CurrentPlayer; all xref instructions are independently decoded from original PE bytes.",
+      "limit": "Does not exclude writes through computed aliases, bulk copies or unknown code."
+    },
+    {
+      "id": "offset_counterexample",
+      "function": "0x1403bb2d0",
+      "stores": [
+        "0x1403bb3b0"
+      ],
+      "summary": "The same +0x5c0 displacement occurs in WINDOW_BASE construction. The explicit WINDOW_BASE vtable assignment and WIN_SEQ member construction establish a different object role."
+    },
+    {
+      "id": "window_pointer_candidates",
+      "functions": [
+        "0x1403bc990",
+        "0x1403bca40"
+      ],
+      "stores": [
+        "0x1403bca13",
+        "0x1403bcafe"
+      ],
+      "summary": "These routines allocate and construct WINDOW_BALLOON objects, then store those window pointers at receiver+0x5c0.",
+      "limit": "Their receiving object's role is not closed here. They are not counted as confirmed Actor STATUS writers merely because the displacement matches."
+    }
+  ],
+  "coverage": {
+    "full_bodies": 19,
+    "body_instructions": 1281,
+    "original_body_bytes": 6368,
+    "body_evidence": "evidence.json",
+    "text_search": {
+      "segments": [
+        {
+          "name": ".text",
+          "start": "0x140001000",
+          "end": "0x140579000"
+        },
+        {
+          "name": ".nep",
+          "start": "0x140579000",
+          "end": "0x14057b000"
+        }
+      ],
+      "chunks": 88,
+      "chunk_max_bytes": 65536,
+      "raw_hits": 732,
+      "pages": "search-pages.json",
+      "pagination": "All 88 returned done=true, no cancellation or page truncation. This is complete requested range traversal, not complete rendered-instruction coverage."
+    },
+    "direct_xrefs": {
+      "current_player": 186,
+      "parked_player": 6,
+      "pages": [
+        "discovery.json",
+        "additional-xrefs.json"
+      ],
+      "pagination": "All recorded xref sets have next_offset=null and matching counts."
+    },
+    "supplement": {
+      "byte_patterns": 12,
+      "executable_pattern_positions": 508,
+      "instruction_windows": 508,
+      "files": [
+        "byte-patterns.json",
+        "pattern-instruction-windows.json"
+      ],
+      "method": "Four-byte positive displacement encodings for +0x5c0..+0x5c7 and +0x268..+0x26b. Every executable pattern position has a bounded instruction-head window; every window reports done with no truncation. Bytepatterns and all confirmed function bodies are compared with the original PE."
+    },
+    "machine_classification": "instruction-candidates.json records Capstone-decoded operands and bytes. Memory displacement is only a candidate; RBP may itself be a frame pointer. Object roles remain unclassified except findings justified by full bodies."
+  },
+  "tool_limits": [
+    "insn_query op_any=1472 or 616 misses the known stores at 3A7B1B/3A7B32. Local api_analysis.py uses op.value for o_displ instead of op.addr. This failed known-answer probe is recorded and never used to exclude writers.",
+    "search_text can omit the instruction line behind labels/comments. Four of the 186 CurrentPlayer xrefs were absent: 3A3351,3BE404,3CF9B2,3FE548. Unfiltered insn_query recovered all four; they are loads, not new direct stores.",
+    "insn_query may include a requested start inside an existing instruction while rendering that containing instruction's text. The byte-window classifier discards every row exactly at a window start. The containing four-byte displacement cannot begin in an instruction 15 bytes earlier. Full verified body rows remain the source for claimed writers.",
+    "An initial get_bytes request for 732 regions returned ten without pagination. All 732 were rerequested in batches of ten with exact response-count validation.",
+    "The rendered-text and exact positive-displacement search does not exclude typed/renamed operands, undiscovered code, base-biased or computed aliases, wider writes starting before the field, indexed effective addresses, bulk copies, indirect writes or another object's coincident displacement."
+  ],
+  "next_work": [
+    {
+      "scope": "Outer rebind admission",
+      "sites": [
+        "0x1404112b0",
+        "0x140411350",
+        "0x140431aa0",
+        "0x140431a70"
+      ],
+      "need": "Establish complete execution/thread provenance and a common exclusion interval across Release, allocator return, Actor slot store and backlink store. Five inner STATUS hooks are insufficient."
+    },
+    {
+      "scope": "Parked Actor lifetime",
+      "sites": [
+        "0x1403a80e0",
+        "0x1403a8140",
+        "0x1403aa950",
+        "0x142a11268"
+      ],
+      "need": "Resolve callers/transitive retirement behavior, retain parked generations and separate off-current from retirement."
+    },
+    {
+      "scope": "Unclassified displacement candidates",
+      "sites": [
+        "0x140088c5a",
+        "0x14011e4f8",
+        "0x1402cda3a",
+        "0x140385964",
+        "0x1403bca13",
+        "0x1403bcafe"
+      ],
+      "need": "Trace base register provenance and receiving object class before admitting or excluding candidates. The complete candidate list is preserved."
+    },
+    {
+      "scope": "Computed/bulk aliases",
+      "need": "Use the parallel heap/bulk analysis plus construction/lifetime evidence; include writes starting before either field and base-adjusted destinations. No alias-closure claim is made here."
+    }
+  ],
+  "verification": {
+    "command": "py -3 -B docs/research/actor-binding-writers-20261008/verify.py",
+    "result": "PASS",
+    "receipt": "verification.json",
+    "checks": "Original PE SHA; all full body bytes; every full ASM cursor/count/instruction boundary; contiguous text chunk requests; original bytes for 732 text hits and all bytepatterns; complete query windows; all 186 direct global references; specific store widths and rebind calls."
+  },
+  "safety": {
+    "game_started": false,
+    "game_attached": false,
+    "ui_used": false,
+    "ida_database_mutated": false,
+    "idb_closed": false,
+    "product_sources_changed": false,
+    "runner_changed": false,
+    "coverage_changed": false
+  }
+}

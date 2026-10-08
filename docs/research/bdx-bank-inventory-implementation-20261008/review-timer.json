@@ -1,0 +1,156 @@
+{
+  "status": "accepted after wording correction and exact native-evidence reference repair",
+  "study": "docs/research/timer-message74-handlers-20261008",
+  "reviewer": "drain_audit_v2",
+  "date": "2026-10-08",
+  "reviewedManifestSha256": "bebd12c24e738b5d1f044979ce4bfa53f557204bcef7b34458d74d20f1703936",
+  "originalManifestAtIndependentRun": "7033b80efe9181109efd607c7dbf0cbefe7f07b7cd042c6981907093aded03fb",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "nativeIndependentChecks": {
+    "bodies": 27,
+    "instructions": 796,
+    "bytes": 2993,
+    "allOriginalBytesMatched": true,
+    "allIdaMnemonicsMatchedCapstone": true
+  },
+  "scriptIndependentChecks": {
+    "rawWordOracleCases": 104,
+    "combinedChecks": 3208,
+    "authorTests": 1098,
+    "physicalCallReturnSlotsModeled": true,
+    "event0ActorBindingsMatched": true,
+    "all66Message74PrefixesMatched": true,
+    "selectedConditionalReadCasesMatched": true,
+    "extraSigned32BoundaryMessagesMatched": true
+  },
+  "retailRebuild": {
+    "success": true,
+    "assets": 6,
+    "structuralJsonExactMatch": true,
+    "probeSourceSha256": "1c51f193b9ad92d67ff5501caf4ad8c901031a0f6ddb99469531b926ae1ba9f9",
+    "compiledCoreDllSha256": "7e87f404dd249091dbddc07aa5c0a1fd9f4e41caedc4de2e4e797e3b7f7cb739",
+    "sourceProjectNotBuilt": true,
+    "output": "artifacts/review-timer-message74-20261008/retail-recheck.json"
+  },
+  "findings": [
+    {
+      "id": "wording-selector-return",
+      "severity": "documentation precision",
+      "status": "resolved",
+      "detail": "3F60D0 selects a matching record, then executes its effects and returns a status. Changed returns to selects in report.txt/report.json/claims.json. The four annotations and native/model evidence are unchanged."
+    }
+  ],
+  "sourceHashes": {
+    "analyze_scripts.py": "21c536b07000fa2406ebbd95641fedb54bda800d4d176b998eed4a282adcb7bf",
+    "test_model.py": "a06ea55d2c5a453e7ae083c1077d19dafb8976c1fef98a3d6dd9927c27ccdad5",
+    "verify.py": "759333408881ca150220df821af790b678ec718b813d88c6566d7c8c5ad4b66d",
+    "annotations.json": "31446f5f3e7b81c5bfc424c2518b622f69a966b4f5426b33e8654f9ce219dc23",
+    "report.txt": "b2eb8d55758ca6edaede8c77d4c0975b122b4cf84effb20eedde90bd20f613ea",
+    "report.json": "e9eb2cd335915f64a6d8d10fd4c223eebcf8400cfbddd63bd5832e9aa915ebdf",
+    "capture.json": "ec5cd90a42c53b8263e5c0c4a9cdf569d7189c471e250167f98d16f65dd1f937",
+    "script-analysis.json": "e6e4b2229771216f4d122a9dd250be85a0d597f94284cabcfb143234d18e8a39",
+    "claims.json": "9faa49b7f24f85f3a76546c7443922e5bb1e9bac185b3b19f06de4456e5f9ac9",
+    "imported-evidence.json": "38363168c3425e0a03d49d09f2fe7af68f5d64249754a764932acb5e60d673f2",
+    "verification.json": "2090f9b6d8d9e3c5446602e2723cdbe2258b5a548ed755e08afad9d73ad39814"
+  },
+  "reviewArtifactHashes": {
+    "review.py": "8cdfb011575015781d54ee04b9d98a88e454f23c6baa1bd5ab5394a6cb1a4ea3",
+    "checks.json": "70e9fd052bc9c8b1b34750833fc367670ae38f153b780a950bff2183a31fa911",
+    "RetailReview.csproj": "98ff35cd139fe7fc1c8a30b705c84fdbf653fa15f9286a44e5ac5f792118967a",
+    "retail-recheck.json": "82851b3ec6e43fd1005df1f68605a25fc448e79bd3819e907084a52ad0d98680",
+    "reference-update-review.py": "986d440332a3f6a99f41e418ce3f6b1dffb6be84e25448f54ebe32b0787ef199",
+    "reference-update-checks.json": "169842c747157ca88a1e79c92ba910b39d8fe00a8d7352b1ac289d22e012a923",
+    "reference-update.diff": "13bb8278e097b4237d555a377a56354de813135c4c4f105ad6a45f557572e88b",
+    "verify-before-reference-repair.py": "504cc9620bde331c18f1dadd266c0a55b323f8ce68c58a4c8088d99e5f049e9f"
+  },
+  "reviewedTopics": [
+    "All four annotations checked against captured ASM and original descriptor flags.",
+    "Actor wrapper+4 links are demonstrated by independent Event0 prefixes with explicit return slots. No later Actor lifetime is inferred.",
+    "Read summaries1:39 and4:21 are conditional values;1:8 and1:262 remain effect boundaries.",
+    "B_EX170 default branch writes at message74 without requiring an immediate74 constant.",
+    "Eight-record registry full-path index8 write and sixteen-record allocator NULL initialization are genuine local precondition failures; retail reachability remains unproved.",
+    "First exact vs last wildcard matching and post-effect message=-1 store confirmed.",
+    "3CAEC0 can invoke the previous action exit event before queueing old VM retirement; no immediate free was inferred."
+  ],
+  "limits": [
+    "No game, native trap or script runtime execution.",
+    "The raw-word interpreter intentionally covers only opcodes needed by the bounded witnesses, not a general BDX emulator.",
+    "Its physical-frame comparison supports current104 cases; it does not validate every possible self-modifying or return-slot-aliasing script.",
+    "Original package identity independently reproduced for six selected assets; wider66-row census retains its loose-source boundary.",
+    "The actual Actor descriptor slot160 target, matching named-action records, callbacks, allocator failures and lifetime/concurrency remain open."
+  ],
+  "finalAuthorCheck": {
+    "success": true,
+    "functions": 27,
+    "instructions": 796,
+    "bodyBytes": 2993,
+    "semanticAnchors": 53,
+    "descriptors": 4,
+    "verifiedXrefs": 31,
+    "imports": [],
+    "importedNativeEvidence": {
+      "functions": 3,
+      "instructions": 118,
+      "bodyBytes": 477,
+      "sourceSha256": "ad5073e41d88be7bb45ba1b468b1e0fbb61d50cd1daaca6b1f2a2385555146ea"
+    },
+    "assetRows": 66,
+    "distinctScripts": 53,
+    "prefixOutcomes": {
+      "native boundary": 15,
+      "root return": 49,
+      "unknown memory read": 2
+    },
+    "retailAssets": 6,
+    "annotations": 4,
+    "modelTests": {
+      "success": true,
+      "checks": 1098,
+      "limits": "Bounded stored-byte model tests and chosen conditional representatives; no game or native trap execution."
+    },
+    "limits": [
+      "No native or script execution.",
+      "The C# probe decodes original archives; this check revalidates package hashes, HED rows and exact loose/header identity.",
+      "Capture is limited to selected helpers and finite direct-xref groups; no indirect alias exclusion.",
+      "Prefix outcomes describe stored instructions and explicit conditional state assumptions, not observed game behavior."
+    ]
+  },
+  "previousReviewedManifestBeforeReferenceRepair": "c8d457d5b4b196935191ea50df34752a66855e100190f626ea9d78149a0597ee",
+  "referenceRepairReview": {
+    "success": true,
+    "checks": 309,
+    "reviewedManifestSha256": "bebd12c24e738b5d1f044979ce4bfa53f557204bcef7b34458d74d20f1703936",
+    "previousManifest": "c8d457d5b4b196935191ea50df34752a66855e100190f626ea9d78149a0597ee",
+    "importedBodies": [
+      {
+        "addr": "0x1403b4c90",
+        "bytes": 75,
+        "instructions": 15,
+        "sha256": "9c4ec29c5e914c2379892fdc0059399887964b776a07b0290d5f9084be28ae1d"
+      },
+      {
+        "addr": "0x1403e1840",
+        "bytes": 193,
+        "instructions": 50,
+        "sha256": "d75ed6bac3c4cf6430adfcbf9886570a2e583b477c09d93673d71ae2eff2e3df"
+      },
+      {
+        "addr": "0x14041b320",
+        "bytes": 209,
+        "instructions": 53,
+        "sha256": "56571f75e71f8b5ce1ce103120b17a4b15affad511da6c70641670bea4e0917e"
+      }
+    ],
+    "importedInstructions": 118,
+    "importedBytes": 477,
+    "originalPEsha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+    "exactHistoricalCopies": true,
+    "claimTextAndSemanticsUnchanged": true,
+    "exactOldVerifierRecovered": true,
+    "verifierBeforeSha256": "504cc9620bde331c18f1dadd266c0a55b323f8ce68c58a4c8088d99e5f049e9f",
+    "verifierAfterSha256": "759333408881ca150220df821af790b678ec718b813d88c6566d7c8c5ad4b66d",
+    "limits": "Narrow copy/reference/verifier repair review. Earlier independent native/model/retail checks remain bound to unchanged evidence and model files; no game action or new semantic claim.",
+    "authorCheck": "Fresh --check passed: 27 original bodies / 796 instructions; 3 separate imported copies / 118 instructions / 477 bytes. No new retail decode or independent model rerun was performed for the reference repair.",
+    "note": "Baseline report text serialization is not used as byte proof. Reversing only the eight ASCII reference substitutions in each actual carrier restores its previously reviewed SHA256, preserving original encoding and line endings."
+  }
+}

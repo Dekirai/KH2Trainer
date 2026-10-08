@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "Domain": "native",
+  "claims": [
+    {
+      "addr": "0x140127100",
+      "Title": "Concrete callback slot and setter",
+      "Finding": "127100 gets singleton 8A0970 through 11C150, returns the old device+728 pointer and stores the supplied pointer with plain loads/stores at 127111/127118. Its concrete named caller is tail wrapper 15EF60. This setter does not acknowledge or drain an already loaded callback; original slot address is 8A0C48. This is a proven binding, not an alias-complete writer census.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140127100]",
+        "evidence.json#functions[addr=0x14011c150]",
+        "evidence.json#functions[addr=0x14015ef60]"
+      ]
+    },
+    {
+      "addr": "0x140109f50",
+      "Title": "Constructor initialization",
+      "Finding": "10A270 passes device+8 into 109F50. The latter writes zero at this+720 (10A25B), therefore device+728 starts NULL. 10A270 also initializes device+760 to -1, so the tick-work gate is initially enabled. 10D600 contains the same guarded singleton initialization sequence as 11C150, not an unconditional replacement of an existing initialized singleton.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140109f50]",
+        "evidence.json#functions[addr=0x14010a270]",
+        "evidence.json#functions[addr=0x14011c150]",
+        "evidence.json#functions[addr=0x14010d600]"
+      ]
+    },
+    {
+      "addr": "0x140154440",
+      "Title": "Actual registered target and ordering",
+      "Finding": "App initialization 14ED40 calls 1532A0, which calls 154440. This routine initializes counters, registers task 1571B0 via 157090, publishes function 154700 through 15EF60 at 154495, then initializes semaphore state through 15ED70 at 15449A and registers task 1548E0. Publication precedes semaphore initialization. The callback has an explicit NULL-semaphore path; this ordering alone is not proof of a crash or a harmful retail interleaving.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140154440]",
+        "evidence.json#functions[addr=0x1401532a0]",
+        "evidence.json#functions[addr=0x14014ed40]",
+        "evidence.json#functions[addr=0x140157090]",
+        "evidence.json#functions[addr=0x14015ed70]",
+        "evidence.json#functions[addr=0x14015edb0]"
+      ]
+    },
+    {
+      "addr": "0x1401287d0",
+      "Title": "Timing-worker call context and pause boundary",
+      "Finding": "11D0A0 creates separate App127ED0 and timing129110 threads through _beginthreadex; timing is created suspended then resumed. 129110 calls 1287D0. The optional call at 128C4D loads device+728 and passes zero in RCX; its result is ignored. It is reached only through the nonzero device+760 and accumulated-tick conditions, after signaling device+768. It precedes the device+776 pause read at128E01. Pause request stores alone therefore do not prove callback quiescence. The observed pause loop stops further callback iterations until resume/stop, but exposes no caller-visible acknowledgement.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14011d0a0]",
+        "evidence.json#functions[addr=0x140127ed0]",
+        "evidence.json#functions[addr=0x140129110]",
+        "evidence.json#functions[addr=0x1401287d0]",
+        "evidence.json#functions[addr=0x140127eb0]",
+        "evidence.json#functions[addr=0x140125a10]"
+      ]
+    },
+    {
+      "addr": "0x140154700",
+      "Title": "Immediate callback closure and ABI",
+      "Finding": "The actual installed target154700 ignores its incoming argument, calls1574E0,1570F0,15EDB0, increments ABAC00/04 with ordinary load/inc/store operations, and returns EAX=0. The complete immediate normal-control-flow closure is154700,1574E0,152380,1570F0,15EDB0 plus the shared0FDB10 tail and fixed ReleaseSemaphore import. There is no Actor/STATUS call, vtable dispatch, asset-resource mutation, or application-supplied nested callback in that closed path. These bytes establish the observed x64 ABI behavior, not an exact recovered C++ source typedef or exclusivity for future callback replacements.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140154700]",
+        "evidence.json#functions[addr=0x1401574e0]",
+        "evidence.json#functions[addr=0x140152380]",
+        "evidence.json#functions[addr=0x1401570f0]",
+        "evidence.json#functions[addr=0x14015edb0]",
+        "evidence.json"
+      ]
+    },
+    {
+      "addr": "0x1401574e0",
+      "Title": "Global save-buffer counters are written by timing worker",
+      "Finding": "152380 returns fixed global buffer9A98B0. 1574E0 increments unsigned DWORD+0x2444 when below0x0CDFE5C4 and always writes it back; it reloads and writes back DWORD+0x2448 unchanged. If716884 is nonzero and zero-extended byte717008 is in0..18, it similarly saturates DWORD+0x244C+4*index. The signed comparison against-1 after MOVZX cannot reject any zero-extended byte; the upper bound excludes0xFF. These stores mutate resident save-buffer memory, not a save file, and use no atomic update. Playtime-style counter semantics are an interpretation of the timing cadence; exact UI time units and save serialization are outside this study.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401574e0]",
+        "evidence.json#functions[addr=0x140152380]"
+      ]
+    },
+    {
+      "addr": "0x1401570f0",
+      "Title": "Timing gate separate from renderer pause",
+      "Finding": "1570F0 increments ABB850 only while DWORD ABB854 is zero. 157110 clears requested bits with AND-not; 157130 sets requested bits with OR. This counter gate does not gate154700's ABAC00/04 or1574E0 buffer writes and is distinct from device+776. These are ordinary shared-memory operations; no global lifetime barrier follows from them.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401570f0]",
+        "evidence.json#functions[addr=0x140157110]",
+        "evidence.json#functions[addr=0x140157130]",
+        "evidence.json#functions[addr=0x140154700]"
+      ]
+    },
+    {
+      "addr": "0x14015edb0",
+      "Title": "Waiter-gated semaphore signal",
+      "Finding": "15EDB0 loads ABC610, returns without dereference when NULL, otherwise branches to shared tail0FDB10. The tail calls ReleaseSemaphore(handle,1,NULL) only when wrapper DWORD0 is nonzero; the handle is at wrapper+8. 15ED70 creates this wrapper with initial count0 and maximum1. It is a wake-up path for existing waiters, not an unbounded accumulated tick count. The full out-of-line tail is preserved separately because IDA entrypoint pagination alone lists only the four primary instructions.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14015edb0]",
+        "evidence.json#functions[addr=0x14015ed70]",
+        "evidence.json#functions[addr=0x1400fd9c0]",
+        "evidence.json"
+      ]
+    },
+    {
+      "addr": "0x1400fdd90",
+      "Title": "Wait and failure behavior",
+      "Finding": "0FDD90 increments wrapper DWORD0 with LOCK INC, waits on handle+8 with INFINITE, then LOCK DECs the count even when WaitForSingleObject returns failure. 0FD9C0 returns NULL on allocation failure, but does not reject a NULL CreateSemaphoreA handle after successful allocation. 15EE10 skips the main wait for a NULL wrapper. Release/wait status is not converted to a recovery protocol by154700/1548E0. A waiter counter is not an ownership pin for arbitrary actors or buffers.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400fdd90]",
+        "evidence.json#functions[addr=0x1400fd9c0]",
+        "evidence.json#functions[addr=0x14015ee10]",
+        "evidence.json#functions[addr=0x140154700]",
+        "evidence.json#functions[addr=0x1401548e0]"
+      ]
+    },
+    {
+      "addr": "0x1401548e0",
+      "Title": "App consumer remains separate from timing callback",
+      "Finding": "1548E0 is a separately registered root9BA888 task. It performs rendering-related calls, waits via15EE10, computes scaled/unscaled frame delta with a6.0 upper clamp, writes reciprocal delta, and resets ABAC04. 15EE10 waits on ABC610 if present, then signals non-NULL handles at ABC5C8 and ABC5F8 through0FDC70. Neither the callback nor this semaphore API executes1548E0 inline; scheduler registration/dispatch is documented in the pinned actor-task study. Full transitive rendering/resource closure is intentionally not claimed here.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401548e0]",
+        "evidence.json#functions[addr=0x140154440]",
+        "evidence.json#functions[addr=0x14015ee10]",
+        "evidence.json#functions[addr=0x1400fdc70]",
+        "../actor-task-context-20261008/evidence.json#functions[addr=0x14014F770]",
+        "../actor-task-context-20261008/evidence.json#functions[addr=0x14014FC20]"
+      ]
+    },
+    {
+      "addr": "0x1401571b0",
+      "Title": "Downstream timer completion reaches dynamic app dispatch",
+      "Finding": "157090 separately registers1571B0. Under its state/count conditions1571B0 calls3AABE0(74,0). Original switch selector data in3AABE0 maps74 to the default dispatch arm, which calls3B4270. 3B4270 iterates3BF4F0 results, decodes each entry's pointer, and invokes virtual slot+96. This is a concrete downstream dynamic target boundary on the App task path. The immediate timing callback does not enter it; actual handler instances and transitive mutation effects are not closed by this study.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140157090]",
+        "evidence.json#functions[addr=0x1401571b0]",
+        "evidence.json#functions[addr=0x1403aabe0]",
+        "evidence.json#functions[addr=0x1403b4270]",
+        "../actor-task-context-20261008/evidence.json#functions[addr=0x14014F770]"
+      ]
+    },
+    {
+      "addr": "0x14011ad80",
+      "Title": "Normal closure uses thread stop/join rather than callback withdrawal",
+      "Finding": "11AD80 requests App exit, polls the App thread handle until GetExitCodeThread no longer reports259, closes it, then sets timing stop device+808, polls/closes the timing handle, and releases device+768. It does not first unregister device+728. During the App-wait interval the timing callback can still be reachable. 1287D0 exits its loop after observing+808 and cleans its timer/event. Poll errors and an infinite GPU wait remain limitations of the existing closure, as in the frozen App study; a pointer replacement is not equivalent to successful thread completion.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14011ad80]",
+        "evidence.json#functions[addr=0x1401287d0]",
+        "evidence.json#functions[addr=0x140127100]"
+      ]
+    },
+    {
+      "addr": "0x14010be40",
+      "Title": "Destructor and semaphore ownership boundary",
+      "Finding": "10BE40 destroys graphics members and closes stored thread handles if non-NULL; its captured body neither waits for those threads nor clears device+728. The normal stop/poll sequence is11AD80. The four named ABC610 references are initializer store, callback load, consumer load, and572740's address setup. 572740 subtracts48 twice and calls no-op16C950 on ABC5E0/ABC5B0; it does not dereference or free ABC610. No lifetime cleanup guarantee for that wrapper follows from this named-reference census; alias writes/frees are not excluded.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14010be40]",
+        "evidence.json#functions[addr=0x14011ad80]",
+        "evidence.json#functions[addr=0x140572280]",
+        "evidence.json#functions[addr=0x140572740]",
+        "evidence.json#functions[addr=0x14016c950]",
+        "evidence.json"
+      ]
+    },
+    {
+      "addr": "0x140127100",
+      "Title": "Writer census limits and trainer consequence",
+      "Finding": "The saved IDA listing search over executable heads in[140001000,140580000) found88 literal+2D0/+2D8 displacement hits. Together with complete named incoming-reference snapshots this locates the concrete singleton constructor, setter and invocation. Equal offsets on other object types, rebased pointers, bulk writes, unrecognized code and dynamic stores prevent an exclusive-writer conclusion. A trainer must treat callback replacement, scene lifetime, resident save writes and actor ownership as separate synchronization problems. No runtime hook or product patch is licensed by this study alone.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140127100]",
+        "evidence.json#functions[addr=0x140109f50]",
+        "evidence.json#functions[addr=0x1401287d0]",
+        "evidence.json"
+      ]
+    }
+  ]
+}

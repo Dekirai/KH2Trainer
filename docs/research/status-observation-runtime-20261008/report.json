@@ -1,0 +1,140 @@
+{
+  "schema": 1,
+  "date": "2026-10-08",
+  "component": "StatusObservationRuntime",
+  "status": "frozen_implemented_unintegrated",
+  "scope": "Coordinator source and isolated synthetic control-flow tests. No TrainerBridge, test runner, README, Actor provider, IPC, release, or game execution changes.",
+  "sources": [
+    {
+      "path": "src/KH2Trainer.Bridge/StatusObservationRuntime.h",
+      "sha256": "9c6390f3fa62043f5e3e33b897c96661a0d2ea197efed60c46c86e6615e0ec0b"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/StatusObservationRuntimeTests.cpp",
+      "sha256": "bf27e349607dc9b71eb581cbf375ba691923a85d36dc5e313f1de0ef3b0f8973"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/StatusObservationRuntimeProductionCompile.cpp",
+      "sha256": "d5e46984e35a732d5cc4e525c3c4b7a1f5d246105be3a527e2c1da8dc71c2f3f"
+    }
+  ],
+  "dependencies": [
+    {
+      "path": "src/KH2Trainer.Bridge/StatusBootstrapContract.h",
+      "sha256": "5a275ac972c539e3996a59b331488e100efe51dec13c8814f053226f9f60eadd"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/StatusBootstrapPins.inl",
+      "sha256": "211295d5fb53680e3fedda475a75f3f4468807642ac925f1e51d2d1413fc33fa"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/StatusOriginalTrampolines.h",
+      "sha256": "bc25e0f130e85f423aab272328231e98c63bad5818f39fb5be85b28b46241cae"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/StatusThreadDrain.h",
+      "sha256": "f001f2448feab948855f3ba78cddbcb3582a00faa55e3042d41c2944fe414c98"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/StatusObserverSupport.h",
+      "sha256": "98277fd5c5df27b3f49b0bf259549d544432a4a70c2e900cebb127c314cee042"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/StatusBreakpointRouter.h",
+      "sha256": "b04ddd9c37053170d93c3a2a5858337922beebd7944ef5056b63c67c96934234"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/StatusEntryPlan.h",
+      "sha256": "8077246092503a65390c52828cc8aca77f169564669fc9eefa97b9b1e70f6a9c"
+    }
+  ],
+  "api": {
+    "runtime": "status_observation::RetailRuntime",
+    "identity": "Runtime<Identity> has deleted constructor and static state. Start claims the owner once using InterlockedCompareExchange before accessing Observer or other components.",
+    "start": "Start(module, pool, bridgeInstance, confirmedGameThread). The host must independently establish the game thread. Rejects invalid identity, zero instance, overflow, or pool != module + 0x2a17290 before claiming. Does not poll or arm.",
+    "tick": "Tick(budget=1) must keep running on the retained owner, including Fault. Start and later Tick must be separate frames.",
+    "diagnostic": "InspectOnOwner returns a cached diagnostic only after atomic owner-ID and retained-handle checks. Foreign/recycled identity returns Invalid/WrongThread before mutable coordinator reads. sampledInFlight is not current admission evidence.",
+    "fields": "No Journal binding, raw Observer access, Actor-provider callback, native field operation, or IPC authorization is exposed."
+  },
+  "start_order": [
+    "Claim owner, retain own thread HANDLE, store instance",
+    "Contract.Prepare and exact five candidate/root mappings into static storage",
+    "Originals.Prepare, Originals.Bindings, Observer.Bind",
+    "Router.Prepare, Contract.Verify(Original), Router.Commit",
+    "Contract.Verify(FiveGates), Drain.Begin with stable gate callback/context",
+    "Return Bootstrap without Poll or Arm"
+  ],
+  "tick_order": [
+    "Reject foreign/dead retained owner without component access",
+    "In Fault, continue Drain.Poll to service owned resume debt even for an invalid budget",
+    "During Bootstrap/Observing, bounded Drain.Poll; debt or drain fault records permanent local Fault",
+    "No Observer.Inspect/Fault lock while ResumePending is true",
+    "Verify router and full contract; observe Observer health",
+    "After Drain.Ready, ArmAfterProvenBarrier on matching instance; active wrapper tickets defer Arm",
+    "After Arm, retain owner handles and recheck Drain.Ready; never close drain or reopen initialization"
+  ],
+  "lifetime_and_fault": [
+    "Bindings seals original trampoline lifetime even if Observer.Bind or later publication fails.",
+    "Fault never tears down Router, wrappers, Observer, bound trampolines, registered unwind tables, or retained owner handles.",
+    "Fault first records local state. Observer.Fault is delayed until ResumePending is false, preventing an SRW-lock wait on a still-suspended holder.",
+    "Before Bindings only, failed original cleanup can be retried by later Fault ticks.",
+    "A restored gate never rearms a failed runtime. Typed forwarding remains callable in faulted Observer state."
+  ],
+  "pool_evidence": {
+    "path": "docs/research/status-rebuild-ownership-20261007/evidence.json",
+    "original_pe_sha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+    "anchor": "Retail reset caller RVA 0x3c0844 LEA RCX, [module+0x2a17290]; call PoolReset at RVA 0x3c084b.",
+    "limit": "Checks the fixed pool address relative to the contract-validated module. Does not claim that pool contents or Actor binding are usable at Start."
+  },
+  "validation": {
+    "compiler": "MSVC x64 /std:c++17 /O2 /W4 /MT /EHsc /DUNICODE /D_UNICODE",
+    "production_compile": {
+      "result": "PASS",
+      "kind": "compile-only real components and all public coordinator APIs; no test macros",
+      "log": "artifacts/status-observation-runtime-production.txt",
+      "sha256": "58e99483306ed9b3d64cba4ca29753bd9e34eb1be47ac90378a3a03f2f31a682"
+    },
+    "synthetic_suite": {
+      "result": "PASS",
+      "checks": 90,
+      "failures": 0,
+      "log": "artifacts/status-observation-runtime-run.txt",
+      "sha256": "fad245c43e2d8634e78d4985c73d3d0137be565d64e39aa1948e73592ba9a68d"
+    },
+    "build_log": {
+      "path": "artifacts/status-observation-runtime-build.txt",
+      "sha256": "e0ce772ee975f7863d594885bc771e200f3f8058159eaee429025ea6211f0a04"
+    },
+    "covered": [
+      "Exact prepare/publication/drain sequence; no Start polling or arm",
+      "All five independent expected typed targets, original byte arrays, sizes and root ranges",
+      "Real Observer bootstrap forwarding during simulated Commit",
+      "Completed synthetic drain plus a real active wrapper ticket defers Arm until next Tick",
+      "Ten preparation/publication failure stages and permanent singleton claim",
+      "Faulted typed candidate targets call each test original exactly once",
+      "Repeated synthetic resume failures delay Observer.Fault, with maintenance on invalid budgets",
+      "Unpublished cleanup retry; published originals retained",
+      "Real own-thread foreign calls are rejected; signaled test owner object models retained-identity rejection"
+    ],
+    "limits": [
+      "Contract, original batch, router and drain are test doubles in the running suite.",
+      "Real Observer/Entrypoints and coordinator thread-handle checks execute, but no native gate or executable trampoline is installed.",
+      "No real stack snapshot, suspended-lock scenario, thread-ID reuse, retail module, or end-to-end runtime execution is validated by this suite.",
+      "No game process was started, attached to, controlled or modified."
+    ]
+  },
+  "integration_requirements": [
+    "Host must independently identify the game thread, provide a fresh bridge instance and call outside DllMain and engine/Actor/STATUS metadata locks.",
+    "Host must keep ticking Fault until resume debt is repaid. Existing TrainerBridge::OnFrame returns early under g_disabled; future integration must place maintenance where that return cannot suppress it.",
+    "Keep the Runtime/module and every published dependency resident until process exit.",
+    "Observer-ready alone never authorizes Journal use. Actor generation, actual current role, packed backlink and native destruction/rebinding exclusion remain separate requirements.",
+    "Drain/contract support only the researched normal native closure. Arbitrary exception callbacks, custom stack changes, foreign thread control, transient code changes and modified trusted OS/CRT implementations remain outside that proof.",
+    "A positive conservative stack scan can defer indefinitely; a timeout must not be converted into successful bootstrap.",
+    "No teardown or restart API is provided."
+  ],
+  "review": {
+    "author": "/root/status_barrier",
+    "root_initial_review": "Root reviewed the first source version and reported no immediate blocker; requested fixed retail pool validation, which was added.",
+    "final_independent_review": "Root reviewed the complete final header and tests, independently compiled the production variant without warnings and reran the suite: 90 checks, 0 failures. The additional drain_audit_v2 review also found no blocking issue within the documented contract; see independent-review.json. No combined native installation or gameplay proof is claimed."
+  }
+}

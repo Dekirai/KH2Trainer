@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "reviewer": "drain_audit_v2",
+  "date": "2026-10-08",
+  "releaseContext": "v0.12.13",
+  "status": "PASS_WITH_BOUNDED_SCOPE",
+  "conclusion": "The existing implementation already handles an empty, unknown, non-Keyblade or unmapped second-weapon item for locked Final, Valor and Master. No new product defect was found in this targeted review; no source change is proposed.",
+  "scope": "Static review of DriveWeaponSupport.inl and DriveFeatures.inl, inspection of the existing native test fixtures, and a fresh run of DriveGuardTests. No game action, injection, save-file modification or product-source edit.",
+  "existingBehavior": [
+    {
+      "source": "src/KH2Trainer.Bridge/DriveWeaponSupport.inl:147",
+      "description": "PlanFormWeapon applies to form IDs 1 (Valor), 4 (Master) and 5 (Final). It preserves an existing valid form weapon. Otherwise it accepts Sora's currently equipped primary Keyblade only after validating it for the requested form. Other forms receive no fallback assignment. Unlock bits and inventory ownership are not required or granted."
+    },
+    {
+      "source": "src/KH2Trainer.Bridge/DriveWeaponSupport.inl:120",
+      "description": "A candidate must be a nonzero item-table entry of type 2, resolve through the selected form object's nonzero weapon group into a known named model, and have a nonempty terminated 32-byte offhand MSET name. The form object must be owner class 1 and its signed +87 form selector must equal the requested form."
+    },
+    {
+      "source": "src/KH2Trainer.Bridge/DriveWeaponSupport.inl:22",
+      "description": "went/wmst/sklt spans are checked against the owning system BAR allocation, header, self pointer, first matching type/tag record, installed table pointer and declared entry extent. Address arithmetic and cell/name bounds are checked; a later duplicate does not repair an invalid first match."
+    },
+    {
+      "source": "src/KH2Trainer.Bridge/DriveWeaponSupport.inl:79",
+      "description": "When a hand reaches native attachment lookup, the exact object BYTE+7 skeleton key must exist in a complete ordered sklt row; the native signed comparator must preserve that lookup's order. Five relevant native bodies are byte-pinned. The planned offhand replacement participates in this check."
+    },
+    {
+      "source": "src/KH2Trainer.Bridge/DriveFeatures.inl:300",
+      "description": "Begin repeats all scene, role, save/status, resource, skeleton, timer and message gates, then replans the weapon. A replacement is written to exactly the writable 2-byte form weapon slot immediately before NativeBegin. An unsafe candidate or later preflight gate rejects before writing or starting the native transition."
+    },
+    {
+      "source": "src/KH2Trainer.Bridge/DriveFeatures.inl:342",
+      "description": "An already active form first queues Revert. The target weapon slot remains untouched during that first step. DriveTick requires the expected fresh base actor, scene identity and cleared matching native context, then revalidates and replans before triggering the requested form. Cancellation, changed resources, expired host or scene replacement stop the follow-up."
+    },
+    {
+      "source": "src/KH2Trainer.Bridge/DriveFeatures.inl:322",
+      "description": "If NativeBegin produces no native context and the slot still contains the preparatory replacement, the prior value is restored. A live or unexpected context retains the valid assignment for engine cleanup. A successfully queued assignment remains after disconnect; the game may subsequently save that equipment slot."
+    }
+  ],
+  "tests": {
+    "command": ".\\tests\\KH2Trainer.Bridge.Tests\\run-tests.ps1 -Suite DriveGuardTests -LogDirectory artifacts/drive-offhand-review-20261008-v01213",
+    "exitCode": 0,
+    "checks": 1599,
+    "failures": 0,
+    "compiler": "MSVC x64, /std:c++17 /O2 /W4 /MT /EHsc; no compiler warnings in this run's log",
+    "log": "artifacts/drive-offhand-review-20261008-v01213/native-DriveGuardTests.txt",
+    "logSha256": "e9b1db9f5ef0dd1c94a29278ad2f7538403c746e931c6bdab67d86e737d9b1e5",
+    "relevantCases": [
+      {"file": "tests/KH2Trainer.Bridge.Tests/DriveWeaponTests.cpp", "lines": "108-136", "coverage": "Unlocked and locked empty Final; all three dual forms; exact 2-byte write before native callback; old null offhand dereference reproduced under private SEH; valid existing weapon preserved; wrong-type, unknown and unmapped weapon fallback; non-dual records left unchanged."},
+      {"file": "tests/KH2Trainer.Bridge.Tests/DriveWeaponTests.cpp", "lines": "137-174,202-206", "coverage": "Invalid primary, missing mapping/model/MSET, aliases, invalid BAR owner/extent/pointer, wrong form selector, later gate failure and actual read-only page reject with zero native calls and zero save-byte changes."},
+      {"file": "tests/KH2Trainer.Bridge.Tests/DriveWeaponTests.cpp", "lines": "175-195", "coverage": "Revert before Final; target slot untouched until fresh base step; changed resources and cancellation prevent follow-up; no-native-context rollback; disconnect retains safe initialized offhand."},
+      {"file": "tests/KH2Trainer.Bridge.Tests/DriveWeaponTests.cpp", "lines": "215-336", "coverage": "Exact skeleton key versus weapon group, table ordering/comparator boundaries, owner and first-match semantics, native skip conditions, both hands and Revert, fresh second-step and direct Begin revalidation, every pinned-byte mutation, inaccessible payload."},
+      {"file": "tests/KH2Trainer.Bridge.Tests/DriveGuardTests.cpp", "lines": "213-234,240-272,347-349", "coverage": "All 49 current/requested combinations and fresh actor identity; zero gauge and locked forms without unlock/gauge writes; queue cancellation/identity/scene guards; actual inclusion and execution of weapon, skeleton and player-role tests."}
+    ]
+  },
+  "limits": [
+    "1599 is the aggregate DriveGuardTests count, including role and general queue checks, not 1599 separate offhand cases.",
+    "Tests compile the actual feature sources with KH2_DRIVE_TESTS and synthetic private memory. NativeBegin, time and the engine's asynchronous loader are test doubles; the null dereference reproduction uses private SEH memory only.",
+    "This run does not execute the shipping NativeBegin branch or perform an in-game transformation. The runner has no separate production-only compile entry for this suite.",
+    "A named model and bounded MSET/skeleton metadata do not prove all archive assets, later constructors, allocator operations or asynchronous parsers will succeed. The five body pins cover the stated skeleton lookup contract, not the complete engine closure.",
+    "The checks rely on the supported original layout and the scene/game-thread contract. Concurrent external modification after preflight, unrelated malformed assets and in-flight engine failures are outside this review.",
+    "The fallback intentionally keeps valid equipment initialization after native ownership begins. It is not a temporary inventory grant and is not universally rolled back on cancellation or disconnect."
+  ],
+  "sourceState": {
+    "reviewerEditedProductOrTestSources": false,
+    "reviewedProductAndTestFilesMatchGitHead": true,
+    "note": "run-tests.ps1 has an existing working-tree change from other work; the reviewer used it without editing it.",
+    "sha256": {
+      "src/KH2Trainer.Bridge/DriveFeatures.inl": "8e6d126ae8efa88646b9b5e423940527d30c84d194541cbc8f0fe1cb7c93ef29",
+      "src/KH2Trainer.Bridge/DriveWeaponSupport.inl": "8494645e68db9c3b2f9b20fa9cb4c7471aed5a3849328a8f85e8fc327fd20d0c",
+      "src/KH2Trainer.Bridge/ProgressionFeatures.inl": "a9ea0f5e37e036fbaef3f95818a5c10512f860114d814ce22f11a89c3ce555e8",
+      "src/KH2Trainer.Bridge/PlayerRoleSupport.inl": "bb9fc7439879e0a6bc9cb86192043179d032995a9fe62aeb2721bbb178beb5f5",
+      "tests/KH2Trainer.Bridge.Tests/DriveGuardTests.cpp": "983fb53fd1ab3976b6ba1e88e954059d5a4d1f84ddaecb7d225eb7d96a774e81",
+      "tests/KH2Trainer.Bridge.Tests/DriveWeaponTests.cpp": "ba03eb872ebcf0c53bb03fd36f0d8482c8ca21830e4a02cf44141e7d1db5570b",
+      "tests/KH2Trainer.Bridge.Tests/PlayerRoleTests.cpp": "50286754221ac653cb65691be52f151b5811518ce33e0458155991f3559e4821",
+      "tests/KH2Trainer.Bridge.Tests/run-tests.ps1": "4e6cff8593503cb039a3bb17105196623a952b63a6fc25e78d1e512aa5769a66"
+    }
+  },
+  "openFindings": []
+}

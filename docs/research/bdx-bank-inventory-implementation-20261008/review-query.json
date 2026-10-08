@@ -1,0 +1,160 @@
+{
+  "schema": 1,
+  "status": "ACCEPTED_BOUNDED_NATIVE_ANALYSIS",
+  "reviewer": "status_fields_v2",
+  "scope": "Independent review of final frozen Actor-query study, native path 1:147/1:367 and its bounded arithmetic/output claims, including final annotations, claims, verifier and manifest. No uncaptured transitive collision closure.",
+  "blockingFindings": [],
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "sourceHashes": {
+    "docs/research/bdx-actor-query-20261008/capture.json": "829879991a65c05384e3671c75b51aca3ad62df859048278081469aa61340133",
+    "docs/research/bdx-actor-query-20261008/additional-capture.json": "41d1309af14d7a84c79c10ae2da853c64df0d33463c2247b4cd69f1d732cd6de",
+    "docs/research/bdx-actor-query-20261008/helper-capture.json": "739e7fa438deb1a6981a0c10c07c1599c543794966568d116cc9808caa9bb83f",
+    "docs/research/bdx-actor-query-20261008/imported-evidence.json": "24807292e4f0201b72c58ba6ac362acc5882ec65abfa834be937b4c955d9b8a8",
+    "docs/research/bdx-bank12-inventory-20261008/verify.py": "33c52715b7bd3ba6c355be3dc4837e22892c70e2eee32158e112fbc95e97a193",
+    "docs/research/bdx-bank12-inventory-20261008/evidence.json": "d01b64ae252d92d12cca03f13cb3f195c6420e635322bf463a431af6c6f432a3"
+  },
+  "checks": {
+    "fullBodyCount": 9,
+    "instructionCount": 239,
+    "bodyBytes": 931,
+    "dataRegionCount": 4,
+    "dataBytes": 40,
+    "instructionAnchors": 18,
+    "positiveSharedBufferXrefs": 33
+  },
+  "findings": [
+    {
+      "id": "output-entry",
+      "addresses": [
+        "0x1403b85ed",
+        "0x1403b85f0",
+        "0x1403b8651"
+      ],
+      "conclusion": "Limit<=0 or unordered NaN with masked invalid exception bypasses the direct output copy. This check occurs after Actor reads and helper calls."
+    },
+    {
+      "id": "output-break",
+      "addresses": [
+        "0x1403b8635",
+        "0x1403b863b",
+        "0x1403b8651",
+        "0x1403b8659"
+      ],
+      "conclusion": "Mode false and query+116 bit0 can break before output copy; first break yields no fresh direct output, later break leaves prior iteration output. Mode true skips that break test."
+    },
+    {
+      "id": "adapter-return",
+      "addresses": [
+        "0x14042bb7f",
+        "0x14042bb84",
+        "0x14042bb8b",
+        "0x14042bb9a",
+        "0x14042bb9c"
+      ],
+      "conclusion": "After normal helper return, adapter ignores its success flag and returns encoded shared buffer 756B48 plus @ADR tag unconditionally. It does not initialize the result buffer."
+    },
+    {
+      "id": "shared-buffer",
+      "addresses": [
+        "0x14042b7da",
+        "0x14042b7df"
+      ],
+      "conclusion": "Separate adapter 42B7B0 is a concrete second writer/returner of the same buffer. Captured positive xrefs are not an exhaustive transitive writer census."
+    },
+    {
+      "id": "non-progress",
+      "addresses": [
+        "0x1403b8617",
+        "0x1403b861f",
+        "0x1403b8656",
+        "0x1403b865b"
+      ],
+      "conclusion": "First reached RN-even fixed point is 2^31. Strict binary32 limit>2^31 or +Inf keeps MINSS at this value and JA true if helpers return normally, registers/rounding remain stable, relevant exceptions are masked, and no early flag break occurs. Equality exits normally.",
+      "mathematicalResult": {
+        "value": 2147483648,
+        "bits": "0x4f000000",
+        "upwardSpacing": 256,
+        "predecessorSpacing": 128,
+        "addend": 100,
+        "iterationsThroughFirstFixedStep": 18147357,
+        "successfulStrictIncrements": 18147356,
+        "tail": [
+          2147483136,
+          2147483264,
+          2147483392,
+          2147483520,
+          2147483648
+        ],
+        "smallestBinary32LimitAbove": 2147483904,
+        "requires": "Fixed RN-even; all helpers return; no earlier flag break; relevant floating-point exceptions masked; normal preserved registers."
+      }
+    }
+  ],
+  "limitations": [
+    "Not a game/runtime test.",
+    "No retail script witness of this large input is established.",
+    "No exhaustive transitive query-helper or writer census.",
+    "Invalid-limit validation occurs after Actor reads and helper calls.",
+    "No exclusive thread ownership or stable Actor lifetime established.",
+    "Unmasked NaN invalid exception does not take the asserted normal-return path.",
+    "Positive subnormal behavior can additionally depend on DAZ and exception masks; it is outside the modeled normal-positive progression.",
+    "No original instructions or game actions were executed."
+  ],
+  "externalSemantics": {
+    "title": "Intel SDM Volume 1, December 2024, Tables D-6 and D-9",
+    "url": "https://cdrdv2-public.intel.com/843827/253665-sdm-vol-1-dec-24.pdf",
+    "use": "COMISS masked NaN flags and MINSS exceptional operand semantics; all game-specific claims independently tied to original bytes."
+  },
+  "recommendation": "A future caller should validate a finite practical limit and explicit success, then copy successful output to caller-owned storage. A native hardening change needs a progress/iteration guard and defined failure result; no patch is included.",
+  "reproduce": {
+    "cwd": "C:\\Users\\shinz\\source\\repos\\KH2Trainer",
+    "command": "py -3 -B artifacts/review-bdx-actor-query-20261008/independent_check.py",
+    "writesStudyFiles": false,
+    "executesOriginalCode": false
+  },
+  "reviewArtifacts": {
+    "artifacts/review-bdx-actor-query-20261008/independent_check.py": "89f0bd57b7c49e6a8928c47b6c1c081d120a7e705c4087afc4af133bf49cc2e9",
+    "artifacts/review-bdx-actor-query-20261008/independent-checks.json": "6d70e4e2d85846682454a6447c6e106ee4fe4e39ca6f87c6f6aef9ba59415679",
+    "artifacts/review-bdx-actor-query-20261008.txt": "bd84a135569fe2896855105d1a845dc36e891777e846aa56d0192569519b3e77"
+  },
+  "subjectManifest": {
+    "path": "docs/research/bdx-actor-query-20261008/manifest.json",
+    "sha256": "95d9683efe7191be09202f819e79786f6cce8591e18346a6b7a900e25412b3ec"
+  },
+  "finalStudySourceHashes": {
+    "docs/research/bdx-actor-query-20261008/additional-capture.json": "41d1309af14d7a84c79c10ae2da853c64df0d33463c2247b4cd69f1d732cd6de",
+    "docs/research/bdx-actor-query-20261008/annotations.json": "116e13d31730ce733f5daf8cec32d796a7664ee9786d5ff778497e7447c7bfec",
+    "docs/research/bdx-actor-query-20261008/capture.json": "829879991a65c05384e3671c75b51aca3ad62df859048278081469aa61340133",
+    "docs/research/bdx-actor-query-20261008/claims.json": "9951e7cce86c2c26f22db46721677d03cb1639e08eff1e8acd8b172cbde57ca1",
+    "docs/research/bdx-actor-query-20261008/evidence.json": "99940dcae04796bc58b1c68839f600611930eb4464b6c1dcfab1aac87c7b16c0",
+    "docs/research/bdx-actor-query-20261008/helper-capture.json": "739e7fa438deb1a6981a0c10c07c1599c543794966568d116cc9808caa9bb83f",
+    "docs/research/bdx-actor-query-20261008/imported-evidence.json": "24807292e4f0201b72c58ba6ac362acc5882ec65abfa834be937b4c955d9b8a8",
+    "docs/research/bdx-actor-query-20261008/model.json": "e8e094ccee4a1036ed554ff7fc17b3275d99460d15934a595794188d140706be",
+    "docs/research/bdx-actor-query-20261008/report.txt": "9cf62dca2b53bfb6f5bd16dd706f15093357b0b30d3b0fa315175bd5613f8fc3",
+    "docs/research/bdx-actor-query-20261008/verification.json": "cb4dafe0ac5d195ef678416903dcfe03102b29c201e75694605799394be1b6cf",
+    "docs/research/bdx-actor-query-20261008/verify.py": "8eda9c650356e9181462b06e7818976186046a91049fdacf26f68435c2c56d36"
+  },
+  "finalStudyVerification": {
+    "status": "PASS",
+    "command": "py -3 -B docs/research/bdx-actor-query-20261008/verify.py --check",
+    "manifestFileCount": 11,
+    "manifestDependencyCount": 1,
+    "claims": 6,
+    "resolvedClaimReferences": 9,
+    "nativeBodyCount": 9,
+    "instructions": 239,
+    "bodyBytes": 931,
+    "codeXrefs": 34,
+    "modelChecks": 20,
+    "annotationDescriptorsIndependentlyMatchedPE": [
+      "1:147",
+      "1:367"
+    ]
+  },
+  "resolvedObservations": [
+    {
+      "id": "sse-exception-precondition",
+      "resolution": "Final report, annotation and model scope explicitly require relevant masked SSE exceptions, including precision/inexact, and stable RN-even. Claim limitations repeat this condition. No native bytes or model cases changed."
+    }
+  ]
+}

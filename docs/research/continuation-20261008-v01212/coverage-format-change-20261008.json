@@ -1,0 +1,94 @@
+{
+  "success": true,
+  "date": "2026-10-08",
+  "parserSha256": "546d0defdacd8857d7f2461283516348ca28776d13e253d8d954ad43622cc1b2",
+  "headBlobSha256": "42c892ee0ee5ac6717855e02be0efe004c95008b085c771172bbcbaa756520cd",
+  "changes": [
+    "Normalize the documented disasm aggregate alias without inventing counts, cursors, pages or bytes.",
+    "Reject contradictory concurrent disasm/disassembly/nested-asm aggregate representations.",
+    "Admit addressed raw asm/disassembly lists as raw code content only; list metadata never creates complete ASM.",
+    "Retain all existing function inventory, extent, domain, original-byte and semantic-tier gates."
+  ],
+  "tests": {
+    "selfTests": 245,
+    "selfFailures": 0,
+    "reproducibleTwoRuns": true,
+    "independentPeerChecks": 374,
+    "peerFailures": 0,
+    "unresolvedOccurrences": 0,
+    "originalPeMatches": 1708,
+    "originalPeMismatches": 0,
+    "motionCompleteBodies": 31,
+    "systemRawOnlyBodies": 140
+  },
+  "coverage": {
+    "native": {
+      "inventoryFunctions": 36451,
+      "newInventoryFunctions": 0,
+      "historicalValidExports": 36451,
+      "legacyFunctionsWithSpecificClaim": 1712,
+      "newUniqueFunctionsWithSpecificClaim": 439,
+      "alreadyClaimedFunctionsWithAdditionalFindings": 245,
+      "mergedFunctionsWithSpecificClaim": 2151,
+      "functionsWithoutSpecificClaim": 34300,
+      "legacyRecordedFullAsmFunctions": 1571,
+      "currentFullAsmFunctions": 906,
+      "additionalFullAsmFunctionsBeyondLegacy": 633,
+      "mergedRecordedFullAsmFunctions": 2204,
+      "completeSemanticFunctionCount": null,
+      "completeSemanticFunctionCountReason": "Not measured or established by these inputs."
+    },
+    "newClaims": {
+      "occurrences": 991,
+      "supportedFunctionClaimOccurrences": 990,
+      "supportedCodeRangeClaimOccurrences": 1,
+      "canonicalFunctions": 684,
+      "classifications": {
+        "exact_inventory_function_start": 986,
+        "instruction_inside_evidenced_function": 4,
+        "separate_code_range_not_inventory_function": 1
+      },
+      "unresolvedOccurrences": 0,
+      "duplicateClaimGroupsAcrossAllRecordedSources": 411
+    },
+    "currentEvidence": {
+      "records": 1849,
+      "completeBodyRecords": 1456,
+      "originalPeCompared": true,
+      "recordedByteComparisonsPassing": 1708,
+      "recordedByteComparisonsFailing": 0,
+      "note": "Body occurrences from overlapping investigations are not unique functions."
+    }
+  },
+  "peerReview": {
+    "path": "artifacts/review-coverage-formats-20261008/review.json",
+    "sha256": "a07adbabbe16e20c487af657dbeda6d25b97bc8628c140b8a5494f59ff1682c9",
+    "resolvedFinding": "A contradictory unfinished disasm plus finished old nested-asm aggregate could initially be overwritten. The final parser rejects it; author and reviewer tests cover both aliases."
+  },
+  "relatedRootRepair": {
+    "path": "artifacts/motion-event27-reference-repair-20261008.json",
+    "sha256": "b5274d864374e572e4fd2f45a7e2194985200495a95e8af3fd2d5b03c66652c1",
+    "scope": "Root separately added four missing native Evidence references to two asset claims duplicated in report/claims. Parser gates were not weakened; no study content was changed by this agent."
+  },
+  "outputs": {
+    "docs/research/coverage/summary.json": "100c41428e1e8afb5ce6edab769bdac252a143f54ec478a1cee2232822dd8ac5",
+    "docs/research/coverage/reproducibility.json": "8037fa77f5456fe797d73666651497ffe7b0bb4a10205b4c4938f16e01ad353b",
+    "docs/research/coverage/self-tests.json": "3e459a56a2212f3bd84af7bc652917a19a1415946e32d57b245d84e768c2dc89",
+    "artifacts/v01212-coverage-final.txt": "842b8e37e3f9764731906e81ad243b5f62ff0906829931f2381bffd57530a35f",
+    "artifacts/coverage-formats-20261008/changes.diff": "d6e1b33011dbafc9c32d4eb3c7aea8b04cee5e924726b761b602be52a708df11"
+  },
+  "limits": [
+    "Coverage counts explicit recorded findings and separately records ASM completeness; no function is marked fully understood.",
+    "Raw ASM lists remain raw even if another export independently carries full pagination; no metadata is synthesized or borrowed.",
+    "The original-byte comparison does not validate every semantic assertion or runtime reachability.",
+    "No game execution, process attachment, injection, product/package edit or original research edit by this agent."
+  ],
+  "finalPackageReferenceRerun": {
+    "reason": "Root relocated Motion retail-probe from excluded artifacts/retail-probe to package-included retail-probe and updated its references. Program.cs bytes are unchanged per Root repair; project reference depth changed.",
+    "motionManifestSha256": "9ec6af3bb26bbf0e60b1ea63c714a57f9a38ca65140236149af71dc5de9e2921",
+    "command": "py -3 -B scripts/update-analysis-coverage.py --verify-reproducible",
+    "success": true,
+    "parserChanged": false,
+    "claimAndEvidenceCountsChanged": false
+  }
+}

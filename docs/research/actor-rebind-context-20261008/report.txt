@@ -1,0 +1,112 @@
+Actor/STATUS rebind context — 2026-10-08
+
+Decision
+Observe the two outer native entries 4112B0 and 411350 if implementing rebind
+tracking. They enclose Release, acquisition and both binding stores, retain
+their frames and have ordinary return paths. After acquisition returns, the
+Actor slot always receives its result; the STATUS backlink is written only
+for a nonnull result. Neither a particular BDX event/callsite nor
+the five inner STATUS entries covers this whole interval. No observer is
+installed by this research; Actor lifetime and other binding writers remain
+separate prerequisites for any compare/write admission.
+
+Registration and ABI
+- TrapRoot753490 bank2 points to756B60. Index9, descriptor756BF0, registers
+  431A70 with3 operands; index95, descriptor757150, registers431AA0 with2.
+  Exact qword scans across the original PE sections find each callback once.
+- Both adapters receive RCX=tagged8-byte operand vector. They decode the low
+  DWORD of operand0 to p, then decode the DWORD at p+4 to Actor. Operand1's
+  low DWORD becomes EDX. They restore their stack and tail-jump the root.
+  The third operand of431A70 is popped by the VM but unused by its native body.
+- The roots receive RCX=Actor*, EDX=32-bit parameter ID. Their normal paths
+  assign Actor+5C0 after acquisition returns; encoded STATUS+268 is written
+  only for a nonnull result. The recorded script
+  route does not use their incidental native RAX as a semantic result.
+- 41B400 opcode group0xA selects bank=opcode>>6 and the next WORD as index.
+  It pops descriptor.low16 argument count into a local vector and CALLs the
+  callback synchronously. Return flag0x40000000 pushes the callback-modified
+  vector[0], not RAX. Both rebind descriptors leave this flag clear.
+- Canonical static decode examples:008A 0009 and008A 005F. These are not
+  identified instructions from an extracted retail event script.
+
+Thread and callback provenance
+The previously evidenced motion-worker path reaches3B5E80 ->3E1840 ->3E1C80
+->41B400 synchronously. This dispatcher uses the same bank2 and has no native
+Event27-specific trap filter. Conditional interpreter reachability is proved;
+an actual shipped Event27 execution of either operation is not. That requires
+bytecode selecting the trap and constructing valid operands. Event27 supplies
+a directly encoded Actor as its first argument, while these adapters expect
+an intermediate structure p containing an encoded Actor at p+4. Those values
+must not be equated without tracing the bytecode.
+
+Another native entry into the same interpreter is3E1410: when VM context+64
+has a finalizer PC, it executes that PC with the shared trap table before
+cleanup. Actual finalizer use of these rebind operations remains unproved.
+The interpreter's rdata reference6EF8B0 is chained unwind metadata, not an
+additional callback registration.
+
+Each rebind root has exactly one recorded direct code caller, its adapter;
+the other direct reference is pdata. Exact root-pointer qword searches find
+none. This does not exclude computed, encoded or externally introduced calls.
+The trap-bank setter3E1720 writes the supplied bank pointer without a visible
+index bound. Its two recorded direct callers26ACC0/26ACE0 clear/replace bank9,
+not bank2. The writable table is not thereby proved immutable.
+
+Normal execution and abnormal exits
+The24-body normal rebind closure includes both adapters, both roots, direct
+calls/tails/conditional transfers and fixed bsearch comparator3EBF20. Its
+external boundaries are bsearch, CRT critical-section/event waits and decoded
+condition-variable APIs. No ordinary engine fiber switch or longjmp appears
+in this bounded closure under those external contracts, including a nonzero
+bsearch key and valid CRT parameters. CRT lazy initialization
+can wait without a bounded duration. This is not a single-thread assertion,
+nor does it exclude entering the root while already running on a task fiber.
+
+All four root/adapter pdata records cover their complete bodies and have
+UNWIND version1, flags0. This means no local language handler metadata, not
+exception-free execution. Transitive4AD2C0 has termination-handler metadata.
+The interpreter has primary plus chained unwind records. Abnormal SEH/C++
+paths, external DLL implementations and modified code are outside the normal
+closure. A future wrapper must preserve native ABI/unwind behavior and fault
+its observation on abnormal exit instead of publishing a completed binding.
+Tracker locks must be released before invoking native code or CRT waits.
+
+Argument and resource limits
+The trap branch has no visible bank/index/count/operand-underflow guard before
+its reads and indirect call. The adapters check neither operand tags nor the
+two decoded pointers. Selected invalid opcode cases return status5; that is
+not a general malformed-trap error path. A root observer starts after the
+adapter's decoding and cannot guard an earlier adapter fault.
+Enemy lookup sign-extends the ID into the bsearch key at 3EBF44. ID0 is thus
+a null key and may invoke the CRT invalid-parameter handler, whose behavior
+is outside the normal closure. The ID0x45 retry is reached only if the first
+bsearch returns null; a failed fallback is passed onward. Valid resources remain required. The enemy initializer
+also writes the coefficient bytes including General within the outer rebind
+interval on allocation paths. These observations justify resource/argument
+validation work before using arbitrary VM traps for trainer commands.
+
+Verification and scope
+43 complete bodies,3,053 recorded instructions,12,723 original body bytes.
+The interpreter has231 trailing bytes of padding/switch data, retained and
+checked;4AD2C0 has one separately decoded4-byte NOP gap. Fresh interpreter ASM
+has4 pages; pseudocode has300+300+295=895 lines. Its tool marks every partial
+page truncated=true, including the last; exact counts and finished cursors
+establish the joined export. Original page flags are preserved.
+All recorded xrefs/imports/exact-pointer searches are complete.368 imports
+match original PE address/module/name or ordinal records; IDA's labels for
+ordinal imports are identified separately. Imported older evidence is SHA-bound.
+18 limited claims on17 function addresses are coverage-compatible from this
+report; bodies and bytes are in evidence.json. No all-functions claim.
+
+Reproduce:
+py -3 -B docs/research/actor-rebind-context-20261008/verify.py --check
+
+Next work: identify actual event27/finalizer BDX trap use and operand0 origin;
+close other Actor creation/rebind/retirement paths and identity; audit generic
+VM argument validation separately; retain conservative failure on unknown
+exception paths. No game/UI operation, IDB mutation/closure, product change,
+central coverage edit or runner edit occurred.
+
+Official references used for external-format/contracts only:
+https://learn.microsoft.com/en-us/cpp/build/exception-handling-x64?view=msvc-170
+https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/bsearch?view=msvc-170

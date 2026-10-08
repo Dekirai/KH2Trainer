@@ -1,0 +1,613 @@
+{
+  "Domain": "native",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "claims": [
+    {
+      "addr": "0x14041da20",
+      "Finding": "Native descriptor 0:9 (Create child VM context): Creates a child of the current VM context and returns its encoded address as @ADR. Operand 0 is stored as the child mask; when nonzero, existing children satisfying (childMask & operand0) == operand0 are first destroyed. Operand 1 initializes the child PC. Nonzero operand 2 replaces its exit-PC field at +64. Non-NULL decoded operand 3 causes that tagged value to be copied onto the child stack.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041da20]",
+        "evidence.json#functions[addr=0x1403e1f00]",
+        "evidence.json#functions[addr=0x1403e1e30]",
+        "evidence.json#functions[addr=0x1403e1240]",
+        "evidence.json#functions[addr=0x14041b320]",
+        "evidence.json#functions[addr=0x1403e1410]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Uses the current-context global at RVA 0x2A25048 and VM allocator at RVA 0x2A250A0. Child destruction can run exit script code before freeing memory. Allocation failure is not safely returned by the captured creator: it dereferences the resulting child without a NULL guard. No script-PC, pointer-lifetime or concurrency validation is established."
+    },
+    {
+      "addr": "0x14041db20",
+      "Finding": "Native descriptor 0:11 (Resource queue pending): Returns @INT indicating whether the resource-request list at RVA 0x2A0D628 is nonempty. The worker changes request states and the completion path invokes stored callbacks before unlinking and freeing requests.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041db20]",
+        "evidence.json#functions[addr=0x1403a0a30]",
+        "evidence.json#functions[addr=0x1403a0710]",
+        "evidence.json#functions[addr=0x1403a0790]",
+        "evidence.json#functions[addr=0x1403a0c60]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "This is a list-presence test, not a global I/O completion fence. A completed request awaiting callback dispatch still keeps the list nonempty; the adapter takes no lock."
+    },
+    {
+      "addr": "0x14041db40",
+      "Finding": "Native descriptor 0:12 (Repack resource regions): Calls the resource-region rebuild path at RVA 0x39D460 with a NULL argument. It recalculates placements, relocates retained resources, and unlinks/frees selected region records; BAR release callbacks can be reached.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041db40]",
+        "evidence.json#functions[addr=0x14039d460]",
+        "evidence.json#functions[addr=0x14039d590]",
+        "evidence.json#functions[addr=0x14039e690]",
+        "evidence.json#functions[addr=0x14039e2a0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "No VM return slot. This is mutating resource maintenance, not a general unload-all or lifetime barrier. It can enqueue loads and modify addresses; the complete transitive resource/callback graph is outside this annotation."
+    },
+    {
+      "addr": "0x14041db50",
+      "Finding": "Native descriptor 0:14 (Apply indexed flag action record): Sets the grouped flag for operand 0 and interprets its variable-length action record from the table rooted at RVA 0xBF30B0. Actions can change other flags, apply further records recursively, modify stored state and trigger native follow-up functions.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041db50]",
+        "evidence.json#functions[addr=0x14039afc0]",
+        "evidence.json#functions[addr=0x14039a980]",
+        "evidence.json#functions[addr=0x1403f0ea0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "This is not a plain bit-setter. Three hard-coded IDs also call RVA 0x210540, and the path includes additional rule propagation. It does not check the ID/table bounds or record length before dereferencing them. The complete meanings of all action opcodes and downstream callbacks remain open."
+    },
+    {
+      "addr": "0x14041db60",
+      "Finding": "Native descriptor 0:15 (Read grouped flag): For ID 65535, returns zero. Otherwise reads bit (id & 31) from DWORD index 8*(signed(id)>>10) + ((id & 1023)>>5), based at RVA 0x9AB540. Returns @INT.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041db60]",
+        "evidence.json#functions[addr=0x14039a980]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "The signed shift and overlapping grouped indexing are native behavior. IDs other than the explicit 65535 sentinel receive no bounds check; a negative ID is not rejected."
+    },
+    {
+      "addr": "0x14041dcc0",
+      "Finding": "Native descriptor 0:19 (Set queued flag): Sets the unsigned-indexed bit in the array at RVA 0x9AD8E8 if it is not already set. For IDs 37, 42, 45 and 46, an additional preexisting flag can suppress the operation. A table lookup then decides whether the low byte of the ID is appended to the notification queue.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041dcc0]",
+        "evidence.json#functions[addr=0x1403df2e0]",
+        "evidence.json#functions[addr=0x1403deee0]",
+        "evidence.json#functions[addr=0x1403deab0]",
+        "evidence.json#functions[addr=0x14039ac80]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "The byte queue cursor at RVA 0x9ADA07 increments with wraparound. The table lookup uses a key encoded as a pointer value and dereferences its result without a NULL check; valid table contents and a matching ID are required. ID 0 becomes a NULL search key; external CRT argument-validation behavior is outside this capture. No guessed game feature name is assigned."
+    },
+    {
+      "addr": "0x14041dcd0",
+      "Finding": "Native descriptor 0:20 (Read queued flag): Returns @INT for bit (unsignedId & 31) in DWORD array RVA 0x9AD8E8 at index unsignedId >> 5.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041dcd0]",
+        "evidence.json#functions[addr=0x1403deab0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "No array-bound or semantic-ID check is present. This reads the flag array modified by 0:19; it does not consume the associated notification queue."
+    },
+    {
+      "addr": "0x14041dd10",
+      "Finding": "Native descriptor 0:28 (Initialize screen-effect parameters): Initializes the decoded caller buffer: QWORD +0=0, DWORD +8=112, DWORD +12=1, QWORD +16=1 and DWORD +24=1. No VM return slot.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041dd10]",
+        "evidence.json#functions[addr=0x1403f7850]",
+        "evidence.json#functions[addr=0x1403f7880]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Writes 28 bytes to caller-owned memory without a NULL guard. The later activation path also writes interpolation fields at +28/+32, so activation requires storage beyond these initialized 28 bytes. This call alone does not enable the global effect."
+    },
+    {
+      "addr": "0x14041dd30",
+      "Finding": "Native descriptor 0:29 (Enable shared screen effect): Sets bit 0 in the decoded parameter buffer and enables the shared rendering state at RVA 0xABC690. It applies mode from +4, alpha byte from +8, position from +12/+16 and float rate from +20 and signed integer duration/count from +24. It also initializes the buffer interpolation pair at +28/+32.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041dd30]",
+        "evidence.json#functions[addr=0x1403f7880]",
+        "evidence.json#functions[addr=0x14015f1d0]",
+        "evidence.json#functions[addr=0x14015f160]",
+        "evidence.json#functions[addr=0x14015f1e0]",
+        "evidence.json#functions[addr=0x14015f1a0]",
+        "evidence.json#functions[addr=0x14015f170]",
+        "evidence.json#functions[addr=0x1403b7810]",
+        "evidence.json#functions[addr=0x14015f250]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "The adapter explicitly supplies zero as the interpolation duration; the helper clamps it to one, initializing the pair to (0,1). Coordinate additions use 16-bit wraparound before scaling to current render dimensions. State is shared globally; the caller buffer is also mutated. No NULL or size guard."
+    },
+    {
+      "addr": "0x14041dd50",
+      "Finding": "Native descriptor 0:30 (Disable shared screen effect): Clears bit 0 in the decoded parameter buffer and disables the shared screen-effect state. Disabling also resets its global rate, elapsed value and duration.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041dd50]",
+        "evidence.json#functions[addr=0x1403f7900]",
+        "evidence.json#functions[addr=0x14015f170]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "No VM return slot or NULL guard. The global effect is shared, so this can disable state previously configured through a different parameter buffer."
+    },
+    {
+      "addr": "0x14041dd70",
+      "Finding": "Native descriptor 0:31 (Increase white overlay opacity): Divides the float operand by 2, truncates to a signed 32-bit integer and configures the shared overlay at RVA 0xABB3B0. RGB bytes become 255 and the render-mode field becomes 72. State 3 increases alpha toward 128. The update subtracts the native float delta at RVA 0x717484.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041dd70]",
+        "evidence.json#functions[addr=0x140156dc0]",
+        "evidence.json#functions[addr=0x140156ce0]",
+        "evidence.json#functions[addr=0x140156c90]",
+        "evidence.json#functions[addr=0x140156d00]",
+        "evidence.json#functions[addr=0x140156f10]",
+        "evidence.json#functions[addr=0x140160a50]",
+        "evidence.json#functions[addr=0x140160a70]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "No finite/range validation. The helper doubles the converted value modulo 2^32 and then converts that zero-extended DWORD to float; negative inputs can therefore become large positive durations, and wrapped zero can reach a reciprocal divide by zero. An originally zero converted value instead selects duration 2 and slope 1. Units are native update units, not proven wall seconds. State 4 can invoke another native continuation after reaching alpha 128; its full effect remains open."
+    },
+    {
+      "addr": "0x14041ddb0",
+      "Finding": "Native descriptor 0:32 (Decrease white overlay opacity): Divides the float operand by 2, truncates to a signed 32-bit integer and configures the shared overlay at RVA 0xABB3B0. RGB bytes become 255 and the render-mode field becomes 72. State 1 first performs its native two-pass delay before state 2 decreases alpha toward zero. The update subtracts the native float delta at RVA 0x717484.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041ddb0]",
+        "evidence.json#functions[addr=0x140156dc0]",
+        "evidence.json#functions[addr=0x140156ce0]",
+        "evidence.json#functions[addr=0x140156c90]",
+        "evidence.json#functions[addr=0x140156d00]",
+        "evidence.json#functions[addr=0x140156f10]",
+        "evidence.json#functions[addr=0x140160a50]",
+        "evidence.json#functions[addr=0x140160a70]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "No finite/range validation. The helper doubles the converted value modulo 2^32 and then converts that zero-extended DWORD to float; negative inputs can therefore become large positive durations, and wrapped zero can reach a reciprocal divide by zero. An originally zero converted value instead selects duration 2 and slope 1. Units are native update units, not proven wall seconds. State 4 can invoke another native continuation after reaching alpha 128; its full effect remains open."
+    },
+    {
+      "addr": "0x14041de30",
+      "Finding": "Native descriptor 0:87 (Increase black overlay opacity): Divides the float operand by 2, truncates to a signed 32-bit integer and configures the shared overlay at RVA 0xABB3B0. RGB bytes become 0 and the render-mode field becomes 68. State 3 increases alpha toward 128. The update subtracts the native float delta at RVA 0x717484.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041de30]",
+        "evidence.json#functions[addr=0x140156dc0]",
+        "evidence.json#functions[addr=0x140156ce0]",
+        "evidence.json#functions[addr=0x140156c90]",
+        "evidence.json#functions[addr=0x140156d00]",
+        "evidence.json#functions[addr=0x140156f10]",
+        "evidence.json#functions[addr=0x140160a50]",
+        "evidence.json#functions[addr=0x140160a70]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "No finite/range validation. The helper doubles the converted value modulo 2^32 and then converts that zero-extended DWORD to float; negative inputs can therefore become large positive durations, and wrapped zero can reach a reciprocal divide by zero. An originally zero converted value instead selects duration 2 and slope 1. Units are native update units, not proven wall seconds. State 4 can invoke another native continuation after reaching alpha 128; its full effect remains open."
+    },
+    {
+      "addr": "0x14041de70",
+      "Finding": "Native descriptor 0:88 (Decrease black overlay opacity): Divides the float operand by 2, truncates to a signed 32-bit integer and configures the shared overlay at RVA 0xABB3B0. RGB bytes become 0 and the render-mode field becomes 68. State 1 first performs its native two-pass delay before state 2 decreases alpha toward zero. The update subtracts the native float delta at RVA 0x717484.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041de70]",
+        "evidence.json#functions[addr=0x140156dc0]",
+        "evidence.json#functions[addr=0x140156ce0]",
+        "evidence.json#functions[addr=0x140156c90]",
+        "evidence.json#functions[addr=0x140156d00]",
+        "evidence.json#functions[addr=0x140156f10]",
+        "evidence.json#functions[addr=0x140160a50]",
+        "evidence.json#functions[addr=0x140160a70]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "No finite/range validation. The helper doubles the converted value modulo 2^32 and then converts that zero-extended DWORD to float; negative inputs can therefore become large positive durations, and wrapped zero can reach a reciprocal divide by zero. An originally zero converted value instead selects duration 2 and slope 1. Units are native update units, not proven wall seconds. State 4 can invoke another native continuation after reaching alpha 128; its full effect remains open."
+    },
+    {
+      "addr": "0x14041e630",
+      "Finding": "Native descriptor 0:47 (Allocate from current region): Sign-extends the low 32-bit operand to a 64-bit byte count and calls vtable slot +8 of the active allocator at RVA 0x9BA920 with the third argument zero. Returns the encoded result as @ADR.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e630]",
+        "evidence.json#functions[addr=0x140152430]",
+        "evidence.json#functions[addr=0x140152680]",
+        "evidence.json#functions[addr=0x1404ad240]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "No adapter size-range or active-owner check. Negative input becomes a negative 64-bit request. The current allocator can be replaced during region transitions; the returned address is not a stable cross-transition allocation contract."
+    },
+    {
+      "addr": "0x14041e660",
+      "Finding": "Native descriptor 0:48 (Free through current region): Decodes operand 0 and calls vtable slot +16 on the allocator currently stored at RVA 0x9BA920. No VM return slot.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e660]",
+        "evidence.json#functions[addr=0x140152570]",
+        "evidence.json#functions[addr=0x140152680]",
+        "evidence.json#functions[addr=0x1404ad270]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "The adapter neither checks for NULL nor identifies the allocator that originally produced the pointer. The active allocator can change during region transitions, so allocation provenance and lifetime remain required."
+    },
+    {
+      "addr": "0x14041e680",
+      "Finding": "Native descriptor 0:55 (Start countdown timer): Uses 32-bit arithmetic to multiply the integer operand by 60 and store the timer limit. Initializes the displayed count to that limit and selects countdown mode. Snapshots counter RVA 0xABB850 and sets state 1; the next unpaused timer task changes it to state 2 before updating the count.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e680]",
+        "evidence.json#functions[addr=0x140157140]",
+        "evidence.json#functions[addr=0x140157170]",
+        "evidence.json#functions[addr=0x140157190]",
+        "evidence.json#functions[addr=0x1401571b0]",
+        "evidence.json#functions[addr=0x1401570f0]",
+        "evidence.json#functions[addr=0x140154700]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Counter progress is driven by the installed timing callback and can be paused through RVA 0xABB854. The factor 60 establishes the native conversion, not exact elapsed wall seconds. Countdown clamps at zero; count-up clamps at 215999 and otherwise stops on a positive configured limit. Limit completion dispatches native call 3AABE0(74,0). Input multiplication can wrap; no argument bounds are checked."
+    },
+    {
+      "addr": "0x14041e6a0",
+      "Finding": "Native descriptor 0:56 (Start count-up timer): Uses 32-bit arithmetic to multiply the integer operand by 60 and store the timer limit. Initializes the displayed count to zero and selects count-up mode. Snapshots counter RVA 0xABB850 and sets state 1; the next unpaused timer task changes it to state 2 before updating the count.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e6a0]",
+        "evidence.json#functions[addr=0x140157140]",
+        "evidence.json#functions[addr=0x140157170]",
+        "evidence.json#functions[addr=0x140157190]",
+        "evidence.json#functions[addr=0x1401571b0]",
+        "evidence.json#functions[addr=0x1401570f0]",
+        "evidence.json#functions[addr=0x140154700]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Counter progress is driven by the installed timing callback and can be paused through RVA 0xABB854. The factor 60 establishes the native conversion, not exact elapsed wall seconds. Countdown clamps at zero; count-up clamps at 215999 and otherwise stops on a positive configured limit. Limit completion dispatches native call 3AABE0(74,0). Input multiplication can wrap; no argument bounds are checked."
+    },
+    {
+      "addr": "0x14041e8a0",
+      "Finding": "Native descriptor 0:63 (Add indexed inventory entry): Uses operand 0 as an entry ID and operand 1 as a destination selector. The native policy chooses global storage (selector 100) or a mapped character record. It can set a unique-entry bit, increment a byte quantity, or insert into character slots. Returns @INT indicating a nonzero policy result.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e8a0]",
+        "evidence.json#functions[addr=0x1403c3f00]",
+        "evidence.json#functions[addr=0x1403c4d50]",
+        "evidence.json#functions[addr=0x1403c3fe0]",
+        "evidence.json#functions[addr=0x1403e39a0]",
+        "evidence.json#functions[addr=0x1403a14e0]",
+        "evidence.json#functions[addr=0x1403e60c0]",
+        "evidence.json#functions[addr=0x1403a1330]",
+        "evidence.json#functions[addr=0x1403a1380]",
+        "evidence.json#functions[addr=0x1403c47a0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "The global quantity policy caps ordinary additions at 99. Character selectors 14/15 map to 1/6; an invalid destination mapping can fall back to global storage. Unknown entry IDs are dereferenced without a NULL guard. Type 19 insertion searches 80 slots, but a full array does not cause the outer function to report failure. Other entry types can trigger equipment/default-selection and notification side effects. This is not a general successful-insertion guarantee."
+    },
+    {
+      "addr": "0x14041e820",
+      "Finding": "Native descriptor 0:64 (Block pooled native requests): Sets the admission gate byte at RVA 0xAD93C0 to one. The captured request-allocation paths test this byte and return without allocating a request when it is set.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e820]",
+        "evidence.json#functions[addr=0x1401dd4e0]",
+        "evidence.json#functions[addr=0x1401dd510]",
+        "evidence.json#functions[addr=0x1401ddf10]",
+        "evidence.json#functions[addr=0x1401de230]",
+        "evidence.json#functions[addr=0x1401de7c0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "No VM return slot. This does not walk or stop already queued records. The exact in-game name of the pooled subsystem is left open; setup clears the gate. This is not a global game pause."
+    },
+    {
+      "addr": "0x14041e830",
+      "Finding": "Native descriptor 0:65 (Play sound from bank 2): Passes operand 0 as the sound number to the native SslSePlay path with bank 2 and ID 0. The adapter supplies zero for the second wrapper parameter; the wrapper supplies scale value 16383 before conversion to a float.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e830]",
+        "evidence.json#functions[addr=0x1401dd170]",
+        "evidence.json#functions[addr=0x1401df790]",
+        "evidence.json#functions[addr=0x1401398e0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "No VM return slot or success result. Playback depends on the sound-system singleton, a matching loaded bank and the backend handle checks. The native path allocates a playback object, starts a handle and adds it to a global list; missing bank/invalid count can produce no playback. Diagnostic text establishes the sound meaning, without guessing an audible sound name."
+    },
+    {
+      "addr": "0x14041e850",
+      "Finding": "Native descriptor 0:69 (Set rule-linked flag): Sets bit (unsignedId & 31) at DWORD index unsignedId >> 5 in array RVA 0x9ABC40, then runs the rule evaluator at RVA 0x3F0EA0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e850]",
+        "evidence.json#functions[addr=0x1403e3930]",
+        "evidence.json#functions[addr=0x1403f0ea0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "No bit-array bounds check. The evaluator counts satisfied conditions across three flag families and can apply further grouped action records, queued flags or rule-linked flags recursively. This can have effects beyond the requested bit."
+    },
+    {
+      "addr": "0x14041db90",
+      "Finding": "Native descriptor 0:70 (Read grouped flag bit 0x800): Returns @INT indicating whether DWORD RVA 0x9AB5C4 has mask 0x800 set. No operand.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041db90]",
+        "evidence.json#functions[addr=0x14039ac80]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "A direct read of stored state; no stronger game-mode or completion label is assigned. The native code does not synchronize this read."
+    },
+    {
+      "addr": "0x14041e860",
+      "Finding": "Native descriptor 0:73 (Clear rule-linked flag): Clears bit (unsignedId & 31) at DWORD index unsignedId >> 5 in array RVA 0x9ABC40. No VM return slot.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e860]",
+        "evidence.json#functions[addr=0x1403e3910]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "No bit-array bounds check. Unlike 0:69, this helper returns immediately after the clear and does not run the rule evaluator."
+    },
+    {
+      "addr": "0x14041de10",
+      "Finding": "Native descriptor 0:77 (Start task-based screen blend): Divides the float operand by 2 and schedules transition work with mode byte 1. The initializer doubles that value into task storage, replaces prior transition tasks and schedules rendering work. The update advances two shared blend values in the range 0..128 using native delta RVA 0x717480.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041de10]",
+        "evidence.json#functions[addr=0x140163590]",
+        "evidence.json#functions[addr=0x140163040]",
+        "evidence.json#functions[addr=0x140163110]",
+        "evidence.json#functions[addr=0x140163540]",
+        "evidence.json#functions[addr=0x140163630]",
+        "evidence.json#functions[addr=0x1401635a0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "This is asynchronous task setup, not a blocking wait. It allocates task state and can cancel/replace earlier work. It has no finite, zero-duration or allocation-failure guard on the captured path; a helper divides 128 by the stored duration. Exact wall-clock timing and all rendering callbacks remain outside the contract."
+    },
+    {
+      "addr": "0x14041daa0",
+      "Finding": "Native descriptor 0:80 (Read held input bit): Reads the current mask in the mapped input record selected by index zero at RVA 0xBF31A0. Returns the chosen bit as @INT. The register BT instruction uses operand 0 modulo 64.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041daa0]",
+        "evidence.json#functions[addr=0x14039b780]",
+        "evidence.json#functions[addr=0x14039bf00]",
+        "evidence.json#functions[addr=0x14039c720]",
+        "evidence.json#functions[addr=0x14039b640]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Input update computes current and rising/falling-edge masks from native mapping tables; this is the mapped mask, not a declared keyboard scan code or physical controller button number. Disabled/reset records clear the masks, and resynchronization can suppress edge detection. The adapter performs no refresh or locking."
+    },
+    {
+      "addr": "0x14041dae0",
+      "Finding": "Native descriptor 0:81 (Read newly pressed input bit): Reads the newly-set-bit mask at +8 of the mapped input record selected by index zero at RVA 0xBF31A0. Returns the chosen bit as @INT. The register BT instruction uses operand 0 modulo 64.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041dae0]",
+        "evidence.json#functions[addr=0x14039b780]",
+        "evidence.json#functions[addr=0x14039bf00]",
+        "evidence.json#functions[addr=0x14039c720]",
+        "evidence.json#functions[addr=0x14039b640]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Input update computes current and rising/falling-edge masks from native mapping tables; this is the mapped mask, not a declared keyboard scan code or physical controller button number. Disabled/reset records clear the masks, and resynchronization can suppress edge detection. The adapter performs no refresh or locking."
+    },
+    {
+      "addr": "0x14041e870",
+      "Finding": "Native descriptor 0:89 (Read rule-linked flag): Returns @INT for bit (unsignedId & 31) at DWORD index unsignedId >> 5 in array RVA 0x9ABC40.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e870]",
+        "evidence.json#functions[addr=0x1403e38f0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "No array-bound check or rule evaluation. Reads the same flag family modified by 0:69 and 0:73."
+    },
+    {
+      "addr": "0x14041e8d0",
+      "Finding": "Native descriptor 0:97 (Remove indexed inventory entry): For destination selector 100, clears a unique-entry bit or subtracts one from a byte quantity with a zero floor. Other selectors resolve a character record and search its ordinary slot array backward, clearing the last matching entry.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e8d0]",
+        "evidence.json#functions[addr=0x1403c49c0]",
+        "evidence.json#functions[addr=0x1403c4a40]",
+        "evidence.json#functions[addr=0x1403a14e0]",
+        "evidence.json#functions[addr=0x1403e60c0]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "The native helper produces an internal success value, but the descriptor has no VM return slot. The character path dereferences the mapped record without a NULL check. It does not perform the type-19 80-slot search used by the add path, so this is not a universal inverse of 0:63."
+    },
+    {
+      "addr": "0x14041df70",
+      "Finding": "Native descriptor 0:100 (Increment saturating counter): Increments the unsigned WORD at RVA 0x9AD880 only while its current value is below 999. No operands and no VM return slot.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041df70]",
+        "evidence.json#functions[addr=0x1403e6a10]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Values already at or above 999 are left unchanged, not clamped downward. The semantic name of this stored counter is not established; this is a shared-memory write without synchronization."
+    },
+    {
+      "addr": "0x14041dbb0",
+      "Finding": "Native descriptor 0:101 (Check three grouped flags): Returns @INT for the short-circuit conjunction of grouped flag IDs 4215, 9289 and 11325.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041dbb0]",
+        "evidence.json#functions[addr=0x1403e6b00]",
+        "evidence.json#functions[addr=0x14039a980]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "Uses the grouped-flag reader at RVA 0x39A980. The exact named milestone represented by the conjunction is not established."
+    },
+    {
+      "addr": "0x14041dbd0",
+      "Finding": "Native descriptor 0:103 (Check difficulty-dependent completion): Reads the stored difficulty selector. Selector 0 and unknown selectors return false. Selector 1 requires native completion percentage ==100 and an additional 27-value aggregate ==100; selector 2 requires only the percentage. Selector 3 requires positive global inventory counts for IDs 593, 594 and 595. Returns @INT.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041dbd0]",
+        "evidence.json#functions[addr=0x1403e6a60]",
+        "evidence.json#functions[addr=0x140152350]",
+        "evidence.json#functions[addr=0x1402f3ab0]",
+        "evidence.json#functions[addr=0x140348b30]",
+        "evidence.json#functions[addr=0x1402c7760]",
+        "evidence.json#functions[addr=0x1403c4380]",
+        "evidence.json#functions[addr=0x1403c4720]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "This is not a pure read: the percentage branch can lazily initialize managers, allocate temporary region/heap objects, mutate global completion totals and then free resources. The exact in-game reward/ending gated by this predicate is not proved. The full completion-table algorithm and allocation-failure behavior remain open."
+    },
+    {
+      "addr": "0x14041e840",
+      "Finding": "Native descriptor 0:104 (Toggle type-2 request flag): Walks the shared list at RVA 0xAD93B0. For records whose byte +53 equals 2, positive signed operand 0 clears mask 8 in DWORD +40; zero or negative operands set that mask.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041e840]",
+        "evidence.json#functions[addr=0x1401df060]",
+        "evidence.json#functions[addr=0x1401df0a0]",
+        "evidence.json#functions[addr=0x1401deb50]",
+        "annotations.json",
+        "semantic-anchors.json",
+        "verification.json",
+        "report.txt"
+      ],
+      "Limitations": "No VM return slot. Follows encoded next links at +32 and changes existing records without validating their lifetime or locking. The full behavioral meaning of flag 8 is left open; no generic pause/resume claim is made."
+    },
+    {
+      "addr": "0x140156d00",
+      "Finding": "Overlay duration doubles in DWORD arithmetic, then zero-extends before 64-bit-register CVTSI2SS. Negative/wrapped edge behavior is therefore not the decompiler signed conversion.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140156d00]",
+        "semantic-anchors.json",
+        "report.txt",
+        "verification.json"
+      ],
+      "Limitations": "Bounded original-file semantics; no live execution or complete transitive closure."
+    },
+    {
+      "addr": "0x1401571b0",
+      "Finding": "The timer update task consumes a separately incremented callback counter and has an explicit start-state pass, saturation and completion dispatch.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401571b0]",
+        "semantic-anchors.json",
+        "report.txt",
+        "verification.json"
+      ],
+      "Limitations": "Bounded original-file semantics; no live execution or complete transitive closure."
+    },
+    {
+      "addr": "0x1403f0ea0",
+      "Finding": "Typed loaded rule records can call all three flag families recursively; arbitrary-table termination is not proved.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403f0ea0]",
+        "semantic-anchors.json",
+        "report.txt",
+        "verification.json"
+      ],
+      "Limitations": "Bounded original-file semantics; no live execution or complete transitive closure."
+    },
+    {
+      "addr": "0x140348b30",
+      "Finding": "The completion-percentage path performs native allocation, manager setup, global-total updates and frees; it is not a pure predicate.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140348b30]",
+        "semantic-anchors.json",
+        "report.txt",
+        "verification.json"
+      ],
+      "Limitations": "Bounded original-file semantics; no live execution or complete transitive closure."
+    },
+    {
+      "addr": "0x14039bf00",
+      "Finding": "Mapped input records retain current and rising/falling-edge masks with disabled/resynchronization branches.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039bf00]",
+        "semantic-anchors.json",
+        "report.txt",
+        "verification.json"
+      ],
+      "Limitations": "Bounded original-file semantics; no live execution or complete transitive closure."
+    },
+    {
+      "addr": "0x1403a1330",
+      "Finding": "Type19 insertion searches at most 80 WORD slots; full-array return does not feed an outer BDX failure result.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a1330]",
+        "semantic-anchors.json",
+        "report.txt",
+        "verification.json"
+      ],
+      "Limitations": "Bounded original-file semantics; no live execution or complete transitive closure."
+    },
+    {
+      "addr": "0x1403e39e0",
+      "Finding": "The loaded 24-byte-record table root setter uses an out-of-line tail at 41E930 to publish the second-table address.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e39e0]",
+        "semantic-anchors.json",
+        "report.txt",
+        "verification.json"
+      ],
+      "Limitations": "Bounded original-file semantics; no live execution or complete transitive closure."
+    }
+  ],
+  "scope": "33 selected system descriptors; no product changes or live game execution."
+}

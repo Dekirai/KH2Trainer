@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-08",
+  "Domain": "native",
+  "title": "Actor task and fiber execution context",
+  "scope": "Fresh static analysis of 38 complete function bodies, registration/dispatch bindings, original data, imports and incoming xrefs. This is a bounded context study, not a claim of complete transitive semantics or whole-program thread safety.",
+  "original": {
+    "path": "E:\\SteamLibrary\\steamapps\\common\\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-\\KINGDOM HEARTS II FINAL MIX.exe",
+    "sha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+    "imageBase": "0x140000000"
+  },
+  "counts": {
+    "functions": 38,
+    "instructions": 1588,
+    "originalFunctionBytes": 6268,
+    "dataSpans": 862,
+    "originalDataBytes": 7560,
+    "verifiedIncomingXrefs": 859,
+    "verifiedImportIdentities": 5,
+    "fiberImportCallSites": 6
+  },
+  "result": "The normal App -> module fiber -> Field scheduler path is closed by original bindings and concrete registration stores. Parked child fibers and deferred deletion prevent treating an idle current OS stack or an empty task list as universal Actor-lifetime quiescence.",
+  "addressConvention": "Full virtual addresses in evidence and claims; six-digit hexadecimal addresses in prose are RVAs added to 0x140000000. Structure offsets marked +N are decimal unless prefixed 0x.",
+  "normalPath": [
+    "14ED40 -> 14F600 -> global 9BA888; 14EDDD -> 150740 installs Field callbacks.",
+    "153160 -> 150820 returns &716860 -> original vtable 5B14B8 slot +8 -> 1505A0.",
+    "1505A0 -> 14F8A0(root manager 9BA888, callback 150310); returned task+24 = module descriptor.",
+    "App update 14EB70 at 14ECD9 -> 14FC20 -> 14FD60(root manager). The root task runs as a fiber through 14F650.",
+    "150310 -> original module vtable +16 -> 150590 -> descriptor+40 -> 150770, which creates Field manager at 716868 and registers 152680.",
+    "150310 while state1 -> 14FC20(module+8 = Field manager) -> 14FD60; child task fibers yield to this module fiber, which yields to its root parent.",
+    "150310 when state3 -> 1500D0(child tasks) BEFORE module exit slot -> 1504F0 -> descriptor+48 -> 150710 -> 1524E0; then any residual tasks are dispatched until empty before 14FA60 destroys the manager."
+  ],
+  "parkedStates": [
+    {
+      "state": "Field task yielded",
+      "sites": [
+        "0x140152787",
+        "0x1401527CB",
+        "0x1401528F5"
+      ],
+      "continuations": [
+        "0x14015278C",
+        "0x1401527D0",
+        "0x1401528FA"
+      ],
+      "retained": "152680 and its non-tail callers remain on the suspended child fiber; 150060 has no frame.",
+      "consequence": "The active parent/OS stack can be outside this lifetime root while its suspended frame remains."
+    },
+    {
+      "state": "Module yielded after child scheduler",
+      "sites": [
+        "0x1401503C3"
+      ],
+      "continuations": [
+        "0x1401503C8"
+      ],
+      "retained": "150310 remains on its suspended module fiber; earlier child callbacks may simultaneously remain on other parked fibers.",
+      "consequence": "Nested suspended stacks must be accounted for independently."
+    },
+    {
+      "state": "Field exit final tail-yield",
+      "sites": [
+        "0x14015073A"
+      ],
+      "continuations": [
+        "0x1401503E5"
+      ],
+      "retained": "150310 remains; 150710, 1504F0 and the already returned 1524E0 have no retained frame at this final-yield site.",
+      "consequence": "Do not infer a retained exit/heap-root frame merely from a decompiler return expression."
+    },
+    {
+      "state": "Task normal completion",
+      "sites": [
+        "0x14014F659",
+        "0x14014F67B"
+      ],
+      "retained": "The task callback has returned and 14F650 removes its frame before the parent switch; the OS trampoline stack still exists until deletion.",
+      "consequence": "Parent observes null callback, retires the fiber and removes the task."
+    },
+    {
+      "state": "Task cancelled while parked",
+      "sites": [
+        "0x140150180",
+        "0x1401354E0",
+        "0x1401351ED"
+      ],
+      "retained": "An abandoned callback stack can remain allocated in the deferred-deletion queue after task/context storage is removed.",
+      "consequence": "Deletion discards the fiber stack without a native guarantee of resumption and normal callback return. A wrapper exit counter alone is insufficient."
+    }
+  ],
+  "threadAndWorkerBoundary": [
+    "Direct tasks execute on the invoking scheduler's current stack. Fiber tasks execute on the Windows thread which schedules the fiber. The normal nested path is therefore concrete, but it is not a universal ownership proof.",
+    "The captured switching code uses globals 713420, 8BBCF8, 713430/713438 and 713440 rather than a visible TLS lookup. No thread-ID gate or lock is visible in 135470; the absence of a local gate cannot establish an external invariant.",
+    "App update 14EB70 has original vtable/data references, including 5B11B0. The final outer virtual dispatch and its OS-thread owner remain unresolved in this bounded set.",
+    "152990 has 25 incoming xref occurrences: 23 code sites, its own RUNTIME_FUNCTION.BeginAddress entry, and the preceding RUNTIME_FUNCTION.EndAddress reference. Source sites are verified; their complete caller chains and thread identities are not captured here.",
+    "Existing worker research demonstrates six motion worker dispatch/join paths and a separate resource worker, plus a possible worker-to-BDX route. This set does not identify an actual shipped event/asset that reaches these transition/task mutations from a worker, and does not exclude one.",
+    "Microsoft permits suitably synchronized fibers to be switched by a different thread. The use of CreateFiber/SwitchToFiber alone is not evidence against migration or concurrency.",
+    "Task cleanup slot +104, manager allocation/free virtual slots, other scheduler callers, and transitive actor/heap callees remain dynamic or outside this capture. No full no-yield or no-worker closure is claimed."
+  ],
+  "failureAndAbortPaths": [
+    {
+      "kind": "Allocation and API preconditions",
+      "finding": "14F8A0 and 14F770 use allocator results without local null recovery. 135250 returns null when its object allocator returns null, and stores a failed CreateFiber result without checking it; 14FD60/135470 do not locally recover. ConvertThreadToFiber's result is likewise stored without a local failure branch.",
+      "limit": "Static missing checks, not induced or observed failures; allocator semantics and system resource conditions were not tested."
+    },
+    {
+      "kind": "Deferred retirement is not idempotent",
+      "finding": "1352E0 checks only next==0, not its +40 marked flag. Requeueing the current tail makes next point to itself. 135470 reads that next before destructing the queued object, so this input violates the queue's one-retirement-per-object precondition.",
+      "limit": "The shown callers clear their fiber pointer. No reachable duplicate-retirement bug in an unmodified playthrough is claimed."
+    },
+    {
+      "kind": "Cancellation skips normal callback completion",
+      "finding": "Cleanup callbacks execute from the canceller. Task/context are removed, then deferred DeleteFiber releases the suspended stack. No normal return path is supplied for the cancelled callback.",
+      "limit": "The claim is about this native mechanism and the API stack-deletion contract; transitive custom cleanup callbacks may perform additional work."
+    },
+    {
+      "kind": "Unexpected fiber callback return",
+      "finding": "135220 enters an unconditional self-loop after its callback returns. Normal 14F650 completion tail-switches away instead.",
+      "limit": "This is a fallback behavior, not an observed hang."
+    },
+    {
+      "kind": "Transition deferral",
+      "finding": "152A90 decrements task+24 and returns while positive, or returns when 1515C0/19BA60 report busy. Its destructive section is reached only after those branches; direct registration 152990 is therefore not itself the whole teardown boundary.",
+      "limit": "Readiness helper semantics and every side effect were not exhaustively re-proven."
+    }
+  ],
+  "practicalUses": [
+    "Explain Field loading, unloading and task timing with concrete scheduler identities and continuation addresses.",
+    "Build a read-only task/fiber diagnostic model with states registered, active, parked, retired and deleted; include the module parent relationship and deferred deletion list.",
+    "Design future lifetime instrumentation around explicit task admission, suspension, cancellation and deletion events, with durable metadata independent of task storage.",
+    "Keep any future Actor/STATUS write provider gated until outer dispatch ownership, worker entry paths, binding stores and heap invalidation have a compatible proven serialization contract."
+  ],
+  "limitations": [
+    "No game process, injection, UI action, runtime experiment or product modification occurred.",
+    "The existing IDA session was revalidated and read only; it was not restarted, closed or saved.",
+    "38 captured bodies do not mean all their callees, all runtime callbacks, all workers or every actor lifetime path are understood.",
+    "Original import-table bytes differ from IDA's zero-filled view at 57B288. evidence.json preserves idaBytes separately and identifies originalBytes as read directly from the retail file. Import identity is a PE parse, not live IAT validation.",
+    "Five incoming data references are RUNTIME_FUNCTION.EndAddress metadata. The other captured RUNTIME_FUNCTION.BeginAddress entries are also unwind metadata, not callers or callback registrations; verification.json records both kinds.",
+    "No implementation or installer approval follows from this study."
+  ],
+  "priorEvidence": [
+    "../actor-binding-lifetime-20261008/report.json",
+    "../actor-bulk-lifetime-20261008/report.txt",
+    "../status-bootstrap-20261007/report.md",
+    "../status-worker-observation-20261007/report.md"
+  ],
+  "externalContracts": [
+    {
+      "url": "https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-switchtofiber",
+      "use": "Saved/restored fiber execution state and possibility of synchronized cross-thread switching.",
+      "retrieved": "2026-10-08"
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-deletefiber",
+      "use": "Deletion releases fiber data, including its stack. Lack of guaranteed native callback resumption is an inference from this contract and the captured cancellation code.",
+      "retrieved": "2026-10-08"
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/windows/win32/procthread/fibers",
+      "use": "A fiber runs in the context of the thread that schedules it and maintains its own stack/state.",
+      "retrieved": "2026-10-08"
+    }
+  ],
+  "claimFile": "claims.json",
+  "claimCount": 16
+}

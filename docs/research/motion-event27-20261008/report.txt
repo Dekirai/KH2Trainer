@@ -1,0 +1,172 @@
+Motion/Event27 — originaler B_LK120-Zeuge, 2026-10-08
+
+Ergebnis
+Ein echter Originaldatensatz für Event27 ist gefunden: obj/B_LK120.mdlx.
+Der Handler verarbeitet neue Kontakt-/Gelenk-IDs. Seine 201 statisch
+erreichbaren Instruktionen enthalten keinen direkten Rebind-Trap2:9/95.
+Im Gesamtscript liegt2:9 beiPC21314, außerhalb dieser Event27-Closure.
+Native Folgewirkungen sind damit nicht ausgeschlossen. Keine Spielausführung,
+kein Prozesszugriff und keine Produktänderung wurden vorgenommen.
+
+Der untersuchte native Weg enthält keine Liste gespeicherter Eventnummer27.
+Er erzeugt Event27 aus32-Byte-Kontaktresultaten, die aus BAR-Typ23-Datensätzen
+und der aktuellen Motion-/IK-Auswertung entstehen. Die bisherige Beschreibung
+als „flagged motion event“ wird hier auf diese konkrete Datenherkunft präzisiert.
+
+Originalidentität
+  Paketindex: kh2_fifth.hed, Originaleintrag6513
+  Namehash: f70f7650febe906261f5344484cce241
+  PKG-Offset:8915574400; gespeicherter Eintragsbereich:8686048Bytes
+  Dekodiertes Original:2303472Bytes
+  Gesamt-SHA256:
+    a6a0195e7ee6834ec1b12543d5d636f877ba804be8e39b12dbe1946cb247a50b
+  BDX: BARordinal2,type3, Offset2252496,Länge47630
+    SHA57470856e51797a5a59174302460c0e66a654999f52b65fd721ac714c1f06d61
+  Definitionen: BARordinal3,type23,Offset2300128,Länge3344
+    SHA2b2ef50518ec7434c42eb1e7e5b7636c438eb36f02a9b147dbfdfcc3e9116af2
+Der vorhandene lesende AssetArchiveReader hat das vollständige Originalpayload
+aus HED/PKG dekodiert und Bytegleichheit mit der Loose-Datei geprüft.
+retail-witness.json enthält die HED-Zeile, deren SHA, die SHA des gespeicherten
+PKG-Eintrags und beide Kindpayloads. Die gesamte PKG wurde nicht gehasht.
+Keine vollständigen Originalassets wurden in diese Studie kopiert.
+
+Native Datenherkunft und Grenzen
+1. Actor-Konstruktor3B3200 sucht BARtype23/occurrence0 in Actor+0x920 und
+   speichert den dekodierten Datenzeiger in Actor+0xAB8.
+   Ersatzpfad3B6310 kann später einen anderen Definitionszeiger setzen.
+2.3C9B80: count=int32(header+0), Einträge ab+64, Schritt20Bytes;
+   Typ=BYTE+4.3B4F10 prüft Gruppe=BYTE+0 über3BA550.
+   Native Funktionen kennen hier keine Dateilänge; unser Leser prüft diese.
+3. Gruppenpriorität: enable-Bit bei Actor+1448, dann disable-Bit dort+4;
+   danach enable/disable bei Actor+1440/+1444, schließlich headerDWORD+4.
+   Es sind indexierte Gruppenbits. Die fehlende zweite Argumentanzeige im
+   Decompiler ist kein „alle Gruppen“-Schalter; ASM erhält/setztEDX.
+4.3C8070 verlangt Motion+360 bit0, Actor+288 ohne0x40000000 sowie entweder
+   3BA940 oder Actor+1736 bit0x20.3BA940 verlangt Actor+2488 bit0,
+   Actor+288 bit0 gelöscht und Decode(Actor+1696)==NULL.
+5. Typ10, danachTyp11: u16+6 liefert Gelenk-ID; i16+18 liefert Höhe.
+   1A8670 baut32-Byte-Records:
+      +0..15 Ergebnisposition nach Treffer
+      +16 DWORD Ergebnisflags, bit0=Kontaktresultat
+      +20 DWORD Kontrollflags:0x80000 explizite Höhe,
+          0x100000 Typ11,0x200000 Terminator
+      +24 float Höhe
+      +28 WORD aus Skelett-Gelenkdescriptor[ID].+4
+      +30 WORD ursprüngliche Gelenk-ID
+   Am Ende folgt ein separater Terminatorrecord.
+6.3C6AA0 verwendet bei geordnet positivem Motion+72 den Blendpfad
+   1A4CD0→1C3A30. Der andere Pfad benutzt1A4D40→currentMotion.vtable+0x10;
+   dessen konkrete Ziele sind hier noch offen.
+7.1C3A30 löscht zunächst Ergebnisflags, verlangt gleiche passende Modi
+   aus beiden gespeicherten Posen und Modus>=2. Es sucht record+28 passend
+   zum verarbeiteten Gelenk. Nur ein nichtnull Resultat von1712B0 setzt
+   record+16 bit0 und schreibt die Kontaktposition.1712B0 kombiniert zwei
+   niedrigere Abfragen; deren vollständige transitive Geometrieimplementierung
+   ist hier nicht erschlossen.
+8.3C6AA0 vergleicht gesetzte Records anhand ihrer ID+30 gegen die vorherige
+   ID-Liste Motion+528/count+560. Neue IDs rufen3B5E80. Dies ist kein
+   zusätzlicher Unique-Filter innerhalb der neu aufgebauten Liste.
+9.3B5E80 übergibt Event27 mit [Actor@ADR, ID@INT, record@ADR].
+   Ein gültiger Actor+1456-Scriptkontext und ein positiver erster Event-PC
+   sind erforderlich.3E1840 führt die VM synchron aus;41B320 legt die
+   Argumente in dieser Reihenfolge auf den Operandenstack.
+   Der eingefrorene Workerbeleg bleibt:
+   3BEEC0→12FDB0/130030→3BF4E0→3BFAB0→3C6AA0→3B5E80→3E1840→3E1C80→41B400.
+   Diese Studie beweist nicht, dass B_LK120 tatsächlich den Workerzweig
+   statt des anderen synchronen Zweigs nimmt.
+
+Originaler Scriptpfad
+BDX-Header b_lk120: Work5056, Stack512, Temporary512, Headerende108.
+Event27 beginnt beiPC2904, Dateioffset5824.
+Die ersten drei Stores legen record,ID,Actor in Frame+0/+4/+8 ab.
+Der gesamte syntaktische Event27-Untergraph enthält201 Instruktionen,
+alle statischen Calls/Branches und mögliche Call-/Trap-Fortsetzungen:
+  1:15 beiPC3022 und3127
+  1:87 beiPC3207
+  2:10 beiPC3238
+  2:61 beiPC3246
+  2:11 beiPC3256
+  2:62 beiPC3269
+  2:22 beiPC3275
+Kein ungeprüftes lineares Durchlaufen von Daten, keine U16-Rohwortsuche.
+Native Rückrufe, Debugcallback, Scriptmutation und abnormale Ausgänge sind
+externe Grenzen dieses Untergraphen.
+
+Der Präfix bis vor1:87 ist zusätzlich mit echten Callframes nachvollzogen:
+- Hilfsroutine3006 erhält Work+576. Sie liest Work+932 und über1:15 den
+  DWORD bei decode(Work+580)+384. Die tatsächliche Initialisierung dieses
+  Gate-Quellzeigers ist Voraussetzung; Gleichheit zum eingehenden Actor
+  wird hier nicht behauptet.
+- Bei Work+932==0 sind Werte1,3,4,5,213,214,221,222,233,164 zugelassen.
+  Wert47 verlangt zusätzlich Work+5044==7.
+  Bei Work+932!=0 ist nur164 zugelassen.
+- Kontakte103/83/127/121 wählen Parameter213/214/215/216 und
+  Timer Work+8/+12/+16/+20. Ein endlicher Timer<=0 erreicht1:87.
+- Der native Operandenvektor an1:87 ist dann
+  [eingehender Actor, gewählter Parameter,1,0].
+576 konkrete Vertreter ergeben111 unterschiedliche Präfixpfade.
+Das Modell stoppt vor1:87 und simuliert dessen Wirkung nicht.
+Seine einzige native Zusammenfassung1:15 ist direkt durch42B480 belegt:
+Decode(operand0), DWORD+384 lesen, @INT-Ergebnis zurückgeben.
+
+Präzisierung zur Actor-/Wrapper-ABI
+3B3200 schreibt bei3B323A/3B3242 EncodeNullable(Actor) nach Actor+4.
+42D540 (1:87) erwartet Decode(Decode(operand0)+4) als nativen Actor.
+Der direkte Actor aus Event27 ist daher bei intaktem Self-Link selbst ein
+strukturell passender Wrapper. Der echte B_LK120-Präfix benutzt dies.
+Eine gesonderte Wrapperallokation ist für dieses Argument nicht nötig.
+Dies präzisiert die frühere offene Trennung in actor-rebind-context-20261008;
+eingefrorene Dateien wurden nicht verändert. Es beweist weder allgemeine
+Zeigergültigkeit noch das Fehlen späterer Actor+4-Writes oder Event27→Rebind.
+
+Definitionszeuge und Census
+B_LK120 enthält164 Definitionen. Gruppe12 enthält Typ10-IDs127,121,83,103;
+Gruppe13 enthält94 sowie127,121,103,83. Höhen stammen aus den Originalrecords
+(Gruppe12:500/700; Gruppe13:20 beziehungsweise667).
+Defaultmaske0xBFF00001 enthält weder Bit12 noch Bit13. Ein wirksames
+Gruppen-enable ist deshalb eine zusätzliche Ausführungsvoraussetzung.
+Die aktuelle Motion muss außerdem die passenden Skelett-/IK-Modi liefern.
+
+Frisch gescannt: sämtliche2238 direkten obj/*.mdlx im vorhandenen Loose-Baum.
+-1397 nichtleere BAR23-Payloads,613 Typ10/11-Records, maximal9 pro Payload.
+-920 nichtleere BAR3-Scripts, genau ein erster Event27-Header: B_LK120.
+-232 leere BAR23 und47 leere BAR3 separat;0 Struktur-/Parserfehler.
+-Alle Dateien samt SHA/Größe und alle geprüften Einträge sind inventarisiert.
+Die nativen16 Recordplätze reichen damit für diese gespeicherten Listen
+einschließlich Sentinel, sogar ohne Gruppenfilter. Das ist kein allgemeiner
+Sicherheitsbeweis für andere Klassen, Runtime-Ersatzdaten oder beschädigte
+vorherige Listen/Skelettindizes.
+Der Census umfasst weder rekursive Container noch andere Endungen oder
+sämtliche Originalpakete. Nur der ausgewählte Zeuge wurde aus HED/PKG
+bytegleich verifiziert. Deshalb keine archivweite Abwesenheitsbehauptung.
+
+Nachweis und Reproduktion
+31 vollständige neue Bodies,2649 Instruktionen,12370 Originalbodybytes;
+Die darin enthaltenen4 unaufgeführten NOP-Paddingbytes sind separat validiert.
+60 konkrete Capstone-Semantikanker;8 Originaldatenspans/128Bytes.
+Zwei importierte memcpy-Callsites samt Originalforwarder und PE-IAT-Identität.
+Alle disasm-Seiten wurden bis cursor.done gelesen und ihre Mengen abgeglichen.
+Kein Claim schließt die gesamte transitive native Closure oder alle Threads.
+
+Aus dem Repository:
+  py -3 -B docs/research/motion-event27-20261008/verify.py --check
+Der Check rekonstruiert Census/Scriptpräfixe, prüft Original-PE/Original-PKG-
+Eintragsbytes und alle Manifestdateien ohne Schreibzugriff.
+Der anfängliche vollständige Package-Decoder-Vergleich lässt sich wiederholen:
+  dotnet run --project docs/research/motion-event27-20261008/retail-probe/RetailProbe.csproj --configuration Release -- "<gameRoot>" "<temporary receipt path>"
+Vergleiche das JSON mit retail-witness.json. Keine Rohassets werden ausgegeben.
+
+Konkrete nächste Grenzen
+- Nichtgeblendete virtuelle Evaluatorziele bestimmen.
+- B_LK120 Motion-/Cache-Daten und die aktivierenden Gruppenmasken verfolgen.
+- Native Folgewirkungen1:87/2:10 und mögliche Rückrufe untersuchen, bevor
+  indirekte STATUS-Rebinds ausgeschlossen werden.
+-3C6F60 besitzt eine ähnliche zweite Dispatchroutine; die frischen IDA-Xrefs
+  zeigen keinen direkten Codecaller. Indirekte/computierte Wege bleiben offen.
+
+Nutzbare Folgerung
+Ein künftiger lesender Motion-Inspektor kann gespeicherte Typ10/11-Records,
+Gruppen, Gelenk-IDs/Höhen und zugehörige Event27-Handler anzeigen und die
+genannten Laufzeitbedingungen erklären. Für eine sichere Runtimebeobachtung
+bleiben native Eintrittsgrenzen und Lifetime-Nachweise notwendig.
+Diese Studie installiert keine Hooks und führt keine Skripte aus.

@@ -1,0 +1,99 @@
+BDX DESCRIPTOR REGIONS: BANKS 3, 4, 5, 6, 7, 8 AND 10
+2026-10-08
+
+Result
+
+Seven additional descriptor regions contain 451 records. Each record's complete
+16 original bytes matches the IDA capture. There are 446 nonnull targets and five
+NULL handlers. All nonnull targets lie in executable PE sections. 443 are exact
+function starts in the captured IDB; three are short branch stubs which IDA has
+not defined as functions. Those stubs remain explicit code ranges in this study.
+
+Bank  Table RVA  Captured records  End RVA (exclusive)  NULL indices
+3     72F1A0     179               72FCD0               none
+4     757250      59               757600               0, 1
+5     789BE0      35               789E10               none
+6     787E80      72               788300               none
+7     7883F0      37               788640               20, 22, 23
+8     787530       9               7875C0               none
+10    787070      60               787430               none
+
+These are bounded structural observations. They do not establish a native index
+check, a recovered source-language array declaration, or complete semantics for
+the handlers. The previously captured dispatcher indexes directly into a bank
+without checking its size, NULL holes or a terminal sentinel. The descriptor
+regions therefore must not be presented as a guarantee that calls are safe.
+
+Every integer address above is an RVA relative to image base 140000000. Original
+executable SHA256:
+9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed
+
+Why these extents are separate data regions
+
+The first following 16-byte row in each case no longer has descriptor structure.
+The captured descriptors have a NULL or executable handler, flags confined to
+the U16 operand count and 40000000 return flag, and zero padding. These properties
+are checked independently against the PE. The first following rows are retained
+in full so the classification can be inspected instead of accepted from a count.
+
+Bank 3 is followed by DWORDs 40800000 and C0800000 at 72FCD0/72FCD4. Function
+012E00 loads those values separately and copies them into a different global
+region. They are not a function pointer followed by operand flags.
+
+Bank 5 is immediately followed by QWORD 789E10 pointing to 2B047D0. Function
+0304A0 reads that pointer, adds 8000 and stores the result in 2B59BA8. The pointer
+does not point into an executable section.
+
+Banks 4, 6, 7, 8 and 10 are followed by initialized data beginning with QWORD 60,
+DWORD 01300000 and DWORD 20000000. Separate functions mask QWORDs at offsets +0x30
+from these region starts to 40 bits. Additional pointer consumers were captured
+for the regions following Banks 4 and 6. This is evidence of different data use,
+not a recovered type or exact object size for every following region.
+
+The table-base xrefs resolve to the corresponding original registry slots for
+Banks 4 through 8 and 10. Bank 3 instead has the previously established setup
+reference from 1F9AA0. The original Bank 3 registry entry is NULL; its persistent
+descriptor storage and context-dependent registration remain distinct.
+
+Holes and branch stubs
+
+Bank 4 begins with two NULL records. Bank 7 has three internal NULL records.
+Scanning until the first zero handler would omit real later descriptors.
+
+Three Bank 4 targets are not functions in this IDB snapshot:
+
+  4:14 -> 433510: a five-byte direct jump to 3FB1C0, declared argc 0.
+  4:15 -> 433520: a five-byte direct jump to 3FB4D0, declared argc 0.
+  4:25 -> 433830: a 16-byte code range. It loads operand0 into XMM1,
+          sets R8D=0 and ECX=1, then jumps to 3FB250; declared argc 1.
+
+These are real nonnull executable targets. The exact bytes were read from IDA,
+compared with the original PE and decoded independently. The jumps and register
+setup are established; this inventory does not name their transitive behavior.
+No function was created or renamed in IDA, and these ranges are not silently
+added to the existing canonical function count.
+
+Use in the trainer
+
+The descriptors.json file uses the trainer's existing numeric catalog fields.
+It lets the offline script inspector show actual handler addresses, declared
+operand counts, return-slot flags and NULL holes for these banks. Empty names
+mean that behavior remains unannotated. Structural metadata must stay separate
+from both semantic names and live registration/argument validity.
+
+Reproduction
+
+  py -3 -B docs/research/bdx-bank-other-inventory-20261008/verify.py --check
+
+The verifier requires the pinned original executable and Python with Capstone.
+It checks 451 descriptors, nine complete boundary-consumer functions containing
+40 instructions/226 bytes, ten explicit semantic anchors and three code ranges
+containing six instructions/26 bytes. Table captures include 8112 bytes, of which
+896 are the intentionally included following-data windows.
+
+The read-only IDA capture used an existing database with Hex-Rays ready and
+auto_analysis_ready reported false. Original-byte comparisons and explicit
+cursor/extent checks bound the evidence despite that snapshot limitation.
+Function metadata and direct xrefs are recorded, not treated as exhaustive
+proof against indirect aliases or future table changes. No game process,
+script, injected component or original executable code was executed.

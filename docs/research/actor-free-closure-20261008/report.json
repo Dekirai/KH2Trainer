@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-08",
+  "scope": "Follow-up of allocator free, region recycling and resource cleanup; no universal lifetime closure claim",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "evidence": "docs/research/actor-free-closure-20261008/evidence.json",
+  "verification": "docs/research/actor-free-closure-20261008/verification.json",
+  "claims": [
+    {
+      "addr": "0x1400fdd90",
+      "Title": "Der Allocator verwendet einen echten binären Semaphore.",
+      "Finding": "0FDD90 erhöht atomar den Zähler im 16-Byte-Wrapper, wartet mit WaitForSingleObject(INFINITE) auf wrapper+8 und senkt den Zähler danach. 0FDC90 gibt genau einen Semaphore-Zähler frei. 0FD9C0 erzeugt den Wrapper. Der wiederverwendete Konstruktor 19C3A0 übergibt Initial=Max=1. 19C2B0 und 19C470 benutzen beide das globale AC0FD8.",
+      "Evidence": [
+        "docs/research/actor-free-closure-20261008/evidence.json",
+        "docs/research/actor-free-closure-20261008/verification.json",
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14019c3a0]",
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14019c470]"
+      ],
+      "Limitations": "Die Sperre ist nur für die beobachteten Allocator-Operationen belegt. Andere Actor-/STATUS-Writes, die gesamte Zerstörung und suspendierte Fibers werden damit nicht ausgeschlossen."
+    },
+    {
+      "addr": "0x14019c470",
+      "Title": "Freigabe beginnt vor der EFACCAFE-Füllung; Wait-Fehler werden nicht geprüft.",
+      "Finding": "19C470 wartet bei 19C487, prüft danach RBX auf NULL statt EAX als Wait-Ergebnis, zieht 32 vom Payloadzeiger ab, ruft 3A08F0, entfernt den Header aus der Liste und füllt ihn mit EFACCAFE. 19C2B0 ignoriert das Wait-Ergebnis ebenfalls. 0FD9C0 speichert den CreateSemaphoreA-Rückgabewert ohne Prüfung. Ein gültiger Handle ist eine native Voraussetzung.",
+      "Evidence": [
+        "docs/research/actor-free-closure-20261008/evidence.json",
+        "docs/research/actor-free-closure-20261008/verification.json",
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14019c470]"
+      ],
+      "Limitations": "Weitere Fehlerpfade des Allocators werden separat in allocator-blocks-20261008 untersucht. Ein Wait-Return allein bestätigt keine erfolgreiche Sperrübernahme."
+    },
+    {
+      "addr": "0x1403a08f0",
+      "Title": "Der bislang verdächtige Free-Helfer führt selbst keine Ressourcen-Callbacks aus.",
+      "Finding": "3A08F0 ignoriert seine Eingangsgrenzen, lädt den Listenanfang 2A0D628 und folgt DWORD-Packedlinks über 4AD270 bis NULL. Der einzige CALL in seinem vollständigen Körper ist der Ptr32-Decoder. Er gibt keinen Block frei und schreibt keine Actor-/STATUS-Bindung ungültig.",
+      "Evidence": [
+        "docs/research/actor-free-closure-20261008/evidence.json",
+        "docs/research/actor-free-closure-20261008/verification.json",
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x1404ad270]"
+      ],
+      "Limitations": "Die Decoder-Voraussetzungen und Listenintegrität bleiben erforderlich. Eine zyklische Liste kann die Schleife festhalten. Die Position im Free-Pfad beweist keine Callback-Semantik."
+    },
+    {
+      "addr": "0x14039d300",
+      "Title": "Auch Reservierung recycelt Regionen und kann Ressourcen zerstören.",
+      "Finding": "39D300 rundet die Größe auf 128, dekrementiert 749750, subtrahiert die Größe von 749740 und speichert sie in 29FB400. Überlappende Ressourcen werden je nach Status und Flags entkoppelt oder per BAR-Cleanup, 39E2A0 und virtuellem Free beseitigt. Danach wird die gesamte reservierte Region mit Nullbytes gefüllt. Im Körper gibt es keine vorherige Semaphore-/CriticalSection-Übernahme. 39D400 hebt dieselbe Top-/Größenverwaltung nach BAR- oder Bereichscleanup wieder an.",
+      "Evidence": [
+        "docs/research/actor-free-closure-20261008/evidence.json",
+        "docs/research/actor-free-closure-20261008/verification.json",
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14039d400]"
+      ],
+      "Limitations": "Entry 39D300 liegt vor der beobachteten Regionsmutation, ist aber keine bewiesene gemeinsame Actor-Grenze. Der virtuelle Free bei 39D3C1 besitzt eine dynamische Allocator-Identität. Top-/Indexgrenzen werden hier nicht validiert."
+    },
+    {
+      "addr": "0x14012ef30",
+      "Title": "Bereichscleanup sucht und zerstört konkrete ResourceEntry-Objekte.",
+      "Finding": "12EF30 wiederholt 12E100(start,end) und 12E460(found,flag). 12E100 sucht Buffer-/Größenüberlappungen in der ResourceEntry-Liste. 12E460 kann einen registrierten Callback aufrufen, markiert Replacement-Texturen, entfernt das Objekt aus der Liste und ruft den virtuellen Destruktor mit Delete-Flag 1.",
+      "Evidence": [
+        "docs/research/actor-free-closure-20261008/evidence.json",
+        "docs/research/actor-free-closure-20261008/verification.json"
+      ],
+      "Limitations": "Kein Allocator-/Actor-Lock in diesen Körpern. Während dynamischer Callbacks sind Wiederentranz und Seiteneffekte nicht durch diese Analyse ausgeschlossen."
+    },
+    {
+      "addr": "0x14012ee70",
+      "Title": "Die optionale Ressourcen-Callback-Tabelle ist beim beobachteten App-Start deaktiviert.",
+      "Finding": "axaAppMain (14F1E0) übergibt bei 14F301 drei NULL-Argumente an 12EE70; das setzt 8AEF38=NULL. Der ResourceEntry-Konstruktor 12CD80 initialisiert +0x64C=-1. 12E5C0 und 12DBB0 benutzen die Tabelle aus 32-Byte-Einträgen nur, wenn sie vorhanden ist. Der Init-Callback liegt bei +16 und Cleanup bei +24. 12E460 überspringt den Cleanup-Callback bei einem Index <= -1.",
+      "Evidence": [
+        "docs/research/actor-free-closure-20261008/evidence.json",
+        "docs/research/actor-free-closure-20261008/verification.json"
+      ],
+      "Limitations": "Dies beweist den beobachteten direkten Initialisierungspfad, keine Unveränderlichkeit des Globals gegen Aliase, Mods oder externe Schreiber. Eine aktivierte Tabelle benötigt eigene Callback-Verträge. Ein nichtnegativer Index bei NULL-Tabelle wäre ungültig."
+    },
+    {
+      "addr": "0x14012d8e0",
+      "Title": "ResourceEntry und ReplaceEntry sind bis zu ihren CRT-Freigaben aufgelöst.",
+      "Finding": "Der Konstruktor installiert 5AA190->12D8E0. Dieser Destruktor baut die Replacement-Liste ab und erreicht bei Delete-Flag 1 j_j_free->j_free->free. Die native ReplaceEntry-Tabelle 5AA090->129D30 führt für Buffer+96 zu _aligned_free und für das Objekt zu free. Beide Vtable-Zellen stimmen mit dem Original-PE überein.",
+      "Evidence": [
+        "docs/research/actor-free-closure-20261008/evidence.json",
+        "docs/research/actor-free-closure-20261008/verification.json"
+      ],
+      "Limitations": "Die konkreten Targets gelten für die aufgezeigten nativen Konstruktoren. Der dynamische Typ aller Objekte und Replacement-Knoten im Lauf ist nicht bewiesen. CRT-Implementierung und Exception-Unwind bleiben externe Grenzen."
+    },
+    {
+      "addr": "0x1403a6a10",
+      "Title": "BAR-Cleanup umfasst mehrere Ressourcentypen und sofortige wie verzögerte Rücknahme.",
+      "Finding": "3A6A10 behandelt verschachtelte BARs sowie Modell-, Textur- und Audioressourcen und entfernt die gepackte ResourceEntry-Bindung. Die Switchtabelle samt 48-Byte-Typabbildung wurde aus Originalbytes geprüft. Typ 4 führt über 1BE1C0 zu 1B9890 oder 1BCDF0. Diese geben CPU-Hilfsblöcke frei und reichen Grafikbuffer an 119B00 weiter. Mehrere Texturhelfer setzen lediglich Zustand 176=10, 180=1 und 184=0/-1.",
+      "Evidence": [
+        "docs/research/actor-free-closure-20261008/evidence.json",
+        "docs/research/actor-free-closure-20261008/verification.json"
+      ],
+      "Limitations": "Die Analyse spezialisiert die beobachteten Release-Argumente. Konstruktion/Upload bei anderem Argument, beschädigte Ressourcen, Texturverbraucher und alle dynamischen Grafiktypen sind nicht vollständig geschlossen."
+    },
+    {
+      "addr": "0x140119b00",
+      "Title": "Grafikbuffer werden unter eigener Sperre in eine vierteilige Freigabequeue eingereiht.",
+      "Finding": "119B00 beschafft den GX-Singleton über 11C150 und übernimmt dessen CriticalSection bei +31352 (0x7A78). Es hängt einen nicht NULL Buffer ausschließlich in die Familie bei +31208+24*index ein; fehlende Kapazität vergrößert den Vektor über 1082B0. Der Drain besitzt zwei getrennte Familien mit jeweils vier Queue-Slots: +31112 für virtuelle Destruktoren an Slot 0 und +31208 für Slot 8. 123990 inkrementiert den gemeinsamen Index +31304 modulo 4 und leert die beiden erreichten Slots unter derselben CriticalSection. 115230 wiederholt das für alle vier Indexpositionen.",
+      "Evidence": [
+        "docs/research/actor-free-closure-20261008/evidence.json",
+        "docs/research/actor-free-closure-20261008/verification.json"
+      ],
+      "Limitations": "Vier Queue-Positionen sind belegt, keine exakte Frame-/Zeitgarantie und keine bestimmte Thread-ID. Der Queue-Verbraucher hat einen direkten Caller 128470, dessen kompletter Kontext hier nicht expandiert wurde. Virtuelle GPU-Destruktoren und Singleton-Erstinitialisierung bleiben Grenzen."
+    },
+    {
+      "addr": "0x1400818b0",
+      "Title": "Audio-Cleanup besitzt eine weitere Sperre und einen optionalen dynamischen Callback.",
+      "Finding": "1363B0 entfernt Bank-/Voice-Listeneinträge und ruft 081880->0818B0. 0818B0 übernimmt die CriticalSection 2B81278, erstellt ein 48-Byte-Kommando mit Zeitstempel und ruft bei nicht NULL den Funktionszeiger 2B81100, bevor Audio-Backend-Operationen folgen. Anschließend wird die CriticalSection freigegeben.",
+      "Evidence": [
+        "docs/research/actor-free-closure-20261008/evidence.json",
+        "docs/research/actor-free-closure-20261008/verification.json"
+      ],
+      "Limitations": "Der Callback wird nur bei nicht NULL ausgeführt. Seine aktuelle Belegung und Erreichbarkeit sowie die Audio-Backend-Funktionen sind nicht geschlossen. Daraus folgt keine universelle callbackfreie oder fiberfreie Cleanup-Closure."
+    },
+    {
+      "addr": "0x14012d5a0",
+      "Title": "Ressourcenabbau kann auch eine Datei schreiben.",
+      "Finding": "12D8E0 ruft 12D5A0. Bei positivem Namenszähler erstellt 12D5A0 Verzeichnisse und versucht, eine 1024-Byte-Datei name_table.bin mit optionalem Regionpräfix unter dem konfigurierten Replacement-Pfad zu schreiben. _sopen_dispatch-Fehler setzen den Handle auf -1. _write und _close werden trotzdem versucht; ihre Ergebnisse werden nicht ausgewertet.",
+      "Evidence": [
+        "docs/research/actor-free-closure-20261008/evidence.json",
+        "docs/research/actor-free-closure-20261008/verification.json"
+      ],
+      "Limitations": "Statischer Seiteneffekt; keine solche Datei wurde durch diese Analyse erstellt. Pfad-/Formathelfer und Dateisystemverhalten sind nicht vollständig expandiert."
+    },
+    {
+      "addr": "0x14039d400",
+      "Title": "Die Folgeanalyse liefert getrennte frühe Grenzen, keine universelle Actor-/STATUS-Invalidierung.",
+      "Finding": "Innerhalb der belegten Teilpfade liegen 39D300 vor Regionsrecycling, 39D400 vor Regionscleanup und 19C470 vor Blockunlink und Poisoning. BAR-/ResourceEntry-, CPU-Heap-, GPU-Queue- und Audio-Rücknahme verlaufen jedoch unterschiedlich. Bereits der vorherige Bulk-Bericht belegt Task-Cleanup vor 19FFD0 sowie einen Fiber-Wechsel im 152680-Pfad. Ein später Free-Hook kann diese früheren Lebensdauerenden nicht allgemein ersetzen.",
+      "Evidence": [
+        "docs/research/actor-free-closure-20261008/evidence.json",
+        "docs/research/actor-free-closure-20261008/verification.json",
+        "docs/research/actor-bulk-lifetime-20261008/report.json",
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14019c470]",
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14039d400]"
+      ],
+      "Limitations": "Kein universeller Hook oder Schreibzugriff wird aus diesen statischen Befunden freigegeben. Notwendig bleiben Allocation-/Resource-Identität, native Besitzer-/Task-Zuordnung, Aliascensus und Behandlung dynamischer Callbacks sowie suspendierter Fibers."
+    }
+  ],
+  "usefulness": [
+    "Grundlage für Ressourcen- und Speicherdiagnostik mit getrennten CPU-/GPU-/Audio-Lebensdauern.",
+    "Gezielte Asset-Replacement-Analyse: native ResourceEntry-/ReplaceEntry-Destruktoren, Callback-Tabellen und name_table.bin sind jetzt lokalisiert.",
+    "Ein späteres Hot-Reload-Verfahren muss die native Release-Reihenfolge, Queue-Verbrauch und native Besitzerkontexte erhalten; direkte sofortige GPU-/Actor-Freigabe ist dadurch nicht legitimiert."
+  ],
+  "knownFrontiers": [
+    "verification.json enumerates every observed unexpanded direct call/jump and indirect call/jump, including out-of-scope initialization branches.",
+    "No attempt to complete generic CRT/OS implementations or all graphics/audio virtual targets.",
+    "No runtime thread IDs, ownership epochs, arbitrary callback closure, exception/unwind safety or all-Actor invalidation proof.",
+    "Incoming references for generic j_j_free were clipped: actual materialized count10; tool reported1000 and more=true. No caller-count inference from reported count."
+  ]
+}

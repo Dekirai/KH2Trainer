@@ -1,0 +1,55 @@
+Independent bounded review — BDX Bank 9
+2026-10-08
+
+Result: PASS after one descriptive correction. No unresolved findings.
+
+Reviewed study: docs/research/bdx-bank9-calls-20261008
+Final manifest: 6e66697723d410dbb24be6e37721c73074cc994baaf4b50e2e631d06c2e85d87
+Final annotations: 58f61ff2e67e76aa28b5bbb59da7103a6d0cd57eff11076ad8fe800ed0c287a4
+
+Validation
+- All 41 descriptions read against their native adapters and selected helper paths.
+- All 41 original descriptors independently unpacked: handler, declared operand
+  count, return flag, reserved bytes and 16-byte contiguous table placement.
+- All 154 complete captured function bodies and 5,051 listed instructions matched
+  to the pinned original PE. Capstone independently decoded every instruction.
+- Primary byte-span total 21,031; complete ASM pages/counts, instruction chunks,
+  additional data spans, import identities, five RTTI types and evidence links checked.
+- Five reused registry function bodies separately checked against original bytes.
+- 51 selected semantic expectations and three projection constants independently
+  checked. These expectations are specified in the review script, not copied from
+  the author's semantic-anchor list. Automated review: 16,976 checks, no failures.
+- Author verifier independently rerun with --check: PASS154/5051/41/80.
+
+Important conclusions
+1. 9:9 remains declared argc6. Adapter reads extra scratch DWORDs through slot15,
+   but its immediate leaf consumes only local-array element0 (=operand5). This is
+   not evidence for argc16, valid extra operands or safe uninitialized contents.
+2. 9:25 uses positive operand2 as elements per cooperative yield, default10.
+   The signed remainder check is based on element index, not elapsed time.
+   There are additional phase yields. Equal source pointers skip binding changes.
+3. Camera eye/target inputs and matrix rebuild are distinct. FOV mode0 is
+   horizontal; nonzero is vertical. Native tanf/atanf formulas use radians and
+   original512/416 dimensions, without finite-angle or divisor validation.
+4. VM retirement enqueue does not synchronously destroy the VM. Child and base
+   VM retirement, thread allocator release and later VM exit-code execution are
+   separate operations. Concurrency/reentrancy safety is not established.
+5. 9:27 writes object attachment fields only for a non-NULL target. An effective
+   NULL camera also skips its object store. Passing NULL does not clear existing
+   object attachments. The author corrected annotation/report text and added
+   concrete branch anchors before this final review freeze.
+6. Other annotations appropriately retain native type, field, model or virtual
+   slot descriptions where gameplay meanings and downstream backends are open.
+
+Reproduce from repository root
+  py -3 -B artifacts/review-bdx-bank9-calls-20261008.py
+  py -3 -B docs/research/bdx-bank9-calls-20261008/verify.py --check
+
+Limits
+This is a bounded static review. All 41 annotation texts were reviewed, but this
+does not prove the complete transitive semantics of every external helper or
+callback, retail-script reachability, correct concurrent ownership, or valid
+arbitrary arguments. Table extent and declared argc are not runtime guards.
+No game execution, live attach, injection, UI use or original-file mutation.
+The review writes only its own JSON receipt. No study or product files edited
+by this reviewer; author applied the 9:27 correction in the study.

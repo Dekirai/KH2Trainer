@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 1,
+  "reviewer": "/root/drain_audit_v2",
+  "date": "2026-10-08",
+  "status": "Accepted as a bounded bootstrap prerequisite; production integration remains unproved.",
+  "scope": "Independent read-only review of StatusThreadDrain.h, its native test source, five recorded retail writer bodies, bootstrap contract and verifier logic. Only this audit receipt was created. No game operation or product edit.",
+  "reviewedInputs": [
+    {
+      "path": "src/KH2Trainer.Bridge/StatusThreadDrain.h",
+      "sha256": "f001f2448feab948855f3ba78cddbcb3582a00faa55e3042d41c2944fe414c98"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/StatusThreadDrainTests.cpp",
+      "sha256": "37888e1c97dcaf6b6eb734677f69bcd9387ef3992bc525d0b2df3d7226765994"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/StatusThreadDrainProductionCompile.cpp",
+      "sha256": "e5c1999e98017d8a1584a153d47a0db87d0451b7d9b11b74eb7cb1822895e0dd"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/bin/StatusThreadDrainTests.exe",
+      "sha256": "64b312bb18a7ccf3d6d3acc72f60b8ca89e7624fffd19f79f763a0a3c174f1d9"
+    },
+    {
+      "path": "docs/research/status-thread-drain-20261008/verify.py",
+      "sha256": "2a560b4d6619f68ff5c1849c144219c82afad995c21121f2fb836f4aa0f45a51"
+    },
+    {
+      "path": "docs/research/status-thread-drain-20261008/evidence.json",
+      "sha256": "3dbc13aa1cd1d2eac7cda0ed0db8a3c8e35936a808be247c668b70587d2974e6"
+    },
+    {
+      "path": "docs/research/status-thread-drain-20261008/verification.json",
+      "sha256": "34ea96afd0f55fe2c549006e74de4f7785f653123e1c863908c4c4df02d932dc"
+    }
+  ],
+  "blockingFindingsWithinBoundedContract": [],
+  "independentExecution": {
+    "command": "tests/KH2Trainer.Bridge.Tests/bin/StatusThreadDrainTests.exe",
+    "exitCode": 0,
+    "stdout": "StatusThreadDrainTests: 812 checks, 0 failures. Own process threads only.",
+    "rebuiltByReviewer": false,
+    "limit": "Executed the current native test binary whose hash is recorded above; root build log also proves the separate production preprocessor branch compiled without warnings. Reviewer did not rebuild. Repeated executions are not additional distinct tests."
+  },
+  "previousIndependentExecution": {
+    "checks": 804,
+    "failures": 0,
+    "exitCode": 0,
+    "headerSha256": "b785605610d2db1cc7ccfdfa6d4d20fa8948ca7ea6220537598d3f9f09793c15",
+    "testSourceSha256": "73829676028f92c3cab63b07e752f217e8f2cb8dc6d9732c5ac7bb356a976ccf",
+    "binarySha256": "540bfe738a6ca0215ffcdca11764097e9cc0081e1192a91a0861020b42bd2cb8",
+    "retainedAsHistoricalRun": true
+  },
+  "finalDiffReview": [
+    "Header changes only clarify foreign thread-control, exception and stack-switching exclusions, the suspend-count ABA limitation, lack of wall-time bound and the operations performed in the suspended interval.",
+    "The added real-thread check releases the already drained worker, waits for its retained handle to signal, then verifies Capture::Exited and invalidated snapshot before closing the handle.",
+    "The new compile-only source instantiates Begin, Poll, Ready and Close without KH2_STATUS_THREAD_DRAIN_TESTS. The suite runner builds it with the existing /O2 /W4 production settings. No additional runtime installation is performed.",
+    "Reviewed the final retained ownerHandle check: OnOwner requires both matching current DWORD ID and a nonsignaled retained owner object; Poll and Ready cannot authorize a recycled ID after the original owner exits. Close clears the borrowed owner handle after closing the retained thread set. Independently reran the final native EXE: 805 checks, zero failures.",
+    "The proof verifier now limits its APC comment to ordinary alertable-wait dispatch; executable verification logic and saved result are unchanged.",
+    "Reviewed ResumePending(): the owning caller reads the debt boolean without taking a metadata lock; a caller with a different initialized owner ID short-circuits to conservative true before reading mutable debt. The query does not resume, close handles, or restore confidence.",
+    "Reviewed the added own-process worker test: two injected Resume failures leave Fault with pending debt after capture and after the next fault-state Poll; the following Poll repays debt but remains Fault. Cleanup occurs only after the pending query is false. The production compile-only source also calls ResumePending without the test macro.",
+    "Independently executed the final 812-check test binary with zero failures. The newer resume-debt cases do not replace the original full-stack capture, exited-handle, gate-loss or ownership checks.",
+    "The earlier bootstrap contract now explicitly permits the complete conservative stack copy and marks static unwind metadata optional for false-positive investigation; the previous documentation follow-up is resolved."
+  ],
+  "independentProofVerification": {
+    "script": "docs/research/status-thread-drain-20261008/verify.py",
+    "execution": "Executed with runpy; intercepted the single Path.write_text call and required exact equality with the existing verification.json, leaving research files unchanged.",
+    "exitCode": 0,
+    "functions": 5,
+    "instructions": 377,
+    "originalBytes": 2222,
+    "rootCallContinuations": 22,
+    "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+    "priorClosureEvidenceSha256": "324210e3a065dfb59b35f24c5f44911bcd4b8f60e63b9d445bb3685f72f75fdb",
+    "review": [
+      "Verifier pins the actual original PE SHA, all five exact root bodies, complete disassembly addresses and final decoded extent, and equality with the earlier closure evidence.",
+      "All 22 root CALLs are ordinary direct E8 calls with continuations strictly inside their respective bodies. Every root branch remains local, and captured root stack-pointer changes are ordinary aligned ABI operations.",
+      "The reused 43A028 body is checked against original PE bytes. R8D is cleared before WaitForSingleObjectEx, so that fallback does not request ordinary alertable-wait APC dispatch. The earlier closure verifier establishes the import identity; this new narrow check reuses that contract.",
+      "The result does not prove the complete wider closure or current process imports again, and correctly retains their conditional scope."
+    ]
+  },
+  "reasoning": [
+    "Under the proved normal closure, an old writer either has RIP in its root or has at least one aligned root continuation in the active Win64 stack. The leaf PoolReset root is covered directly by RIP. Recorded nonleaf roots retain ordinary call continuations and do not tail-jump outside their bodies.",
+    "Inspect accepts only a full captured RSP..StackBase span with full context, exact size/capacity and eight-byte alignment. A possible root value anywhere in that span defers, including incidental data; partial capture and invalid bounds remain Unknown.",
+    "Current-thread capture keeps its frame alive during copying. Older root continuations remain above captured RSP; younger copy helpers grow below it. Current-thread GetThreadContext is not used.",
+    "Retained handles distinguish original thread lifetimes from IDs. An old thread that exits is drained; an inaccessible old-thread entry faults enumeration or remains unresolved. A thread born after continuously published gates can only enter supported writers through tracking.",
+    "CaptureRemote repays exactly its added suspend count on every normal/SEH exit through finally. Failed ResumeThread retains the handle and debt; a signaled exited thread may discharge failed resume debt. A non-unit final resume count invalidates an otherwise complete snapshot.",
+    "Poll verifies gates before scanning and after every resumed capture. Ready verifies them again. Any observed loss permanently enters Fault; restoring bytes does not return to readiness.",
+    "Ready is only a drained-old-thread prerequisite. Observer ArmAfterProvenBarrier must still serialize adoption and require inFlight==0. A new wrapper starting between Ready and Arm is either counted before Arm or enters the observing ledger before its original mutation."
+  ],
+  "requiredIntegrationConditions": [
+    "Bind exact five retail root extents and validate the full recorded normal closure, imports and decoded callback identities; generic nonoverlapping ranges alone do not establish those facts.",
+    "Publish all entry gates and flush instruction caches before Begin, retain routing for process lifetime and keep acquisition closed until both Drain.Ready and observer arming succeed.",
+    "Use process-lifetime trusted metadata and private Snapshot storage. Call Begin/Poll/Ready/Close from the owning game thread; do not expose these mutable objects through IPC.",
+    "Forbid concurrent external ResumeThread, SetThreadContext, stack mutation or unsupported context migration on observed threads. Initial count zero plus final count one cannot detect an intervening foreign Resume then Suspend cycle.",
+    "Do not hold metadata/loader/heap locks while suspending. Resolve APIs and allocate/touch storage before suspension. Stock eagerly loaded Win32 calls are the operating-system boundary; no claim covers arbitrary API hooks or delayed-load substitutions.",
+    "Retain resume debt and handles on every fault. Ensure later owner-thread polling or explicit Close continues debt repayment before any object/module destruction.",
+    "The byte cap and Poll budget bound work, not elapsed suspension time: paging and kernel scheduling have no hard latency bound here.",
+    "Do not silently extend normal-closure evidence to exceptional/custom callbacks, parked writer fibers, arbitrary foreign code or writes that bypass the five entries.",
+    "After ResumeFailed, inspect only lock-free coordinator/drain state while ResumePending() is true. In particular, do not call Observer::Fault/Inspect/WithMetadata or loader/heap operations while the retained suspended thread may hold those locks. Continue owner-thread Poll even in Fault until debt is discharged; confidence still stays Fault."
+  ],
+  "nonblockingFollowups": [
+    "A foreign-owner Ready check has been reviewed statically; there is no separate test assertion for that branch in the reviewed 805-check suite."
+  ],
+  "evidenceRead": [
+    "docs/research/status-bootstrap-20261007/contract.json",
+    "docs/research/status-bootstrap-20261007/report.md",
+    "docs/research/status-bootstrap-20261007/verification.json",
+    "docs/research/status-bootstrap-20261007/verify.py",
+    "docs/research/status-bootstrap-20261007/evidence.json writerRoots",
+    "docs/research/status-thread-drain-20261008/verify.py",
+    "docs/research/status-thread-drain-20261008/evidence.json",
+    "docs/research/status-thread-drain-20261008/verification.json",
+    "src/KH2Trainer.Bridge/StatusObserverSupport.h",
+    "tests/KH2Trainer.Bridge.Tests/run-tests.ps1",
+    "artifacts/status-thread-drain-run.txt"
+  ],
+  "primaryReferences": [
+    {
+      "url": "https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-suspendthread",
+      "use": "Suspend count semantics and the warning against acquiring locks held by a suspended thread."
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getthreadcontext",
+      "use": "A running/current-thread GetThreadContext result cannot be used as a valid context; remote capture requires suspension."
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-readprocessmemory",
+      "use": "The requested area must be readable and returned byte count must cover the complete snapshot."
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-waitforsingleobjectex",
+      "use": "bAlertable controls ordinary queued APC/completion dispatch through this wait."
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-queueuserapc2",
+      "use": "Special user-mode APCs do not require an alertable wait; the non-alertable fallback must not be described as excluding every external callback."
+    }
+  ],
+  "beforeOwnerLifetimeFixInputs": [
+    {
+      "path": "src/KH2Trainer.Bridge/StatusThreadDrain.h",
+      "sha256": "b116737917adc4b14cbbc6cb14e6986e15fea8527a6811bfd14c1b0956b4954c"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/StatusThreadDrainTests.cpp",
+      "sha256": "0c73727eb8e1b10a8088b43bcade3d006a20c9a3a693c075e3f51daa287eeb9c"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/StatusThreadDrainProductionCompile.cpp",
+      "sha256": "4122ca54d09d84d2ab8870efeedd9f1a7556b75df385fa99c385bfd408e8341a"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/bin/StatusThreadDrainTests.exe",
+      "sha256": "a99c4fbce44c263e6252d1ad4fe5ceca6c5356578737b39285c6c4bf0db2ff65"
+    },
+    {
+      "path": "docs/research/status-thread-drain-20261008/verify.py",
+      "sha256": "6a05df53635e1dd33080885e41c9c13af26ad27cc0cc0c179f17216eba45a817"
+    },
+    {
+      "path": "docs/research/status-thread-drain-20261008/evidence.json",
+      "sha256": "3dbc13aa1cd1d2eac7cda0ed0db8a3c8e35936a808be247c668b70587d2974e6"
+    },
+    {
+      "path": "docs/research/status-thread-drain-20261008/verification.json",
+      "sha256": "34ea96afd0f55fe2c549006e74de4f7785f653123e1c863908c4c4df02d932dc"
+    }
+  ],
+  "beforeResumePendingInputs": [
+    {
+      "path": "src/KH2Trainer.Bridge/StatusThreadDrain.h",
+      "sha256": "e599e3e36fec1b6fdbc614ffcd2a794c5cac52420090085749741885449a9a1b"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/StatusThreadDrainTests.cpp",
+      "sha256": "0c73727eb8e1b10a8088b43bcade3d006a20c9a3a693c075e3f51daa287eeb9c"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/StatusThreadDrainProductionCompile.cpp",
+      "sha256": "4122ca54d09d84d2ab8870efeedd9f1a7556b75df385fa99c385bfd408e8341a"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/bin/StatusThreadDrainTests.exe",
+      "sha256": "afb082783dc961290a2e1b7259c5ad4ce84d8ac3285977ef921dcf3b8deef697"
+    },
+    {
+      "path": "docs/research/status-thread-drain-20261008/verify.py",
+      "sha256": "2a560b4d6619f68ff5c1849c144219c82afad995c21121f2fb836f4aa0f45a51"
+    },
+    {
+      "path": "docs/research/status-thread-drain-20261008/evidence.json",
+      "sha256": "3dbc13aa1cd1d2eac7cda0ed0db8a3c8e35936a808be247c668b70587d2974e6"
+    },
+    {
+      "path": "docs/research/status-thread-drain-20261008/verification.json",
+      "sha256": "34ea96afd0f55fe2c549006e74de4f7785f653123e1c863908c4c4df02d932dc"
+    }
+  ],
+  "beforeResumePendingExecution": {
+    "command": "tests/KH2Trainer.Bridge.Tests/bin/StatusThreadDrainTests.exe",
+    "exitCode": 0,
+    "stdout": "StatusThreadDrainTests: 805 checks, 0 failures. Own process threads only.",
+    "rebuiltByReviewer": false,
+    "limit": "Executed the current native test binary whose hash is recorded above; root build log also proves the separate production preprocessor branch compiled without warnings. Reviewer did not rebuild. Repeated executions are not additional distinct tests."
+  }
+}

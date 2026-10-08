@@ -33,7 +33,7 @@ tests/
   KH2Trainer.Bridge.Tests/     Native guard tests against synthetic memory, run-tests.ps1
 ```
 
-`src/KH2Trainer/Data/features.json` is the source of truth for all 353 features: their
+`src/KH2Trainer/Data/features.json` is the source of truth for all 358 features: their
 command and value slots, ranges and implementation evidence. The bridge sources and this
 catalog must change together.
 
@@ -45,6 +45,23 @@ catalog must change together.
 - Python 3 (only for the user guide in `build.ps1`)
 
 No NuGet packages, test frameworks or third-party libraries are used.
+
+The offline BDX view includes a partial native-call catalog: 1,063 recorded descriptors and
+256 behavioral annotations for the pinned executable across all eleven recorded bank slots.
+The latest notes cover Gummi object creation, movement and deferred deletion,
+mission counters, timers and result transitions, plus the shared state changed by
+Actor collision queries. The resolved audience Voice request is described with
+its resource and priority conditions. These are offline inspection notes.
+Names and side effects are searchable. Recorded table extents do not establish native bounds
+or complete behavior of the handlers and their callees.
+Details distinguish NULL handlers, uncatalogued entries and context-dependent registration.
+Declared operand counts are metadata; they do not validate native accesses or object lifetimes.
+Evidence and original-byte verification are linked from the catalog and collected under
+`docs/research/bdx-bank-inventory-implementation-20261008`. Descriptions cover effects,
+timers, resource and child-VM lifetime, character/form equipment, abilities, camera settings,
+object groups and vector operations. Query descriptions identify shared output buffers and
+conditions that can leave an earlier result in place. The existing Drive weapon fallback
+validates dual-form equipment before requesting the transformation.
 
 ## Building
 
@@ -84,7 +101,7 @@ analysis working folders and compiled test outputs stay outside the package. Opt
 
 | Suite | Run it with |
 | --- | --- |
-| Native bridge guards (35 suites) | `.\tests\KH2Trainer.Bridge.Tests\run-tests.ps1` (optionally `-Suite LootGuardTests`) |
+| Native bridge guards (40 suites) | `.\tests\KH2Trainer.Bridge.Tests\run-tests.ps1` (optionally `-Suite LootGuardTests`) |
 | Core library and catalog | `dotnet run --project tests\KH2Trainer.Core.Tests -- src\KH2Trainer\Data\features.json` |
 | Twitch rewards | `dotnet run --project tests\KH2Trainer.Twitch.Tests -- src\KH2Trainer\Data\features.json` |
 | Offscreen UI | `dotnet run --project tests\KH2Trainer.UiTests -- --fixture artifacts\ui` |
@@ -106,6 +123,20 @@ soon as they are flipped. Search everything with **Ctrl+F**, and pin frequently 
 makes them permanent. The generated user guide describes every feature.
 
 Profiles, backups and preferences are stored in `%LOCALAPPDATA%\KH2Trainer`.
+
+### Inspect game scripts offline
+
+In **Asset Explorer**, open a `.bdx` file or a type-3 entry inside a BAR container.
+The **Script** tab shows its events, stored instructions, branch and call targets,
+and native calls. Choose an event to jump to its entry, or search for an operation,
+PC or native call such as `2:95`. For an unnamed script payload, select it and use
+**Inspect BDX**. Inspection works while disconnected and reads the selected file.
+
+The decoder follows declared event entries with bounded reads. Diagnostics identify
+invalid targets, overlapping instructions and inspection limits. Calls and yields
+have conditional continuations; dynamic returns and native callback effects require
+runtime state. Undecoded bytes may contain data or other code. This view helps locate
+script behavior and compare potential mod targets; it does not execute or modify scripts.
 
 To add a catalog category to a section, edit `src/KH2Trainer/ViewModels/Navigation.cs`. A category
 missing there still appears, in a "More" section.
@@ -189,7 +220,7 @@ new feature catalog.
 
 ## Research archive
 
-### Current analysis and Crowd Control checks (0.12.8)
+### Current analysis and Crowd Control checks (0.12.10)
 
 `docs/research/` contains the new IDA evidence and review notes. Packages include these files
 under `Research/`. The read-only **Advanced > Player control** tab exposes verified character
@@ -300,6 +331,14 @@ restoration. The journal has bounded capacity and refuses new work when unresolv
 records fill it. See `docs/research/actor-lifetime-20261007` and
 `docs/research/movement-ownership-20261007` for the contract and synthetic checks.
 
+Disconnect cleanup for these movement rewards now checks native player control
+independently of the trainer heartbeat. Previously an expired heartbeat also
+blocked restoration, leaving effects pending until reconnection. Menus, events,
+transitions, unavailable identity and external value changes still govern cleanup;
+new effects and reapplication still require a fresh host. The joint regression
+uses the real bridge, movement journal, gameplay and identity checks against
+private synthetic memory. See `docs/research/movement-cleanup-20261008`.
+
 Position bookmarks now use the same actor lifetime observer. Reusing an actor's
 address cannot make an old bookmark valid again. Collision bypass also pins its
 original actor: release waits while that actor cannot be verified, blocks another
@@ -324,8 +363,37 @@ volatile-register jump with matching unwind records. No entry hooks are installe
 `StatusRevisionLedger.h` implements the separate pool/allocation/field revisions.
 The worker follow-up in `docs/research/status-worker-observation-20261007` proves
 a motion-worker path into synchronous BDX event 27. Metadata therefore admits
-overlapping threads while retaining per-thread callback order. Installer bootstrap,
-native wrappers and durable typed STATUS receipts still require integration.
+overlapping threads while retaining per-thread callback order.
+
+The STATUS prerequisites now include exact native code/import checks, registered
+original-call trampolines, typed native wrappers, a conservative complete-stack
+check for pre-existing writers, and a coordinator that binds those components in
+order. Failed resumes remain pending before any metadata lock is entered. Typed
+field transactions retain exact values and writer revisions, so a native rebuild
+or intervening manual write prevents stale cleanup, even when the value is equal.
+See the `status-*-20261008` research folders for tests and explicit limits.
+
+These components are not installed in TrainerBridge. Actor binding and lifetime
+must remain stable throughout a field transaction; the existing metadata pin
+alone does not establish that. Fresh native evidence identifies additional STATUS
+rebind stores, parked/restored current-player pointers, earlier task frees and
+separate arena return paths. The field load task also yields through fibers.
+A complete lifetime and execution contract is still needed before a real Actor
+provider and typed STATUS IPC can be connected. See the three
+`actor-*-20261008` research folders. These prerequisites remain uninstalled in
+v0.12.12. The earlier movement disconnect-cleanup correction is retained. The
+offline BDX inspector's decoder agrees with the independent
+native-derived parser for all 4,480 instructions in two selected original scripts,
+including their branch and call edges. The bounded asset scan identifies actual
+stored STATUS rebind calls in those scripts. The follow-up `bdx-rebind-operands-20261008`
+traces their selected Event0 setup prefixes and wrapper writes under stated normal
+execution assumptions. `motion-event27-20261008` identifies contact/IK data as the
+source of Event27, verifies a B_LK120 retail witness, and shows that an intact
+Actor+4 self pointer can satisfy the wrapper layout. It does not establish a
+worker-thread STATUS rebind. `app-timer-dispatch-20261008` traces timer message74
+through the active Actor list and concrete descriptors into synchronous BDX Event10;
+selected message74 script effects remain open. See the individual reports for
+original-byte evidence, reproduction and lifetime limits.
 
 The HP damage guard now uses the actual Sora/Roxas and rescue Mickey callbacks.
 It binds protection to the observed actor lifetime, role and scene. Only negative

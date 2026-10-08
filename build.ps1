@@ -99,7 +99,7 @@ try {
     $checks = [ordered]@{
         builtAt = (Get-Date).ToUniversalTime().ToString('o'); architecture = 'win-x64'; selfContained = -not $FrameworkDependent
         nativeTestSuites = @($nativeResults.Name); syntheticTests = 'passed'; liveGameplay = 'not yet tested'
-        visualReview = 'Feature pages, Twitch page, Asset Explorer, asset fingerprints and Game Messages offscreen renders and binding checks; live UI/gameplay and live Twitch pending'
+        visualReview = 'Feature pages, Twitch page, Asset Explorer, BDX script inspection, asset fingerprints and Game Messages offscreen renders and binding checks; live UI/gameplay and live Twitch pending'
         scope = 'Synthetic tests and build validation do not prove live gameplay behavior.'
         nativeSourceFingerprint = $nativeFingerprint
     }

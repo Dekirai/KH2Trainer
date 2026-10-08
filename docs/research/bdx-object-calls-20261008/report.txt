@@ -1,0 +1,49 @@
+BDX OBJECT, EQUIPMENT AND VECTOR CALLS — 2026-10-08
+
+This study adds bounded behavioral descriptions for 27 Bank0 adapters in the original executable with SHA256 9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed. It records 64 fresh helper bodies and imports 37 previously frozen adapter/helper bodies. All 101 bodies, their three external chunks and selected constants/RTTI spans are compared with the original PE. No live game, native script or target instruction is executed here.
+
+Effect object identity and state
+
+The original RTTI chain at vtable5B87A8 -> locator675D38 -> type descriptor793B60 contains .?AVEFFECT@ryj@@. Destructor2BCF90 installs that vtable, releases the child and unlinks the effect from the active list. This gives the adapters' common object cluster a concrete native type: ryj::EFFECT. Native names in this report are analyst descriptions unless explicitly taken from RTTI.
+
+The enclosing effect stores a QWORD child at +48. Accessors2BE970/2BEA80/2BE1B0/2BE1E0 reach child+0/+32/+16/+48. Setters0:38/39/40/67 copy full four-float vectors after replacing NaN inputs with zero in place. Matrix builder4B1280 reads rotation at child+16, scale at+32 and translation at+0.0:41 derives rotation from a direction.0:53 returns a copy of the position through a shared buffer.0:54 produces the rotated +Z direction through another shared buffer.
+
+0:44/85 set child BYTE+145;85 also sets owner DWORD+12 bit0. Their apparent preliminary null check does not guard the eventual dereference. The downstream interpretation of BYTE+145 is left explicit rather than assigning a complete emission/lifetime meaning.0:49 reads the owner's inactive bit;0:50 only tests child-pointer presence. Neither proves a live allocation.
+
+0:51 sets owner bits0x10001 and invokes cleanup2C1FB0 ->4B01C0 before releasing the child through2C1F50 ->4AF410. Cleanup includes indirect component callbacks, reference-count updates and further releases. The enclosing effect itself is not destroyed by this helper.
+
+0:52 uses a float duration and a third operand selecting owner bit0. Positive ordered duration sets a fade slope at owner+60 from -ownerFloat56/duration; nonpositive or unordered duration takes the immediate release branch when floating-point exceptions are masked.2BD190 applies slope*global717480 to owner+56, scales child vector+48.w and releases the child at zero under the native update gates. The unit is the native tick factor, not a proven number of seconds.0:79 maintains a four-slot effect ring, fading the replaced effect with duration4.0. The signed index has no guard against corrupted state.
+
+0:66 controls owner bit0x200000. Update combines it with other flags before assigning child BYTE+193, which gates at least the child delay countdown in2C28E0. The study does not claim that this freezes every effect callback or render operation.
+
+Vector ABI and edge cases
+
+0:13 rotates around Y;0:68 around X. Their angle argument is visible in XMM2 at the helper call although the decompiler's call expression omits it.0:83 receives its angle in XMM3 and normalizes a copied axis. Their return buffers are shared and can be overwritten by later native calls.
+
+0:46 passes operand2 in XMM3.3B7200 normalizes local direction copies, computes their angle and cross-product axis, multiplies the supplied rate by global717480, then follows COMISS/JA and MAXSS. For finite nonnegative rate*tickFactor it uses min(angle,step). There is no special antiparallel-axis fallback: a zero axis can produce cos(angle)*I, so partial turns can shorten the direction. NaN sanitization happens in the referenced input memory before local copies are made.
+
+0:54 composes X, Y and Z rotations and transforms (0,0,1,0). Its repeated-add/subtract wrapper1A90C0 can fail to progress for infinities and sufficiently large finite floats; the verifier shows the IEEE-float stall for +/-infinity and +/-2^28. This is distinct from the fmodf wrapper used by13/68/83.
+
+0:90 declares five operands but reads only a vector address and a scalar. It constructs a matrix entirely in its stack frame, stores the sanitized vector in the translation column and discards the matrix. It has no VM return and no drawing/publication call. Input NaN cleanup still has an externally visible write. This is not a pure no-op.
+
+Resident save records and equipment
+
+0:61 maps IDs1..15 through3E60C0:14 aliases1,15 aliases6; invalid IDs return null. Character records start at9ABDA0 with stride276.0:75 writes two weapon WORDs at+0/+2.3E0CC0 confirms these are read by hand index except for Sora's form-offhand selection. An invalid character ID reaches null stores; there is no item/model/ownership validation.
+
+0:76 writes a form record's first WORD at9ABDA0+3588+56*(index-1), for indices1..10.3E0CC0 reads this as the Sora form's offhand weapon. It can set an unavailable Keyblade; it does not include the trainer's separate validated fallback. This is a useful script-editor annotation, not an authorization to bypass the trainer's transition checks.
+
+0:62 changes the item-slot count at character-record BYTE+18. It clears new +52/+68 WORD slots on expansion, and passes removed +52 items to3C3F00(item,100,0) before clearing them on reduction. Loops use a full signed count while the stored result is only a byte. No negative/count-capacity check exists in the helper. The grant path has further inventory and record effects.
+
+0:98 inserts an equipped ability into the first empty low15-bit slot of24 form entries.0:99 inserts a character ability into the first empty slot of80 and uses operand2 for its equipped bit. Full arrays are unchanged; duplicate/ID/ownership checks are absent. The descriptor discards the helper's returned slot index.
+
+Layout construction
+
+0:74 passes a decoded resource name into167720, which constructs a256-byte dk::CacheBuffLayout and obtains cached resource data through39CC40.1677D0 stores the resource and configures the layout with fixed4800 and operand1. Native pointer return is discarded by the no-return descriptor. Original RTTI5B1E20 ->66DD58 ->791250 proves the CacheBuffLayout name. Six additional complete ASM bodies connect effect rotation inputs unchanged to the original cosf/sinf imports, confirming radians. These six support bodies intentionally have no pseudocode capture. Option semantics, complete allocation-failure behavior and downstream layout ownership remain open.
+
+Reproduction and limits
+
+py -3 -B docs/research/bdx-object-calls-20261008/verify.py --check
+
+The verifier compares original bytes, complete instruction pages and primary/extensional chunks; validates RTTI and all27 descriptor identities; and checks23 selected instruction anchors and26 direct-call groups. Arithmetic examples are illustrative calculations tied to the recorded instructions, not execution-equivalence tests for the entire game.
+
+annotations.json supplies searchable names, arguments and effects to the offline BDX catalog. claims.json supplies addressed, bounded findings to the global coverage audit. A recorded full body or a useful annotation does not establish complete semantic understanding of all callees, all inputs, concurrency, resource lifetime or every live context. Remaining work includes the child emission flag, effect component callbacks/allocator ownership, cached-layout lifecycle and scripts that actually select these adapters.

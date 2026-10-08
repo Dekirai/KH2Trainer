@@ -1,0 +1,163 @@
+{
+  "date": "2026-10-08",
+  "status": "bounded-research-complete; production lifetime proof remains open",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "verification": {
+    "functions": 20,
+    "instructions": 2437,
+    "bodyBytes": 11267,
+    "xrefSpans": 96,
+    "xrefBytes": 648,
+    "embeddedSwitchBytes": 136,
+    "failures": 0,
+    "evidenceSha256": "317b56bd0e9b96d1fd7b68cfae49322d291811b59f5cbecdf7bf16d394d7e61c"
+  },
+  "capturedBodies": [
+    "0x1403B3200",
+    "0x1403A7A40",
+    "0x140405030",
+    "0x140415670",
+    "0x1404158C0",
+    "0x1403BF300",
+    "0x1403DA940",
+    "0x1403D2DA0",
+    "0x1403D5840",
+    "0x1403A7CB0",
+    "0x1403DF930",
+    "0x14040D000",
+    "0x14040CF10",
+    "0x14040CAA0",
+    "0x1403FCEC0",
+    "0x1403FCA90",
+    "0x1403FC7A0",
+    "0x1403BF4C0",
+    "0x1403BF810",
+    "0x14041EA20"
+  ],
+  "findings": [
+    {
+      "id": "common-constructor",
+      "claim": "3A7A40 encloses the early Actor+1472 zero and later current-player/STATUS publication in the captured playable constructor family.",
+      "sites": [
+        "3A7A74 call 3D5840",
+        "3D5863 call 3D2DA0",
+        "3D2DB5 call 3DA940",
+        "3DA97D call 3B3200",
+        "3B3251 xor R14D,R14D",
+        "3B33A0 store Actor+1472",
+        "3B3969 indirect birth callback",
+        "3A7AF4 publish currentPlayer",
+        "3A7B16 call 3C0620",
+        "3A7B1B bind Actor+1472",
+        "3A7B32 bind STATUS+616"
+      ],
+      "limit": "A wrapper around 3B3200 returns before the nonnull binding. Birth notification follows the first zero store. The STATUS allocator returns before both backlink stores. The constructor's transitive no-yield and callback-lock properties are not proved."
+    },
+    {
+      "id": "separate-spawn-roots",
+      "claim": "Normal spawn and Drive replacement reach 405030 then 3A7A40. Alternate playable constructors also reach 3A7A40.",
+      "sites": [
+        "3DFA51 and 3DFE25 tail-jump to 3A7CB0",
+        "3A7E62 call 405030",
+        "40D2AC call 405030",
+        "405056 call 3A7A40"
+      ],
+      "limit": "A 3DF930 gate misses Drive replacement; a 405030 gate misses other constructors. Tail jumps remove dispatcher frames, so bootstrap cannot depend only on finding the outer dispatcher frame."
+    },
+    {
+      "id": "rescue",
+      "claim": "415670 and the inlined specialization in 4158C0 both call 3A7A40. The recorded rescue task path reaches 4158C0.",
+      "sites": [
+        "41569C call 3A7A40",
+        "4158DD call player-parking helper 3A80E0",
+        "4159B9 call 3A7A40",
+        "3FD0F3 call 4158C0",
+        "3FCAA0 call 3FCEC0",
+        "3FC9BF materialize callback 3FCA90",
+        "3FC9D0 call 1506B0"
+      ],
+      "limit": "415670 has no returned direct code caller, which does not exclude indirect calls. Gating only 3A7A40 misses earlier current-player parking in 4158C0."
+    },
+    {
+      "id": "drive-yields",
+      "claim": "The Drive replacement task contains cooperative wait calls before and after construction.",
+      "sites": [
+        "40CB7E load scheduler 142A17180",
+        "40CB9B materialize 40CF10",
+        "40CBAE call 14F8A0",
+        "40CBBE store task context at +18h",
+        "40CBC6 store task cleanup at +68h",
+        "40CF17 tail-jump 40D000",
+        "40D0C2 call 150080",
+        "40D151/40D16A/40D495/40D4AE call 150060"
+      ],
+      "limit": "Task and yield semantics additionally use the prior verified scheduler study. Registration proves no universal OS-thread affinity. A lock cannot safely span this whole cooperative task."
+    },
+    {
+      "id": "deferred-destruction",
+      "claim": "3BF300 first destroys pending actors through virtual callbacks, then moves marked actors from the active list to the pending list. Cleanup callback 3BF4C0 invokes this pass twice.",
+      "sites": [
+        "3BF30A read pending list 142A171D8",
+        "3BF336 call 3B4E80",
+        "3BF34B virtual destructor call",
+        "3BF366/3BF374 clear pending list",
+        "3BF3BB test actor flag 80000h",
+        "3BF870 materialize 3BF300",
+        "3BF881 call 1506B0",
+        "3BF886 materialize cleanup 3BF4C0",
+        "3BF4C6 call and 3BF4D1 tail-jump 3BF300"
+      ],
+      "limit": "This explains deferred deletion; it does not prove every actor allocation reaches a virtual destructor or exclude bulk heap release. Native work also precedes the virtual destruction callback."
+    },
+    {
+      "id": "mutex-candidate",
+      "claim": "41EA20 has a candidate mutex region around its 3DF930 call.",
+      "sites": [
+        "41EA3A set ECX=1",
+        "41EA3F call 12FFD0",
+        "41EA47 retain returned value in RBX",
+        "41EA4A call 0FDBB0",
+        "41EAA9 call 3DF930",
+        "41EB01 pass RBX",
+        "41EB04 call IDA-named ReleaseMutex helper 0FDD80"
+      ],
+      "limit": "The 20-body scope excludes full mutex helper bodies and import resolution. Eleven other direct 3DF930 callers remain. This is no proof of shared mutual exclusion."
+    }
+  ],
+  "priorEvidence": [
+    {
+      "path": "../status-bootstrap-20261007",
+      "scope": "Previously verified scheduler 14EB70 → 14FC20 → 14FD60 invokes tasks or cooperative fibers; returning from update does not join every OS thread. Motion batches wait via 130130; resource worker 3A0C60 is separate."
+    },
+    {
+      "path": "../status-worker-observation-20261007",
+      "scope": "Previously verified possible motion-worker path reaches the BDX VM through 3BF4E0, 3BFAB0, 3C6AA0, 3B5E80, 3E1840, 3E1C80 and 41B400. No shipped event-27 asset reaching these constructors was identified in this round."
+    },
+    {
+      "path": "../../../artifacts/status-actor-provider-boundary-review.json",
+      "scope": "Pin holds metadata only. Separate Resolve/Pin creates a TOCTOU interval. The death observer releases its Actor lock before forwarding native code; holding that lock across native STATUS operations would conflict with STATUS-to-Actor metadata ordering."
+    }
+  ],
+  "recommendation": [
+    "Treat 3A7A40 as an earlier observation candidate for this constructor family, with no claim of a universal lifetime boundary.",
+    "Before native binding mutations, prevent transaction admission until the operation finishes. Bootstrap must drain earlier calls, including tail-call and parked-fiber cases.",
+    "Keep STATUS-to-Actor metadata ordering for a short guard across validation and commit. Do not hold that metadata lock over entire native constructors or the Drive task.",
+    "PoolOwns, backlinks and ActorGeneration cannot substitute for native allocation lifetime. Prove coverage of bulk frees, rebinds and current-player transitions.",
+    "Keep production provider/STATUS activation unavailable until coverage and bootstrap are established."
+  ],
+  "openBoundaries": [
+    "Other direct 3A7A40 callers: 2E2CB0, 394D70, 395420, 403680, 4044D0, 405FA0 and 5528F0. Their xref source bytes are verified, but their bodies are outside this round.",
+    "Other direct 3B3200 callers: 3F8010, 3F8170 and 419230; general actor constructors and alternate role branches.",
+    "The 12 direct 3DF930 callers, including 2D2160, 2D23B0 and 2D24F0, have no complete fresh caller closure to OS thread entrances.",
+    "The independent writer census reports rebinds at 4112B0/411350, paired stores in 3C2DB0, and current-player parking/restoration at 3A80E0/3A8140. Integrate its final verified evidence separately.",
+    "The heap family 19FFD0/39D400/39CCA0/152xxx is assigned separately; no bulk-free exclusion is established here.",
+    "Transitive helpers, virtual callbacks, task cancellation and exception paths have no complete no-yield or reentrant-writer proof."
+  ],
+  "nonClaims": [
+    "No global native thread safety proven",
+    "No real ActorProvider implemented",
+    "No installer or IPC authorization implied",
+    "No game, injection, UI, Twitch or save actions",
+    "No product or central runner edits"
+  ]
+}

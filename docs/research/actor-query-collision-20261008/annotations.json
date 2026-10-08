@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "annotations": {
+    "1:367": {
+      "handlerRva": 4373312,
+      "declaredOperandCount": 3,
+      "hasReturnSlot": true,
+      "name": "Run expanding Actor collision query",
+      "summary": "Decodes wrapper+4 Actor and copies its 136-byte collision state. A local scalar advances by 100 toward operand1 as the float limit and sets state+32, consumed as a collision sphere radius, plus field+40. Movement starts at zero; each retained result seeds the next iteration. Operand2 controls a mode bit and an optional flag break. Returns shared buffer RVA 0x756B48 as @ADR, discarding the helper result.",
+      "notes": "The wrapper discards the helper's success byte. Nonpositive or unordered NaN input skips output copying with masked SSE invalid exceptions; an early flag break can also skip the copy, so the returned pointer does not guarantee a fresh result. Actor memory is read before the scalar check. With relevant SSE exceptions masked and rounding held at nearest-even, limits above 2^31 or positive infinity can leave the counter stuck at 2^31 if helper calls return and no flag break applies. The query changes shared static/moving collision-context filters; copying Actor state does not make it a pure query. Radius units and the independent meaning of field+40 remain unassigned. Geometry indices, hierarchy acyclicity, resource lifetimes and matrix/radius inputs are trusted. The 1023-candidate cap is not a traversal bound. Retail reachability of extreme inputs remains open.",
+      "evidence": "actor-query-collision-20261008/evidence.json + actor-query-collision-20261008/report.txt + bdx-actor-query-20261008/evidence.json + bdx-actor-query-20261008/model.json"
+    }
+  }
+}

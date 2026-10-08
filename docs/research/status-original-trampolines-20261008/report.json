@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-08",
+  "status": "implemented_tested_not_installed",
+  "claims": [],
+  "sourceHashes": {
+    "src/KH2Trainer.Bridge/StatusOriginalTrampolines.h": "bc25e0f130e85f423aab272328231e98c63bad5818f39fb5be85b28b46241cae",
+    "tests/KH2Trainer.Bridge.Tests/StatusOriginalTrampolinesTests.cpp": "d48d35a03812c2634b5466c5eaf80ba596caca2fa305cc9c6348fdfb403af187",
+    "src/KH2Trainer.Bridge/StatusEntryPlan.h": "8077246092503a65390c52828cc8aca77f169564669fc9eefa97b9b1e70f6a9c"
+  },
+  "tests": {
+    "checks": 430,
+    "failures": 0,
+    "log": "native-tests.txt",
+    "productionDefine": "STATUS_ORIGINALS_PRODUCTION_COMPILE",
+    "scope": "Independent root MSVC /O2 /W4 compile and execution after review fixes; real Windows allocation/unwind APIs on private memory. Generated retail code is never executed."
+  },
+  "implementation": [
+    "Verify the complete five original bodies and generate the previously checked prefix/continuation/unwind image for each.",
+    "Allocate one 4 KiB page per image, change the whole allocation to RX, flush its instruction cache and register five RUNTIME_FUNCTION tables before any binding can escape.",
+    "Bindings seals the batch before returning typed pointers. Callable storage and OS unwind records then remain until process exit, even after Batch metadata itself is destroyed.",
+    "Unpublished cleanup removes each successful registration. If any deletion fails, retain the whole code/table allocation and retry only the unresolved table later.",
+    "A failed VirtualFree retains the exact allocation pointer and Error::Free. It cannot report Closed or discard the pointer; the unpublished owner can retry.",
+    "All Batch operations require a single serialized installer owner. Entry only exposes a borrowed inspection address; it does not publish callable lifetime."
+  ],
+  "review": {
+    "initialIndependentReviewer": "status_fields_v2",
+    "findingsFixed": [
+      "Unregister ignored VirtualFree failure.",
+      "Partial RtlAddFunctionTable/RtlDeleteFunctionTable rollback branches lacked execution coverage."
+    ],
+    "repairAuthor": "status_fields_v2",
+    "finalIndependentReviewer": "root",
+    "conclusion": "Final header and full tests reviewed, then production branch and 430-check suite compiled and run independently with zero warnings/failures.",
+    "meaningfulCases": [
+      "Every partial registration point",
+      "Every individual deletion failure",
+      "Combined registration/rollback failure",
+      "Free failure and exact retry",
+      "OS lookup after cleanup and after Bound metadata lifetime",
+      "Full source mismatch and exact typed pointer mapping"
+    ]
+  },
+  "limits": [
+    "No game installation or invocation of generated retail instructions.",
+    "Source module and original continuations must remain loaded and intact.",
+    "Bound storage deliberately has no teardown. Original-call allocation does not itself establish old-writer drain or Actor lifetime."
+  ],
+  "liveGame": false,
+  "gameOrSaveWrites": false
+}

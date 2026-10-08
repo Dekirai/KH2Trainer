@@ -1,0 +1,61 @@
+Independent review — BDX Bank 1/2 inventory
+2026-10-08
+
+Result: PASS. No findings requiring a study change.
+
+Reviewed frozen manifest:
+dbfcb40c05762aec27b648ac7104dfabce655256a95072bc88b523e629c56949
+Descriptors SHA256:
+ba7a70058cbd1bb2c8828b7ee0c0c59fba2621dc606c929334fcb8b2abc916e8
+Evidence SHA256:
+d01b64ae252d92d12cca03f13cb3f195c6420e635322bf463a431af6c6f432a3
+
+Independent checks: 4,825 PASS
+- All 466 original PE records unpacked and compared with the captured bytes and
+  derived descriptors, including flags, padding, argument counts and return flags.
+- Bank 1: 368 records, 363 non-NULL slots; holes16/116/215/216/282;
+  136 declared return slots, maximum declared argc12.
+- Bank 2: 98 records, all non-NULL; 56 return slots, maximum declared argc6.
+- 461 non-NULL slots resolve to460 distinct executable handler entries matching
+  the recorded IDA entry identities. This is not semantic review of460 bodies.
+- 31 selected full bodies independently decoded from550 original bytes:
+  148 instructions, complete ASM page/count checks and instruction addresses.
+- 8,320 captured region bytes match the original PE, including the separately
+  decoded112-byte/30-instruction dispatch subpath. All five recorded incoming
+  xrefs and boundary/shared-buffer RIP references are byte-supported.
+- 30 independent instruction expectations cover argument consumption, dispatch,
+  field conditions, final-record ABI and data boundaries.
+- Study verifier independently rerun with --check: PASS466/31/148/550 and the
+  separate112-byte dispatch span. Source and study files remained unchanged.
+
+Conclusions
+1. Original registry pointers establish the two table starts. Adjacent independent
+   data and initializer accesses support the stated capture ends. The report
+   correctly does not infer native bounds enforcement or source array lengths.
+2. All six RET0 bodies are exactly C2 00 00 and have no VM return flag:
+   1:103 argc3; 1:122 argc1; 1:163 argc2; 1:240 argc3; 1:246 argc0;
+   2:36 argc2. The VM consumes these arguments before the otherwise empty handler.
+3. 1:157 and1:219 both point to42E070, both argc3 without a return flag.
+   They remain distinct descriptors, not merged catalog identities.
+4. 1:367 passes the float through XMM2 and boolean through R9D, then returns
+   encoded shared buffer756B48 with @ADR. The report leaves3B8510 semantics open.
+5. 2:97 follows both wrapper+4 links before tail-calling411300. The unconditional
+   normal-path store is firstObject+3384. The+3392 store requires active-list
+   membership, absence of state flags0x10080000, and secondObject DWORD1244==1.
+   False branches leave+3392 unchanged. No direct Actor+1472/STATUS store appears
+   in these immediate bodies. The report correctly does not infer stable lifetime.
+
+Limits
+This is a bounded static inventory and selected-path review. The remaining
+handler bodies, the complete VM, transitive helper effects and broader consumers
+of+3384/+3392 were not independently closed here. No claim is made about valid
+arbitrary pointers, malformed-input aliasing, safe capacities, concurrency,
+retail-script reachability, or comprehensive xref absence. IDA entry/xref records
+are snapshot evidence; auto_analysis_ready was false in the recorded session.
+No game, script, target code, UI, attachment, injection or original-file write.
+
+Reproduce from repository root
+  py -3 -B artifacts/review-bdx-bank12-inventory-20261008.py
+  py -3 -B docs/research/bdx-bank12-inventory-20261008/verify.py --check
+
+The independent review script writes only its own JSON receipt.

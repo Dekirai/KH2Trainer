@@ -1,0 +1,73 @@
+{
+  "date": "2026-10-08",
+  "scope": "Runtime normal-call integrity prerequisite with isolated tests. No installer integration, game operation, observer arming or release claimed.",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "status": "Implemented and isolated-tested; ready for parent integration review.",
+  "implementation": [
+    "src/KH2Trainer.Bridge/StatusBootstrapContract.h",
+    "src/KH2Trainer.Bridge/StatusBootstrapPins.inl",
+    "tests/KH2Trainer.Bridge.Tests/StatusBootstrapContractTests.cpp",
+    "tests/KH2Trainer.Bridge.Tests/StatusBootstrapContractProductionCompile.cpp"
+  ],
+  "api": {
+    "prepare": "Contract::Prepare(mainModuleBase), before entry publication, outside DllMain/locks/suspension.",
+    "verify": "Contract::Verify(Original) while Prepared; Verify(FiveGates) after complete entry publication and thereafter.",
+    "roots": "Contract::RootRanges(out) returns five complete original extents in StatusEntryPlan order; configured ranges are not a readiness permit.",
+    "failure": "Permanent Fault; no reset or rebinding."
+  },
+  "tests": {
+    "checks": 11238,
+    "failures": 0,
+    "productionCompileWithoutTestMacro": true,
+    "compiler": "MSVC x64 /O2 /W4 /MT /EHsc",
+    "warnings": 0,
+    "log": "docs/research/status-bootstrap-contract-20261008/local-tests.txt",
+    "executedGameBytes": false,
+    "realOsApiResolveInOwnTestProcess": true
+  },
+  "pins": {
+    "normalClosureBodiesReused": 25,
+    "freshBodies": 1,
+    "freshInstructions": 1,
+    "freshBodyBytes": 2,
+    "fullRuntimeBodyBytes": 5517,
+    "importPointers": 6,
+    "encodedCallbacks": 2,
+    "patchedRootFirstBytesOnly": 5
+  },
+  "claims": [
+    {
+      "addr": "0x1405669f0",
+      "Finding": "The fixed retail native dispatch thunk is exactly FF E0 (JMP RAX). The runtime contract requires its complete bytes and the relocated pointer at RVA57BCA0; another CFG dispatch is rejected without replacement.",
+      "Evidence": [
+        "docs/research/status-bootstrap-contract-20261008/evidence.json",
+        "docs/research/status-bootstrap-contract-20261008/verification.json"
+      ],
+      "Limitations": "Specific pinned retail build with GUARD_CF absent; trusted Windows/CRT implementations and no unsupported external interventions remain required."
+    }
+  ],
+  "runtimeContractLimits": [
+    "All 25 normal writer bodies, six IAT pointers and stable event/CV configuration must remain within the recorded contract.",
+    "Loader resolution and MEM_IMAGE protections do not prove system API authenticity or absence of inline hooks.",
+    "Arbitrary external code/data ABA, thread control, stack migration, exception callbacks and special APC intervention are outside the proof.",
+    "Router routing, trampolines, old-thread drain, observer synchronization and typed ownership receipts require separate installer integration."
+  ],
+  "sourceHashes": [
+    {
+      "path": "src/KH2Trainer.Bridge/StatusBootstrapContract.h",
+      "sha256": "5a275ac972c539e3996a59b331488e100efe51dec13c8814f053226f9f60eadd"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/StatusBootstrapPins.inl",
+      "sha256": "211295d5fb53680e3fedda475a75f3f4468807642ac925f1e51d2d1413fc33fa"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/StatusBootstrapContractTests.cpp",
+      "sha256": "4b35f438aa0214b1b36a29fcebcaa152474159897da19a711ffbe69664018fc2"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/StatusBootstrapContractProductionCompile.cpp",
+      "sha256": "f3b6f043dc0ed7e67d088b3ab1e65b1b953672d9ea214bbaef4649b3e93fce6c"
+    }
+  ]
+}

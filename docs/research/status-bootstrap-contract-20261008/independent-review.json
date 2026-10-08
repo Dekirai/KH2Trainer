@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-08",
+  "reviewer": "root",
+  "checks": 11238,
+  "failures": 0,
+  "sourceHashes": {
+    "src/KH2Trainer.Bridge/StatusBootstrapContract.h": "5a275ac972c539e3996a59b331488e100efe51dec13c8814f053226f9f60eadd",
+    "src/KH2Trainer.Bridge/StatusBootstrapPins.inl": "211295d5fb53680e3fedda475a75f3f4468807642ac925f1e51d2d1413fc33fa",
+    "tests/KH2Trainer.Bridge.Tests/StatusBootstrapContractTests.cpp": "4b35f438aa0214b1b36a29fcebcaa152474159897da19a711ffbe69664018fc2",
+    "tests/KH2Trainer.Bridge.Tests/StatusBootstrapContractProductionCompile.cpp": "f3b6f043dc0ed7e67d088b3ab1e65b1b953672d9ea214bbaef4649b3e93fce6c"
+  },
+  "scope": "Full header/test review, independent production compile and suite execution, and original-PE verifier execution.",
+  "result": "No blocking finding within the fixed normal-closure and trusted API contract.",
+  "reviewed": [
+    "Prepare resolves and pins declaring and forwarded API modules before suspension. Verify only reads previously bound code and data.",
+    "All 25 original closure bodies and the two-byte native dispatch thunk are pinned. Only the five first-byte CC substitutions are permitted after publication.",
+    "The original dispatch pointer receives ASLR relocation; every code body has no DIR64 relocations. Tests and generator agree with the original PE.",
+    "Six IAT slots must equal their named current exports; the existing native CFG mode and dispatch are checked without replacement.",
+    "Event mode bypasses encoded callback slots exactly as the pinned branches do. CV mode checks the cookie/XOR/rotate decoder and resolved sleep/wake identities.",
+    "Two samples reject observed configuration drift; captured mode, handle and relevant encoding remain fixed. Fault cannot be cleared by restored bytes."
+  ],
+  "limits": [
+    "No proof of arbitrary API inline-patch authenticity or transient foreign ABA changes.",
+    "No game process or writer closure is executed by the tests.",
+    "Exact root ranges must stay in durable metadata to avoid unnecessary full-stack scan matches."
+  ],
+  "log": "independent-native-tests.txt",
+  "liveGame": false,
+  "runtimeInstalled": false
+}

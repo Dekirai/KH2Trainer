@@ -1,0 +1,156 @@
+Actor / field-heap bulk lifetime: bounded native research, 2026-10-08
+
+Result
+------
+No single common early Actor/STATUS invalidation boundary is proved by this
+round. The four recorded field-heap teardown paths share 19FFD0 -> 39D400 ->
+39CCA0(0), but three paths execute task cleanup and allocator frees in 14FF10
+before reaching that suffix. The ready-byte stores in 1524E0 and 152A90 cover
+only those branches and are observations, not mutual exclusion. Neither the
+ready byte nor a metadata-only pin prevents a native call starting afterwards.
+
+An observer at 19FFD0 would precede the three block frees inside that body and
+the following arena release. It would not precede the earlier task unlink,
+cleanup callback or task/context frees. No observed common suffix alone is a
+complete Actor lifetime boundary. The earlier callback may itself destroy an
+Actor; its exact targets and reachability are not established here.
+
+What was captured and checked
+-----------------------------
+15 fresh complete IDA captures, including previously studied functions:
+762 unique instruction rows, 3154 original code bytes, 56 vtable bytes.
+These are capture totals, not 15 newly discovered or fully understood functions.
+Five older scheduler/fiber bodies were reused and independently byte-checked;
+they are excluded from fresh totals. All captured functions have complete
+disassembly, pseudocode, raw bytes and untruncated IDA incoming-reference lists.
+The verifier separately decoded 655 direct code reference sites, four address
+references inside functions, and fourteen static data references. These site
+checks are not complete analyses of the hundreds of caller bodies.
+
+Original EXE SHA256:
+9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed
+
+Run: Python with Capstone 5.x, verify.py from this directory. verification.json
+records PASS. No game process, attachment, injection, UI or save operation.
+
+Exact paths and ordering
+-----------------------
+1524A0: 19FFD0@1524AB -> 39D400@1524B7 -> 39CCA0(0)@1524BE ->
+         field heap global 9BA920 cleared@1524C3.
+1524E0: ready byte 9BA8D0 cleared@1524E4; 39B640@1524EB;
+         14FF10(manager=716868, mask=1, value=1)@1524FF; further cleanup;
+         shared suffix@152541/15254D/152554; heap cleared@152559.
+152680: long-lived load task contains cooperative yields through 150060;
+         transient phase8D1 cleared@1527DF;
+         14FF10(manager=716868, mask=8, value=8)@1527E6; 2C4240;
+         shared suffix@1527F7/152803/15280A; heap cleared@152814;
+         later loop iteration or post-loop code can construct a new allocator.
+152A90: after countdown and native predicate checks, optional3A5650;
+         ready cleared@152AE3; 39B640@152AEA;
+         14FF10(manager=716868, mask=1, value=1)@152AFE; further cleanup;
+         shared suffix@152B40/152B4C/152B53; heap cleared@152B58;
+         registers callback152680 through14F8A0@152BBC before task completion.
+
+The task cleanup before the suffix
+---------------------------------
+14FF10 walks manager+0x10 and Task+0x78 links, selects matching Task+0x60
+flags, and unlinks selected nodes. It then reads Task+0x68 and calls it at
+14FFEA when nonnull. It optionally calls1352E0 on the Task+0x70 context object,
+clears that context's first pointer, then frees context and task through the
+allocator at Task+0x58, virtual slot+0x10 (150014 and150021).
+
+This proves earlier task allocator frees. It does not prove that each such
+task owns an Actor, that every task callback destroys an Actor, or that the
+task allocator is the field Actor heap. The callback set and1352E0 body remain
+outside this round. The original field-heap pointer clear occurs much later.
+
+39B640 itself only sets flags and clears globals in the BF31xx/BF32xx range;
+its complete body has no call or free. 1AE6B0 similarly only resets globals in
+the AC7970..AC79B0 region. Their existence does not create a transaction lock.
+
+Allocator and resource semantics
+--------------------------------
+19FFD0 saves its allocator argument, calls1AE6B0, then conditionally passes
+AC1C58, AC1C60 and AC1C68 as RDX to allocator-vtable+0x10 at19FFF6,
+1A0012 and1A002E. Each pointer is zeroed after the call. Pseudocode drops RDX
+in this IDB; the recorded assembly establishes the actual second argument.
+
+152570 is a four-instruction forwarding thunk: RDX=caller RCX; RCX=9BA920;
+jump through [allocator.vtable+0x10]. It invokes no Actor destructor itself.
+Its182 incoming direct call/jump sites were enumerated and byte-decoded;
+that is not a claim that all182 caller bodies were semantically analyzed.
+
+19C3A0 initializes a kn::MemoryAllocator over the caller's region and writes
+primary vtable1405B2BB0. The captured table's +0x10 entry is14019C470.
+152680 calls19C3A0 and stores its result in9BA920, establishing that mapping
+for this constructor path. Other possible runtime heap implementations need
+their own identity check.
+
+19C470 calls0FDD90 withAC0FD8, then for a nonnull payload obtains its block
+header at payload-0x20 and size from payload-0x10. Before unlinking it calls
+3A08F0(header,end). It updates allocator/list metadata, fills the released
+block in DWORD units withEFACCAFE at19C4E7, clears header+8, and tail-calls
+0FDC90. This is a concrete block invalidation/free boundary. The two external
+helpers and3A08F0 are outside this round; their names do not prove an Actor
+transaction lock or a callback-free allocator closure. Hooking only this
+entry would also occur after any caller's earlier Actor destructor work.
+
+39D400 checks for a BAR prefix and calls3A6A10 with argument1 if present.
+Otherwise it calls12EF30(start,start+savedSize,1). It then adds the size from
+29FB400[index] to global749740 and increments749750. Thus region return and
+resource handling happen here without this body calling19C470 or enumerating
+Actor destructors. Callee semantics and arena allocation39D300 are not fully
+captured in this bounded round; arena-pop is an interpretation of the verified
+pointer/index reversal, not proof that the OS releases a virtual-memory region.
+
+39CCA0 changes resource-entry state at+0x48 while walking packed+0x70 links.
+Only argument5000 reaches its immediate resource release/removal/virtual-free
+loop. All four field suffixes pass0, so those calls perform the marking phase
+and return without reaching39CE45. Generic claims that39CCA0 always immediately
+frees all Actors are contradicted by the inspected branch structure.
+
+Task / thread evidence and limits
+--------------------------------
+14F8A0 allocates a48-byte context and152-byte task, stores its fourth argument
+as the task callback, sets flag0x80000, and inserts by priority. 152A90 passes
+152680 as that callback. The captured150060 sets context+0x1C then tail-jumps
+135470 with the task and manager fiber values. The reused135250 and135470
+bodies call PE-verified CreateFiber, ConvertThreadToFiber, SwitchToFiber and
+ConvertFiberToThread imports. This is concrete cooperative fiber machinery.
+
+The reused14FD60 body dispatches direct callbacks or creates/switches task
+fibers. The reused App update14EB70 reaches it through14FC20 using manager
+global9BA888. This does not establish that the separate manager716868 used by
+all observed field-task operations always executes on the identical OS thread.
+The nested-manager path,152A90 registration caller152990,152680 registration
+callers1525A0/1525F0, direct1524E0 caller150710, and task trampoline14F650 remain
+specific follow-ups. 1524A0 has only a data/unwind reference in this IDA query;
+that result is not proof of dead code or of no indirect callers.
+
+No all-thread caller census or worker exclusion is established. A scan only
+of the current Win64 thread's active stack cannot alone dismiss a suspended
+152680 fiber; the function demonstrably yields. The previous five-root STATUS
+drain contract is narrower and cannot be extended to these task bodies without
+a separate fiber/entry contract.
+
+Implications for the provider
+-----------------------------
+Keep native Actor/STATUS lifetime admission unavailable until a covering entry
+or serialized execution contract is established. Do not treat19FFD0,152570,
+ready sampling, or allocator internal bookkeeping as a complete solution.
+Candidate next work is a proved early entry set over task cleanup, individual
+Actor destruction and whole-region return, plus each old-call/fiber state at
+installation. Notification metadata may be guarded, but forwarding full native
+destruction while holding Actor/STATUS locks could introduce the previously
+identified lock-order problem. A synthetic epoch may express observed invalidity;
+this research does not discover a native generation counter or implement one.
+
+Known remaining callees / contexts
+---------------------------------
+3A08F0,0FDD90,0FDC90: free-path side effects and synchronization closure.
+12EF30,3A6A10,39D300: resource and whole-region ownership/reuse details.
+14F650,1352E0,150710,1525A0,1525F0,152990: exact task dispatch, exit and callers.
+The four remaining direct callers of19FFD0 outside the field family and the
+other19 code sites of39D400 require separate coverage before a universal claim.
+
+No product change, working trainer fix or gameplay result is claimed.

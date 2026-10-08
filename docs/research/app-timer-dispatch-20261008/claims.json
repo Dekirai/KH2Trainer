@@ -1,0 +1,211 @@
+{
+  "schema": 1,
+  "Domain": "Actor lifetime and App timer dispatch",
+  "claims": [
+    {
+      "addr": "0x1401571b0",
+      "Finding": "The App timer completion path clears its timer state and dispatches message74 with parameter0 through3AABE0. Message74 uses the switch default:3F4980, Actor broadcast3B4270, then3F60D0. These are ordered native calls; only the Actor branch and immediate sibling boundaries are closed here.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401571b0]",
+        "evidence.json#functions[addr=0x1403aabe0]",
+        "evidence.json#functions[addr=0x1403f4980]",
+        "evidence.json#functions[addr=0x1403b4270]",
+        "evidence.json#functions[addr=0x1403f60d0]"
+      ],
+      "Limitations": "Static original-build evidence. No live timer firing, script execution, concurrent-writer census or all-class/all-path completeness proof."
+    },
+    {
+      "addr": "0x1403b4270",
+      "Finding": "The broadcast registry is the active Actor list. Head2A171C8 and packed Actor+2704 links are traversed by3BF4F0, which excludes DWORD Actor+288 bits0x10080000. Actor DWORD0 decodes to a descriptor object; its firstQWORD is the native vtable. The call ABI at3B42A8 is RCX=descriptor,RDX=Actor,R8D=message,R9D=parameter, virtual byte-offset96. The next Actor link is read after the handler returns.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b4270]",
+        "evidence.json#functions[addr=0x1403bf4f0]",
+        "evidence.json#functions[addr=0x1403baa80]"
+      ],
+      "Limitations": "Static original-build evidence. No live timer firing, script execution, concurrent-writer census or all-class/all-path completeness proof."
+    },
+    {
+      "addr": "0x1403bfbc0",
+      "Finding": "3BFBC0 inserts an Actor in ascending unsigned-byte Actor+2961 order using packed next+2704 and active head/tail2A171C8/2A171D0. Its only concrete incoming native call in the saved IDA census is3B3951 in the base constructor3B3200. Registration occurs after assigning the OBJ descriptor but before the default-action callback, model initialization and derived descriptor/STATUS construction.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bfbc0]",
+        "evidence.json#functions[addr=0x1403b3200]",
+        "evidence.json#functions[addr=0x1403a7a40]",
+        "evidence.json#functions[addr=0x140405030]",
+        "evidence.json#functions[addr=0x140415670]"
+      ],
+      "Limitations": "Static original-build evidence. No live timer firing, script execution, concurrent-writer census or all-class/all-path completeness proof."
+    },
+    {
+      "addr": "0x140405030",
+      "Finding": "Original RTTI, vtable cells and explicit constructor stores prove nine concrete descriptor families: OBJ, STDOBJ, BTLOBJ, PARTY, PLAYER, SORA, MICKEY, PRIZEBOX and ACTOR. SORA binds750300\u21925CBA28\u2192slot96 target404C10; MICKEY binds7523B8\u21925D15A0\u2192415240. The constructor chain reaches the common registered OBJ allocation. Full mapping is in report.json descriptorChains; names come from original RTTI, not guessed offset similarity.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b3200]",
+        "evidence.json#functions[addr=0x1403da940]",
+        "evidence.json#functions[addr=0x1403d2da0]",
+        "evidence.json#functions[addr=0x1403d5840]",
+        "evidence.json#functions[addr=0x1403a7a40]",
+        "evidence.json#functions[addr=0x140405030]",
+        "evidence.json#functions[addr=0x140415670]",
+        "evidence.json#functions[addr=0x1404158c0]",
+        "evidence.json#functions[addr=0x1403f8010]",
+        "evidence.json#functions[addr=0x1403f8170]",
+        "evidence.json#functions[addr=0x140419230]",
+        "evidence.json#functions[addr=0x140404c10]",
+        "evidence.json#functions[addr=0x140415240]",
+        "evidence.json"
+      ],
+      "Limitations": "Static original-build evidence. No live timer firing, script execution, concurrent-writer census or all-class/all-path completeness proof."
+    },
+    {
+      "addr": "0x1403b4c90",
+      "Finding": "The saved direct-caller census contains69 distinct16-byte forwarding functions. Their full original instruction sequences adapt (descriptor,Actor,message,parameter) to3B4C90(Actor,message,parameter). Their saved original pointer-cell references are verified individually. The OBJ base slot3B3030 embeds equivalent forwarding behavior. This is a census of these direct forwarders, not a complete census of every Actor type or every possible slot96 target.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b4c90]",
+        "evidence.json#functions[addr=0x1403b3030]"
+      ],
+      "Limitations": "Static original-build evidence. No live timer firing, script execution, concurrent-writer census or all-class/all-path completeness proof."
+    },
+    {
+      "addr": "0x1403b44d0",
+      "Finding": "The concrete Script binding routine finds BAR type3 at Actor+2336, decodes the payload, allocates a112-byte VM context with Actor as owner and stores it at Actor+1456. It invokes event0 with the encoded Actor (@ADR) and starts event1. Actor class-flag+1736 bit0x20 skips this setup. The original ACTOR constructor419230 sets that bit; a timer handler with null Script pointer simply returns.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b44d0]",
+        "evidence.json#functions[addr=0x1403b2c50]",
+        "evidence.json#functions[addr=0x1403e1730]",
+        "evidence.json#functions[addr=0x140419230]",
+        "evidence.json#functions[addr=0x1403b4c90]"
+      ],
+      "Limitations": "Static original-build evidence. No live timer firing, script execution, concurrent-writer census or all-class/all-path completeness proof."
+    },
+    {
+      "addr": "0x1403e1840",
+      "Finding": "3B4C90 passes event10 and two8-byte tagged cells [message,@INT] and [parameter,@INT]. For the timer they are74 and0.3E1840 finds the first matching event-table entry, constructs a temporary VM before checking signed entryPC>0, then invokes41B320/UpdateTree only for a positive PC. Missing event10 therefore skips BDX execution but still constructs and destroys the temporary context.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b4c90]",
+        "evidence.json#functions[addr=0x14041c690]",
+        "evidence.json#functions[addr=0x1403e1840]",
+        "evidence.json#functions[addr=0x14041b320]"
+      ],
+      "Limitations": "Static original-build evidence. No live timer firing, script execution, concurrent-writer census or all-class/all-path completeness proof."
+    },
+    {
+      "addr": "0x1403e1240",
+      "Finding": "Temporary VM construction directly calls the current VM allocator virtual+8 for two stack buffers, shares/refcounts the parent Work allocation (or allocates Work if absent), and increments owner Actor+1464. For five exact script names with header stack-size512, it also writes the shared script header+20 to1024. These are concrete transitive Actor, heap and script-buffer mutations from the timer handler when Actor+1456 is non-null, including when event10 is absent. No direct STATUS field write is established by this immediate normal dispatch closure.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1840]",
+        "evidence.json#functions[addr=0x1403e1240]",
+        "evidence.json#functions[addr=0x1403e1410]",
+        "evidence.json#functions[addr=0x1403e1c80]"
+      ],
+      "Limitations": "Static original-build evidence. No live timer firing, script execution, concurrent-writer census or all-class/all-path completeness proof."
+    },
+    {
+      "addr": "0x1403e1c80",
+      "Finding": "Event execution calls the native BDX interpreter synchronously with the current bank table. UpdateTree may recurse into child VM contexts; normal completion marks the context and decrements Actor+1464 once.3E1840 restores the two ambient VM globals before destroying the temporary VM. Destruction can execute a nonzero cleanup PC through BDX, recursively tears down children, frees stack buffers, decrements Work refs and balances the Actor count if not already complete. A suspended/yielded temporary VM is still destroyed before this handler returns; no persistence of this temporary context is shown. Native traps can have effects outside this bounded closure.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1c80]",
+        "evidence.json#functions[addr=0x1403e1840]",
+        "evidence.json#functions[addr=0x1403e1410]",
+        "evidence.json#functions[addr=0x1403e1530]",
+        "evidence.json#functions[addr=0x1403e1a00]",
+        "../bdx-rebind-operands-20261008/evidence.json#functions[addr=0x14041b400]"
+      ],
+      "Limitations": "Static original-build evidence. No live timer firing, script execution, concurrent-writer census or all-class/all-path completeness proof."
+    },
+    {
+      "addr": "0x1403b45c0",
+      "Finding": "Normal removal requests first run descriptor slot56 where appropriate, destroy and clear Actor+1456 Script, release related animation state, clear flag0x10000000 and set Actor+288 bit0x80000.3B4700/3B2E10 instead set0x10000000 and stop the root VM. Both flags make the Actor ineligible for the filtered timer broadcast, but neither flag by itself proves the Actor allocation has been freed.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b45c0]",
+        "evidence.json#functions[addr=0x1403b2ed0]",
+        "evidence.json#functions[addr=0x1403b4700]",
+        "evidence.json#functions[addr=0x1403b2e10]",
+        "evidence.json#functions[addr=0x1403e1a00]",
+        "evidence.json#functions[addr=0x1403baa80]"
+      ],
+      "Limitations": "Static original-build evidence. No live timer firing, script execution, concurrent-writer census or all-class/all-path completeness proof."
+    },
+    {
+      "addr": "0x1403bf300",
+      "Finding": "3BF300 first drains the previous pending list, caching its next link before callbacks, invoking3B4E80 and descriptor slot0. It then migrates marked active Actors to pending head/tail2A171D8/2A171E0. Newly migrated Actors are disposed on a later invocation.3BF810 registers this processor with scheduler priority91000 and cleanup3BF4C0, which calls it twice. Two passes are the observed native cleanup protocol; this is not a proof that arbitrary callback reentrancy cannot append further work.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bf300]",
+        "evidence.json#functions[addr=0x1403b4e80]",
+        "evidence.json#functions[addr=0x1403bf810]",
+        "evidence.json#functions[addr=0x1403bf4c0]",
+        "evidence.json#functions[addr=0x1403bf570]"
+      ],
+      "Limitations": "Static original-build evidence. No live timer firing, script execution, concurrent-writer census or all-class/all-path completeness proof."
+    },
+    {
+      "addr": "0x1403b3d60",
+      "Finding": "The checked final destruction chain can release STATUS and resource ownership: SORA4049E0 and MICKEY414DD0 call2E2D60\u21923B3D60;3B3D60 releases non-null Actor+1472 via3C07E0. That decrements STATUS+612 and returns an exhausted record to the632-byte pool. The descriptor destructors finally call152570 on the Actor allocation. These are deferred destruction consequences, not a claim that every timer event or message74 script selects destruction.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404049e0]",
+        "evidence.json#functions[addr=0x140414dd0]",
+        "evidence.json#functions[addr=0x1402e2d60]",
+        "evidence.json#functions[addr=0x1403b3d60]",
+        "evidence.json#functions[addr=0x1403b2b80]",
+        "evidence.json#functions[addr=0x1403c07e0]"
+      ],
+      "Limitations": "Static original-build evidence. No live timer firing, script execution, concurrent-writer census or all-class/all-path completeness proof."
+    },
+    {
+      "addr": "0x1403b4270",
+      "Finding": "No lock, generation token or pin is present in the checked list iterator/broadcaster/inserter/drainer bodies. Broadcast returns to the current Actor's link after arbitrary BDX; the concrete stack therefore depends on the current Actor, descriptor, Script/Work/owner binding and allocator remaining valid until the native operation finishes. Existing App-task provenance shows caller context but does not prove exclusive OS-thread ownership, worker quiescence, or safety against a reentrant disposal/bulk teardown. A trainer must obtain a separately proven stable execution/lifetime boundary before read-modify-restore transactions.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b4270]",
+        "evidence.json#functions[addr=0x1403bf4f0]",
+        "evidence.json#functions[addr=0x1403bfbc0]",
+        "evidence.json#functions[addr=0x1403bf300]",
+        "evidence.json#functions[addr=0x1403e1840]",
+        "evidence.json#functions[addr=0x1403e1240]",
+        "evidence.json#functions[addr=0x1403e1410]",
+        "../timing-callback-context-20261008/evidence.json#functions[addr=0x140157090]",
+        "../actor-task-context-20261008/evidence.json#functions[addr=0x14014f770]"
+      ],
+      "Limitations": "Static original-build evidence. No live timer firing, script execution, concurrent-writer census or all-class/all-path completeness proof."
+    },
+    {
+      "addr": "0x140577820",
+      "Finding": "The inspected static descriptor QWORDs have native exit writes. Registration wrappers024C30/029390/02AD80 pass5775D0/577820/577D20 through4399B0\u2192439928 to CRT atexit/onexit registration. These callbacks reset OBJ/SORA/MICKEY descriptors to original IVTABLE5B2E58, whose first13 cells point to the imported _purecall thunk471A3C. Original constructor bindings do not make descriptor storage immutable for the whole module lifetime.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1405775d0]",
+        "evidence.json#functions[addr=0x140577820]",
+        "evidence.json#functions[addr=0x140577d20]",
+        "evidence.json#functions[addr=0x140024c30]",
+        "evidence.json#functions[addr=0x140029390]",
+        "evidence.json#functions[addr=0x14002ad80]",
+        "evidence.json#functions[addr=0x1404399b0]",
+        "evidence.json#functions[addr=0x140439928]",
+        "evidence.json#functions[addr=0x140471cbe]",
+        "evidence.json#functions[addr=0x140471cb2]",
+        "evidence.json#functions[addr=0x140471a3c]"
+      ],
+      "Limitations": "Static original-build evidence. No live timer firing, script execution, concurrent-writer census or all-class/all-path completeness proof."
+    },
+    {
+      "addr": "0x14041c690",
+      "Finding": "The hash-pinned loose-script inventory contains921 scripts, of which66 contain event10. This census checks native-format event headers, not arbitrary byte matches. Previously selected B_AL020 and B_EX400 headers contain no event10. Header presence does not select the message74 branch and does not prove the local loose copy equals every installed archive entry. No unknown native call is treated as a no-op and no complete message74-to-STATUS/resource mutation path is claimed.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041c690]",
+        "evidence.json#functions[addr=0x1403e1840]",
+        "script-event10-census.json",
+        "../bdx-inspection-20261008/selected-structure.json",
+        "../bdx-inspection-20261008/retail-comparison.json"
+      ],
+      "Limitations": "Static original-build evidence. No live timer firing, script execution, concurrent-writer census or all-class/all-path completeness proof."
+    },
+    {
+      "addr": "0x1403f4980",
+      "Finding": "The preceding sibling dispatcher3F4980 sends the same event10/two-INT payload to up to8 Script pointers at16-byte strides from2AE5D88. The following sibling3F60D0 selects among16 records of96 bytes at2AE6ED0 using message/parameter and negative-parameter wildcard rules, then calls3F61A0 and conditional event/transition helpers. Their registration, selected data and downstream transition effects remain distinct open boundaries; closing the Actor branch does not close the whole3AABE0 notification.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403f4980]",
+        "evidence.json#functions[addr=0x1403f60d0]",
+        "evidence.json#functions[addr=0x1403aabe0]"
+      ],
+      "Limitations": "Static original-build evidence. No live timer firing, script execution, concurrent-writer census or all-class/all-path completeness proof."
+    }
+  ]
+}

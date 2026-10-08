@@ -1,0 +1,106 @@
+BDX 1:147 AND 1:367: SHARED ACTOR VECTOR AND STEPPED QUERY
+2026-10-08
+
+Result
+
+The final Bank 1 descriptor, 1:367, calls an incremental Actor query. Its wrapper
+always returns the encoded shared buffer at RVA 756B48. It discards the helper's
+success byte, so returning an address is not a promise of a new result.
+
+The original descriptor declares three operands and a return slot:
+0 = encoded wrapper; wrapper DWORD+4 encodes the Actor;
+1 = floating limit, passed in XMM2;
+2 = integer converted to boolean, passed in R9B.
+
+Handler 42BB40 calls 3B8510 with that Actor and output buffer 756B48, then replaces
+operand0 with the encoded buffer address and tag @ADR. It never tests the helper
+result. There is no wrapper or Actor lifetime validation in this adapter.
+
+All short hexadecimal addresses here are RVAs relative to 140000000. Structure
+offsets after '+' are decimal unless written with 0x. Original executable SHA256:
+9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed
+
+Selected Actor vector and shared storage
+
+3B5B40 selects Actor+112 when 3DA520 decodes a nonnull pointer from Actor+1696;
+otherwise it selects Actor+1648. This identifies the exact source locations,
+not a globally interchangeable coordinate-space convention.
+
+1:147, handler 42B7B0, decodes the same wrapper layout, copies this selected
+16-byte vector into 756B48 through 1A8E60 and returns the same encoded address.
+1A8E60 copies four DWORDs in sequence unless source and destination are equal.
+It does not sanitize NaNs or create an independently owned result object.
+
+The original buffer starts with four floats (0,0,0,1). Its 33 recorded direct
+xrefs include other native wrappers. The freshly captured 1:147 path proves
+one concrete competing writer. This study does not exhaust indirect aliases,
+reentrant calls or concurrent writers.
+
+Immediate 1:367 helper
+
+3B8510 copies 136 bytes from Actor+1744 into a local query structure, replaces
+its first vector with the selected Actor vector and sets local vector+16 to
+(0,0,0,1). It clears local flags bits0/1, sets bit2, and restores bit0 when the
+boolean operand is true. Other flag bits are preserved.
+
+The scalar check happens after these Actor reads. A nonpositive scalar therefore
+does not make a missing or invalid Actor safe to use.
+
+With masked SSE invalid exceptions, the COMISS/JBE entry test returns zero for
+nonpositive or unordered NaN input. In this normal immediate path no output
+copy is performed, although the adapter still returns the shared buffer.
+
+For positive ordered input, each iteration:
+1. Computes binary32 step = min(limit, step + 100), starting at zero.
+2. Stores step at local query offsets +32 and +40.
+3. Calls 16FEC0 on the local structure; that routine's return value is ignored.
+4. If boolean mode is false and local byte+116 bit0 is set, exits before copying.
+5. Otherwise copies local vector+48 to the query's initial vector and to the
+   supplied output buffer, records success, and repeats while limit > step.
+
+The freshly captured 16FEC0 body establishes the immediate calls and local
+mutations. Its transitive queries through 1638F0, 1752E0, 163750 and 172840 remain
+open. Exact geometric meaning and units of the limit are not named here.
+
+If the first iteration breaks before the output copy, that explicit copy is
+absent. A later break leaves the last copied intermediate result through this
+path. Unknown transitive or reentrant writers are not ruled out. Callers cannot
+infer a fresh successful result solely from the returned buffer pointer.
+
+Floating-point progress limit
+
+With relevant SSE exceptions masked and binary32 round-to-nearest-even held
+constant, the ADDSS(+100) sequence has its first
+positive fixed point at 2^31 = 2147483648 (bits 4F000000). The predecessor is
+2^31 - 128, and the successor is 2^31 + 256. Adding 100 at the fixed point rounds
+back to the same value because 100 is below half the new spacing.
+
+At a limit equal to 2^31, the final JA comparison terminates normally. With a
+larger limit or positive infinity, the counter can stop advancing while the
+loop comparison remains true. If the native query calls keep returning and
+the optional flag break never applies, this captured loop does not terminate.
+This is a conditional arithmetic property, not an observed retail freeze or
+proof that a shipped script supplies such a value.
+
+The model tests small finite limits, entry exits, supplied break decisions and
+the exact fixed-point boundary. It does not execute original instructions or
+simulate transitive query effects. Unmasked SSE exceptions (including precision/inexact) and changes to the
+rounding mode are outside the model assumptions.
+
+Practical use
+
+The offline catalog can now identify the two calls and explain their shared
+result storage. A future script editor can avoid treating 1:367 as a reliable
+success-returning query, warn about extreme scalar inputs, and copy a needed
+result before another native call overwrites the buffer. This study does not
+add live script execution or change the original game's loop.
+
+Reproduction
+
+  py -3 -B docs/research/bdx-actor-query-20261008/verify.py --check
+
+The verifier checks nine complete bodies (seven fresh, two imported with source
+hashes), 239 instructions, 931 original body bytes, four data spans, 14 semantic
+anchors, 34 code xrefs and 20 bounded arithmetic/decision checks. It requires the
+pinned original executable and Python with Capstone. No game or original code
+is executed, and no source asset or save file is written.

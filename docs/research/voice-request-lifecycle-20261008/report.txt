@@ -1,0 +1,104 @@
+Selected BTLNPC Voice request lifecycle
+=======================================
+
+VOICE fields, EE pool type6, selected backend wrappers, reset/destruction edges, direct task registration and one distinct PARTY IOP fallback.
+
+Main result
+Voice request acceptance, pool admission and backend playback are three different steps. Pending IDs are consumed before admission. Admission and start failures do not locally retain a retry. Handles can describe queued requests; EE backend operations share key/ID/group identity rather than poolhandle ownership.
+
+Normal flow
+1. request stores pending ID/priority/reference
+2. conditional Actor Voice poll consumes pending before request admission
+3. EE admission creates type6/state1 pool handle or returns0
+4. later audio consumer attempts backend start and sets state2
+5. active query/update or state4 stop
+6. later pool pass returns slot; Voice clears handle on a subsequent false query
+
+Boundaries
+- No game execution, attach, injection, GUI, audio observation or original-file modification.
+- 59 selected complete function bodies; no complete transitive Actor/audio/exception closure or all-writers census.
+- All transition models assume valid memory, finite intact lists, sequential execution and normal return from external calls.
+- Original N_EX650_BTL10 and 00objentry stored-entry/loose identity is rechecked via the pinned previous verifier; fresh decompression is not repeated.
+- No inference that direct task registration establishes OS-thread ownership, once-per-frame invocation, or relative timing between distinct managers.
+- Actor+2996 remains conditionally NULL for the selected construction; PARTY IOP fallback has no proven reachability for that BTLNPC.
+- Backend identity uses a resource-derived key/ID/group, not an exclusive poolhandle. Lower SoundSystem processing and audible playback remain open.
+
+Addressed findings
+
+0x1403CE580: VOICE request admission compares signed priorities. Idle means pendingID<0 and handle==0. Otherwise equal or higher priority replaces pendingID, priority and encoded Actor reference; it neither starts nor stops a backend request. Negative IDs are not rejected here but do not enter the later pendingID>=0 consumption path.
+  Evidence: evidence.json#functions[addr=0x1403CE580], evidence.json#functions[addr=0x1403CE260], verification.json
+  Limits: Valid component and pointer encoding assumed; no synchronization or input validation contract is established.
+
+0x1403CE260: For pendingID>=0, Voice update stops a nonzero old handle, clears that handle, writes pendingID=-1 before the virtual request call, obtains position from the stored Actor, and stores the returned handle even when zero. Admission failure therefore consumes the pending ID with no automatic retry in later idle updates. The priority and Actor reference are retained on this branch.
+  Evidence: evidence.json#functions[addr=0x1403CE260], evidence.json#functions[addr=0x1403CE560], evidence.json#functions[addr=0x1401DE230], verification.json
+  Limits: Normal returns and valid Actor/component/resource pointers required. The pending branch does not locally null-check the decoded Actor before the position helper. External faults and exceptions are outside the model.
+
+0x1403CE260: With no pending ID and a nonzero handle, a false lookup/query result clears handle and Actor reference. An active handle updates position only when the decoded Actor exists and 3BA720 returns true; otherwise only the Actor reference is cleared. With no pending ID and handle==0, the old Actor reference and priority are untouched.
+  Evidence: evidence.json#functions[addr=0x1403CE260], evidence.json#functions[addr=0x1401DE8D0], evidence.json#functions[addr=0x1401DE840], evidence.json#functions[addr=0x1401DEEE0]
+  Limits: The meaning and lifetime guarantees of 3BA720 are not expanded here. Clearing the position source is not itself a backend stop.
+
+0x1403CE550: The Voice busy predicate is only handle!=0. Handle lookup reports true unconditionally for request state1, before the backend-start consumer has run. A nonzero handle or true busy predicate therefore does not demonstrate audible playback.
+  Evidence: evidence.json#functions[addr=0x1403CE550], evidence.json#functions[addr=0x1401DE8D0], evidence.json#functions[addr=0x1401DE840]
+  Limits: 1DE8D0 is the handle-to-request lookup wrapper. Internal1DE840 uses its supplied pointer even after its separate list scan misses; that scan is not membership validation. A valid request pointer is required. Later EE query uses the backend key/ID tuple, not unique sound-instance ownership.
+
+0x1401DE230: EE request admission rejects when AD93C0 is nonzero, signed freeCount<=16, or signed intervalCount>24. On the admitted normal path it decrements freeCount, increments intervalCount, takes a 56-byte pool slot, enqueues type6/state1, stores the resource pointer, ID and low16 flags, and returns the generated handle. Starting from intervalCount0, the comparison permits 25 admitted requests before the counter gate rejects.
+  Evidence: evidence.json#functions[addr=0x1401DE230], evidence.json#functions[addr=0x1401DEB50], evidence.json#functions[addr=0x1401DD8D0], verification.json
+  Limits: The shared counter also serves other request paths not inventoried here. Pool/free-index consistency, counter nonnegativity and valid camera/position helpers are preconditions, not validated properties.
+
+0x1401DEB50: Pool handle generation increments a DWORD and skips zero on wrap. The queued request is appended through encoded next at +32, while type/state are bytes+53/+52. A stopped entry retains its pool allocation until the later retirement pass, so replacement can encounter capacity rejection before the old slot has been returned.
+  Evidence: evidence.json#functions[addr=0x1401DEB50], evidence.json#functions[addr=0x1401DE320], evidence.json#functions[addr=0x1401DD8D0], evidence.json#functions[addr=0x1401DE230], verification.json
+  Limits: Skipping zero is not an eternal uniqueness guarantee; wrap, other writers and concurrency are not exhaustively analyzed.
+
+0x1401DD560: For captured EE type6, state1 calls 1DDD60, then passes resourceQWORD+24, ID+16, sign-extended WORD+44, sign-extended WORD+48 and the request pointer to 1DFD70. The return value of 1DDD60 is not used as the third argument. After normal return from 1DFD70, state is unconditionally set to2. State2 either updates the backend when queried active or stops/marks retirement; state3 also stops. Other states, including4, take no type6 action.
+  Evidence: evidence.json#functions[addr=0x1401DD560], evidence.json#functions[addr=0x1401DDD60], evidence.json#functions[addr=0x1401DF730], evidence.json#functions[addr=0x1401DFD70], evidence.json#functions[addr=0x1401DFF30], evidence.json#functions[addr=0x1401DE840], evidence.json#functions[addr=0x1401DE320], verification.json
+  Limits: Only the type6 branch is modeled. Type5 and other-type callees visible in the same body are not semantically closed.
+
+0x1401DFD70: The EE backend adapter reads the resource signature. ORIGIN including its terminating NUL requires nonzero resourceQWORD+32; a zero pointer returns0 before creation/play. A nonzero ORIGIN pointer becomes the low32 bank key in resourceDWORD+12. SEDBSSCF uses low32(resource) as key. Both recognized forms first call 1363B0(key,2), then 13B2E0(...,2,2). Other signatures skip these registration calls and still attempt creation/play using low32(resource).
+  Evidence: evidence.json#functions[addr=0x1401DFD70], evidence.json#functions[addr=0x1401363B0], evidence.json#functions[addr=0x14013B2E0], evidence.json
+  Limits: Readable resource memory is required; this is not a parser/bounds-validation guarantee. Pointer-derived keys can alias at low32. Resource ownership and later loader writes are outside the bounded set.
+
+0x14013B2E0: Bank registration returns0 when the global sound system is absent, the pointed payload does not start with SEDBSSCF, or 07A850 returns signed <=1. In the selected a5=2 path it invokes synchronous registration helpers, stores the bank entry, and links it. 1DFD70 ignores that return and also ignores the result of 1391D0 before calling 139E50. Consequently its normal return and pool state2 are not a successful-start contract.
+  Evidence: evidence.json#functions[addr=0x14013B2E0], evidence.json#functions[addr=0x1401DFD70], evidence.json#functions[addr=0x1401391D0], evidence.json#functions[addr=0x140139E50]
+  Limits: Allocation failure and C++ exception paths are not established as recoverable. Deep SoundSystem helpers and hardware/audio output remain outside this study.
+
+0x1401391D0: The captured creation wrapper has explicit failure branches for missing bank entries and failed/invalid sound creation, returning -1 after logging and appropriate shown cleanup. The play wrapper checks the sound-system global, searches a matching key/ID/group state2 entry, calls 081320 if the sound predicate succeeds, logs a non-success status, and returns0 on its shown normal paths. Thus even the play-wrapper return is not a playback-success boolean.
+  Evidence: evidence.json#functions[addr=0x1401391D0], evidence.json#functions[addr=0x140139E50]
+  Limits: Internal SoundSystem APIs, their asynchronous work and allocation/exception closure are not analyzed. No actual failure or audible result was observed.
+
+0x1401DE320: The handle wrapper1DE500 looks up a matching active-list request before passing it to1DE320. Internal1DE320 performs a separate scan but still dereferences its supplied pointer after a scan miss; membership is not validated by that scan. For a valid type6 request it calls1DFD00(resource,ID,-1,fadeArgument) and sets request state4 after normal return. 1DFD00 converts the resource to a key and calls 139470(key,ID,2,negativeVolume,convertedDuration). That wrapper, when the global sound system exists, stops, unlinks and virtually destroys every matching backend record whose stateWORD+62 is2.
+  Evidence: evidence.json#functions[addr=0x1401DE500], evidence.json#functions[addr=0x1401DE320], evidence.json#functions[addr=0x1401DFD00], evidence.json#functions[addr=0x140139470]
+  Limits: A valid request pointer, readable resource and normal-return backend calls are preconditions; internal1DE320 is not safe for an arbitrary/nonmember pointer. The selected Voice replacement/reset/destructor use fadeArgument0. Full backend release/deallocation effects are not proven.
+
+0x1401DFEB0: The EE backend uses a resource-derived key plus ID plus group2 for query, stop and position/volume update; the pool handle is not passed to these backend operations. Query returns false when the sound-system global is absent, no tuple matches, or the first exact tuple match reports inactive. Start registration can invalidate other records with the same bank key through1363B0; these paths do not establish exclusive backend ownership for each Voice or pool handle.
+  Evidence: evidence.json#functions[addr=0x1401DFEB0], evidence.json#functions[addr=0x1401DFD00], evidence.json#functions[addr=0x1401DFF30], evidence.json#functions[addr=0x14013A0A0], evidence.json#functions[addr=0x1401380B0], evidence.json#functions[addr=0x14013A3D0], evidence.json#functions[addr=0x1401363B0], evidence.json#functions[addr=0x1401DFD70], verification.json
+  Limits: This is a concrete key-based aliasing possibility, not proof that two live BTLNPC instances share a resource/key/ID or that an audible overlap occurred.
+
+0x1401DD8D0: The pool consumer walks active requests, dispatches each, and collects state4 entries via a separate encoded +36 chain. A second pass unlinks those entries from the active +32 chain, updates the tail, returns their indices to the free-index stack and increments freeCount. Only after the passes does it clear retirement head/tail and reset intervalCount. It does not clear every payload/handle field before slot reuse.
+  Evidence: evidence.json#functions[addr=0x1401DD8D0], evidence.json#functions[addr=0x1401DD560], evidence.json#functions[addr=0x1401DE320]
+  Limits: Sequential, intact finite lists and normal callees are required. This is request-slot retirement, not a universal resource-lifetime or thread-safety proof.
+
+0x1403CD8E0: Voice reset3CE5C0 stops a nonzero handle, clears it and writes pendingID=-1, retaining priority and Actor reference. Base destructor3CD8E0 does the same after replacing the vtable with VOICE. The selected BTLNPC destructor4069C0 reaches this destructor on Actor+3000; descriptor slot0→406600 calls it before152570. The separate deleting VOICE_EE wrapper3D85A0 optionally calls free when flags bit0 is set.
+  Evidence: evidence.json#functions[addr=0x1403CE5C0], evidence.json#functions[addr=0x1403CD8E0], evidence.json#functions[addr=0x1403D85A0], evidence.json#functions[addr=0x1404069C0], evidence.json#functions[addr=0x140406600], evidence.json
+  Limits: Actor destruction scheduling, all child destructors, resource release order and global lifetime synchronization remain open. These component bodies do not themselves clear Actor+2996.
+
+0x1403BFD30: The Actor dispatcher can invoke selected descriptor+0x40 before its main update branch when ActorDWORD+288 bit28 is set. The BTLNPC slot4066E0→3DAC30 first requires 3B4420 true and not both ActorQWORD+128 and+152 nonzero, polls a non-NULL Voice, and returns false while its handle remains nonzero. The regular descriptor+0x28 path4066B0→3DAD10 also polls a non-NULL Voice, but is gated by 3BAA80,3BAAD0,global2A11400 bit5 and3BA530 in the outer dispatcher.
+  Evidence: evidence.json#functions[addr=0x1403BFD30], evidence.json#functions[addr=0x1404066E0], evidence.json#functions[addr=0x1403DAC30], evidence.json#functions[addr=0x1403B4420], evidence.json#functions[addr=0x1404066B0], evidence.json#functions[addr=0x1403DAD10], evidence.json#functions[addr=0x1403BAA80], evidence.json#functions[addr=0x1403BAAD0], evidence.json#functions[addr=0x1403BA530], evidence.json
+  Limits: 3B4420 itself invokes VM work and other helpers can have side effects. These conditional call edges do not prove an instance is scheduled or an exact poll count per frame.
+
+0x1403BF810: Actor setup3BF810 creates a child manager and registers3BF5E0 through14F770 with flags0/order5; it also registers3BF550 on an outer manager. 3BF550 polls the child via14FC20→14FD60. 3BF5E0 walks the Actor list and conditionally calls3BFD30. Audio initialization1DC770 registers1DC370 with flags0/order500010 on manager9BA888; that callback runs1DD8D0 before1DF440 and13C470. 14F770 creates direct tasks with task+112=0, and14FD60 invokes that branch by an ordinary indirect call.
+  Evidence: evidence.json#functions[addr=0x1403BF810], evidence.json#functions[addr=0x1403BF550], evidence.json#functions[addr=0x1403BF5E0], evidence.json#functions[addr=0x14014F770], evidence.json#functions[addr=0x14014FC20], evidence.json#functions[addr=0x14014FD60], evidence.json#functions[addr=0x1401DC770], evidence.json#functions[addr=0x1401DC370]
+  Limits: The two order values belong to different manager contexts; they do not establish relative timing or OS-thread identity. Manager execution, descendant yield/exception behavior, Actor liveness and initialization success are prerequisites.
+
+0x1403D5840: A concrete later NULL-to-Voice binding exists in PARTY constructor3D5840: if Actor+2996 decodesNULL and3CDA70 matches the Actor row WORD+76 against a three-record table, it initializes embedded VOICE_IOP at Actor+3448, stores the returned bank index, sets mode1 and binds Actor+2996. Original descriptor74C468/vtable5C6918 RTTI identifies this as PARTY; selected BTLNPC descriptor750588 has a different RTTI and constructor.
+  Evidence: evidence.json#functions[addr=0x1403D5840], evidence.json#functions[addr=0x1403CDA70], evidence.json#functions[addr=0x1403B5B20], evidence.json#functions[addr=0x1403CE570], evidence.json#functions[addr=0x140406940], evidence.json#functions[addr=0x1403DA940], evidence.json
+  Limits: This proves a PARTY fallback, not its reachability for N_EX650_BTL10. It does not overturn the selected constructor no-op condition and is not an all-writers census.
+
+0x1403DA940: The previous N_EX650_BTL10/tt_audience_c witness and original archive identities remain pinned and rechecked. This study does not find a BTLNPC-specific later rebind within the selected bodies. The prior NULL-Voice no-op remains conditional on that construction path and absent later/indirect writers; failed rendered-text controls preclude using the bounded text search as a complete writer exclusion.
+  Evidence: evidence.json#functions[addr=0x1403DA940], evidence.json#functions[addr=0x1403DAD90], evidence.json#functions[addr=0x140406810], evidence.json#functions[addr=0x1403D5840], verification.json, provenance.json, investigation.json
+  Limits: No universal persistence of NULL, runtime instance guarantee, complete displacement scan or complete audio resource availability census is claimed.
+
+Next useful scope
+- Concrete BTLNPC binding writers/aliases beyond selected constructor/reset/update bodies.
+- ORIGIN resource producers, +32/+12 writers and lifetime relative to stop/retirement.
+- SoundSystem create/start/status helper semantics and resource-to-audible-clip mapping.
+- Cross-manager invocation timeline and synchronization, without assuming thread ownership from task names.

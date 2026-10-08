@@ -1,0 +1,49 @@
+KH2 BDX CATALOG: MISSION, GUMMI, COLLISION AND VOICE
+
+This update keeps all 1063 descriptor records and all numeric fields. It adds
+81 behavioral descriptions: 30 for Bank3's Gummi object family and 51 for
+Bank4's mission functions. Two existing descriptions gain specific findings:
+1:367's radius and shared-filter effects, and the selected BTLNPC branch of
+1:262's virtual operation. The latter remains named as a generic descriptor
+dispatch because another descriptor may implement a different operation.
+
+There are 239 annotated records and 15 explicit NULL holes. The other 980 rows
+are unchanged byte-for-byte as structured data; the existing 4:21 annotation
+is preserved. A captured table extent does not establish a native bounds check.
+
+Product behavior
+
+The dark offline BDX inspector shows the new names, descriptions, prerequisites
+and evidence references in its existing list, search and detail controls.
+No BDX bytes are rewritten and no script or new native operation is executed.
+The catalog class, parser, native bridge and UI implementation are unchanged.
+The application version and existing catalog-count expectation are updated.
+
+These findings can support later mission editors, Gummi object previews and
+collision inspection. They do not by themselves establish safe live spawning,
+mission completion, counter callbacks, geometry queries or audio playback.
+Each underlying study records its remaining ownership and runtime boundaries.
+
+Drive Form equipment behavior remains the existing validated fallback. A bad
+offhand slot for Final, Valor or Master is filled from a valid primary Keyblade
+after form-specific model, MSET and skeleton checks, with revalidation after
+Revert. Successful initialization can persist through normal game saving.
+There is no new native Drive patch or new live-game validation in this update.
+
+Reproduction
+
+py -3 -B docs/research/bdx-mission-gummi-implementation-20261008/build_catalog.py --check
+powershell -File docs/research/bdx-mission-gummi-implementation-20261008/run-probe.ps1 -Check
+py -3 -B docs/research/bdx-mission-gummi-implementation-20261008/verify.py --check
+
+The builder verifies original descriptors, every upstream manifest, unchanged
+records and exact annotation transfer. The compiled probe builds the actual
+unchanged catalog class with the new embedded JSON and checks all stored rows,
+search/details text and unknown/NULL/context-dependent boundaries.
+
+Core and offscreen UI receipts are included. They use synthetic data and create
+no visible window. The 780-pixel list and query-detail renders were visually
+reviewed: dark backgrounds, readable labels, scrollable long details and no
+overlapping controls. Full package validation is recorded in the release's
+Validation directory. Static evidence and synthetic tests do not establish
+live-game behavior or complete understanding of the executable.

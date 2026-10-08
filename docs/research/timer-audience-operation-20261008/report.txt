@@ -1,0 +1,81 @@
+TIMER AUDIENCE OPERATION — 2026-10-08
+
+Ergebnis
+Die ausgewählte BTLNPC-Operation hinter BDX 1:262 fordert Voice-ID 8 mit vorzeichenbehafteter Priorität 3 an. Sie schreibt zunächst einen ausstehenden Auftrag. Sie schaltet in diesem aufgelösten Descriptorpfad keine Actor-Aktionstabelle um.
+
+Der originale N_EX650_BTL10-Datensatz (ID 2149, Typ 9) besitzt Flags+72 = 1. Die belegten Ressourcen-/Bindungspfade überspringen damit die separate .a.*-Ressource und stellen keine Voice-Komponente bereit. Wenn Actor+2996 beim späteren Aufruf weiterhin NULL ist, kehrt dieser sofort zurück. Dies ist eine bedingte statische Aussage; keine beobachtete Spielinstanz und keine allgemeine Aussage, dass die Figur immer stumm bleibt.
+
+Originale Daten
+00objentry.bin: kh2_first.hed, Ordinal 3, Eintragsoffset 119200, Originalgröße 182416. Version 3, 1900 sortierte Datensätze von 96 Bytes; ausgewählte Zeile 1514, Dateioffset 145352, ID 0x865, Typ 9, Flags+72 = 1.
+N_EX650_BTL10.mdlx: kh2_fifth.hed, Ordinal 8784. Vollständiger dekodierter Payload wurde mit der losen Datei bytegleich verglichen. Drei BAR-Einträge: Typ 4, 7, 3. Der Script-SHA ist f0c8b6a2f315b78190404607a290d9b8fb9b60cee85fd874d91279bda8aa4efc.
+retail-witnesses.json enthält HED-Identität, exakte Indexzeilen, Paketoffsets, gespeicherte/entpackte SHA-256 und den ausgewählten Objekt-Datensatz. Der portable C#-Probe dekodiert Originalarchive erneut; keine Rohassets werden mitgeliefert.
+
+Belegter Pfad
+  script Event10 PC73 -> 1:262 adapter 0x14042BDE0
+  wrapper DWORD+4 -> Actor; Actor DWORD0 -> descriptor
+  original row type9 -> factory 0x1403DF930 case9 -> constructor 0x140406940
+  descriptor 0x140750588 -> vtable 0x1405CC860 +0xA0 -> 0x140406810
+  0x1403DAD90: Decode Actor+2996; NULL returns
+  0x1403CE580: priority admission and pending request stores
+  conditional update 0x1403CE260 -> VOICE_EE slot+8 0x1403CE560 -> 0x1401DE230 -> request pool append 0x1401DEB50
+
+Was die Priorität bedeutet
+Annahme, wenn (signed pendingID < 0 und currentHandle == 0) oder signed newPriority >= signed oldPriority. Gleichstand ersetzt. Bei kompletter Inaktivität spielt die alte Priorität keine Rolle. Abgewiesene Anfragen behalten Pending-ID, Priorität und Actor-Verweis. 1029 synthetische Kombinationen und fünf Grenzfälle prüfen die logische Beschreibung gegen den aus ASM abgeleiteten Zweigverlauf; das sind keine Spieltests.
+
+Ressourcengrenze
+Actor+2320 ist hier der Ressourcenblock. Sein +24 entspricht Actor+2344 und enthält die separate Hilfsressource. Die Bindung des eingebetteten VOICE_EE an Actor+2996 verlangt dort einen gültigen BAR-Typ34-Payload. Fehlender Typ34 in der MDLX allein würde die Abwesenheit einer Voice nicht beweisen. Der ausgewählte originale Bit0-Gate liefert den zusätzlichen relevanten Grund.
+Die gesamte transitive Konstruktorclosure und alle späteren Writer der beiden Felder wurden nicht erfasst. Die bedingte NULL-Aussage setzt daher voraus, dass keine andere Operation diesen Zustand ersetzt.
+
+Belege und Grenzen je Aussage
+1. The original 00objentry.bin record for N_EX650_BTL10 is ID 2149 (0x865), type byte +4 = 9, and flags DWORD +72 = 1. Subject to the factory's ID, resource-budget and allocation gates, type 9 selects case 0x1403DFAD9, allocates 3400 bytes, and reaches 0x140406940. That constructor finally stores encoded descriptor 0x140750588. Its vtable is 0x1405CC860; RTTI names YS::BTLOBJ::VTABLE<YS::BTLNPC>, and slot +0xA0 contains 0x140406810.
+   Evidence: retail-witnesses.json; evidence.json#functions[addr=0x1403df930]; evidence.json#functions[addr=0x140406940]; evidence.json#functions[addr=0x140410940]; evidence.json#functions[addr=0x1403d2da0]; evidence.json#functions[addr=0x1403a1f00]; evidence.json#data
+   Limitations: This binds an original data record to one conditional factory path. A script/model filename alone does not prove the identity, existence, successful construction or lifetime of a live Actor. RTTI is the descriptor's template type; it is not a runtime Actor observation.
+
+2. The native initialization sequence at 0x14039CAF0 calls 0x1403E0440. The latter passes the configured literal 00objentry.bin through 0x1403E5FA0 and registers its returned table via 0x1403E0E00. Lookup 0x1403E0F10 searches up to three registered tables in order, using imported bsearch over signed count at +4, records at +8, stride 96, and comparator 0x1401E2300. ID 2149 follows the non-alias path in 0x1403DFEB0.
+   Evidence: evidence.json#functions[addr=0x14039caf0]; evidence.json#functions[addr=0x1403e0440]; evidence.json#functions[addr=0x1403e5fa0]; evidence.json#functions[addr=0x1403e0e00]; evidence.json#functions[addr=0x1403e0f10]; evidence.json#functions[addr=0x1401e2300]; evidence.json#functions[addr=0x1403dfeb0]; evidence.json#data; evidence.json#imports
+   Limitations: The selected original file contains 1900 strictly increasing IDs and a unique selected model row. The full loader, all other table registrants, runtime precedence, overrides and bsearch invalid-argument paths are not closed. No guarantee that a live lookup uses this row.
+
+3. BDX bank 1 index 262 has declared operand count 3 and no VM return-slot flag. Its adapter decodes operand0 as a wrapper, decodes wrapper DWORD+4 as Actor, decodes Actor DWORD0 as descriptor, and tail-dispatches descriptor.vtable+0xA0 with RCX=descriptor, RDX=Actor, R8D=operand1 and R9D=operand2. The selected BTLNPC thunk moves Actor/request/priority into the 0x1403DAD90 ABI.
+   Evidence: evidence.json#functions[addr=0x14042bde0]; evidence.json#functions[addr=0x140406810]; evidence.json#data
+   Limitations: No wrapper, Actor, descriptor, slot or lifetime validation is supplied by this adapter. Declared operand count is metadata, not proof of safe memory, tag or arity validation. Pointer-encoding helper semantics are reused from prior analysis rather than newly closed here.
+
+4. The selected virtual operation reads the encoded pointer at Actor+2996 (0xBB4). A NULL decoded pointer returns immediately. Otherwise it calls 0x1403CE580(component, requestID, priority, Actor). The callee accepts the new request when both pendingID<0 and currentHandle==0, or when signed newPriority>=signed existingPriority. Acceptance stores pendingID at component+12, priority at +16 and encoded Actor at +28; rejection preserves these fields.
+   Evidence: evidence.json#functions[addr=0x1403dad90]; evidence.json#functions[addr=0x1403ce580]; verification.json#model
+   Limitations: The comparison is signed, equal priority replaces an existing request, and idle admission ignores old priority. This is a deferred Voice request for this resolved descriptor slot. It does not imply every other descriptor has this meaning or establish thread safety/lifetime.
+
+5. The captured initialization/binding path initializes Actor+2996 to NULL and prepares an embedded YS::VOICE_EE at Actor+3000. It binds that pointer only through a non-NULL Actor+2344 resource containing a BAR type-34 entry with a non-NULL decoded payload. The base resource block is Actor+2320: 0x1403E63D0 clears resource+24, and 0x1403E6120 skips assigning it when objentry byte+72 bit0 is set. The original selected row has that bit set. These stores therefore supply no Voice binding for this original row; if Actor+2996 remains NULL when the BDX operation runs, the operation is a no-op.
+   Evidence: retail-witnesses.json; evidence.json#functions[addr=0x1403b3200]; evidence.json#functions[addr=0x1403e63d0]; evidence.json#functions[addr=0x1403e6120]; evidence.json#functions[addr=0x1403e0ab0]; evidence.json#functions[addr=0x1403da940]; evidence.json#functions[addr=0x1403dad90]; evidence.json#data
+   Limitations: Conditional on the original row being selected and no other call, override or later writer changing the resource/component fields. The entire constructor's transitive callees and all Actor+2996 writers are not closed. This is not an observed runtime no-op or a guarantee that the character is always silent.
+
+6. When the bit permits acquisition, the auxiliary filename builder formats the complete row model string as obj/%s.a.%s, with locale-dependent .a.fm and .a.us branches. It independently returns NULL if row byte+72 bit0 is set. The original selected MDLX has exactly BAR types 4, 7 and 3, with no type 34; the Voice-binding check uses the separate Actor+2344 auxiliary resource, not this MDLX's type-3 script.
+   Evidence: retail-witnesses.json; evidence.json#functions[addr=0x1403e0ab0]; evidence.json#functions[addr=0x1403e6120]; evidence.json#functions[addr=0x1403da940]; evidence.json#data
+   Limitations: Absence of type34 in MDLX alone is not evidence of absent Voice; the decisive selected-path condition is objentry bit0 and the separate resource binding. No all-archive .a.* absence census or exact sound-bank contents claim.
+
+7. For a bound Voice, update 0x1403CE260 consumes a nonnegative pending request: it calls 0x1401DE500 on an existing nonzero handle, clears that handle, marks pendingID=-1, obtains Actor position through 0x1403B5B40, calls component.vtable+8, and stores the returned handle. VOICE_EE's slot+8 is 0x1403CE560, which forwards resource pointer +32, requestID, position and flags +24 to 0x1401DE230. BTLNPC descriptor slots +0x28 and +0x40 reach two captured update callers of 0x1403CE260.
+   Evidence: evidence.json#functions[addr=0x1403ce260]; evidence.json#functions[addr=0x1403ce560]; evidence.json#functions[addr=0x1403b5b40]; evidence.json#functions[addr=0x1403da520]; evidence.json#functions[addr=0x1404066b0]; evidence.json#functions[addr=0x1404066e0]; evidence.json#functions[addr=0x1403dad10]; evidence.json#functions[addr=0x1403dac30]; evidence.json#data
+   Limitations: The external handle helper's full stop/release semantics, actual update scheduling and transitive position/lifetime predicates are not established here. Calling the request setter itself does not immediately execute this update or guarantee playback.
+
+8. The VOICE_EE forward target has a disable-byte gate, signed free-count>16 gate and signed request-count<=24 gate. On admission it selects a 56-byte pool element, invokes 0x1401DEB50, records the resource pointer, requested ID and low 16 bits of flags, and returns the element's handle. 0x1401DEB50 assigns a handle/state and appends the element through the encoded next pointer and global head/tail. Rejection returns zero.
+   Evidence: evidence.json#functions[addr=0x1401de230]; evidence.json#functions[addr=0x1401deb50]
+   Limitations: This closes the native path to a queued Voice-associated request, not waveform decoding, sound-bank ID8 selection, actual audible playback, or audio backend completion. Camera/spatial helper meanings are not inferred from analyst names.
+
+9. The exact original N_EX650_BTL10.mdlx payload contains the previously analyzed tt_audience_c script (SHA f0c8b6a2f315b78190404607a290d9b8fb9b60cee85fd874d91279bda8aa4efc). Its bounded Event0 model stores incoming Actor into Work+4 at PC862 before its first unknown native call. Its Message74/Event10 model reaches 1:262 at PC73 with operand slice [Work+0,8,3] only when the preceding 1:39 result is 1. The leading 74 in stackBefore is preserved deeper stack state, not a fourth operand.
+   Evidence: selected-script.json; retail-witnesses.json; ../timer-message74-handlers-20261008/script-analysis.json; evidence.json#functions[addr=0x14042bde0]
+   Limitations: All 81 selected Event0/Event10 instruction byte ranges are rechecked against the original-archive-pinned script; the frozen symbolic model is reused, not rerun across unknown native effects. Work binding retention, Actor identity, message delivery and the 1:39 value are conditional, not observed.
+
+Verifikation
+34 vollständige, paginierte ASM-Listings; 1790 Instruktionen; 8199 primäre Originalbytes. 377 nachgestellte Switchtabellenbytes sind ausdrücklich Daten. 12 statische Datenspans, 90 konkrete ASM-Anker, eine originale Importstelle (bsearch). Alle Listed-Instruktionen sind einzeln gegen Capstone und Original-PE geprüft, alle primären Bytes gegen IDA und Original-PE. Ein paginierter Pseudocodebody wird über Cursor/Offsets vollständig zusammengesetzt; IDA markiert seine einzelnen Ausschnitte als truncated, einschließlich des letzten Ausschnitts.
+Zwei originale Archiveinträge, alle 1900 Objekt-IDs und 81 ausgewählte Script-Instruktionsbereiche werden geprüft. --check schreibt keine Dateien. Die aktuelle Prüffassung prüft gespeicherte Original-Paketbytes und entpackte Loose-Identität; frische Dekompression ist der separat dokumentierte Probe-Aufruf.
+IDA-Sitzung cc60e602 / PID46464: health ok, auto_analysis_ready=false. Keine vollständige Xref-/Writer-/Caller-Ausschlussbehauptung.
+
+Reproduktion
+py -3 -B docs/research/timer-audience-operation-20261008/verify.py --check
+dotnet run --project docs/research/timer-audience-operation-20261008/retail-probe/RetailProbe.csproj --configuration Release -- "E:\SteamLibrary\steamapps\common\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-" "<new-output.json>"
+Compare the freshly decoded probe JSON structurally with retail-witnesses.json; pass a new output path to keep frozen evidence unchanged.
+
+Offen
+• Enumerate and prove actual runtime registered objentry precedence and all Actor+2996/resource+2344 writers before asserting a concrete instance no-op.
+• Close external/native constructor side effects and model/BDX association at actual spawn, including failures and overrides.
+• Trace the actual engine dispatch to descriptor update slots +0x28/+0x40 if guaranteed scheduling is needed.
+• Trace the request-pool consumer and actual voice-bank entry8 only for a proven non-NULL Voice binding; no waveform or spoken line is identified here.
+

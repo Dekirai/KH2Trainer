@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "annotations": {
+    "1:8": {
+      "bank": 1,
+      "index": 8,
+      "handlerRva": 4376240,
+      "name": "Request Actor action by name",
+      "summary": "Decodes operand 0 as a wrapper and its DWORD +4 as Actor. Decodes operand 1 as a string and passes it to the action dispatcher at Actor +912. When local flag +300 bit 0 is clear, the dispatcher searches up to 128 registered names. A match can replace the current child VM and invoke action-related script events. No VM return slot.",
+      "notes": "A missing name or the initial flag guard produces no transition. Existing child cleanup can execute script code. This is a request through the current action registry, not proof of a completed action. Wrapper, Actor, name, registry and parent VM must remain valid; no generic type, lifetime or allocation-success check is established.",
+      "evidence": "timer-message74-handlers-20261008/evidence.json#functions[addr=0x14042c6b0]; helpers RVA 0x3CAE60, RVA 0x3CA700, RVA 0x3CAEC0, RVA 0x3CAD00; timer-message74-handlers-20261008/report.txt",
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "helperRvas": ["3cae60", "3ca700", "3caec0", "3cad00"]
+    },
+    "1:39": {
+      "bank": 1,
+      "index": 39,
+      "handlerRva": 4381440,
+      "name": "Read indexed Actor DWORD",
+      "summary": "Decodes operand 0 as a wrapper and its DWORD +4 as Actor. Returns @INT from Actor +2548 + 4*signed(operand 1).",
+      "notes": "The signed index is not bounds-checked. The selected audience script uses index 1, which reads Actor +2552. No meaning is assigned to every indexed field; the wrapper binding and Actor lifetime must be valid.",
+      "evidence": "timer-message74-handlers-20261008/evidence.json#functions[addr=0x14042db00]; helper RVA 0x3B5DF0; timer-message74-handlers-20261008/report.txt",
+      "declaredOperandCount": 2,
+      "hasReturnSlot": true,
+      "helperRvas": ["3b5df0"]
+    },
+    "1:262": {
+      "bank": 1,
+      "index": 262,
+      "handlerRva": 4373984,
+      "name": "Call Actor descriptor operation at +160",
+      "summary": "Decodes operand 0 as a wrapper, wrapper DWORD +4 as Actor, and Actor DWORD 0 as descriptor. Tail-calls descriptor vtable byte offset 160 with (descriptor, Actor, operand 1, operand 2). No VM return slot.",
+      "notes": "The actual virtual target depends on the Actor descriptor. The selected audience script supplies integers 8 and 3; their meaning and the resulting effect are not established here. Pointer validity, descriptor identity and lifetime are caller prerequisites.",
+      "evidence": "timer-message74-handlers-20261008/evidence.json#functions[addr=0x14042bde0]; timer-message74-handlers-20261008/report.txt",
+      "declaredOperandCount": 3,
+      "hasReturnSlot": false,
+      "helperRvas": []
+    },
+    "4:21": {
+      "bank": 4,
+      "index": 21,
+      "handlerRva": 4404528,
+      "name": "Read context flag bit 0",
+      "summary": "Returns @INT 1 when the QWORD pointer at RVA 0x2A0FF68 is non-NULL and bit 0 of BYTE[pointer +4] is set; otherwise returns 0. No declared operands.",
+      "notes": "The pointer is tested and loaded through separate helper calls, so it must remain valid between them. This annotation identifies the exact storage and predicate without inferring broader context semantics. B_EX120 uses the result to gate its message-74 failure-action request.",
+      "evidence": "timer-message74-handlers-20261008/evidence.json#functions[addr=0x140433530]; helpers RVA 0x3FB840, RVA 0x3A3B50, RVA 0x3A3970; timer-message74-handlers-20261008/report.txt",
+      "declaredOperandCount": 0,
+      "hasReturnSlot": true,
+      "helperRvas": ["3fb840", "3a3b50", "3a3970"]
+    }
+  }
+}

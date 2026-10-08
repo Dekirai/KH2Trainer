@@ -1,0 +1,482 @@
+{
+  "schema": 1,
+  "domain": "native",
+  "title": "Bank 3 gb object, movement, scroll coordinates and retirement",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "scope": {
+    "structuralAdapterCount": 179,
+    "semanticAnnotationCount": 30,
+    "selectedHelperCount": 152,
+    "wholeBankSemanticCompletion": false,
+    "liveExecution": false
+  },
+  "findings": [
+    "gb::OBJ/ENEMY descriptor and gb::SCROLL RTTI chains establish the subsystem.",
+    "Context registration and teardown differ from object lifetime; removal is mark/retirement/destruction with callback boundaries.",
+    "30 selected calls cover creation, removal, movement, coordinate vectors, scale, alpha and borrowed-parent queries.",
+    "Float return-register behavior, shared vector storage and point-mode movement conversion are explicitly preserved."
+  ],
+  "limitations": [
+    "All other Bank 3 adapters remain structurally captured but semantically unclosed.",
+    "No native VM index guard, external-thread call safety or global scheduler barrier is established.",
+    "Allocator/resource/model/VM callbacks and arbitrary subclasses remain bounded external effects.",
+    "One auxiliary function lacks pseudocode; full ASM remains verified."
+  ],
+  "claims": [
+    {
+      "addr": "0x140226760",
+      "claim": "3:0 Create gb object from object-data ID: Looks up operand 0 in 96-byte object-data rows, chooses the type 3/4/8 ENEMY path or type 13 specialized path, and returns the encoded object address. Both initial vectors supplied by the adapter are (0,0,0,1). Requires installed Bank 3, its allocator, object-data and loaded resources. The bsearch result is dereferenced without a missing-ID check; ID 0 also becomes a NULL CRT key. Unsupported found row types return NULL. The ENEMY allocation-failure path still calls a helper that dereferences the object. No arbitrary-ID or allocation-failure safety is established.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140226760]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e2250]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e2300]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140212f80]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401f66d0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140212920]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e4220]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140206740]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e67d0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e6ba0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e1fa0]"
+      ]
+    },
+    {
+      "addr": "0x140226860",
+      "claim": "3:1 Set gb movement toward stored-space target: Subtracts the object's stored position from operand 1 vector, normalizes the resulting XYZ direction into +72 when its length is nonzero, stores operand 2 float speed at +84, and returns that speed as FLOAT. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. The target must be expressed in the object's current storage space; this call does not convert coordinates or retain a target. Eligible updates apply a normalized step only for positive speed, without multiplying that step by the time scalar. There is no arrival/overshoot policy or caller-input validation. Zero length remains unnormalized, and attachment overrides are not handled by this call.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140226860]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e71b0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140142080]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x14013fd20]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7880]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e5ca0]"
+      ]
+    },
+    {
+      "addr": "0x1402268c0",
+      "claim": "3:2 Request gb object removal: Invokes the object's descriptor virtual slot +40. The captured base OBJ and ENEMY implementations detach an attached object and set removal mask 0x1 at +508. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. The captured OBJ/ENEMY implementations do not free the object inline. Collector 1E4AE0 first destroys its previous retirement list, then moves newly marked active objects into that list. Other descriptor overrides and reentrant callbacks remain separate boundaries; keeping an ADR across collection is unsafe.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1402268c0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e4160]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1402128d0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e53b0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e5a10]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e4ae0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e4c90]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e3be0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140212810]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140212c60]"
+      ]
+    },
+    {
+      "addr": "0x140226910",
+      "claim": "3:17 Start gb shrink-and-fade removal: When removal-animation mask 0x2 at +508 is clear, sets it and stores alpha rate -0.0625 at +988. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. Eligible object updates multiply scale by approximately 0.85 each call, advance alpha by the native time scalar times that rate, and invoke removal slot +40 when alpha is at or below zero. Repeating the call while the mask is set does not restart the rate. Native time units and exceptional float inputs are not normalized here.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140226910]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7040]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7880]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140154430]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e3dd0]"
+      ]
+    },
+    {
+      "addr": "0x140226930",
+      "claim": "3:18 Set gb movement along stored forward vector: Copies the stored forward vector at +40 into movement +72, stores operand 1 float speed at +84, and returns that speed as FLOAT. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. The scheduler later normalizes XYZ and applies the step only when speed is positive. This sets direction and speed; it does not enable animation, guarantee a target, or account for later attachment/subclass position changes.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140226930]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7110]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401a8e60]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7880]"
+      ]
+    },
+    {
+      "addr": "0x140226980",
+      "claim": "3:19 Skip gb model-motion application: Sets mask 0x8 in object flags +504. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. The captured object scheduler tests this mask before calling 216350, which applies the controller's selected/blended motion to the model and object matrix. Script execution, movement and other update stages remain eligible; this is not a whole-object pause.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140226980]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7870]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e4d30]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140216350]"
+      ]
+    },
+    {
+      "addr": "0x1402269a0",
+      "claim": "3:20 Allow gb model-motion application: Clears mask 0x8 in object flags +504. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. This removes the scheduler's local suppression of 216350 when a model exists. It does not select a motion or override other model, object or global conditions.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1402269a0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7220]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e4d30]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140216350]"
+      ]
+    },
+    {
+      "addr": "0x140226a70",
+      "claim": "3:22 Test gb removal marker clear: Returns INT 1 when removal mask 0x1 at object +508 is clear, otherwise 0. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. This is a flag query after dereferencing the object, not a safe handle-validity check. It does not establish that an address is allocated, of the correct type, or still owned by the active list.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140226a70]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e6fd0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e4ae0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1404ad270]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1404ad3f0]"
+      ]
+    },
+    {
+      "addr": "0x140226c70",
+      "claim": "3:45 Switch gb storage to scroll coordinates: If coordinate mask 0x2 at +504 was clear, sets it and converts current/previous position, forward, up and movement storage through the inverse of the current gb::SCROLL matrix. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. Position uses point conversion and orientation uses direction conversion. The native movement conversion also uses point mode with W temporarily 1, then restores speed +84; it is not a pure direction conversion. The inverse helper is a rigid-transform inverse, not a general matrix inverse.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140226c70]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7580]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8300]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x14013f3a0]"
+      ]
+    },
+    {
+      "addr": "0x140226c90",
+      "claim": "3:46 Switch gb storage to world coordinates: If coordinate mask 0x2 at +504 was set, clears it and transforms current/previous position, forward, up and movement storage by the current gb::SCROLL matrix. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. Position uses point conversion and orientation uses direction conversion. The native movement conversion uses point mode with W temporarily 1, then restores speed +84. Repeating this call in world storage does not reconvert the fields.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140226c90]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7250]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8140]"
+      ]
+    },
+    {
+      "addr": "0x140226f10",
+      "claim": "3:60 Set gb position from world vector: Copies operand 1's 16-byte vector into position storage +8, forces W=1, and converts from world space when the coordinate-storage mask differs. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. The conversion operates on the destination copy; a distinct nonoverlapping input vector is unchanged. This writes current position only; previous position and movement are not reset, and attachment/update logic can replace the value. World/scroll conversion uses the current gb::SCROLL matrix; world-to-scroll uses its rigid inverse.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140226f10]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7510]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8140]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8300]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e5ca0]"
+      ]
+    },
+    {
+      "addr": "0x140226f50",
+      "claim": "3:61 Set gb forward from world vector: Copies operand 1's 16-byte vector into forward storage +40, forces W=0, and converts from world space when the coordinate-storage mask differs. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. The conversion operates on the destination copy; a distinct nonoverlapping input vector is unchanged. No explicit vector normalization is performed by this setter. World/scroll conversion uses the current gb::SCROLL matrix; world-to-scroll uses its rigid inverse.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140226f50]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e73d0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8140]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8300]"
+      ]
+    },
+    {
+      "addr": "0x140226f90",
+      "claim": "3:62 Set gb up from world vector: Copies operand 1's 16-byte vector into up storage +56, forces W=0, and converts from world space when the coordinate-storage mask differs. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. The conversion operates on the destination copy; a distinct nonoverlapping input vector is unchanged. No explicit vector normalization is performed by this setter. World/scroll conversion uses the current gb::SCROLL matrix; world-to-scroll uses its rigid inverse.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140226f90]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7700]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8140]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8300]"
+      ]
+    },
+    {
+      "addr": "0x140226fd0",
+      "claim": "3:63 Set gb position from scroll vector: Copies operand 1's 16-byte vector into position storage +8, forces W=1, and converts from scroll space when the coordinate-storage mask differs. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. The conversion operates on the destination copy; a distinct nonoverlapping input vector is unchanged. This writes current position only; previous position and movement are not reset, and attachment/update logic can replace the value. World/scroll conversion uses the current gb::SCROLL matrix; world-to-scroll uses its rigid inverse.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140226fd0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7640]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8140]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8300]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e5ca0]"
+      ]
+    },
+    {
+      "addr": "0x140227010",
+      "claim": "3:64 Set gb forward from scroll vector: Copies operand 1's 16-byte vector into forward storage +40, forces W=0, and converts from scroll space when the coordinate-storage mask differs. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. The conversion operates on the destination copy; a distinct nonoverlapping input vector is unchanged. No explicit vector normalization is performed by this setter. World/scroll conversion uses the current gb::SCROLL matrix; world-to-scroll uses its rigid inverse.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140227010]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7600]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8140]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8300]"
+      ]
+    },
+    {
+      "addr": "0x140227050",
+      "claim": "3:65 Set gb up from scroll vector: Copies operand 1's 16-byte vector into up storage +56, forces W=0, and converts from scroll space when the coordinate-storage mask differs. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. The conversion operates on the destination copy; a distinct nonoverlapping input vector is unchanged. No explicit vector normalization is performed by this setter. World/scroll conversion uses the current gb::SCROLL matrix; world-to-scroll uses its rigid inverse.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140227050]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7680]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8140]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8300]"
+      ]
+    },
+    {
+      "addr": "0x140227090",
+      "claim": "3:66 Read gb position in world coordinates: Copies position storage +8 into the shared 16-byte result at RVA 72FE50, converts to world space if needed, and returns the buffer as ADR. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. The returned buffer is borrowed and overwritten by other getters, including 3:66 through 3:71 and 3:125. Copy its contents before another such call. This query does not retain the object or force an update.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140227090]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e6ba0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8140]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8300]"
+      ]
+    },
+    {
+      "addr": "0x1402270e0",
+      "claim": "3:67 Read gb forward in world coordinates: Copies forward storage +40 into the shared 16-byte result at RVA 72FE50, converts to world space if needed, and returns the buffer as ADR. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. The returned buffer is borrowed and overwritten by other getters, including 3:66 through 3:71 and 3:125. Copy its contents before another such call. This query does not retain the object or force an update.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1402270e0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e6790]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8140]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8300]"
+      ]
+    },
+    {
+      "addr": "0x140227130",
+      "claim": "3:68 Read gb up in world coordinates: Copies up storage +56 into the shared 16-byte result at RVA 72FE50, converts to world space if needed, and returns the buffer as ADR. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. The returned buffer is borrowed and overwritten by other getters, including 3:66 through 3:71 and 3:125. Copy its contents before another such call. This query does not retain the object or force an update.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140227130]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e6f80]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8140]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8300]"
+      ]
+    },
+    {
+      "addr": "0x140227180",
+      "claim": "3:69 Read gb position in scroll coordinates: Copies position storage +8 into the shared 16-byte result at RVA 72FE50, converts to scroll space if needed, and returns the buffer as ADR. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. The returned buffer is borrowed and overwritten by other getters, including 3:66 through 3:71 and 3:125. Copy its contents before another such call. This query does not retain the object or force an update.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140227180]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e6c20]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8140]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8300]"
+      ]
+    },
+    {
+      "addr": "0x1402271d0",
+      "claim": "3:70 Read gb forward in scroll coordinates: Copies forward storage +40 into the shared 16-byte result at RVA 72FE50, converts to scroll space if needed, and returns the buffer as ADR. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. The returned buffer is borrowed and overwritten by other getters, including 3:66 through 3:71 and 3:125. Copy its contents before another such call. This query does not retain the object or force an update.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1402271d0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e6be0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8140]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8300]"
+      ]
+    },
+    {
+      "addr": "0x140227220",
+      "claim": "3:71 Read gb up in scroll coordinates: Copies up storage +56 into the shared 16-byte result at RVA 72FE50, converts to scroll space if needed, and returns the buffer as ADR. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. The returned buffer is borrowed and overwritten by other getters, including 3:66 through 3:71 and 3:125. Copy its contents before another such call. This query does not retain the object or force an update.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140227220]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e6c60]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8140]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8300]"
+      ]
+    },
+    {
+      "addr": "0x140227500",
+      "claim": "3:96 Zero finite gb movement components: Multiplies all four stored movement components at +72, including speed +84, by float zero. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. For finite values this stops the stored movement. IEEE NaN or infinity multiplied by zero need not become zero. Other scheduler stages, scrolling and parent attachments can still change the object's position.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140227500]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7240]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x14013fcc0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7880]"
+      ]
+    },
+    {
+      "addr": "0x140227520",
+      "claim": "3:113 Set gb alpha rate from divisor: Sets object alpha rate +988 to -1.0 divided by operand 1 float. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. There is no zero, finite-value or sign guard. This does not reset current alpha or set shrink/removal mask 0x2. Eligible updates add native time scalar times this rate and clamp at the implemented limits; seconds are not established.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140227520]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e63c0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7880]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140154430]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e3dd0]"
+      ]
+    },
+    {
+      "addr": "0x1402275c0",
+      "claim": "3:124 Set gb scale vector: Copies operand 1's vector to scale storage +88 and forces its W component to zero. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. No positivity, finite-value or uniform-scale check is made. The native transform update reads this scale, and shrink-removal or attached-object processing may modify it later.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1402275c0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e76c0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e4010]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7880]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e5ca0]"
+      ]
+    },
+    {
+      "addr": "0x140227600",
+      "claim": "3:125 Read gb scale into shared vector: Copies scale storage +88 into the shared 16-byte result at RVA 72FE50 and returns that buffer as ADR. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. Borrowed shared storage: position/direction getters and several other Bank 3 calls overwrite it. This returns the stored scale without retaining the object or refreshing it.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140227600]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e6ca0]"
+      ]
+    },
+    {
+      "addr": "0x1402276a0",
+      "claim": "3:127 Measure gb stored-step displacement: Reads current and previous position in world coordinates, subtracts previous from current, and returns their XYZ Euclidean distance as FLOAT. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. There is no division by a time scalar, so this is not speed per second. Both points are converted using the current scroll matrix when needed; this does not reconstruct the previous frame's world matrix or include pure scroll displacement.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1402276a0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e6ba0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e6ab0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x14013fd20]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140140f50]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8140]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7880]"
+      ]
+    },
+    {
+      "addr": "0x140227900",
+      "claim": "3:136 No operation: The native adapter returns immediately and neither reads operand 0 nor writes a return value. The descriptor still declares one operand; that metadata is preserved. The VM's own argument preparation is outside this one-instruction adapter.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140227900]"
+      ]
+    },
+    {
+      "addr": "0x140227a80",
+      "claim": "3:145 Read gb attachment ordinal field: Returns object DWORD +1036 as INT. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. The captured child-instantiation path writes the child ordinal into this field through 1E5550. The read makes no attachment, range or parent-lifetime check; the field alone does not prove current attachment.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140227a80]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e63e0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e5550]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140206740]"
+      ]
+    },
+    {
+      "addr": "0x140227bc0",
+      "claim": "3:153 Borrow gb attachment parent: Reads object parent pointer +1024, encodes it, and returns it as ADR. Requires a live gb object reference: the adapter decodes operand 0, then its +4 encoded object link, without checking object lifetime. No parent ownership or lifetime is retained. A NULL parent is encoded as zero. Detachment changes this field, and either object may later be collected.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140227bc0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e6440]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e5a10]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1404ad240]"
+      ]
+    },
+    {
+      "addr": "0x1401f9aa0",
+      "claim": "Bank 3's static 179-row snapshot at RVA 72F1A0 is installed via 3E1710 after selecting the VM allocator. The row count is a structural capture extent, not a native access guard or object-lifetime guarantee.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401f9aa0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1403e1710]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1403e16b0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e2050]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json"
+      ]
+    },
+    {
+      "addr": "0x1401f9a80",
+      "claim": "Shutdown clears the Bank 3 pointer before global VM retirement. Mode cleanup later destroys the AD9478 task manager and clears the gb allocator. Exit-script execution and task/model/resource callbacks remain possible; this sequence is not a proved universal safe hook or thread barrier.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401f9a80]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1403e1620]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1403e1410]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e12c0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e18f0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e2020]"
+      ]
+    },
+    {
+      "addr": "0x1401e4220",
+      "claim": "The base gb object constructor installs an encoded descriptor and encoded self-link; 212F80 installs the ENEMY descriptor. RTTI connects those descriptor vtables to gb::OBJ::VTABLE<gb::OBJ/gb::ENEMY>; the coordinate object has gb::SCROLL RTTI.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e4220]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140212f80]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1404ad240]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1404ad270]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1404ad390]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1404ad3f0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json"
+      ]
+    },
+    {
+      "addr": "0x1401e4fc0",
+      "claim": "The gb manager registers ordinary priority-30000 object-update and priority-71000 collector tasks on AD9478. Scroll registers priority 23000. 14F770 sorts by signed priority and initializes fiber state to zero; the generic scheduler also has a distinct nonzero-fiber path. No OS-thread ownership or global synchronization guarantee is established.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e4fc0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7f10]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x14014f770]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x14014fc20]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x14014fd60]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e4cf0]"
+      ]
+    },
+    {
+      "addr": "0x1401e4d30",
+      "claim": "Object update processes category field +172 values 0..6. Each category processes nonattached objects before attached objects, then descriptor callbacks and model-motion application. This ordering is within a category and does not prove cross-category parent order.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e4d30]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7880]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7340]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140216350]"
+      ]
+    },
+    {
+      "addr": "0x1401e7880",
+      "claim": "Unmarked objects enter the normal update only when global flag 2A11400 mask 0x20 is clear. Positive stored movement speed yields a normalized per-update step, without an extra time-scalar multiply at that step. Parent attachment and optional subclass/postmovement stages may override position. Even when the global update block is skipped, an unmarked object is appended to the work list.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7880]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e5ca0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140142080]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x14013fcc0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x14013fce0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140154430]"
+      ]
+    },
+    {
+      "addr": "0x1401e52e0",
+      "claim": "Object VM startup is conditional on nonnull +928 and clear flags +504 mask1. Its first update dispatches event0 with one ADR object argument, sets event1, then updates the tree; completion tears down and frees the VM and clears +928. VM teardown can execute the selected exit event.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e52e0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e3cf0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140212830]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140213370]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1403e1840]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1403e1790]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1403e1c80]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1403e1410]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1403e1510]"
+      ]
+    },
+    {
+      "addr": "0x1401e4ae0",
+      "claim": "The collector's normal list algorithm destroys all objects already on the retirement list, clears that list, and only then removes newly mask1-marked objects from the active list into retirement. The cleanup callback calls it twice. Descriptor destruction and model/resource/VM callbacks can reenter other code, so these phases are not a bound on arbitrary callback behavior.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e4ae0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e4c90]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e4f50]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140212810]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140212c60]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e3be0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e4930]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e2030]"
+      ]
+    },
+    {
+      "addr": "0x1401e8300",
+      "claim": "Coordinate helpers operate on the current gb::SCROLL matrix at RVA72975C. 1E8140 applies it with point/direction selection, while 1E8300 uses a rotation-transpose/negative-translation inverse. Matrix interpolation internals and arbitrary non-rigid matrices remain outside the proved contract.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8300]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8140]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x14013f3a0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7f10]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e7ef0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e8a30]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json"
+      ]
+    },
+    {
+      "addr": "0x1404ad3f0",
+      "claim": "Encoded pointer decoding uses a 6-bit region index and low25 offset after nullable decoding. It carries no object allocation generation; the adapters' wrapper+4 dereference and later object access provide no lifetime lease. Initialization, region-table exhaustion and concurrent mutation are outside this study's operational contract.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1404ad3f0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1404ad270]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1404ad390]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1404ad240]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1402268c0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140226a70]"
+      ]
+    },
+    {
+      "addr": "0x140212f80",
+      "claim": "The captured ENEMY constructor allocates 1160 bytes, initializes the base object, installs ENEMY descriptor and registers ENEMY/object links. Its allocation-null branch still reaches 206740, whose position helper dereferences the object. Type13 uses a separate 1176-byte allocator path; safe use additionally requires valid table rows and resources.",
+      "evidence": [
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140212f80]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e4220]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140206740]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e6ba0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401f66d0]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x140212920]",
+        "docs/research/bdx-bank3-calls-20261008/evidence.json#functions[addr=0x1401e1fa0]"
+      ]
+    }
+  ]
+}

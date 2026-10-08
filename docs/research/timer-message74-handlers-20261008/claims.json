@@ -1,0 +1,166 @@
+{
+  "Domain": "native",
+  "claims": [
+    {
+      "addr": "0x1403b4c90",
+      "Finding": "The bounded census follows stored Event10 instructions for message74 and parameter0 in all66 hash-pinned loose-asset rows (53 distinct scripts).49 prefixes return normally,15 stop before their first native trap and2 stop at unknown Work reads. Two of the49 returning prefixes write Work. The remaining47 show only modeled frame/stack changes before return.",
+      "Evidence": [
+        "imported-evidence.json#functions[addr=0x1403b4c90]",
+        "imported-evidence.json#functions[addr=0x1403e1840]",
+        "imported-evidence.json#functions[addr=0x14041b320]",
+        "script-analysis.json",
+        "analyze_scripts.py",
+        "verification.json"
+      ],
+      "Limitations": "These are conditional stored-prefix outcomes, not runtime observations. The scope is the prior66 Event10 rows, not all game assets. The native temporary-VM allocation/owner-count/cleanup effects still occur even when the script prefix returns without Work writes. Native calls, unknown reads and later callbacks are not treated as no-ops."
+    },
+    {
+      "addr": "0x14042c6b0",
+      "Finding": "M_EX950 Event10 compares the supplied message with74. At74, WorkDWORD+540 nonzero writes WorkDWORD+544=1 at PC68 and returns. Zero instead reaches trap1:8 at PC75 with wrapper Work+428 and the stored string leave. Its Event0 prefix writes the incoming Actor to wrapper+4 (Work+432) at PC212 before its first unknown native call.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14042c6b0]",
+        "evidence.json#functions[addr=0x1403cae60]",
+        "imported-evidence.json#functions[addr=0x1403b4c90]",
+        "script-analysis.json",
+        "retail-witnesses.json",
+        "verification.json"
+      ],
+      "Limitations": "The wrapper/Actor must still be valid and preserved from initialization. leave is the exact stored action name; completed departure/despawn behavior is not proven. The model stops before the effectful1:8 call. Initial Work values and an actual timer delivery were not observed."
+    },
+    {
+      "addr": "0x140433530",
+      "Finding": "Original bank4:index21 has zero declared operands and one return slot.433530 returns an @INT boolean from3FB840: GlobalQWORD2A0FF68 is non-NULL and bit0 of BYTE[that pointer+4] is set. B_EX120 and B_EX120_HB_LV99 take message74 to trap1:8 requesting atk_final_failed only when this boolean is true; false returns without that request. Their Event0 prefixes bind the incoming Actor at Work+148, used through wrapper Work+144.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433530]",
+        "evidence.json#functions[addr=0x1403fb840]",
+        "evidence.json#functions[addr=0x1403a3b50]",
+        "evidence.json#functions[addr=0x1403a3970]",
+        "evidence.json#functions[addr=0x14042c6b0]",
+        "script-analysis.json",
+        "retail-witnesses.json",
+        "verification.json"
+      ],
+      "Limitations": "This study names the exact global/flag, not an inferred semantic object type. The two native loads require a stable valid pointer. Read-summary cases supply false/true explicitly and do not prove runtime state. Action completion and downstream script code remain outside the model."
+    },
+    {
+      "addr": "0x14042db00",
+      "Finding": "tt_audience_c (N_EX650/670/680/690_BTL10 loose rows) routes messages74,90,123 to trap1:39 with wrapper Work+0 and index1. The adapter decodes wrapper+4 as Actor and reads DWORD Actor+2548+4*signed(index); selected index1 therefore reads Actor+2552. Only result1 reaches trap1:262 at PC73 with [wrapper,8,3]. Representative N_EX650 Event0 writes the incoming Actor to Work+4 at PC862 before its first unknown native call.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14042db00]",
+        "evidence.json#functions[addr=0x1403b5df0]",
+        "evidence.json#functions[addr=0x14042bde0]",
+        "script-analysis.json",
+        "retail-witnesses.json",
+        "verification.json"
+      ],
+      "Limitations": "Only N_EX650 is independently package-verified here; the four loose rows share the same script SHA. The Actor slot value is a supplied conditional read, not observed game state. Generic signed indices have no bounds check in3B5DF0; the selected script uses1."
+    },
+    {
+      "addr": "0x14042bde0",
+      "Finding": "Trap1:262 decodes operand0 to a wrapper, wrapper+4 to Actor, and Actor DWORD0 to the descriptor. It tail-jumps to descriptor-vtable byte offset160 with RCX=descriptor, RDX=Actor, R8D=operand1 and R9D=operand2. The selected audience message74 branch supplies8 and3.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14042bde0]",
+        "script-analysis.json",
+        "verification.json"
+      ],
+      "Limitations": "The actual runtime descriptor slot160 target for the selected NPC is not established. No animation, state transition or resource effect is inferred from the operand values or trap index."
+    },
+    {
+      "addr": "0x1403b4c90",
+      "Finding": "B_EX170 and B_EX170_LV99 Event10 set their WorkDWORD at offsets296 and312 respectively to1 for message82 and0 for every other modeled integer message, including74. Their PC74 store and PC76 return require no native trap or unknown Work read. Neither Event10 body contains an immediate74 comparison.",
+      "Evidence": [
+        "imported-evidence.json#functions[addr=0x1403b4c90]",
+        "imported-evidence.json#functions[addr=0x14041b320]",
+        "script-analysis.json",
+        "analyze_scripts.py",
+        "test_model.py",
+        "retail-witnesses.json",
+        "verification.json"
+      ],
+      "Limitations": "The tested byte-message partition0..255 plus stored equality/default structure supports the stated default behavior; no meaning is assigned to the Work flag. This illustrates why absence of a decoded immediate74 cannot prove absence of message74 effects."
+    },
+    {
+      "addr": "0x1403cae60",
+      "Finding": "Trap1:8 forwards the decoded string to Actor+912.3CAE60 skips when its local flag+300 bit0 is set, searches up to128 name entries via3CA700, and does nothing when the name is absent. A match can call3CAEC0 to run prior exit behavior, clear fields and enter3CAD00.3CAD00 checks parent-VM flag bit1, then can replace the child VM using3E1970 and invoke an additional event through3E2000.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14042c6b0]",
+        "evidence.json#functions[addr=0x1403cae60]",
+        "evidence.json#functions[addr=0x1403ca700]",
+        "evidence.json#functions[addr=0x1403caec0]",
+        "evidence.json#functions[addr=0x1403cad00]",
+        "verification.json"
+      ],
+      "Limitations": "This closes the immediate named-action dispatcher only. Entry-table construction, actual matching records, VM allocator success, called-script effects and transitive callbacks remain prerequisites or boundaries. No actual leave/failure animation or script completion is claimed."
+    },
+    {
+      "addr": "0x1403f4a20",
+      "Finding": "The preceding sibling registry has8 records at16-byte stride from2AE5D80 (VM pointer at+8).3F4A20 chooses the first NULL slot, creates an owner-NULL VM, invokes event2 synchronously, starts event3 and installs event4 as the exit PC.3F4910 clears the slots and registers task priority14002 with cleanup3F48C0.3F4860 updates noncompleted VMs unless global2A11400 bit0x20 is set.3F4980 delivers event10(message,parameter) to every non-NULL slot.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403f4a20]",
+        "evidence.json#functions[addr=0x1403f4910]",
+        "evidence.json#functions[addr=0x1403f4860]",
+        "evidence.json#functions[addr=0x1403f48c0]",
+        "evidence.json#functions[addr=0x1403f4980]",
+        "imported-evidence.json#functions[addr=0x1403e1840]",
+        "verification.json"
+      ],
+      "Limitations": "Registration and cleanup are native mutations and may execute script code. The selected actor-MDLX census does not cover scripts supplied to this separate registry. Direct xrefs record several registration callers; their selected resource data and all indirect aliases remain open."
+    },
+    {
+      "addr": "0x1403f60d0",
+      "Finding": "The following sibling dispatcher scans16 records of96 bytes at2AE6ED0. It selects the first exact message/parameter match; if none exists, it retains the last matching-message row for which either parameter is negative. Thus message74/parameter0 selects the first(74,0) row or the last(74,negative) row. The selected record is processed by3F61A0, then byte+56 can suppress transition dispatch; otherwise field+16 chooses3AC350 versus3A46E0/3A4BC0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403f60d0]",
+        "evidence.json#functions[addr=0x1403f6010]",
+        "evidence.json#functions[addr=0x1403f6070]",
+        "evidence.json#functions[addr=0x1403f61a0]",
+        "verification.json"
+      ],
+      "Limitations": "No actual installed record with message74 is proven in this registry. Transition helper semantics and selected data remain open; the Actor Event10 result does not close the entire native broadcast."
+    },
+    {
+      "addr": "0x1403f61a0",
+      "Finding": "3F61A0 conditionally applies grouped flag actions from record+8, dispatches nonnegative+12 through3E3930, iterates a DWORD-ID list at+32/count+24 through3A1A60 and3A1E70, and processes tagged WORDs at+40/count+54 through3FDF00 or3FDF60. It then writes record messageDWORD=-1 at3F6260 before returning to transition dispatch.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403f61a0]",
+        "evidence.json#functions[addr=0x1403f60d0]",
+        "../bdx-system-calls-20261008/evidence.json#functions[addr=0x14039afc0]",
+        "verification.json"
+      ],
+      "Limitations": "Only the concrete branch/call/store structure is asserted for unclosed helpers. Record contents, loop bounds, callbacks and whether they register further messages remain unchecked here. Clearing the message does not imply idempotence of prior effects."
+    },
+    {
+      "addr": "0x1403f4a20",
+      "Finding": "The8-slot registration helper has no normal rejection when every slot is occupied: the scan leaves index8 and the subsequent pointer store at3F4A82 addresses the ninth record, beyond the registry traversed by3F4980. The slot-index erase helper3F4AD0 also performs no index-range check.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403f4a20]",
+        "evidence.json#functions[addr=0x1403f4ad0]",
+        "evidence.json#functions[addr=0x1403f4980]",
+        "verification.json"
+      ],
+      "Limitations": "This is a local static capacity/index precondition failure. It does not prove reachable retail over-registration, a timer-triggered overflow, corruption observed in the game or an exploitable crash."
+    },
+    {
+      "addr": "0x1403f5dc0",
+      "Finding": "The16-record allocator3F5DC0 returns an existing exact pair or remembers the last row whose message is negative. With no exact match and no free row, RBX remainsNULL and the first initialization store at3F5E1C dereferences it. The helper has no full-table rejection before that store.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403f5dc0]",
+        "verification.json"
+      ],
+      "Limitations": "Only this conditional native failure path is established. No reachable retail sequence that fills all16 rows then requests a new pair is proven; no live crash or exploit claim."
+    },
+    {
+      "addr": "0x1403b4c90",
+      "Finding": "Six representative complete MDLX assets were decoded read-only from original kh2_fifth.hed/PKG entries and matched their loose copies byte-for-byte: B_EX120(6304), B_EX120_HB_LV99(6312), B_EX170(6350), B_EX170_LV99(6367), M_EX950(8546), N_EX650_BTL10(8784). Script-child hashes and Event10 headers match the separately implemented product reader.",
+      "Evidence": [
+        "imported-evidence.json#functions[addr=0x1403b4c90]",
+        "retail-witnesses.json",
+        "retail-probe/Program.cs",
+        "retail-probe/RetailProbe.csproj",
+        "script-analysis.json",
+        "verification.json"
+      ],
+      "Limitations": "Original identity is proven for these six assets only. Stored code is not execution evidence; actor spawn/class/lifetime, current bank mapping, native state, resource availability and runtime script mutation remain prerequisites."
+    }
+  ]
+}

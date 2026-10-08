@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-08",
+  "Domain": "native",
+  "title": "App execution context: CLR, WinForms, App worker and timing worker",
+  "scope": "Static App entry, mixed-mode CLR transition, WinForms event registration, native worker dispatch, pause and shutdown. Complete captured bodies do not establish full transitive semantics, live scheduling or exclusive ownership of all Actor writers.",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "imageBase": "0x140000000",
+  "counts": {
+    "functions": 29,
+    "instructions": 1737,
+    "originalFunctionBytes": 7833,
+    "chunkedFunctions": 2,
+    "chunkedInstructions": 134,
+    "originalChunkBytes": 475,
+    "allNativeFunctions": 31,
+    "allNativeInstructions": 1871,
+    "allNativeBytes": 8308,
+    "dataSpans": 269,
+    "originalDataBytes": 4372,
+    "incomingXrefs": 266,
+    "clrMethodDefinitions": 597,
+    "clrILBodies": 439,
+    "clrILBytes": 32859,
+    "clrILInstructions": 13565,
+    "clrFixupGroups": 507
+  },
+  "selectedManagedBodies": [
+    "0x060000A8",
+    "0x060000AA",
+    "0x060000BC",
+    "0x06000205",
+    "0x06000209",
+    "0x0600020A",
+    "0x0600020B",
+    "0x0600020C",
+    "0x0600020D",
+    "0x0600020E",
+    "0x0600020F",
+    "0x06000210",
+    "0x06000211",
+    "0x06000212",
+    "0x06000213",
+    "0x06000214",
+    "0x06000215",
+    "0x06000216",
+    "0x06000223",
+    "0x06000224",
+    "0x06000225"
+  ],
+  "nativeClaimsFile": "claims.json",
+  "result": "The normal outer App execution path is closed through real PE/CLR metadata, WinForms event registration, native thread creation and concrete virtual-slot binding. Gameplay App updates run on the registered App worker; UI and timing work have separate contexts. Exclusive ownership of every Actor/STATUS write and complete shutdown recovery remain unproved.",
+  "limitations": [
+    "No target execution, attachment, injection, window interaction, IDB modification, save or product modification.",
+    "CLR metadata/IL inventory is separate from native coverage and is not 439 new semantic claims. Twenty-one selected managed bodies support this context study.",
+    "Two discontiguous functions are captured with six exact byte chunks and complete IDA pagination; they are not mislabeled as contiguous coverage bodies.",
+    "Native caller xrefs alone miss CLR MethodDef transitions and are not a complete indirect-call census. Original pointers are not live immutable bindings.",
+    "The optional timing callback at device+728, input/UI callbacks, external CLR/WinForms implementation, CRT initializers/TLS, and all transitive GPU/resource failure paths are not exhaustively closed.",
+    "Pause+776 is a request/state flag with timing-thread behavior, not a lock, worker drain or Actor/STATUS ownership lease.",
+    "The existing task/fiber evidence still permits parked child stacks; knowing the registered App worker does not collapse those stack lifetimes.",
+    "GetExitCodeThread failure, invalid/closed/reused handles, repeated init, exception exits and synchronous UI invocation races are not proven safe by the normal shutdown path."
+  ],
+  "trainerConsequences": [
+    "Use the concrete App-worker dispatch chain as provenance for a future native command gate; separately validate live module/object/vtable identity and initialization state.",
+    "Do not execute arbitrary gameplay writes directly in WinForms callbacks or on an injected worker based on a generic main-thread label.",
+    "Do not treat minimize/pause, a posted exit flag, a quiet active OS stack, or a closed HANDLE as Actor-lifetime quiescence.",
+    "Any future Actor provider still requires actual binding/lifetime serialization, suspended-fiber accounting and closure of relevant worker writers. This research alone enables no installer, IPC or gameplay feature."
+  ],
+  "sources": [
+    {
+      "title": "Application.Run(Form)",
+      "url": "https://learn.microsoft.com/dotnet/api/system.windows.forms.application.run",
+      "use": "External API contract: message loop runs on the current thread."
+    },
+    {
+      "title": "WinForms cross-thread operations",
+      "url": "https://learn.microsoft.com/en-us/dotnet/desktop/winforms/controls/how-to-make-thread-safe-calls",
+      "use": "External API contract: Control.Invoke is synchronous and marshals to the UI thread."
+    },
+    {
+      "title": "_beginthreadex",
+      "url": "https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/beginthread-beginthreadex?view=msvc-170",
+      "use": "External API contract: independent thread creation, initflag, zero failure return."
+    }
+  ],
+  "verification": "py -3 docs/research/app-execution-context-20261008/verify.py --rebuild-clr; .NET utility reads file bytes using PEReader/MetadataReader and never loads the target assembly"
+}

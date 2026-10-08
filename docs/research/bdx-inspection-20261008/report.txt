@@ -1,0 +1,127 @@
+BDX offline inspection — 2026-10-08
+
+Result
+The native format supports a bounded, read-only script view. Decode stored
+instructions from declared event entries, follow explicit branch/call edges,
+and mark return, resume and callback boundaries. Unvisited bytes remain unknown
+data or code. Do not search them for words that resemble native calls.
+
+Two selected original package scripts contain the STATUS rebind operations:
+- obj/B_AL020.mdlx, BAR entry 2: bank 2 / index 9 at PC 6035.
+  Event 0 starts at PC 4640. The nearby ID push at PC 6029 contains 138;
+  the following zero push is the third argument, unused by the adapter.
+- obj/B_EX400.mdlx, BAR entry 2: bank 2 / index 95 at PC 7593.
+  Event 0 starts at PC 3808. The ID push at PC 7590 contains 216.
+
+These are instruction starts reached by a static CFG, not raw-word matches.
+Their paths include conditional call/native continuations. They do not prove
+execution, valid operand pointers or a motion-worker event reaching the traps.
+The full paths, small byte excerpts and instruction boundaries are saved in
+asset-witnesses.json. No complete game asset is copied into this research.
+
+Root independently opened kh2_fifth.hed entries 6196 and 6443 through the Core
+archive reader. Both original payloads equal the local loose slices byte for
+byte. The independently written C# decoder matches all 4,480 instruction PCs,
+widths and normalized flow edges. Its 8,995-check receipt is preserved in
+retail-comparison.json. This is an offline comparison, not game execution.
+
+Header and addresses
+There is no magic signature or explicit code-offset field. The first 16 bytes
+are the name field. Signed 32-bit declared work, stack and temporary sizes
+follow at offsets 16, 20 and 24. These stored values do not directly describe
+the entire PC implementation's allocation size. The native constructor can
+also change stack size 512 to 1024 for five named scripts.
+
+Event rows start at offset 28. Each contains signed 32-bit ID and PC fields.
+The first row with PC zero terminates lookup regardless of its ID. ID zero
+with a nonzero PC is an ordinary event. Duplicate IDs resolve to the first
+row, so later duplicates are displayed but do not seed additional CFG roots.
+At least 36 bytes are needed to hold the fixed fields and a terminator row.
+
+File offset = 16 + 2 * PC. PC arithmetic uses a 32-bit context field. The
+reader computes file offsets in a wider type and rejects or diagnoses targets
+outside the payload or inside its header. Native code has no equivalent file
+length check in the captured bodies. Reader budgets and overlap rules are
+additional offline policy, not claims about native validation.
+
+Instruction widths and control flow
+The opcode is a little-endian 16-bit word. Group = word & 15,
+mode = (word >> 4) & 3, sub = word >> 6.
+
+Group  Width in words  Operands / flow
+0      3 or 2          Immediate integer/float when mode < 2; otherwise U16
+                      address operand. Unsupported address push yields zero;
+                      unsupported value load has a NULL source.
+1      2              U16 destination offset. Selector 3 uses native scratch.
+2      3              U16 byte count and U16 destination offset. Selector 3
+                      uses retained native scratch, not a new script address.
+3      2              U16 byte offset from a popped address.
+4      1              Embedded byte count; zero selects a DWORD store.
+5      1              Unary operation. Invalid combinations return status 5.
+6      1              Binary operation. Invalid float/type modes return 5;
+                      integer sub > 11 keeps the left operand and continues.
+7      2              Signed 16-bit branch offset relative to PC + 2.
+8      2              Signed 16-bit call offset relative to PC + 2.
+9      1              Control operation: resume, end, stack return or others.
+A      2              Embedded unsigned bank and following unsigned U16 index.
+B      3              Signed 32-bit call displacement relative to PC + 3.
+C–F    1              Status 5.
+
+The exact subselectors, operand types, normal prerequisites and terminal cases
+are in opcode-contract.json. Five original switch tables and 41 instruction
+anchors are independently checked against the executable. Relative target
+addition is 32-bit; there is no 16-bit wrap. This differs from the compared
+OpenKH decoder's target conversion.
+
+Calls have a target and a conditional return continuation. Halt returns status
+1 with the PC already advanced; resuming there is a separate conditional edge.
+Exit returns status 2. Return obtains its target from the VM stack and returns
+status 3 only for target zero. A static decoder cannot replace this with an
+ordinary sequential edge.
+
+Native-call metadata
+Bank 2 / index 9 uses descriptor 0x140756BF0, adapter 0x140431A70 and root
+0x140411350. It consumes three operands and has no VM return-value flag.
+Bank 2 / index 95 uses descriptor 0x140757150, adapter 0x140431AA0 and root
+0x1404112B0. It consumes two operands and has no VM return-value flag.
+The interpreter's return flag 0x40000000 selects operand-vector element zero,
+not the native RAX register. Other traps retain numeric bank/index identity;
+this round does not supply a complete named trap catalogue.
+
+Corpus scope and limits
+The read-only local scan covers exactly 00common.bdx and direct type-3 entries
+of all 2,238 obj/*.mdlx loose files: 921 scripts. Their complete input inventory
+and hashes are recorded. The bounded CFG found 310 index-9 sites and one
+index-95 site in 285 scripts. None was connected to an event-27 root by this
+static model. This is not a proof that no shipped event 27 can perform a
+rebind: other asset classes/providers, native callback effects and modified
+code remain outside the scan.
+
+The view shows stored instructions and operands. Runtime compatibility fixes
+can alter float values and header sizes. Native memory operations and callbacks
+can change the VM state or future bytes. Pointer validity, operand tags, stack
+capacity, exceptions and actual dynamic return targets are not evaluated.
+The two selected scripts still need operand-0 provenance analysis before they
+could establish a valid native call with a particular Actor.
+
+Verification and integration
+verify.py checks 11 complete reused native bodies: 1,529 instructions and
+6,260 original bytes, including the interpreter's recorded trailing switch
+data. It checks original executable and imported-source hashes, pagination,
+instruction boundaries, 41 semantic anchors, five switch tables, two trap
+descriptors, 44 synthetic reader checks, the complete bounded loose scan and
+the two selected structures. Original research imports remain unchanged.
+
+The C# implementation was reviewed read-only against this contract, including
+its bounds, first-match events, widths and flow classifications. The original
+archive/structure comparison is independently supplied by Root. This task
+does not edit product code or claim UI/runtime validation.
+
+Reproduce:
+py -3 -B docs/research/bdx-inspection-20261008/verify.py --check
+
+The full corpus is private local input; reproduction requires those files.
+The verifier and prototype never execute IDA, the game or script bytecode.
+The existing IDB was checked for readiness without saving, closing or changing
+it. External reference files are pinned in external-references.json and retain
+the OpenKH license. Native bytes determine the decoder contract.

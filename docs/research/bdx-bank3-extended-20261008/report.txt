@@ -1,0 +1,222 @@
+Bank 3 extended: Gummi player state, movement and reactions
+=========================================================
+2026-10-08. Bounded static study; no game process was started or inspected.
+Original PE SHA256:
+9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed
+
+1. Scope and evidence
+---------------------
+This adds 17 proposed descriptions: 3:13..16, 44, 97..107 and 160. The
+previous Bank3 study's 30 annotations remain unchanged. This is not semantic
+completion of all 179 structural Bank3 rows. No product or trainer behavior
+was changed here.
+
+capture.json contains fresh read-only IDA captures from the existing adopted
+worker 47255c5b. Each selected body has complete paginated ASM, primary bytes
+and pseudocode. The recorded database had auto_analysis_ready=false;
+autoanalysis, database writes and restarts were not requested. Function sizes
+and IDA boundaries are observed metadata, then checked against the original
+PE. Six long pseudocode captures retained IDA's truncated flag on their final
+page; separate complete single-page responses corroborate their exact joined
+text. No metadata flag is silently rewritten in the capture.
+
+verify.py independently parses the PE, requires the full original SHA256,
+compares every captured body/data span with disk bytes, decodes every listed
+instruction with Capstone, checks counts/cursors, descriptors, 113 explicit
+semantic anchors, RTTI, float constants, xref encodings, annotation ABI and
+reference targets. evidence.json and the listings are deterministic derived
+outputs. Unlisted bytes within primary bodies remain explicitly counted;
+they are not counted as extra instructions. The descriptor-table data span
+contains 179 rows, but only the selected 17 descriptors are semantic claims.
+
+Reproduce from the workspace root (Python3 plus Capstone):
+  py -3 -B docs/research/bdx-bank3-extended-20261008/verify.py --check
+Optional --original PATH selects the PE; the SHA must still match.
+Verification never loads, executes, injects or patches KH2. The PE parser and
+page-verification scaffolding were adapted from the previous Bank3 study;
+this verifier is self-contained and does not import or modify that study.
+
+2. Actual owner and borrowed-reference boundary
+-----------------------------------------------
+1FCF00 requests 5136 bytes and calls1FC8F0. The constructor installs descriptor
+72A860. Its vtable/COL/type descriptor chain names
+  .?AV?$VTABLE@VPLAYER@gb@@@OBJ@gb@@
+The embedded component at player+1392 independently has gb::PLAYER_STATE
+RTTI. Thus PLAYER is supported by original type data, not guessed from use.
+
+3:44 returns encoded global AF0540. The constructor publishes the global at
+1FCB6E before subsequent initialization and resource-derived setup. The two
+captured cleanup paths,1FBF80 and1FCDB0, call earlier effect/component cleanup
+before clearing AF0540. The descriptor destructor path later delegates to
+base cleanup/free helpers. No statement is made that every transitive
+callback is closed. The factory also dereferences its player result after a
+failed allocation. These facts rule out treating a non-NULL global as a
+complete initialization or lifetime guarantee.
+
+The operand-based player adapters decode operand0 and then the reference's
+encoded object field+4. They do not check NULL, RTTI, generation or bounds.
+The context installs table72F1A0 through1F9AA0â†’3E1710â†’7534A8;1F9A80 clears
+that slot before global VM retirement. Static table identity/registration
+does not retain the player, its components, the ship data, or vibration data.
+
+3. Durability and three different cached state predicates
+---------------------------------------------------------
+3:97 tests inclusive float32(maximum)*0.3 >= current. Current is a float at
+PLAYER_STATE+8 and maximum a signed DWORD at+12.225D00 accumulates maximum,
+enforces at least1 and copies it into current.225E60 subtracts signed integer
+damage, selects a category and clamps nonpositive current to0. Native contact
+callers use this alongside effects/feedback, supporting the bounded name
+durability. The query itself has no alive/state or valid-number gate. SETNB
+after COMISS makes unordered false with masked floating exceptions.
+
+3:98 reads player flags+5132 bit2. State2 processing clears the previous bit2,
+transfers pending bit1 to bit2 and clears bit1. Captured damage entry paths
+set pending bit1 after their rejection checks but before durability change.
+This is an update pulse, not a permanent dead/damaged predicate.
+
+3:99 reads bit0x200, refreshed by the priority19000 task in player state2.
+The source predicate traverses component head(player+1312), with encoded
+next at component+1344. Type1 tests a subordinate list(+1448, next+164) for
+entry+156 bit1. Type13 calls descriptor virtual+64. The exact list predicate
+is documented; a universal firing/readiness name is intentionally unproven.
+
+3:100 reads bit0x40. The state2 input update clears it, then tests controller
+DWORD+8 mask0x400 while bit0x80 is clear. A successful start sets0xC0, copies
+the lateral direction, configures a timed movement impulse and spin, can
+start the+1500 protection timer, and invokes an effect helper. The query is
+the start pulse; it is not a permanent maneuver-active or invulnerable flag.
+No physical button mapping is claimed. Other state paths can retain values.
+
+4. Counter affects ordinary movement as well as reactions
+----------------------------------------------------------
+3:101/102 do a DWORD INC/DEC on player+5128;3:103 returns that DWORD as INT.
+There is no saturation, balancing check or atomic/thread contract. For
+example DEC(0) gives0xFFFFFFFF, read as-1 by the consumer; INC(0x7FFFFFFF)
+wraps to the negative half. This is unrelated to lifetime reference counts.
+
+1FF930 interprets N as signed. N<=0 returns1 without dereferencing config.
+For N>0 it sequentially computes, with float32 rounding after each operation,
+  v = 1; for k=1..N: v = v - config[+16]/float32(k)
+An eight-way unroll and a tail preserve that operation order. The final
+COMISS/JA returns float32(0.1) if v is strictly below it, otherwise MINSS(1,v).
+With masked exceptions, NaN can survive; this is not universal sanitization.
+Positive work remains linear in N even once the final clamped value is clear.
+A huge positive counter can consume excessive work. No such live test ran.
+
+Recorded consumers:1FD930 roll-target calculation;1FFE80 lateral movement;
+200CE0 the script's0x800 reaction;200B80 the sibling0x1000 reaction. The
+counter is therefore broader than a reaction-only setting. Exposed increment
+and decrement calls should be balanced only within the original object's
+lifetime and native script scheduling contract.
+
+5. Ship extent queries have reproducible tie behavior
+------------------------------------------------------
+3:104/105 call1FFBA0â†’1FB350â†’206170â†’52E520. Player component selector+1304
+chooses one of AEF488/AEF4B0/AEF4D8. Record+8 is compact ship data. Its WORD+2
+contains three4-bit extents; signed bytes+4/+5/+6 are axis offsets. The XYZ
+result is (nibble - abs(signed offset))*10, W0. The calculation can produce
+negative values; it does not validate the backing resource or geometry.
+
+3:104: X if strictly below both others; else Y if strictly below both; else Z.
+3:105: X if strictly above both others; else Y if strictly above both; else Z.
+Consequently (10,10,20) gives20 for3:104, and (20,20,10) gives10 for3:105.
+Calling them ordinary min/max would be false. A small native comparison-region
+interpreter checks the exact branch behavior, including equal and unordered
+cases. Actual compact-data outputs are finite integer multiples of10.
+
+6. Directional reactions and the scheduler/resource dependency
+--------------------------------------------------------------
+3:106 enters1FD7E0;3:107 enters200CE0. State+1496==5 skips either body.
+Both decode vector operand1 without validation, transform XYZ as a direction
+into the current orientation basis, normalize, force local Z0 and normalize
+again.142080 leaves zero-length XYZ unchanged. The input remains needed later
+for spin setup, so arbitrary aliasing with destination object fields is not
+an input-preservation guarantee.
+
+                 mask     magnitude             duration   spin(degrees)
+3:106            0x400    config+28               config+32  config+36
+3:107            0x800    factor(N)*config+40     config+44  config+48
+
+Both call200440 with the spin passed in XMM2 after multiplication by the
+original float32(pi/180) constant. The callee normalizes the input and forms
+cross(player-up, normalized-input). Here player-up is read from player+56,
+and converted through Scroll when player+504 bit2 is set; it is not the fixed
+world vector(0,1,0). It normalizes that cross-product into+1144, stores angular
+magnitude at+1488, multiplies global DWORD PRNG783CA0 by69069, and chooses a
+sign using unsigned-DWORDâ†’float times2^-32 compared with0.5. It sets0x6000
+and zeros+1492. PRNG state is shared, not a private script seed.
+
+3:106 additionally starts config+108 at+1500 and sets0x20 only if mask0x400020
+is clear and that timer is not positive. Its COMISS/JA also takes the set path
+for unordered with masked exceptions.3:107 has no corresponding timer write.
+Neither reaction subtracts durability. Captured native collision callers
+apply damage separately before1FD7E0; direct script use does not inherit their
+collision, damage-rejection or player-existence gates.
+
+Only when remaining is initially positive,1FFE80 calculates
+magnitude*(remaining/total), subtracts154430's time scalar, and expires or
+interrupts the impulse flags. Nonpositive or unordered remaining duration
+bypasses this whole consumption/clear branch. Other code integrates spin and
+combines ordinary lateral movement with the reaction delta. These are native
+time units; seconds are not proven. Zero/negative/nonfinite configurations
+are not made safe by the adapters. Calls to effect/axis-angle/wrap and other
+helpers outside the captured subset are listed in unexpandedCallBoundaries.
+
+3:106 requests vibration occurrence5;3:107 requests occurrence3. Original
+loader data literally names gumibattle/vibration.bar.20FDC0 finds BAR type47
+and dereferences row+8 even when lookup returned NULL. The payload must be
+loaded and its configured occurrence present.19AE60 borrows it into common
+globals, resets envelope state and either reuses an existing task or creates
+priority15000 work in one of two recognized native scheduler contexts. If
+neither context matches, task+104 is written through a zero task pointer.
+This is an explicit reason the entry points are not arbitrary-thread APIs.
+
+19B1D0 samples two tables and, when the enable flag is set, writes controller
+channel bytes+72/+73. First update starts at0; later updates advance by
+global717484*0.5. Completion requests task retirement via1500B0, which only
+NULLs the task callback; the registered cleanup19B640 clears the task latch.
+The underlying scheduler retirement machinery, OS controller output and
+resource lifetime/reentrancy are not globally closed by this study. Later
+requests replace common payload state rather than creating independent
+per-player envelopes. No live vibration, invalid-resource or thread test ran.
+
+7. Orientation codes and temporary point conversion
+---------------------------------------------------
+The static orientation block is AEA1A0. Current code+148 maps as follows:
+  3:13â†’code0â†’yaw0;3:14â†’code2â†’+pi;3:15â†’code1â†’-pi/2;3:16â†’code3â†’+pi/2.
+Reset initializes current0 and pending+152=-1. The priority29000 update
+commits pending code before its yaw interpolation finishes. The predicates
+therefore test committed code, not a completed camera turn. Native positive/
+negative/half-turn requests and a lock bit are captured, but physical direction
+names are not inferred from handedness. The basis combines gb::SCROLL+28
+and the smoothed Y rotation;+64 stores a rigid inverse, not a general inverse.
+
+3:160 copies the supplied16-byte vector to shared72FE50 and invokes1E9F80
+mode0 using a distinct stack output. This branch keeps the incoming R8 point
+pointer when it calls1E9270; Hex-Rays omits that argument in its call text.
+The helper reads XYZ, forces W1 and multiplies by the cached inverse matrix.
+It then returns shared scratch ADR. Later scratch users overwrite it. Distinct
+nonoverlapping input is unchanged; shared/aliased memory is not protected.
+
+8. Uses and remaining boundaries
+--------------------------------
+These metadata can support a script browser that identifies player queries,
+distinguishes cached pulses from persistent state, explains attenuation,
+shows reaction/vibration dependencies, and warns about extent tie behavior.
+They also give concrete building blocks for a Gummi training sequence or
+scripted directional reaction, provided a later implementation supplies the
+original context, valid objects, resources and correct scheduling. This
+study does not implement or endorse an unchecked trainer call button.
+
+All selected semantics are bounded. Unexpanded direct calls and virtual calls
+remain in the evidence. Native allocation/resource loading, arbitrary class
+overrides, effect callbacks, cleanup reentrancy and imported CRT internals are
+not claimed complete. Imports are resolved from the original PE declaration;
+the captured cosf/sinf/sqrtf thunks are exact jump boundaries, not OS proofs.
+No global mutex/barrier, external-thread safety, native bank bound or complete
+bank/game reverse engineering is inferred from the body count.
+
+The model checks use the captured selector instruction bytes, packed signed
+offset arithmetic, DWORD wrap boundaries and scalar/unrolled float32 factors.
+They assume ordinary IEEE rounding and masked floating exceptions, and do not
+test runtime scheduling, object lifetime, resource allocation or gameplay.

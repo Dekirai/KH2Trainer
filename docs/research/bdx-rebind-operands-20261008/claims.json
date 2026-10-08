@@ -1,0 +1,101 @@
+[
+  {
+    "addr": "0x1403b44d0",
+    "Finding": "Actor setup passes Encode32(the setup Actor)/@ADR as the sole Event0 argument after selecting the first BAR type3 entry. Both original witnesses have exactly one type3 entry, ordinal2.",
+    "Evidence": [
+      "evidence.json#functions[addr=0x1403b44d0]",
+      "evidence.json#functions[addr=0x1403a6420]",
+      "evidence.json#functions[addr=0x1403e1730]",
+      "evidence.json#functions[addr=0x1403e1240]",
+      "evidence.json#functions[addr=0x1403e1840]",
+      "evidence.json#functions[addr=0x1403e1c80]",
+      "evidence.json#functions[addr=0x14041b320]",
+      "evidence.json",
+      "script-dataflow.json"
+    ],
+    "Limitations": "Conditional on this setup caller selecting this asset and valid allocation/ptr32 state. No live Actor or spawn occurrence observed."
+  },
+  {
+    "addr": "0x14041b400",
+    "Finding": "B_AL020 Event0 PC4640 stores the native Actor in its initial Frame0, pushes Work+192 and that Actor, and calls PC4649 with frameWords4. Nested calls6314→231 store the Actor at Work+196 (PC237). At PC6035 the exact ordered arguments are [Encode32(Work+192),138,0].",
+    "Evidence": [
+      "script-dataflow.json",
+      "evidence.json#functions[addr=0x14041b400]",
+      "evidence.json#functions[addr=0x14041c900]",
+      "evidence.json#functions[addr=0x14041c6c0]",
+      "evidence.json#functions[addr=0x14041c780]",
+      "evidence.json#functions[addr=0x14041c890]",
+      "trace_model.py",
+      "verification.json"
+    ],
+    "Limitations": "Conditional static dataflow under the documented native summaries and stable code/work. All256 values of the only byte-valued native branch input reduce to two paths. This is not a runtime trace."
+  },
+  {
+    "addr": "0x14041b400",
+    "Finding": "B_EX400 Event0 PC3808 stores the native Actor in its initial Frame0, pushes Work+144 and that Actor, and calls PC3817. Nested calls7770→1893 store the Actor at Work+148 (PC1899). At PC7593 the exact ordered arguments are [Encode32(Work+144),216].",
+    "Evidence": [
+      "script-dataflow.json",
+      "evidence.json#functions[addr=0x14041b400]",
+      "evidence.json#functions[addr=0x14041c900]",
+      "evidence.json#functions[addr=0x14041c6c0]",
+      "evidence.json#functions[addr=0x14041c780]",
+      "evidence.json#functions[addr=0x14041c890]",
+      "trace_model.py",
+      "verification.json"
+    ],
+    "Limitations": "Conditional static dataflow, one1432-instruction prefix with explicit nested returns. No Event27 reachability or live setup occurrence claim."
+  },
+  {
+    "addr": "0x14042c620",
+    "Finding": "The earlier bank1/index7 trap decodes the same wrapper and its +4 Actor link, stores the motion-table pointer at Actor+1184 and the wrapper at Actor+1176. Thus the wrapper contract is exercised before either selected rebind.",
+    "Evidence": [
+      "evidence.json#functions[addr=0x14042c620]",
+      "script-dataflow.json"
+    ],
+    "Limitations": "Requires valid encoded pointers and disjoint Actor/work/frame storage. These stores are not STATUS bindings."
+  },
+  {
+    "addr": "0x1403ca0e0",
+    "Finding": "All intervening native1:5/1:6 destination writes in the selected prefixes are confined to separate128×32-byte motion tables at AL020 Work+480 or EX400 Work+320. The prefixes insert37/104 distinct bounded script names. The wrapper +4 Actor field and main Frame0 survive the covered script and native writes.",
+    "Evidence": [
+      "evidence.json#functions[addr=0x14042e200]",
+      "evidence.json#functions[addr=0x14042e220]",
+      "evidence.json#functions[addr=0x1403ca790]",
+      "evidence.json#functions[addr=0x1403ca700]",
+      "evidence.json#functions[addr=0x1403ca0e0]",
+      "script-dataflow.json",
+      "trace_model.py"
+    ],
+    "Limitations": "Conditional valid non-overlapping allocations, stable script/work and normal native returns. No concurrent-mutation exclusion. Some stored numeric motion fields depend on uncopied scratch slots."
+  },
+  {
+    "addr": "0x140431a70",
+    "Finding": "Given the witnessed AL020 arguments, bank2/index9 decodes Work+192 then the encoded Actor at Work+196 and tail-calls411350 with that Actor and ID138. Its third supplied argument0 is unused by this adapter.",
+    "Evidence": [
+      "evidence.json#functions[addr=0x140431a70]",
+      "script-dataflow.json"
+    ],
+    "Limitations": "The adapter proves value mapping, not native resource availability, successful STATUS acquisition, or thread-safety."
+  },
+  {
+    "addr": "0x140431aa0",
+    "Finding": "Given the witnessed EX400 arguments, bank2/index95 decodes Work+144 then the encoded Actor at Work+148 and tail-calls4112B0 with that Actor and ID216.",
+    "Evidence": [
+      "evidence.json#functions[addr=0x140431aa0]",
+      "script-dataflow.json"
+    ],
+    "Limitations": "The adapter proves value mapping, not resource validity, successful allocation/rebind, or runtime trigger occurrence."
+  },
+  {
+    "addr": "0x14042e220",
+    "Finding": "Bank1/index6 declares12 arguments (flags0x0000000C at7553D0), but adapter42E220 reads16 Low32 argument slots. Slots12/13/14 flow to motion-record WORD offsets26/28/30; Slot15 is read into a local array but not consumed by3CA0E0.",
+    "Evidence": [
+      "arity-discrepancy.json",
+      "evidence.json#functions[addr=0x14041b400]",
+      "evidence.json#functions[addr=0x14042e220]",
+      "evidence.json#functions[addr=0x1403ca0e0]",
+      "evidence.json"
+    ],
+    "Limitations": "The extra reads remain inside the16-value native scratch array. Slots12..15 are not populated by this dispatch; their actual values and visible effects are unmeasured. No OOB or crash claim."
+  }
+]

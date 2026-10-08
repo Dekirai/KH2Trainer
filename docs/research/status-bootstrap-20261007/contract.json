@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "Design prerequisite; runtime stack drain not implemented or proved here.",
+  "status": "Design prerequisite; a conservative complete-stack implementation was subsequently added in status-thread-drain-20261008. End-to-end runtime integration remains open.",
   "goal": "Bootstrap exact STATUS revision observation after all five permanent one-byte entry gates are active, without assuming older unobserved calls finished.",
   "phases": [
     {
@@ -30,8 +30,8 @@
     {
       "name": "Drain",
       "requirements": [
-        "Inspect each pre-existing thread under a short, bounded suspension using prebuilt static module/unwind metadata. Include the current game thread through an appropriate captured context without suspending itself.",
-        "Before declaring an old thread drained, prove the complete relevant call stack contains no PC/return continuation inside any of the five original writer bodies; unknown frame termination never counts as clean.",
+        "Capture each pre-existing remote thread's full active RSP..StackBase span and full context under suspension, then resume before inspection. Storage is preallocated and touched. Work is byte-bounded; paging and kernel scheduling prevent a hard elapsed-time bound. Capture the current game thread without suspending itself.",
+        "Before declaring an old thread drained, require that neither RIP nor any aligned word in the complete active stack lies in any original writer body. The verified normal closure retains root return slots. Incidental data matches defer admission. Missing, truncated, unreadable or oversized captures never count as clean. Static unwind metadata is an optional way to investigate false positives; it is not used by this negative full-span proof.",
         "Do not hold a metadata lock across SuspendThread, invoke arbitrary function-table callbacks, initialize libraries, acquire loader locks or allocate while another thread is suspended. Resume every successfully suspended thread on every path.",
         "If an older writer remains, resume that thread and retry later; do not rewrite its PC, mint a synthetic Before ticket, reset the ledger or suppress its native call.",
         "The five normal writer closures have no engine fiber yield, under the recorded external API assumptions. Exceptional/custom callback paths need independent treatment and cannot silently inherit this proof."
@@ -51,11 +51,12 @@
     "One or several HookedUpdate returns",
     "A fixed sleep or frame count",
     "g_gameThread identity alone",
-    "Current RIP outside a writer without unwinding callers",
+    "Current RIP outside a writer without proving the complete active stack contains no retained root continuation",
     "Only checking six motion workers",
     "An empty ledger active count immediately after installation",
     "Snapshotting only pointer/refcount/backlink and equal scalar bits",
     "Treating resource phase0/1 as completed because its scheduler callback returned"
   ],
-  "runtimeStatus": "Root's separate StatusBreakpointRouter/EntryPlan can prepare entry interception; no bootstrap completion or typed STATUS receipt integration is established by this research."
+  "runtimeStatus": "Separate Router, original trampolines, typed Observer, complete-stack Drain and field journal prerequisites now exist. Their actual game installation, Actor provider and IPC integration remain open. This design document does not assert a completed bootstrap.",
+  "subsequentImplementation": "docs/research/status-thread-drain-20261008/report.json"
 }

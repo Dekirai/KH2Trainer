@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "scope": "Bounded discovery only; never a complete writer/caller exclusion.",
+  "queries": [
+    {
+      "purpose": "bounded rendered BB4 displacement search",
+      "parameters": {
+        "start": "0x1403A0000",
+        "end": "0x1403E0000",
+        "pattern": "BB4h]",
+        "include": "disasm",
+        "limit": 500
+      },
+      "result": {
+        "n": 3,
+        "hits": [
+          {
+            "addr": "0x1403d594f",
+            "matches": [
+              {
+                "kind": "disasm",
+                "text": ".text:00000001403D594F                 mov     [rbx+0BB4h], eax"
+              }
+            ],
+            "function": "sub_1403D5840",
+            "segment": ".text"
+          },
+          {
+            "addr": "0x1403da99d",
+            "matches": [
+              {
+                "kind": "disasm",
+                "text": ".text:00000001403DA99D                 mov     [rdi+0BB4h], eax"
+              }
+            ],
+            "function": "sub_1403DA940",
+            "segment": ".text"
+          },
+          {
+            "addr": "0x1403daad5",
+            "matches": [
+              {
+                "kind": "disasm",
+                "text": ".text:00000001403DAAD5                 mov     [rdi+0BB4h], eax"
+              }
+            ],
+            "function": "sub_1403DA940",
+            "segment": ".text"
+          }
+        ],
+        "cursor": {
+          "done": true
+        }
+      }
+    },
+    {
+      "purpose": "known-function negative control",
+      "parameters": {
+        "start": "0x1403DAD90",
+        "end": "0x1403DADE2",
+        "pattern": "BB4h",
+        "include": "disasm",
+        "limit": 100
+      },
+      "result": {
+        "n": 0,
+        "hits": [],
+        "cursor": {
+          "done": true
+        }
+      },
+      "knownSites": [
+        "0x1403DADA5"
+      ],
+      "conclusion": "Control returned no hit despite captured BB4 operand; the rendered text scan cannot support a complete writer exclusion."
+    }
+  ],
+  "limitations": [
+    "IDA auto_analysis_ready=false. No autoanalysis was forced.",
+    "Displayed xrefs and search pages are inventory observations, not an exhaustive control-flow graph.",
+    "Known selected function bodies were subsequently captured fully with exact cursor coverage and original-PE bytes."
+  ]
+}

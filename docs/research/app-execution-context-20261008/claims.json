@@ -1,0 +1,286 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-08",
+  "Domain": "native",
+  "scope": "Static App entry, mixed-mode CLR transition, WinForms event registration, native worker dispatch, pause and shutdown. Complete captured bodies do not establish full transitive semantics, live scheduling or exclusive ownership of all Actor writers.",
+  "claims": [
+    {
+      "addr": "0x1405669ce",
+      "Domain": "native",
+      "Finding": "PE entry5669CE is a JMP through import57BBF0 _CorExeMain. Original COR header selects MethodDef0600012A (WinMainCRTStartup), whose native RVA is4393D0 and metadata carries STAThreadAttribute.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1405669ce]",
+        "evidence.json#functions[addr=0x1404393d0]",
+        "clr-evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Static exact-image evidence; no live execution or universal thread-ownership claim."
+    },
+    {
+      "addr": "0x1404393d0",
+      "Domain": "native",
+      "Finding": "The selected CLR native entry calls43A8C8 then tail-jumps4391D8. The latter startup sequence invokes143720; that function calls App entry14F1E0 through original pointer62BA70.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404393d0]",
+        "evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "CRT initializer/TLS callbacks and external CLR failure handling remain outside this bounded closure. The two discontiguous functions are fully retained under chunkedFunctions, not counted as contiguous ASM bodies."
+    },
+    {
+      "addr": "0x1404391c4",
+      "Domain": "native",
+      "Finding": "Alternate wrapper4391C4 calls43A8C8 then tail-jumps4391D8. The captured original COR entry token instead selects4393D0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404391c4]",
+        "evidence.json#functions[addr=0x1404393d0]",
+        "clr-evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Static exact-image evidence; no live execution or universal thread-ownership claim."
+    },
+    {
+      "addr": "0x140439368",
+      "Domain": "native",
+      "Finding": "Alternate startup wrapper439368 obtains startup information and the narrow command line before directly calling143720. The captured COR entry does not select this wrapper.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140439368]",
+        "evidence.json",
+        "clr-evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Static exact-image evidence; no live execution or universal thread-ownership claim."
+    },
+    {
+      "addr": "0x140101690",
+      "Domain": "native",
+      "Finding": "Base App construction initializes state and publishes the object pointer in global79CF00 at101812, before14F1E0 installs the derived MyApp vtable5B1190.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140101690]",
+        "evidence.json#functions[addr=0x14014f1e0]",
+        "verification.json"
+      ],
+      "Limitations": "Publication is a store, not an ownership lock or proof that concurrent consumers cannot see partial construction."
+    },
+    {
+      "addr": "0x14014f1e0",
+      "Domain": "native",
+      "Finding": "The stack App is base-constructed, receives vtable5B1190 at14F215/14F221, and stays in the14F1E0 frame while105420 runs. Its normal return path releases provider1064D0 before App destruction101860.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14014f1e0]",
+        "evidence.json#functions[addr=0x140101690]",
+        "evidence.json#functions[addr=0x140105420]",
+        "verification.json"
+      ],
+      "Limitations": "This is lexical normal-path lifetime, conditional on normal synchronous return and successful worker shutdown; exceptions/foreign callbacks are not all closed."
+    },
+    {
+      "addr": "0x140105420",
+      "Domain": "native",
+      "Finding": "105420 enters579BF0 when platform pointer79CFA0 already exists, or after initialization when state8CC420 equals1. The managed call is conditionally skipped otherwise.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140105420]",
+        "evidence.json#functions[addr=0x140579bf0]",
+        "verification.json"
+      ],
+      "Limitations": "No guarantee of successful platform initialization or recovery from allocation/managed failures."
+    },
+    {
+      "addr": "0x140579bf0",
+      "Domain": "native",
+      "Finding": "The .nep wrapper jumps through CLR fixup747C60; original cell contains MethodDef060000BC, ManageRun, not a native function address. ManageRun calls BaseSimpleForm.createInstance and Application.Run(Form).",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140579bf0]",
+        "clr-evidence.json",
+        "managed-listings.txt",
+        "verification.json"
+      ],
+      "Limitations": "Static exact-image evidence; no live execution or universal thread-ownership claim."
+    },
+    {
+      "addr": "0x14011d070",
+      "Domain": "native",
+      "Finding": "Native MethodDef060001B2 maps to11D070. Assembly preserves incoming HWND inRDI and App inRBX, obtains the device singleton, forwards deviceRCX/HWNDRDX/AppR8 and tail-jumps11D0A0. The Hex-Rays no-argument prototype is incomplete.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14011d070]",
+        "evidence.json#functions[addr=0x14011d0a0]",
+        "clr-evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Static exact-image evidence; no live execution or universal thread-ownership claim."
+    },
+    {
+      "addr": "0x14011d0a0",
+      "Domain": "native",
+      "Finding": "Initialization stores App at device+1000 and HWND at+1008;11D341 starts127ED0 immediately via_beginthreadex and11D37E starts129110 suspended, then sets priority15 and resumes it. Both receive the device pointer. Existing handle fields are closed before replacement without a preceding join.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14011d0a0]",
+        "evidence.json#functions[addr=0x140127ed0]",
+        "evidence.json#functions[addr=0x140129110]",
+        "verification.json"
+      ],
+      "Limitations": "Repeated initialization reachability is not established; closing a prior handle is not a proof its worker ended. No explicit failure branch checks either new thread handle before following work."
+    },
+    {
+      "addr": "0x140127ed0",
+      "Domain": "native",
+      "Finding": "The App worker entry127ED0 calls121D90, then managed exit wrapper579BC0, then_endthreadex(0). This is a concrete OS-thread start registration, not an inference from names.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140127ed0]",
+        "evidence.json#functions[addr=0x14011d0a0]",
+        "evidence.json#functions[addr=0x140121d90]",
+        "evidence.json#functions[addr=0x140579bc0]",
+        "verification.json"
+      ],
+      "Limitations": "Static exact-image evidence; no live execution or universal thread-ownership claim."
+    },
+    {
+      "addr": "0x140121d90",
+      "Domain": "native",
+      "Finding": "121D90 invokes App slot+8 for initialization, slot+0x20 at121F06 for update and slot+0x28 for cleanup. Original MyApp table5B1190 binds them to14ED40,14EB70,14EB00. Update return0 repeats, return1 invokes slot+0x18 and optional widget callback then repeats; other returns invoke cleanup, whose nonzero result ends the outer loop.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140121d90]",
+        "evidence.json#functions[addr=0x14014ed40]",
+        "evidence.json#functions[addr=0x14014eb70]",
+        "evidence.json#functions[addr=0x14014eb00]",
+        "evidence.json#functions[addr=0x14014eff0]",
+        "verification.json"
+      ],
+      "Limitations": "Virtual calls remain conditional on intact runtime object/vtable binding. No thread-ID guard forbids other callers."
+    },
+    {
+      "addr": "0x140104e60",
+      "Domain": "native",
+      "Finding": "The pre-loop gate104E60 returns byte1 unconditionally in this image, so the known gate does not itself reject App-loop startup.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140104e60]",
+        "evidence.json#functions[addr=0x140121d90]",
+        "verification.json"
+      ],
+      "Limitations": "Static exact-image evidence; no live execution or universal thread-ownership claim."
+    },
+    {
+      "addr": "0x140102c40",
+      "Domain": "native",
+      "Finding": "Each121D90 update iteration calls102C40, which obtains one input object through12F6A0 and invokes its virtual slot+8 twice, with index0/output App+24 and index1/output App+92.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140102c40]",
+        "evidence.json#functions[addr=0x140121d90]",
+        "verification.json"
+      ],
+      "Limitations": "Input object callbacks are additional dynamic dependencies; this body does not prove their whole transitive effect set."
+    },
+    {
+      "addr": "0x14014eb70",
+      "Domain": "native",
+      "Finding": "App update dispatches root manager9BA888 through14FC20 at14ECD9 before checking signed App+4752. A nonnegative value returns2; otherwise this body returns0. Thus a posted exit flag does not imply the current update has already drained.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14014eb70]",
+        "evidence.json#functions[addr=0x140121d90]",
+        "../actor-task-context-20261008/evidence.json#functions[addr=0x14014FC20]",
+        "verification.json"
+      ],
+      "Limitations": "Static exact-image evidence; no live execution or universal thread-ownership claim."
+    },
+    {
+      "addr": "0x140129110",
+      "Domain": "native",
+      "Finding": "Timing worker entry129110 calls1287D0 then_endthreadex(0); it is separately registered from the App worker.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140129110]",
+        "evidence.json#functions[addr=0x14011d0a0]",
+        "evidence.json#functions[addr=0x1401287d0]",
+        "verification.json"
+      ],
+      "Limitations": "Static exact-image evidence; no live execution or universal thread-ownership claim."
+    },
+    {
+      "addr": "0x1401287d0",
+      "Domain": "native",
+      "Finding": "The timing/presentation loop continues while device+808 is0, conditionally signals semaphore+768 and invokes optional callback+728 at128C4D. Pause+776 can trigger a GPU-fence wait and a Sleep10 loop that still pumps SteamPlatformTick after the counter exceeds60.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401287d0]",
+        "verification.json"
+      ],
+      "Limitations": "Callback+728 and GPU virtual targets are not fully bound here. An infinite GPU-fence wait precedes the pause-loop stop check; pause is not universal actor quiescence."
+    },
+    {
+      "addr": "0x140127eb0",
+      "Domain": "native",
+      "Finding": "127EB0 obtains the device singleton and stores byte1 at+776. It contains no wait, acknowledgement, join or Actor-lifetime lock.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140127eb0]",
+        "verification.json"
+      ],
+      "Limitations": "Static exact-image evidence; no live execution or universal thread-ownership claim."
+    },
+    {
+      "addr": "0x140125a10",
+      "Domain": "native",
+      "Finding": "125A10 obtains the device singleton and stores byte0 at+776. It contains no wait, acknowledgement, join or Actor-lifetime lock.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140125a10]",
+        "verification.json"
+      ],
+      "Limitations": "Static exact-image evidence; no live execution or universal thread-ownership claim."
+    },
+    {
+      "addr": "0x140579bc0",
+      "Domain": "native",
+      "Finding": "Exit thunk579BC0 resolves through747C30 to MethodDef060000AA, which calls BaseSimpleForm.ExitApplication. That method conditionally uses Control.Invoke; the UI delegate sets appClosed and starts a Timer whose Tick closes the Form.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140579bc0]",
+        "clr-evidence.json",
+        "managed-listings.txt",
+        "verification.json"
+      ],
+      "Limitations": "The check of myFormClosed and the subsequent synchronous Invoke are separate operations; this does not prove every concurrent close schedule is free of blocking cycles."
+    },
+    {
+      "addr": "0x14011ad80",
+      "Domain": "native",
+      "Finding": "Native GX.exit sets App+4752=256, polls the App handle+784 with GetExitCodeThread/Sleep100 until it no longer reports259, closes/clears it, sets timing stop+808=1, similarly polls/closes/clears+792, and frees semaphore wrapper+768. It does not inspect GetExitCodeThread return values, set a timeout, or clear+768 after the free.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14011ad80]",
+        "verification.json"
+      ],
+      "Limitations": "Normal valid-handle/API-success conditions support waiting for these two workers only; they do not prove whole-process lifetime safety or behavior after API failure."
+    },
+    {
+      "addr": "0x14010eb40",
+      "Domain": "native",
+      "Finding": "Fallback WndProc10EB40 handles WM_DESTROY by input exit, App exit request, sequential polling/closing of the two worker handles, semaphore free and PostQuitMessage. WM_SIZE minimization sets pause+776; restored/maximized cases clear it and call124970.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14010eb40]",
+        "evidence.json#functions[addr=0x14011d0a0]",
+        "verification.json"
+      ],
+      "Limitations": "The managed OnShown path supplies a HWND; fallback window creation is conditional on a null input HWND and its failure path continues with null."
+    },
+    {
+      "addr": "0x1401042e0",
+      "Domain": "native",
+      "Finding": "Native message helper1042E0 pauses sound/device, synchronously sends WM_APP+1 with an output pointer, waits while the result is-1, then resumes. Message IDs1/6 may request managed exit;5/7 can set App+4752=256. Its preliminary process scan contains an exact WaitTitleProject.exe termination branch.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401042e0]",
+        "evidence.json#functions[addr=0x140127eb0]",
+        "evidence.json#functions[addr=0x140125a10]",
+        "evidence.json#functions[addr=0x140579bc0]",
+        "clr-evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Only static reachability in this helper is established. No message, process query/termination or game action was executed; no claim that this branch ran on this installation."
+    },
+    {
+      "addr": "0x14038c970",
+      "Domain": "native",
+      "Finding": "MethodDef IsReBoot maps to38C970; the native predicate is precisely signed dword(App+4760)>=0. OnFormClosing uses it to cancel a user-close request before its confirmation branch.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14038c970]",
+        "clr-evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Static exact-image evidence; no live execution or universal thread-ownership claim."
+    }
+  ]
+}

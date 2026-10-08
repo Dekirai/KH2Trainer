@@ -1,0 +1,149 @@
+KH2 MemoryAllocator: Aufbau, Wiederverwendung und Fehlergrenzen
+Stand: 2026-10-08
+
+Ergebnis
+Die zwölf untersuchten Allocator-Funktionen und zwei Destruktor-Helfer sind
+als vollständige ASM-/Pseudocode-Körper erfasst. 1.356 Körperbytes, 359
+Instruktionen und 316 Vtable-/Unwind-Bytes stimmen mit der festgelegten
+Retail-EXE überein. Die eingehenden Referenzen umfassen 57 Codekanten,
+18 Datenreferenzen und eine .pdata-Endgrenze; die Endgrenze ist kein Caller.
+Die isolierte Probe führt alle 14 Körper unverändert in einem eigenen
+Prozess aus. Abhängigkeiten und Objektumgebung sind ausdrücklich ersetzt.
+Das konkrete Prüfergebnis steht in probe.log und report.json.
+
+Region und Blockformat
+19C3A0 richtet den Anfang einer übergebenen Region auf 16 Byte auf. Das Ende
+bleibt Eingabeadresse plus Größe. Der Allocator belegt die ersten 128 Byte;
+die verkettete Sentinel-Struktur liegt bei +96. Die Region wird nur akzeptiert,
+wenn ihr Ende größer als ausgerichteter Anfang plus 176 ist. Deshalb kann
+eine 177-Byte-Region akzeptiert werden, obwohl sie keinen gewöhnlichen
+Minimalblock aufnehmen kann: nutzbar sind 49 Byte, benötigt werden 64.
+
+Allocator-Felder relativ zum ausgerichteten Anfang:
+  +0   primäre Vtable 5B2BB0
+  +8   sekundäre Vtable 5B2BE8 / eingebetteter CThread-Teil
+  +16  vom CThread-Destruktor freigegebener Handle
+  +32  weiterer CThread-Handle, vor +16 geschlossen
+  +56  DWORD, vom Konstruktor und bei +16-Freigabe auf null gesetzt
+  +64  Anfang der Blockregion
+  +72  Ende der übergebenen Region
+  +80  belegte Bytezahl einschließlich Block-Overhead
+  +88  zuletzt verwendeter Vorgänger für die nächste Suche
+  +96  32-Byte-Sentinel-Header
+
+19C2B0 rundet eine Anfrage auf 16 Byte auf und addiert 48 Byte. Jeder
+Block hat einen 32-Byte-Header und zwei acht Byte große Trailerwerte:
+  Header +0: nächster Header oder Regionsende
+  Header +8: vorheriger Header
+  Header +16: DWORD-Gesamtgröße des Blocks
+  Header +24: Allocator-Adresse
+  Payload: Header +32
+  Payload + gerundete Größe: DEADBEEFDEADBEEF
+  Danach: 0123456787654321
+Die vier Bytes bei Header+20 werden hier nicht initialisiert. Diese Studie
+weist ihnen keine Bedeutung zu.
+
+Die Suche bevorzugt eine passende Lücke direkt nach dem zuletzt verwendeten
+Block. Passt sie nicht, folgt eine First-Fit-Suche ab Sentinel. Die Lückengröße
+wird durch DWORD-Subtraktion berechnet. Gesamtgröße und belegte Bytezahl sind
+damit keine Aussage über die größte zusammenhängende freie Lücke.
+19C510 liefert Ende minus Blockanfang, 19C520 die belegte Bytezahl.
+Beide Getter besitzen keine eigene Synchronisierung.
+
+Freigabe und Identität
+19C470 wartet über 0FDD90 auf den globalen Semaphore-Wrapper AC0FD8,
+entfernt den Block aus der Liste, passt die belegte Bytezahl und bei Bedarf
+den zuletzt verwendeten Vorgänger an. Der Block wird in DWORD-Schritten mit
+EFACCAFE gefüllt; danach wird Header+8 auf null gesetzt. Auch eine NULL-
+Freigabe wartet und gibt den Semaphore wieder frei.
+Der vorher aufgerufene 3A08F0 erhält Blockanfang und -ende. Die separate
+actor-free-closure-20261008-Studie zeigt, dass sein aktueller Körper diese
+Grenzen ignoriert und nur eine globale Packedpointer-Liste durchläuft.
+In der Probe ist dieser Aufruf ausschließlich ein Argumentrekorder.
+
+Die freigegebene Adresse kann unmittelbar dieselbe nächste Allokation
+bezeichnen. Ein Generationenzähler wird in diesen Allocator-Pfaden nicht
+geführt. Ein späterer Trainerzugriff benötigt deshalb eine gesonderte,
+vollständig erfasste Objektlebensdauer. Pointergleichheit und Speicher-
+Lesbarkeit sind dafür allein nicht ausreichend.
+
+19C230 enthält nahezu dieselbe Entfernung und Füllung ohne die Semaphore-
+Aufrufe. Seine erfassten eingehenden Referenzen sind ausschließlich
+.pdata-/Unwind-Daten. Die CHAININFO-Einträge beschreiben Teile seines eigenen
+Funktionskörpers; sie beweisen keinen finally-Handler. Für 19C470 sind keine
+lokalen EH-/UH-Handlerflags vorhanden. Eine automatisch garantierte
+Semaphore-Freigabe bei Ausnahmen ist damit nicht belegt.
+
+Reset und Destruktoren
+19C530 stellt Sentinel und Startzustand wieder her. Dabei erfolgen kein
+Block-Free, kein EFACCAFE-Füllen und kein Semaphore-Aufruf. Alte Adressen
+sind anschließend wieder verfügbar. Es wurden keine direkten Caller dieses
+Reset-Bodys gefunden; tatsächliche Nutzung im unveränderten Spiel ist offen.
+19C6E0 setzt ausschließlich +88 auf null und erzwingt damit bei der nächsten
+Allokation den Suchstart ab Sentinel. Er wird über die primäre Vtable erreicht.
+
+19C050 ist der nicht löschende Destruktor. 19C0C0 führt dieselbe Bereinigung
+aus und ruft bei Flagbit0 zusätzlich j_j_free(this). 19C0AC korrigiert einen
+sekundären this-Zeiger um minus acht und springt zu 19C0C0. Alle setzen
+Vtables zurück, zerstören einen vorhandenen globalen Semaphore-Wrapper und
+setzen AC0FD8 auf null. Danach bereinigt 0FD950 den eingebetteten CThread.
+0FDA70 ruft CloseHandle(wrapper+8) und j_j_free(wrapper); bei NULL wrapper
+geschieht nichts. 0FD950 schließt seine nichtnulligen Handle-Felder +24 und
++8, setzt sie auf null und setzt bei letzterem zusätzlich DWORD+48 auf null.
+Die IAT-Identität CloseHandle wurde unabhängig aus dem PE-Importverzeichnis
+für alle drei indirekten Aufrufe bestätigt.
+
+Mehrere Allocator-Instanzen verwenden denselben globalen Wrapper. In diesen
+Körpern gibt es keinen Instanz-Referenzzähler; die Zerstörung einer Instanz
+entfernt ihn auch für andere. Die Probe bestätigt das unter künstlich
+überlappenden Lebensdauern. Das beweist keinen erreichbaren Retail-Fehler;
+die übergeordnete native Lebensdauerverwaltung kann diese Reihenfolge meiden.
+
+19C560 zerstört zunächst den bisherigen globalen Allocator AC0FD0 über
+Vtable-Slot0 mit Flag1. Dann initialisiert er die übergebene Region nach
+demselben Schema und veröffentlicht sie, oder veröffentlicht null bei zu
+kleiner Region. Die alte Instanz ist im Fehlerfall bereits zerstört.
+Die untersuchten Caller-Referenzen beweisen hier keine Live-Nutzung.
+
+Native Fehlerannahmen
+- Allocate und Free prüfen das Ergebnis von 0FDD90 nicht. Die Probe setzt
+  den Rückgabewert auf WAIT_FAILED; beide Körper arbeiten trotzdem weiter.
+  Dabei wird kein echter Windows-Wartefehler ausgelöst.
+- Gibt der ersetzte Semaphore-Konstruktor null zurück, stellt 19C3A0 trotzdem
+  den Allocator fertig. Die Probe erlaubt anschließende Nullargumente nur in
+  den Rekorder-Stubs. Der echte Helfer hat weitere Zeiger-Voraussetzungen.
+- Die Größenarithmetik hat keine Überlaufprüfung. UINT64_MAX rundet durch
+  Überlauf auf null Nutzbytes und ergibt einen 48-Byte-Block mit Trailer direkt
+  an der zurückgegebenen Adresse. Dies wurde nur im eigenen Prozess geprüft.
+  Es gibt hier keinen Beleg für eine tatsächlich so große Retail-Anfrage.
+- Free validiert hier weder Besitzer noch Listenintegrität oder Trailer.
+  Gültige, noch belegte Blöcke bleiben Voraussetzung. Absichtliche ungültige
+  Freigaben wurden nicht ausgeführt.
+
+Probe und Reproduktion
+  py -3 -B docs/research/allocator-blocks-20261008/verify.py
+  & docs/research/allocator-blocks-20261008/run-probe.ps1
+
+Die Probe erzeugt eine private 12-MiB-Abbildung mit denselben RVAs. Alle
+14 Körper bleiben bytegleich. Die Daten-Vtable wird auf die private Abbildung
+relokiert. Folgende Ziele sind 14-Byte-Sprungstubs in lokale Rekorder:
+0FD9C0, 0FDD90, 0FDC90, 3A08F0, 4390A0. Die importierte CloseHandle-Adresse
+zeigt auf einen Rekorder. Die beiden echten Destruktor-Helferkörper werden
+dagegen ausgeführt. Code-Seiten sind nach Einrichtung RX; Daten bleiben RW.
+Kein KH2-Prozess, echter Engine-Callback, Datei-/Savezugriff oder echter
+Semaphore ist beteiligt. Dynamische Unwind-Metadaten werden nicht registriert;
+es werden nur normale Pfade ohne ausgelöste Ausnahme geprüft.
+
+Neben gezielten Grenzfällen läuft eine deterministische Folge von 1.200
+Allokationen/Freigaben. Unabhängige belegte Intervalle prüfen Links, Besitzer,
+Größen, Trailer, unveränderte überlebende Payloads, Nichtüberlappung und
+Bytebilanz nach jedem Schritt. Der Test untersucht keine Threadinterleavings.
+
+Nutzen für das Programm
+Die Erkenntnisse ermöglichen präzise Anzeige von Speicherverbrauch,
+Fragmentierung und beschädigten Blöcken, sobald ein konsistenter, gültiger
+Allocator-Snapshot gesichert werden kann. Sie verbessern außerdem die
+Identitätsprüfung für späteres Spawning, Formwechsel und temporäre Effekte.
+Die erforderliche übergreifende Lebensdauer-/Thread-Grenze bleibt offen;
+deshalb wird mit diesem Bericht kein Live-Heap-Editor in v0.12.9 aktiviert.
+Implementiert ist das reproduzierbare isolierte Analyse-/Prüfwerkzeug.

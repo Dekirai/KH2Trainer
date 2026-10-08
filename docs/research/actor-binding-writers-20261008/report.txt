@@ -1,0 +1,48 @@
+Actor/STATUS binding writers, 2026-10-08 — bounded static evidence
+
+Decision: the five STATUS entry observers do not cover outer Actor/STATUS
+rebinding. The new STATUS components should stay uninstalled until a separate
+binding/lifetime admission proof exists.
+
+Concrete findings
+1. 4112B0 releases the old STATUS, obtains another through 3C06B0, writes
+   Actor+5C0 at 4112D7 and encoded Actor into STATUS+268 at 4112EE.
+   A 3C06B0 cache hit only increments refcount (+264) at 3C07CA and returns;
+   it does not call Init/Rebuild. The earlier Release observer already ended.
+2. 411350 similarly releases, allocates via 3C0280 and writes the binding at
+   411377/41138E after observed initialization returns. Script thunks 431AA0
+   and 431A70 reach these two routines. Their thread provenance remains open.
+3. 3A7A40 publishes CurrentPlayer before storing Actor+5C0/STATUS+268.
+   3C2DB0 has another paired construction store at 3C2E56/3C2E6D.
+4. 3A80E0 parks CurrentPlayer in global 2A11268 and clears the current global.
+   3A8140 restores it and clears the parking slot. OffCurrent is not retirement.
+5. 3BB2D0 writes +5C0 on WINDOW_BASE. 3BC990/3BCA40 store WINDOW_BALLOON
+   pointers at receiver+5C0; those receiver roles remain unclosed. Matching an
+   offset is not enough to call a store an Actor/STATUS mutation.
+
+Evidence and verification
+19 complete function bodies, 1,281 instructions and 6,368 original PE bytes.
+All full-body ASM/decompile pages are complete; verifier checks retail SHA,
+exact bytes and instruction boundaries. Fresh verifier PASS.
+
+88 contiguous search_text chunks traverse .text and .nep, returning 732 raw
+text hits. Every returned cursor is done, but this is not a complete semantic
+writer exclusion: the renderer omits some instruction lines behind labels or
+comments. Four missing CurrentPlayer xrefs were recovered independently and
+are loads. All 186 recorded direct CurrentPlayer xrefs decode from original PE;
+their five direct stores are 3A7133/3A7AF4/3A8132/3A8163/3A8F43.
+
+The operand-query known-answer probe also failed for real displaced-memory
+stores. It is documented, not used as negative evidence. Twelve bytepattern
+queries and 508 bounded instruction windows supplement the text scan. Arbitrary
+window-start rows are discarded because insn_query can render a containing
+instruction at a non-head address. All query cursors and raw results are saved.
+
+Next work: outer rebind synchronization and thread provenance; parked Actor
+lifetime; base-register/object-role checks for the saved unclassified candidates
+(notably 088C5A,11E4F8,2CDA3A,385964,3BCA13,3BCAFE); computed and bulk aliases.
+No whole-program writer closure, live validation, Journal admission or Actor
+retirement proof is claimed. No game/UI use, IDB mutation/closure or product edit.
+
+Reproduce: py -3 -B docs/research/actor-binding-writers-20261008/verify.py
+See report.json, evidence.json, verification.json and saved search artifacts.

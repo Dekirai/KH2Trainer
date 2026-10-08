@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "reviewer": "status_fields_v2",
+  "status": "ACCEPTED_BOUNDED_STATIC_RESEARCH",
+  "study": "docs/research/bdx-bank3-calls-20261008",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "sourceHashes": {
+    "manifest.json": "79497af2e6f95f98a3a6b03cc39480e8aa9c11497f5674489ca284d6b237bed4",
+    "annotations.json": "19fc360324e17a67f74d28587cfcf173dd80ed279721297ff75a0f91f0354ed7",
+    "report.json": "0a479cdb7bf7944536da5742762e09cb07734bcc1c24b393a4d499584c51fe06",
+    "claims.json": "3c11549ee74ab5c0867fd0d754560a10e63d16a273a1216939fab7312170031f",
+    "evidence.json": "ec9efbbcdf9e66af6c82a1efc1d999c1641970b26dcabeaef0e77e6581edfd5a",
+    "verify.py": "d62733fbaca841c17def70d436fa6789f7f9f769ae5d24b48d14caf3d1dacd8c"
+  },
+  "independentChecks": {
+    "success": true,
+    "checks": 16246,
+    "fullBodies": 331,
+    "instructions": 7502,
+    "bodyBytes": 30521,
+    "descriptors": 179,
+    "annotations": 30,
+    "sourceHashes": {
+      "manifest.json": "79497af2e6f95f98a3a6b03cc39480e8aa9c11497f5674489ca284d6b237bed4",
+      "annotations.json": "19fc360324e17a67f74d28587cfcf173dd80ed279721297ff75a0f91f0354ed7",
+      "report.json": "0a479cdb7bf7944536da5742762e09cb07734bcc1c24b393a4d499584c51fe06",
+      "claims.json": "3c11549ee74ab5c0867fd0d754560a10e63d16a273a1216939fab7312170031f",
+      "evidence.json": "ec9efbbcdf9e66af6c82a1efc1d999c1641970b26dcabeaef0e77e6581edfd5a",
+      "verify.py": "d62733fbaca841c17def70d436fa6789f7f9f769ae5d24b48d14caf3d1dacd8c"
+    },
+    "scope": "Independent original PE and instruction decoding, descriptor metadata, positive evidence targets, selected ABI/coordinate/retirement anchors. No original execution or global lifetime safety claim."
+  },
+  "producerVerifier": {
+    "success": true,
+    "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+    "functions": 331,
+    "adapterFunctions": 179,
+    "helperFunctions": 152,
+    "instructions": 7502,
+    "primaryByteSpanTotal": 30521,
+    "listedInstructionByteTotal": 30521,
+    "spans": 97,
+    "descriptors": 179,
+    "annotations": 30,
+    "claims": 41,
+    "semanticAnchors": 67,
+    "rttiTypes": 3,
+    "verifiedXrefs": 78,
+    "referencedImportSites": 3,
+    "decompilerFailures": [
+      {
+        "addr": "0x1401e2110",
+        "error": "Decompilation failed at 0x1401e2110 (address: 0x1401e2176)"
+      }
+    ],
+    "gameExecuted": false
+  },
+  "reproduction": [
+    "py -3 -B artifacts/review-bdx-bank3-calls-20261008.py",
+    "py -3 -B docs/research/bdx-bank3-calls-20261008/verify.py --check"
+  ],
+  "reviewProgramSha256": "af7d53dfd6fbfab9cd367a0ba9a0ef2b5c5e2761ec02697025766280847c6ae2",
+  "findings": [],
+  "resolvedPrecisions": [
+    {
+      "area": "3:60..65 aliasing",
+      "resolution": "Input preservation now requires a distinct, nonoverlapping source. Setters operate on the destination copy; W writes/conversion can affect an aliased source."
+    },
+    {
+      "area": "3:1 zero-length normalization",
+      "resolution": "The annotation now states the explicit zero-length division skip, rather than saying zero inputs are unhandled. No arrival/overshoot or input-validity policy is inferred."
+    },
+    {
+      "area": "3:2 virtual removal",
+      "resolution": "No inline free is explicitly tied to the captured OBJ/ENEMY implementations; arbitrary descriptor overrides remain an open boundary."
+    }
+  ],
+  "reviewedConclusions": [
+    {
+      "area": "FLOAT ABI",
+      "result": "3:1 and3:18 preserve caller speed across helper calls, return it in XMM0 and store @FLT (544C4640) in the adapter return slot. This follows original instructions, not the incomplete inferred helper return type."
+    },
+    {
+      "area": "Object removal and retirement",
+      "result": "Virtual+40 reaches detach plus508bit1 in the captured OBJ/ENEMY classes.1E4AE0 destroys the old retirement list before moving newly marked active objects; cleanup1E4C90 calls it twice. The report retains reentry/override limits and does not claim arbitrary ADR validity from3:22."
+    },
+    {
+      "area": "Scheduler and teardown",
+      "result": "Object and collector task registrations and local signed-priority insertion are supported. Bank3 removal precedes VM retirement but follows other resource cleanup in the captured mode teardown. VM destruction can execute an exit event. The report avoids an OS-thread, universal pause, generation lease or safe hook conclusion."
+    },
+    {
+      "area": "Coordinates and stored movement",
+      "result": "Storage bit2, current scroll matrix and rigid inverse are traced. Mode changes transform movement as a point with W temporarily1 and restore speed afterward. Setters use W1 for position/W0 for orientation; getters share72FE50. Movement is a per-update normalized positive-speed step, with no added dt at that step and no retained target/arrival test."
+    },
+    {
+      "area": "Resource/creation limits",
+      "result": "Original descriptor/RTTI data corroborate the gb subsystem.3:0 row lookup, unchecked missing row and ENEMY allocation-failure dereference are retained as conditional unsafe paths, with no retail trigger or arbitrary-ID safety claim."
+    },
+    {
+      "area": "Other selected annotations",
+      "result": "Finite-component multiply-by-zero, alpha rate/shrink effects, scale, current-vs-previous displacement, RET0 adapter, child ordinal and borrowed parent agree with the selected bodies. Exceptions, arbitrary pointer lifetime and full subsystem semantics remain bounded."
+    }
+  ],
+  "limits": [
+    "Review does not certify all179 Bank3 call semantics; thirty annotations are the semantic scope.",
+    "No original instructions, BDX scripts, live game, injection, GUI or save operations were executed.",
+    "One captured helper1E2110 has complete ASM but decompilation failure; this limitation is disclosed. Four paginated pseudocode captures with tool-level truncated flags have exact complete untruncated corroboration.",
+    "Byte equality and local control-flow reasoning do not establish runtime ownership, absence of reentrancy or a global drain boundary."
+  ]
+}

@@ -1,0 +1,277 @@
+{
+  "schema": 1,
+  "status": "frozen_bounded_static_evidence",
+  "date": "2026-10-08",
+  "domain": "native",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "imageBase": "0x140000000",
+  "claims": [
+    {
+      "addr": "0x1404112b0",
+      "Finding": "RCX is the Actor pointer and EDX is the 32-bit parameter ID. The root preserves its own frame through Release and shared lookup. After lookup returns it always assigns the result to Actor+0x5c0; it writes the encoded Actor to STATUS+0x268 only when that result is nonnull, then RETs. The sole recorded direct code caller is the tail at 431AC2; its other direct xref is pdata. Both branches stay within the root entry/normal-return observation interval.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404112b0]",
+        "evidence.json#functions[addr=0x140431aa0]",
+        "evidence.json#functions[addr=0x1403c06b0]",
+        "dispatch-contract.json"
+      ],
+      "Limitations": "Specific static finding for the pinned retail PE. No shipped Event27 bytecode witness, complete indirect/alias census, live exclusion, or full semantic review."
+    },
+    {
+      "addr": "0x140411350",
+      "Finding": "RCX is the Actor pointer and EDX is the 32-bit parameter ID. The root preserves its frame through Release and new allocation/initialization. After acquisition returns it always assigns the result to Actor+0x5c0; it writes the encoded Actor to STATUS+0x268 only when that result is nonnull, then RETs. The sole recorded direct code caller is the tail at 431A92; its other direct xref is pdata.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140411350]",
+        "evidence.json#functions[addr=0x140431a70]",
+        "evidence.json#functions[addr=0x1403c0280]",
+        "dispatch-contract.json"
+      ],
+      "Limitations": "Specific static finding for the pinned retail PE. No shipped Event27 bytecode witness, complete indirect/alias census, live exclusion, or full semantic review."
+    },
+    {
+      "addr": "0x140431aa0",
+      "Finding": "Registered once as the exact qword callback in bank2 index95 at757150, with argument count2 and no0x40000000 return-slot flag. RCX points to tagged 8-byte operands: it decodes operand0.low32 to p, decodes *(uint32_t*)(p+4) to Actor, puts operand1.low32 in EDX and tail-jumps4112B0. No tag or null validation precedes those dereferences.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140431aa0]",
+        "evidence.json#functions[addr=0x1404112b0]",
+        "evidence.json#functions[addr=0x14041b400]",
+        "dispatch-contract.json"
+      ],
+      "Limitations": "Specific static finding for the pinned retail PE. No shipped Event27 bytecode witness, complete indirect/alias census, live exclusion, or full semantic review."
+    },
+    {
+      "addr": "0x140431a70",
+      "Finding": "Registered once as the exact qword callback in bank2 index9 at756BF0, with argument count3 and no0x40000000 return-slot flag. Its native body reads only operand0.low32 and operand1.low32; the interpreter still pops all three registered operands. It decodes operand0 to p, decodes p+4 to Actor and tail-jumps411350 without tag/null validation.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140431a70]",
+        "evidence.json#functions[addr=0x140411350]",
+        "evidence.json#functions[addr=0x14041b400]",
+        "dispatch-contract.json"
+      ],
+      "Limitations": "Specific static finding for the pinned retail PE. No shipped Event27 bytecode witness, complete indirect/alias census, live exclusion, or full semantic review."
+    },
+    {
+      "addr": "0x14041b400",
+      "Finding": "Trap opcode group0xA selects bank=opcode>>6 and the next unsigned WORD as descriptor index. It pops low16(descriptor+8) tagged 8-byte values into its local vector in original argument order and synchronously calls descriptor[0] with RCX=vector. Flag0x40000000 pushes vector[0] after return; RAX is not used for that result. Both rebind descriptors clear the flag. The trap branch has no visible bank/index/count/operand-underflow checks before its reads and call.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041b400]",
+        "evidence.json#functions[addr=0x140431aa0]",
+        "evidence.json#functions[addr=0x140431a70]",
+        "dispatch-contract.json"
+      ],
+      "Limitations": "Specific static finding for the pinned retail PE. No shipped Event27 bytecode witness, complete indirect/alias census, live exclusion, or full semantic review."
+    },
+    {
+      "addr": "0x14041b400",
+      "Finding": "Control opcodes in group9 set native return statuses1/2; group9 subcase2 restores the VM PC/frame and sets status3 when its return PC is zero. Unknown opcode cases select status5. These routes converge on ordinary native RET, unlike an OS fiber switch. The optional per-opcode callback runs after the opcode; both captured retail callers pass it as null.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041b400]",
+        "evidence.json#functions[addr=0x1403e1c80]",
+        "evidence.json#functions[addr=0x1403e1410]",
+        "dispatch-contract.json"
+      ],
+      "Limitations": "Specific static finding for the pinned retail PE. No shipped Event27 bytecode witness, complete indirect/alias census, live exclusion, or full semantic review. Other native traps and full VM exception closure are outside this rebind-specific normal closure."
+    },
+    {
+      "addr": "0x1403e1720",
+      "Finding": "Stores the supplied RDX table pointer at TrapRoot753490+8*ECX. The routine does not visibly bound the bank index. Its complete recorded direct caller set contains26ACC0 and26ACE0, both selecting bank9.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1720]",
+        "evidence.json#functions[addr=0x14026acc0]",
+        "evidence.json#functions[addr=0x14026ace0]",
+        "dispatch-contract.json"
+      ],
+      "Limitations": "Specific static finding for the pinned retail PE. No shipped Event27 bytecode witness, complete indirect/alias census, live exclusion, or full semantic review."
+    },
+    {
+      "addr": "0x14026acc0",
+      "Finding": "Calls the trap-bank setter with ECX=9,RDX=0 and then tail-jumps3E1620; this observed registration change does not target rebind bank2.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14026acc0]",
+        "evidence.json#functions[addr=0x1403e1720]",
+        "dispatch-contract.json"
+      ],
+      "Limitations": "Specific static finding for the pinned retail PE. No shipped Event27 bytecode witness, complete indirect/alias census, live exclusion, or full semantic review."
+    },
+    {
+      "addr": "0x14026ace0",
+      "Finding": "After3E16B0, tail-jumps the trap-bank setter with ECX=9,RDX=&73D080. This observed registration change does not target bank2.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14026ace0]",
+        "evidence.json#functions[addr=0x1403e1720]",
+        "dispatch-contract.json"
+      ],
+      "Limitations": "Specific static finding for the pinned retail PE. No shipped Event27 bytecode witness, complete indirect/alias census, live exclusion, or full semantic review."
+    },
+    {
+      "addr": "0x1403e1410",
+      "Finding": "If context+64 contains a nonzero finalizer PC, prepares it with zero event arguments and calls41B400 synchronously with TrapRoot753490 and null tracing callback before VM cleanup. Thus the same native trap table is reachable through cleanup execution as well as UpdateTree; actual finalizer bytecode selecting rebind is not established.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1410]",
+        "evidence.json#functions[addr=0x14041b400]",
+        "evidence.json#functions[addr=0x14041b320]",
+        "dispatch-contract.json"
+      ],
+      "Limitations": "Specific static finding for the pinned retail PE. No shipped Event27 bytecode witness, complete indirect/alias census, live exclusion, or full semantic review."
+    },
+    {
+      "addr": "0x1403e1c80",
+      "Finding": "Passes the shared TrapRoot753490 to41B400 with R8=0 and R9=0. No Event27-specific native trap filter is present at this callsite. This supports conditional interpreter-level reachability of the registered rebind operations, not proof that a retail motion event uses them.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1c80]",
+        "evidence.json#functions[addr=0x14041b400]",
+        "dispatch-contract.json"
+      ],
+      "Limitations": "Specific static finding for the pinned retail PE. No shipped Event27 bytecode witness, complete indirect/alias census, live exclusion, or full semantic review."
+    },
+    {
+      "addr": "0x1403b5e80",
+      "Finding": "Motion-event delivery passes event27 with three tagged operands: directly encoded Actor, integer event ID and encoded event-record pointer. The rebind adapters require a first operand decoding to a structure whose+4 encodes Actor; therefore the raw event Actor argument is not itself a proven valid rebind operand.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b5e80]",
+        "evidence.json#functions[addr=0x1403e1840]",
+        "evidence.json#functions[addr=0x140431aa0]",
+        "evidence.json#functions[addr=0x140431a70]",
+        "dispatch-contract.json"
+      ],
+      "Limitations": "Specific static finding for the pinned retail PE. No shipped Event27 bytecode witness, complete indirect/alias census, live exclusion, or full semantic review."
+    },
+    {
+      "addr": "0x1403ebf30",
+      "Finding": "Looks up the ID in 92-byte enmp rows with fixed comparator 3EBF20. At 3EBF44, MOVSXD RCX,ECX constructs the key by sign-extending the ID; ID0 therefore passes a null key to bsearch at 3EBF5A. Only if that call returns null does the body retry ID0x45. The second result is returned without a success check; valid resources and a fallback row remain required.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ebf30]",
+        "evidence.json#functions[addr=0x1403ebf20]",
+        "evidence.json#functions[addr=0x1403c0280]",
+        "evidence.json#functions[addr=0x1403c06b0]",
+        "dispatch-contract.json"
+      ],
+      "Limitations": "Specific static finding for the pinned retail PE. No shipped Event27 bytecode witness, complete indirect/alias census, live exclusion, or full semantic review. The normal closure requires a nonzero bsearch key and all other CRT parameter preconditions. A null key may invoke the external invalid-parameter handler, whose behavior and return are unclosed; ID0 is not merely an ordinary missing-ID fallback case."
+    },
+    {
+      "addr": "0x1403ebf20",
+      "Finding": "The bsearch comparator reads a WORD from the row, subtracts it from ECX and returns. It has no native call or tail transfer.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ebf20]",
+        "dispatch-contract.json"
+      ],
+      "Limitations": "Specific static finding for the pinned retail PE. No shipped Event27 bytecode witness, complete indirect/alias census, live exclusion, or full semantic review."
+    },
+    {
+      "addr": "0x1403c2240",
+      "Finding": "Enemy STATUS initialization chooses a scaling row through3EE8A0 or3EE8C0 and writes the six coefficient bytes+0x1a8..+0x1ad plus General+0x1ae, then encodes the enmp resource at+0x270. Its ordinary callees are captured; the writes occur within the outer4112B0/411350 interval on allocation paths.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c2240]",
+        "evidence.json#functions[addr=0x1403ee8a0]",
+        "evidence.json#functions[addr=0x1403ee8c0]",
+        "evidence.json#functions[addr=0x1404ad240]",
+        "evidence.json#functions[addr=0x1404112b0]",
+        "evidence.json#functions[addr=0x140411350]",
+        "dispatch-contract.json"
+      ],
+      "Limitations": "Specific static finding for the pinned retail PE. No shipped Event27 bytecode witness, complete indirect/alias census, live exclusion, or full semantic review."
+    },
+    {
+      "addr": "0x1403ee8a0",
+      "Finding": "Returns global2AE5978+12*(ECX-1) without a visible count check. The captured enemy initializer calls it only when its unsigned WORD selector is nonzero.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ee8a0]",
+        "evidence.json#functions[addr=0x1403c2240]",
+        "dispatch-contract.json"
+      ],
+      "Limitations": "Specific static finding for the pinned retail PE. No shipped Event27 bytecode witness, complete indirect/alias census, live exclusion, or full semantic review."
+    },
+    {
+      "addr": "0x1403ee8c0",
+      "Finding": "Returns the default scaling pointer from global2AE5980 with no calls; this is the zero-selector branch used by enemy STATUS initialization.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ee8c0]",
+        "evidence.json#functions[addr=0x1403c2240]",
+        "dispatch-contract.json"
+      ],
+      "Limitations": "Specific static finding for the pinned retail PE. No shipped Event27 bytecode witness, complete indirect/alias census, live exclusion, or full semantic review."
+    },
+    {
+      "addr": "0x1404ad390",
+      "Finding": "The nonnull pointer encoder scans up to64 region entries, writes the high-address region into a first empty entry, and returns marker/index/low-address bits. This body has no native calls or tails; its caller still performs CRT lazy initialization first.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404ad390]",
+        "evidence.json#functions[addr=0x1404ad240]",
+        "evidence.json#functions[addr=0x1404ad2c0]",
+        "dispatch-contract.json"
+      ],
+      "Limitations": "Specific static finding for the pinned retail PE. No shipped Event27 bytecode witness, complete indirect/alias census, live exclusion, or full semantic review."
+    }
+  ],
+  "decision": "A process-wide observer at both outer native rebind entries can enclose their existing native mutation intervals. Observing only BDX Event27, a thunk registration or the five inner STATUS calls cannot provide that boundary. This research installs no hook and grants no Journal/transaction admission.",
+  "abi": {
+    "roots": "RCX=Actor*, EDX=uint32 parameter ID; preserved RBX/RDI; one ordinary RET per root, no outer tail exit. After acquisition returns Actor+0x5c0 always receives its result; STATUS+0x268 receives the encoded Actor only for a nonnull result. Return RAX is incidental and unused by the recorded script route; do not invent a stable semantic return value.",
+    "adapters": "RCX points to a local tagged8-byte vector. operand0.low32 -> DecodeNullable -> p; *(uint32*)(p+4) -> DecodeNullable -> Actor. operand1.low32 -> EDX. Restore adapter stack then tail jump.",
+    "descriptors": "bank2 root753490+0x10 ->756B60. Index9 argc3 ->431A70 ->411350. Index95 argc2 ->431AA0 ->4112B0. Both return-slot bits clear. Canonical trap words are008A 0009 and008A 005F; these are static decode examples, not a shipped-script witness."
+  },
+  "provenance": {
+    "workerPath": "3BEEC0 ->12FDB0/130030 ->3BF4E0 ->3BFAB0 ->3C6AA0 ->3B5E80 ->3E1840 ->3E1C80 ->41B400",
+    "conditions": [
+      "Actor uses the batched motion branch rather than the earlier synchronous branch.",
+      "A newly present flagged motion event is delivered and its BDX context contains event27.",
+      "Executed bytecode selects bank2,index9 or95 and builds the required valid operand vector. The third condition has no retail asset witness in this set."
+    ],
+    "otherRoutes": "41B400 has direct calls from3E1C80 and3E1410. Its rdata xref6EF8B0 is chained unwind metadata, not another callback registration. Both rebind roots have exactly one recorded direct code caller (their adapters); exact8-byte PE searches find each adapter in one descriptor and no direct root pointer constants. This does not exclude computed or encoded aliases."
+  },
+  "normalClosure": {
+    "bodies": 24,
+    "scope": "Both roots and adapters, all normal direct/tail descendants plus the fixed3EBF20 bsearch callback. All original bodies/bytes are included.",
+    "external": [
+      "bsearch with fixed 3EBF20 comparator, nonzero key, valid table/count and all other CRT parameter preconditions",
+      "Enter/LeaveCriticalSection",
+      "SetEvent/ResetEvent",
+      "WaitForSingleObjectEx with alertable=false",
+      "Decoded SleepConditionVariableCS/WakeAllConditionVariable via CRT guard dispatch"
+    ],
+    "result": "No ordinary engine SwitchToFiber/yield or longjmp transfer appears in this bounded closure under the named external API contracts, including a nonzero bsearch key and valid parameters. Native waits can be unbounded. Entry from a fiber remains possible; no ordinary yield is found while a rebind frame is open under those preconditions.",
+    "limits": "ID0 becomes a null bsearch key and may enter the external invalid-parameter handler; that path is unclosed and has no no-yield/normal-return claim. External DLL implementations/modifications, abnormal SEH/C++ paths, debugger/VEH rewrites and native injection are not covered by this normal-path graph."
+  },
+  "exceptionBoundary": {
+    "rootAndAdapterFlags": "All four have one full-extent pdata record with UNWIND version1, flags0. This means no local language handler metadata; it does not mean no exception can propagate.",
+    "transitive": "4AD2C0 has termination flag2. Interpreter has a primary handler record plus a chained record; neither makes rebind completion failure-safe. Language-specific unwind handlers were not fully closed.",
+    "implementationRequirements": [
+      "Begin observation before calling either original, before the old STATUS is read/released; invalidate Actor binding before entry.",
+      "Preserve exact input ABI and native return register behavior; retain root frame/trampoline unwind correctness.",
+      "Support calls from any native thread with per-thread nesting. Do not hold a tracker lock while native calls or CRT waits run.",
+      "End normally only after original RET; distinguish abnormal unwind and fault/invalidate rather than publishing a completed binding.",
+      "Keep ordinary entry forwarding available on permanent observation faults. Bootstrap must separately drain preexisting calls; this package does not implement publication/drain.",
+      "Cover constructor, retirement, parking and bulk/alias paths separately before any compare/write transaction admission."
+    ]
+  },
+  "validationLimits": [
+    "Neither the interpreter trap branch nor the two adapters validate the assumed types and pointer chain. Malformed script state can dereference invalid memory; a root observer alone starts after adapter decoding and cannot guard that earlier fault.",
+    "Bank root and descriptors reside in writable data. Two visible setters only change bank9, but computed/bulk writes and external mods are not excluded.",
+    "Native error status5 handles selected invalid opcode cases; it is not general validation for invalid trap indices, insufficient operands or null pointers.",
+    "No installed hooks, product changes, live game operations or IDB changes.",
+    "At 3EBF44 the parameter ID is sign-extended into the pointer-valued bsearch key. ID0 is a null key; the documented CRT invalid-parameter handler can run before any fallback. The retry with key0x45 is reached only if the first bsearch returns null."
+  ],
+  "pagination": "Fresh interpreter ASM:4 pages,1094 instructions; pseudocode:300+300+295=895 lines. Tool marks every partial pseudocode page truncated=true, including the final page; exact counts plus monotone next cursors and done establish aggregation. Original per-page flags are preserved. All direct xrefs, imports and exact-pointer searches completed without continuation.",
+  "nextWork": [
+    "Identify extracted retail BDX event27/finalizer bytecode reaching bank2 entries9/95; trace operand0 construction and its p+4 Actor provenance.",
+    "Observe all Actor construction/rebind/retirement paths with proven identity and lifetime boundaries before enabling dependent mutations.",
+    "Audit the broad native trap argument/error contract separately before using the VM to drive trainer commands.",
+    "Complete exception-handler closure or retain conservative permanent-fault semantics for abnormal unwinds."
+  ],
+  "officialSources": [
+    {
+      "title": "Microsoft x64 exception handling",
+      "url": "https://learn.microsoft.com/en-us/cpp/build/exception-handling-x64?view=msvc-170",
+      "use": "RUNTIME_FUNCTION and unwind flags; byte interpretation only."
+    },
+    {
+      "title": "Microsoft bsearch",
+      "url": "https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/bsearch?view=msvc-170",
+      "use": "Named external comparator contract; DLL implementation is not disassembled here."
+    }
+  ],
+  "verificationCommand": "py -3 -B docs/research/actor-rebind-context-20261008/verify.py --check",
+  "reviewCorrections": [
+    "Qualified the STATUS backlink store as conditional on nonnull acquisition result; Actor slot assignment remains unconditional after acquisition returns.",
+    "Made nonzero bsearch key and valid parameters explicit normal-closure preconditions; invalid-parameter handler behavior remains outside the proof."
+  ]
+}

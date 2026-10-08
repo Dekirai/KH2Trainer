@@ -27,6 +27,9 @@ internal static class PackageVerification
             ?? throw new InvalidDataException("The embedded native bridge is missing.");
         using var diagnosticStream = DataResources.Open("runtime_diagnostics.json");
         var diagnostics = BinaryDiagnosticCatalog.Load(diagnosticStream);
+        var nativeCalls = BdxNativeCallCatalog.Default;
+        if (nativeCalls.DescriptorCount == 0 || nativeCalls.AnnotatedCount == 0)
+            throw new InvalidDataException("The embedded BDX native-call catalog is empty.");
         using var bytes = new MemoryStream(); bridge.CopyTo(bytes);
         byte[] payload = bytes.ToArray(); GameSession.ValidatePayload(payload);
         var report = new
@@ -35,6 +38,8 @@ internal static class PackageVerification
             featureCount = features.Count, catalogs = counts,
             diagnostics = new { messages = diagnostics.Messages.Count, prompts = diagnostics.ClosePrompts.Count,
                 languages = diagnostics.Languages.Count, sourceSha256 = diagnostics.SourceSha256 },
+            bdxNativeCalls = new { descriptors = nativeCalls.DescriptorCount, annotations = nativeCalls.AnnotatedCount,
+                sourceSha256 = BdxNativeCallCatalog.OriginalExecutableSha256 },
             embeddedBridgeSha256 = Convert.ToHexString(SHA256.HashData(payload)).ToLowerInvariant(),
             scope = "Packaged runtime and embedded assets only. No window, game code or gameplay validation."
         };

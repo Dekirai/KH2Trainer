@@ -10088,5 +10088,288 @@
     "CommandId": 0,
     "ValueSlot": 476,
     "CapabilitySlot": 476
+  },
+  {
+    "Id": "mission.counter.add",
+    "Category": "Missions",
+    "Name": "Add to Mission Counter",
+    "Description": "Adds a whole number to a configured counter; use a negative number to subtract. The result must stay between zero and the current maximum. Normal threshold, reward and mission events remain enabled.",
+    "Kind": "Action",
+    "CommandId": 1477,
+    "ValueSlot": -1,
+    "CapabilitySlot": 477,
+    "Minimum": 0,
+    "Maximum": 2147483647,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": true,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "One-time native action. No undo, profile replay, automatic retry or save export. Native event/reward/transition effects remain in force.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3FBAE0 -> 0x3FA230; raw adapters 0x3FB2B0 / 0x3FBB30",
+        "Finding": "Checked integer calculation from the current validated counter, followed by the existing absolute setter once after fresh widget and event checks. Raw wrapping delta and unchecked decimal adapters are not called. See docs/research/mission-counter-implementation-20261008.",
+        "Level": "Native IDA and original-byte evidence; synthetic guard and transport tests. Live gameplay not tested."
+      }
+    ],
+    "Arguments": [
+      {
+        "Name": "Counter",
+        "Minimum": 0,
+        "Maximum": 2,
+        "DefaultValue": 0,
+        "Catalog": "",
+        "Choices": [
+          {
+            "Label": "Counter 1",
+            "Value": 0
+          },
+          {
+            "Label": "Counter 2",
+            "Value": 1
+          },
+          {
+            "Label": "Counter 3",
+            "Value": 2
+          }
+        ]
+      },
+      {
+        "Name": "Change",
+        "Minimum": -2147483648,
+        "Maximum": 2147483647,
+        "DefaultValue": 1
+      }
+    ]
+  },
+  {
+    "Id": "mission.counter.digit",
+    "Category": "Missions",
+    "Name": "Set Mission Counter Digit",
+    "Description": "Replaces one decimal digit of a configured counter. Position 0 is the ones digit, 1 the tens digit, and so on. The resulting value must stay within the current maximum. Normal threshold, reward and mission events remain enabled.",
+    "Kind": "Action",
+    "CommandId": 1478,
+    "ValueSlot": -1,
+    "CapabilitySlot": 478,
+    "Minimum": 0,
+    "Maximum": 2147483647,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": true,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "One-time native action. No undo, profile replay, automatic retry or save export. Native event/reward/transition effects remain in force.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3FBAE0 -> 0x3FA230; raw adapters 0x3FB2B0 / 0x3FBB30",
+        "Finding": "Checked integer calculation from the current validated counter, followed by the existing absolute setter once after fresh widget and event checks. Raw wrapping delta and unchecked decimal adapters are not called. See docs/research/mission-counter-implementation-20261008.",
+        "Level": "Native IDA and original-byte evidence; synthetic guard and transport tests. Live gameplay not tested."
+      }
+    ],
+    "Arguments": [
+      {
+        "Name": "Counter",
+        "Minimum": 0,
+        "Maximum": 2,
+        "DefaultValue": 0,
+        "Catalog": "",
+        "Choices": [
+          {
+            "Label": "Counter 1",
+            "Value": 0
+          },
+          {
+            "Label": "Counter 2",
+            "Value": 1
+          },
+          {
+            "Label": "Counter 3",
+            "Value": 2
+          }
+        ]
+      },
+      {
+        "Name": "Digit position",
+        "Minimum": 0,
+        "Maximum": 9,
+        "DefaultValue": 0,
+        "Choices": [
+          {
+            "Label": "0 - Ones",
+            "Value": 0
+          },
+          {
+            "Label": "1 - Tens",
+            "Value": 1
+          },
+          {
+            "Label": "2 - Hundreds",
+            "Value": 2
+          },
+          {
+            "Label": "3 - 1,000",
+            "Value": 3
+          },
+          {
+            "Label": "4 - 10,000",
+            "Value": 4
+          },
+          {
+            "Label": "5 - 100,000",
+            "Value": 5
+          },
+          {
+            "Label": "6 - 1,000,000",
+            "Value": 6
+          },
+          {
+            "Label": "7 - 10,000,000",
+            "Value": 7
+          },
+          {
+            "Label": "8 - 100,000,000",
+            "Value": 8
+          },
+          {
+            "Label": "9 - 1,000,000,000",
+            "Value": 9
+          }
+        ]
+      },
+      {
+        "Name": "New digit",
+        "Minimum": 0,
+        "Maximum": 9,
+        "DefaultValue": 0,
+        "Choices": [
+          {
+            "Label": "0",
+            "Value": 0
+          },
+          {
+            "Label": "1",
+            "Value": 1
+          },
+          {
+            "Label": "2",
+            "Value": 2
+          },
+          {
+            "Label": "3",
+            "Value": 3
+          },
+          {
+            "Label": "4",
+            "Value": 4
+          },
+          {
+            "Label": "5",
+            "Value": 5
+          },
+          {
+            "Label": "6",
+            "Value": 6
+          },
+          {
+            "Label": "7",
+            "Value": 7
+          },
+          {
+            "Label": "8",
+            "Value": 8
+          },
+          {
+            "Label": "9",
+            "Value": 9
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "Id": "mission.combo.current",
+    "Category": "Missions",
+    "Name": "Current Mission Combo",
+    "Description": "Current value of the registered mission combo widget. This is separate from Sora's attack combo.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 479,
+    "CapabilitySlot": 479,
+    "Minimum": 0,
+    "Maximum": 2147483647,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FA610 / 0x3FA790 / 0x3FA820",
+        "Finding": "The registered inline mission combo at +880 stores current +56, retained peak +80 and float allowance +84. Values are published only after mission, registry, vtable and field checks; they issue no command. See docs/research/mission-counter-implementation-20261008.",
+        "Level": "Native IDA and original-byte evidence; isolated snapshot and UI tests. Live gameplay not tested."
+      }
+    ]
+  },
+  {
+    "Id": "mission.combo.peak",
+    "Category": "Missions",
+    "Name": "Peak Mission Combo",
+    "Description": "Highest value retained by the registered mission combo widget. Its peak remains when the current combo expires.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 480,
+    "CapabilitySlot": 480,
+    "Minimum": 0,
+    "Maximum": 2147483647,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FA610 / 0x3FA790 / 0x3FA820",
+        "Finding": "The registered inline mission combo at +880 stores current +56, retained peak +80 and float allowance +84. Values are published only after mission, registry, vtable and field checks; they issue no command. See docs/research/mission-counter-implementation-20261008.",
+        "Level": "Native IDA and original-byte evidence; isolated snapshot and UI tests. Live gameplay not tested."
+      }
+    ]
+  },
+  {
+    "Id": "mission.combo.allowance",
+    "Category": "Missions",
+    "Name": "Mission Combo Allowance",
+    "Description": "Remaining allowance stored by the mission combo widget. The native update subtracts its step while this value is positive; zero or negative means no active countdown. Shown in native update units.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 481,
+    "CapabilitySlot": 481,
+    "Minimum": -3.4028234663852886e+38,
+    "Maximum": 3.4028234663852886e+38,
+    "DefaultValue": 0,
+    "Step": 0.01,
+    "Unit": "native units",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Missing or unconfigured mission objects have no valid value.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A2C30 / 0x3FA610 / 0x3FA790 / 0x3FA820",
+        "Finding": "The registered inline mission combo at +880 stores current +56, retained peak +80 and float allowance +84. Values are published only after mission, registry, vtable and field checks; they issue no command. See docs/research/mission-counter-implementation-20261008.",
+        "Level": "Native IDA and original-byte evidence; isolated snapshot and UI tests. Live gameplay not tested."
+      }
+    ]
   }
 ]

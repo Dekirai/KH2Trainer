@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-08",
+  "reviewer": "status_fields_v2",
+  "status": "PASS",
+  "subject": "docs/research/allocator-ownership-20261008",
+  "subjectManifestSha256": "218a1d93d6b5b59a3c20cbba98ba1e0fede36358decaadd964f8f1da22ccae45",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "subjectFiles": [
+    {
+      "path": "docs/research/allocator-ownership-20261008/evidence.json",
+      "bytes": 1155151,
+      "sha256": "34973252233d4e53ac2c888a1701d19fac279145c970cfdf27819e339009a14c"
+    },
+    {
+      "path": "docs/research/allocator-ownership-20261008/manifest.json",
+      "bytes": 2095,
+      "sha256": "218a1d93d6b5b59a3c20cbba98ba1e0fede36358decaadd964f8f1da22ccae45"
+    },
+    {
+      "path": "docs/research/allocator-ownership-20261008/report.json",
+      "bytes": 25075,
+      "sha256": "a432281f5a8d04c2af8e2005d3ffbbd53f85b3ec88be56264b18673fdb19be48"
+    },
+    {
+      "path": "docs/research/allocator-ownership-20261008/report.txt",
+      "bytes": 12117,
+      "sha256": "f135b39770d16725e8bf35828328eb62d5c34972c61b3a07b4420647ae8bd813"
+    },
+    {
+      "path": "docs/research/allocator-ownership-20261008/verification.json",
+      "bytes": 104127,
+      "sha256": "7b750243a00051c82ec261ba03f06ef96b44f029121f637a5ecc731aa9aa26e9"
+    },
+    {
+      "path": "docs/research/allocator-ownership-20261008/verify.py",
+      "bytes": 14453,
+      "sha256": "c9c3b634d8108f54a691542bc6c645da966ece1593a86b3be1c60f2a56495ee8"
+    }
+  ],
+  "checks": {
+    "officialVerifier": {
+      "command": "py -3 -B docs/research/allocator-ownership-20261008/verify.py --check",
+      "exitCode": 0,
+      "writes": "--check compares complete reconstructed receipt and manifest; reviewed source writes neither in this mode."
+    },
+    "manifest": {
+      "ownFiles": 5,
+      "reusedEvidenceSources": 5,
+      "allSizesAndHashesMatch": true
+    },
+    "nativeClaims": {
+      "claims": 17,
+      "evidenceReferences": 96,
+      "allResolve": true,
+      "unsupportedFragments": 0,
+      "resolver": "Existing scripts/update-analysis-coverage.py resolve_reference, read-only import; no central coverage update."
+    },
+    "capturedMetrics": {
+      "freshBodies": 49,
+      "freshInstructions": 1780,
+      "freshBodyBytes": 7961,
+      "reusedBodies": 20,
+      "reusedInstructions": 653,
+      "reusedBodyBytes": 2500,
+      "dataBytes": 32,
+      "incomingReferenceInstances": {
+        "instructionReference": 780,
+        "staticData": 52,
+        "runtimeFunctionEndBoundary": 1,
+        "unownedInstructionReference": 2
+      }
+    },
+    "directAndTailEdges": 550
+  },
+  "resolvedFindings": [
+    {
+      "id": "AR1",
+      "severity": "low",
+      "issue": "19C560 claim referenced unsupported evidence.json#globalXrefs selector.",
+      "resolution": "Author replaced it with the complete evidence.json reference. All96 final references resolve."
+    },
+    {
+      "id": "AR2",
+      "severity": "medium",
+      "issue": "2530C0 description specified wrapped DWORD request but omitted MOVSXD RDX,EAX at2530DA; high-bit sums are sign-extended before native Allocate.",
+      "resolution": "Author states sign_extend_64(int32(uint32(a3+a4-1))) and the full64-bit complement mask. Seven concrete instruction assertions added and rerun PASS. The normal0x30000/alignment16 caller is unaffected."
+    }
+  ],
+  "findings": [],
+  "semanticReview": [
+    {
+      "topic": "Coexisting owners",
+      "conclusion": "14ED40 directly creates root taskmanager/allocator then resource allocator. Mode2 nesting and mode4 split/child setup support simultaneous instances under successful initialization and intact bindings; no single-instance assumption remains."
+    },
+    {
+      "topic": "Parent-free versus destructor",
+      "conclusion": "The selected AF75E0/AFBA60 paths free normal parent blocks, and owner cleanup pops whole regions. This does not show a per-child allocator destructor or a demonstrated retail shared-semaphore failure. Transitive callback effects remain expressly open."
+    },
+    {
+      "topic": "Aliases",
+      "conclusion": "212210 clears AF75E0 but has no AF75E8 store;151C20 clears the first three owners but has no9A8818 store. Consumers are recorded separately. No after-free invocation or crash is inferred."
+    },
+    {
+      "topic": "Sizes",
+      "conclusion": "72-byte taskmanager request rounds to80 payload plus48 metadata; mode4 split sizes exactly cover0x1E0000. Field256 requests total1,562,624 payload bytes and1,562,768 charged bytes, plus separate128-byte instance prefix. These are selected-block totals, not whole-mode capacity guarantees."
+    },
+    {
+      "topic": "Overflow and alignment",
+      "conclusion": "152680 ADD EDI,ECX truncates before64-bit doubling.150B70 subtraction is32-bit.2530C0 now records32-bit wrap, signed extension and64-bit mask precisely; invalid-parameter reachability is not asserted."
+    },
+    {
+      "topic": "Lifecycle boundary",
+      "conclusion": "Native owner chains, unsynchronized getters and global aliases do not establish Actor/STATUS locking, lifetime admission or OS-thread exclusivity. The study preserves its explicit limits on indirect callers, exceptions, shutdown and suspended fibers."
+    }
+  ],
+  "additionalReadOnlyCrossCheck": {
+    "purpose": "Confirm CRT free identity used by TASK_MANAGER destructor14F590 without relying solely on the IDA name.",
+    "path": [
+      "14F590 at14F5AD calls4390A0",
+      "4390A0 JMP43A4B4",
+      "43A4B4 JMP471B68",
+      "471B68 JMP IAT57B790"
+    ],
+    "originalBytes": [
+      {
+        "addr": "0x1404390a0",
+        "bytes": "e9 0f 14 00 00"
+      },
+      {
+        "addr": "0x14043a4b4",
+        "bytes": "e9 af 76 03 00",
+        "followingPadding": "cc"
+      },
+      {
+        "addr": "0x140471b68",
+        "bytes": "ff 25 22 9c 10 00"
+      }
+    ],
+    "import": {
+      "slot": "0x14057b790",
+      "dll": "api-ms-win-crt-heap-l1-1-0.dll",
+      "name": "free"
+    },
+    "method": "Fresh read-only IDA disassembly, independent Capstone decode and original PE import-table parse; no target execution."
+  },
+  "limits": [
+    "Independent static review only; no native allocator execution/probe was required in this ownership study.",
+    "Fresh full ASM/byte evidence does not mean every transitive subsystem callee is semantically closed.",
+    "Only selected incoming references were materialized; empty direct xrefs do not exclude dynamic callers.",
+    "No game start, live process access, injection, UI, save, product edit or coverage edit performed.",
+    "Review writes only these two artifacts; subject corrections were made by the author."
+  ]
+}

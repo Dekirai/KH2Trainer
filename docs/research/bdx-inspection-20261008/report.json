@@ -1,0 +1,187 @@
+{
+  "schema": 1,
+  "status": "frozen_pending_independent_review",
+  "scope": "Native BDX stored-byte decoder contract, bounded offline prototype, local loose corpus and two selected structural witnesses; no game/process execution.",
+  "decision": "Expose a read-only Script inspection view backed by a bounded event-rooted CFG decoder. Numeric bank/index identifies native calls; only SHA-bound known descriptors receive native annotations.",
+  "claims": [
+    {
+      "addr": "0x14041c690",
+      "Finding": "BDX event lookup scans ID/PC signed32 pairs at script+28, stops on PC0 regardless of ID and returns the first matching ID. ID0 is not intrinsically a terminator.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041c690]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "No file-length or duplicate-ID rejection in this native body; offline reader bounds are additional policy."
+    },
+    {
+      "addr": "0x1403e1240",
+      "Finding": "The context constructor reads declared allocation fields at script+16/+20/+24 and stores script/context pointers; it may raise header+20 from512 to1024 for five specific names.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1240]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "Offline display reports stored header values, not actual native allocation results or post-load mutated header values."
+    },
+    {
+      "addr": "0x14041b320",
+      "Finding": "Entry initialization stores the supplied PC as a DWORD at context+8 and copies supplied tagged8-byte arguments to the operand stack.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041b320]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "Does not validate all subsequent script instructions or resources."
+    },
+    {
+      "addr": "0x14041b400",
+      "Finding": "The interpreter fetches words at script+16+2*PC, dispatches on low4 bits, and implements the complete group-width/control-flow table in opcode-contract.json. Relative calls/branches update a32-bit PC; branch16 sign-extends and call32 combines two words before DWORD addition, without16-bit wrapping.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041b400]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "Stored-byte syntactic CFG only. Native memory writes, runtime compatibility adjustments, callback changes, invalid operands and dynamic return stack are not emulated."
+    },
+    {
+      "addr": "0x14041b400",
+      "Finding": "Unary invalid selectors return status5; integer-binary sub>11 instead follows its default pop2/push-left continuation. G9 halt returnsstatus1 with advancedPC, exit returnsstatus2, return restoresPC fromVM stack and returnsstatus3 only for restoredzero.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041b400]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "Classification is the captured retail native control flow, not an all-build or safe-execution guarantee."
+    },
+    {
+      "addr": "0x14041b400",
+      "Finding": "Trap groupA reads unsigned bank=word>>6 and unsigned16 index; descriptors stride16. Bank2/index9 and95 decode only when visited as instruction starts from declared event roots.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041b400]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "A raw pair8A/9 or8A/5F elsewhere in a payload is not a proven instruction. Native callbacks have unmodeled effects and conditional continuations."
+    },
+    {
+      "addr": "0x14041c900",
+      "Finding": "Address selector helper always consumes one U16 operand. Selectors0..3 resolve frame/work/decoded-object/script-or-scratch forms; others returnNULL.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041c900]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "A NULL address pushed through NullableEncode can continue, whereas a load may fault; does not prove argument validity."
+    },
+    {
+      "addr": "0x14041c6c0",
+      "Finding": "Store helper pops a tagged operand and writes through its supplied destination without a NULL guard on the final stores.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041c6c0]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "Generic native memory writer; malformed script safety and all transitive effects remain outside this inspection task."
+    },
+    {
+      "addr": "0x14041c780",
+      "Finding": "Load helper dereferences its supplied source and pushes the result; no final NULL source guard protects the load.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041c780]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "Offline diagnostics do not execute the helper or establish exception handling behavior."
+    },
+    {
+      "addr": "0x1404ad240",
+      "Finding": "Nullable pointer encoder preserves a NULL input as zero, which permits the interpreter to push @ADR/0 for unsupported address-selector push forms.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404ad240]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "Later consumers may still reject or dereference that value; this is not a valid-object assertion."
+    },
+    {
+      "addr": "0x140431a70",
+      "Finding": "Native bank2/index9 adapter maps to411350 and takes three VM operands. Retail-byte-identical B_AL020 type3 script has a decoded instruction atPC6035 on an event0-rooted static CFG path.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140431a70]",
+        "opcode-contract.json",
+        "verification.json",
+        "asset-witnesses.json",
+        "retail-comparison.json"
+      ],
+      "Limitations": "Original HED/PKG payload and loose slice independently compared byte-for-byte; No observed script execution or operand0 pointer-provenance claim; third argument is unused by adapter body."
+    },
+    {
+      "addr": "0x140431aa0",
+      "Finding": "Native bank2/index95 adapter maps to4112B0 and takes two VM operands. Retail-byte-identical B_EX400 type3 script has a decoded instruction atPC7593 on an event0-rooted static CFG path.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140431aa0]",
+        "opcode-contract.json",
+        "verification.json",
+        "asset-witnesses.json",
+        "retail-comparison.json"
+      ],
+      "Limitations": "Original HED/PKG payload and loose slice independently compared byte-for-byte; No observed script execution or event27 reachability claim."
+    }
+  ],
+  "verificationCommand": "py -3 -B docs/research/bdx-inspection-20261008/verify.py --check",
+  "scanCommand": "py -3 -B docs/research/bdx-inspection-20261008/scan_local.py --check",
+  "witnesses": [
+    {
+      "asset": "obj/B_AL020.mdlx",
+      "barOrdinal": 2,
+      "scriptOffset": 435904,
+      "scriptLength": 23220,
+      "sha256": "e2930b8b37bb7b12e33928dfd1fd1e707d99dfafae76b7c93648e04ca26b577f",
+      "eventId": 0,
+      "entryPc": 4640,
+      "trapPc": 6035,
+      "trapBank": 2,
+      "trapIndex": 9,
+      "idImmediate": 138,
+      "idPushPc": 6029
+    },
+    {
+      "asset": "obj/B_EX400.mdlx",
+      "barOrdinal": 2,
+      "scriptOffset": 485520,
+      "scriptLength": 60230,
+      "sha256": "bbc9f40c08a52294b6e5aa15f4d16ad55c9b9ff4765ba4aba306abcd79209215",
+      "eventId": 0,
+      "entryPc": 3808,
+      "trapPc": 7593,
+      "trapBank": 2,
+      "trapIndex": 95,
+      "idImmediate": 216,
+      "idPushPc": 7590
+    }
+  ],
+  "scanLimit": "Exactly00common.bdx and directtype3 rows of all2238obj/*.mdlx loose files,921scripts. 285scripts contain310index9sites and1index95site in the bounded CFG. No event27-rooted path to those two indices was produced in this corpus; unknown native effects, other asset classes/providers and runtime-modified code prevent an exclusion claim.",
+  "integration": "selected-structure.json supplies1821+2659 instruction PC/width/typed-edge records for independent C# comparison. No product file changed by this task.",
+  "nativeEvidence": "All11complete bodies are reused with pinned source SHA and independently compared with the original executable;41exact semanticsites and5embedded jump tables verified. Current IDB readiness was checked read-only; no IDB mutation/save/closure.",
+  "unknowns": [
+    "Runtime reachability and operand0 p+4 Actor provenance for the selected asset trap calls.",
+    "Shipped motion event27 to either rebind operation across all asset classes/providers.",
+    "Native callbacks, computed return PCs, arbitrary script writes, SEH and script self-modification.",
+    "Full human-readable trap metadata across all banks; only2descriptors specifically annotated.",
+    "Exact executed float values or runtime-patched header sizes."
+  ],
+  "externalReferences": "external-references.json pins reference source to OpenKH commit7a3b945c538d32c6a285128c98aefba093f52ceb. Original native bytes determine the PC arithmetic contract; external decoder uses a different16bit target conversion.",
+  "retailComparison": {
+    "source": "artifacts/bdx-retail-comparison.json",
+    "savedCopy": "retail-comparison.json",
+    "sha256": "73fc0522aec082f60b0b757116a214389daac0422499a5f392c89038596fff78",
+    "checks": 8995,
+    "hed": "kh2_fifth.hed",
+    "entryOrdinals": [
+      6196,
+      6443
+    ],
+    "scope": "Selected original package payload equals local loose script; all4480 decoded PCs/widths/normalized edges match independently implemented C#. No runtime execution claim."
+  }
+}

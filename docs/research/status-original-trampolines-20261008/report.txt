@@ -1,0 +1,20 @@
+Original STATUS call trampolines
+===============================
+
+StatusOriginalTrampolines prepares five original-call images before entry gates
+can become visible. Each uses the exact verified prefix, continuation jump and
+unwind layout from StatusEntryPlan. All pages become RX and Windows receives all
+five unwind tables before Bindings returns callable pointers.
+
+Once bindings escape, code and unwind storage remain for process lifetime.
+Unpublished failures can be cleaned up explicitly. A failed table deletion keeps
+the entire allocation; a failed VirtualFree keeps its address and error state.
+Neither failure is reported as successful cleanup. Retry only touches resources
+still owned by that batch. The source module must remain loaded and unchanged.
+
+An independent review found the missing VirtualFree result check and missing
+rollback test coverage. Both were corrected, then independently reviewed and
+rebuilt by root. Final result: 430 checks, zero failures, no MSVC /W4 warnings.
+The production branch is separately compiled without fault-injection hooks.
+Tests use real Windows tables and private memory; generated game code is never
+executed. The component is not yet installed in TrainerBridge.

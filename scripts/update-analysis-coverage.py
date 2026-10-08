@@ -418,9 +418,17 @@ def retail_record(row, registry, scope):
 
 
 def normalize_body(row):
+    # IDA aggregate exports also use `disasm`. Preserve the complete object and
+    # outer metadata; body_assembly applies the same cursor/page/count checks.
+    if isinstance(row,dict) and isinstance(row.get('disasm'),dict):
+        if 'disassembly' in row and row['disassembly'] != row['disasm']:
+            raise ValueError('Conflicting disasm/disassembly exports')
+        row=dict(row); row['disassembly']=row['disasm']
     # Documented alternate export shape: {addr,info,asm:{addr,asm,...},bytes:{result:[]}}.
     # Do not infer missing counts, completion or bytes.
     if isinstance(row,dict) and isinstance(row.get('asm'),dict) and isinstance(row['asm'].get('asm'),dict):
+        if 'disassembly' in row and row['disassembly'] != row['asm']:
+            raise ValueError('Conflicting nested asm/disassembly exports')
         info=row.get('info'); raw=row.get('bytes')
         result={key:row[key] for key in ('addr','complete','truncated','cursor','instruction_count','total_instructions','offset','pages') if key in row}
         result.update({'size':info.get('size') if isinstance(info,dict) else None,
@@ -453,8 +461,10 @@ def has_raw_code(row, start, size):
     if isinstance(pseudocode,dict) and isinstance(pseudocode.get('code'),str) and pseudocode['code'].strip():
         return True
     body=row.get('disassembly',row)
-    asm=body.get('asm') if isinstance(body,dict) else None
-    lines=asm.get('lines') if isinstance(asm,dict) else None
+    asm=body.get('asm') if isinstance(body,dict) else body
+    # Some captures retain addressed instruction lists without aggregate
+    # cursors. They witness raw code only; never synthesize completion metadata.
+    lines=asm.get('lines') if isinstance(asm,dict) else asm if isinstance(asm,list) else None
     if isinstance(lines,list) and start is not None and type(size) is int and size>0:
         for line in lines:
             if isinstance(line,dict):
@@ -708,6 +718,62 @@ def self_test():
     check(not has_raw_code({'originalBytes':'0x90 0xc3'},0x140001000,2),'bytes alone never support semantic claim')
     check(has_raw_code(body,0x140001000,2),'addressed ASM is raw content')
     check(has_raw_code(batch,0x140001000,2),'nonblank actual pseudocode is raw content')
+    alias={'addr':body['addr'],'size':2,'disasm':copy.deepcopy(body),'pages':copy.deepcopy(pages),'originalBytes':'90 c3'}
+    normalized=normalize_body(alias)
+    check(body_assembly(normalized)[0],'disasm aggregate retains explicit completed pages')
+    check('disassembly' not in alias and normalized['disassembly']==alias['disasm'] and normalized['pages']==alias['pages'],
+          'disasm alias leaves source and pagination untouched')
+    check(original_spans(normalized)==[(BASE+0x1000,b'\x90\xc3')],'disasm alias preserves exact bytes for PE comparison')
+    for key,value in [('size',1),('size',None),('originalBytes','90'),('originalBytes','90 cc')]:
+        changed=dict(alias,**{key:value}); candidate=normalize_body(changed)
+        check(candidate[key]==value,'alias never repairs size or mismatching byte extent/content')
+    for key,value in [('cursor',None),('cursor',{'done':False}),('cursor',{'done':True,'cancelled':True}),
+                      ('instruction_count',1),('total_instructions',3),('offset',1),('complete',False),('truncated',True)]:
+        changed=copy.deepcopy(alias);changed['disasm'][key]=value
+        check(not body_assembly(normalize_body(changed))[0],f'aliased aggregate retains invalid {key}')
+        changed=copy.deepcopy(alias);changed[key]=value
+        check(not body_assembly(normalize_body(changed))[0],f'aliased outer record retains invalid {key}')
+    changed=copy.deepcopy(alias);changed['disasm'].pop('cursor')
+    check(not body_assembly(normalize_body(changed))[0],'finished pages cannot invent an absent aggregate cursor')
+    changed=copy.deepcopy(alias);changed['pages'][0]['cursor']={'next':2}
+    check(not body_assembly(normalize_body(changed))[0],'aliased pages cannot skip an instruction')
+    changed=copy.deepcopy(alias);changed['pages'][1]['cursor']={'done':False}
+    check(not body_assembly(normalize_body(changed))[0],'aliased last page must explicitly finish')
+    changed=copy.deepcopy(alias);changed['pages'][0]['asm']['lines'][0]['instruction']='int3'
+    check(not body_assembly(normalize_body(changed))[0],'aliased pages must match aggregate instructions')
+    changed=copy.deepcopy(alias);changed['disasm']['addr']='0x140002000'
+    check(not body_assembly(normalize_body(changed))[0],'alias does not repair body/start mismatch')
+    check(body_assembly(normalize_body(dict(alias,disassembly=copy.deepcopy(body))))[0],'equal aliases preserve explicit metadata')
+    try:
+        normalize_body(dict(alias,disassembly={}))
+    except ValueError:
+        check(True,'conflicting aliases rejected')
+    else:
+        check(False,'conflicting aliases rejected')
+    for alias_key in ('disasm','disassembly'):
+        dual={'addr':body['addr'],'info':{'size':2},'asm':copy.deepcopy(body),
+              'bytes':{'result':[{'addr':body['addr'],'data':'90 c3'}]},alias_key:copy.deepcopy(body)}
+        check(body_assembly(normalize_body(dual))[0],'equal nested aggregate aliases remain valid')
+        for key,value in [('cursor',{'done':False}),('cursor',{'done':True,'cancelled':True}),
+                          ('instruction_count',1),('total_instructions',3),('complete',False),('truncated',True),
+                          ('pages',[]),('addr','0x140002000')]:
+            changed=copy.deepcopy(dual);changed[alias_key][key]=value
+            try:
+                normalize_body(changed)
+            except ValueError:
+                check(True,f'nested aggregate cannot overwrite contradictory {alias_key}.{key}')
+            else:
+                check(False,f'nested aggregate cannot overwrite contradictory {alias_key}.{key}')
+    for key in ('asm','disassembly'):
+        raw={'addr':body['addr'],'size':2,key:copy.deepcopy(body['asm']['lines']),'originalBytes':'90 c3','pages':copy.deepcopy(pages)}
+        check(has_raw_code(raw,BASE+0x1000,2),f'{key} addressed list is raw content')
+        check(not body_assembly(normalize_body(raw))[0],f'{key} raw list with pages never promoted to full ASM')
+        for value in (None,[],[{}],['ret'],[{'addr':'140001002','instruction':'ret'}],[{'addr':'140001000','instruction':' '}],
+                      [{'addr':True,'instruction':'ret'}],[{'addr':'140000fff','instruction':'ret'}]):
+            changed=dict(raw,**{key:value})
+            check(not has_raw_code(changed,BASE+0x1000,2),f'{key} empty/malformed/outside list is no witness')
+        for start,size in ((None,2),(BASE+0x1000,0),(BASE+0x1000,True),(BASE+0x1000,None)):
+            check(not has_raw_code(raw,start,size),f'{key} raw list needs known positive extent')
     retail={'id':'retail','imageBase':hx(BASE),'originalSha256':TARGET_SHA}
     panacea={'id':'panacea','imageBase':'0x180000000','originalSha256':'0'*64}
     mixed={'modules':[retail,panacea]}
@@ -718,6 +784,10 @@ def self_test():
     check(not retail_record(dict(body,module='panacea'),registry,scope),'mixed foreign body excluded even at retail-looking VA')
     check(not retail_record(dict(body,addr='1000',module='panacea'),registry,scope),'foreign RVA never rebased to retail')
     check(not retail_record(body,registry,scope),'mixed unlabelled body is not guessed')
+    for shaped in (alias,raw):
+        check(not retail_record(dict(shaped,module='panacea'),registry,scope),'new export shapes remain behind foreign-domain gate')
+        check(not retail_record(shaped,registry,scope),'new export shapes cannot escape ambiguous-domain gate')
+        check(retail_record(dict(shaped,module='retail'),registry,scope),'new export shapes explicitly admit retail only')
     for key in ('Domain','domain'):
         check(retail_record(dict(body,**{key:'native'}),registry,scope),'explicit native claim resolves mixed scope')
         check(not retail_record(dict(body,**{key:'panacea'}),registry,scope),'external claim excluded')

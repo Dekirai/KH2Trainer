@@ -66,9 +66,23 @@ void Reset() {
     At<uintptr_t>(0x2A10620+2784)=g_base+Actor;
     At<uintptr_t>(0x2A10620+3128)=g_base+Actor;At<uintptr_t>(0x2A10620+2792)=g_base+Pad;
 }
-auto Read() { return gameplay_state::Inspect(Context()); }
+auto Read() {
+    const auto s=gameplay_state::Inspect(Context());
+    if(gameplay_state::HostReady()) {
+        const auto native=gameplay_state::InspectNative(Context());
+        Check(s.known==native.known && s.role==native.role && s.blockers==native.blockers &&
+            s.controllable==native.controllable && s.fieldState==native.fieldState &&
+            s.characterId==native.characterId && s.form==native.form,"native and admitted observation agree with fresh host");
+    }
+    return s;
+}
 void Has(unsigned bits,const char* name) {const auto s=Read();Check((s.blockers&bits)==bits && !s.controllable,name);}
-void ExpectUnknown(const char* name) {const auto s=Read();Check(!s.known && (s.blockers&gameplay_state::Unknown) && !s.controllable,name);}
+void ExpectUnknown(const char* name,bool nativeUnknown=true) {
+    const auto s=Read();Check(!s.known && (s.blockers&gameplay_state::Unknown) && !s.controllable,name);
+    const auto native=gameplay_state::InspectNative(Context());
+    Check(nativeUnknown?(!native.known && !native.controllable):(native.known && native.controllable),
+        "native observation preserves native guards independently of host admission");
+}
 void OwnedField() {
     world_features::pausePhase=world_features::PausePhase::Held;
     world_features::pauseGlobalsOwned=true;
@@ -204,9 +218,11 @@ void ControllerIdentity() {
 void Guards() {
     Reset();g_disabled=1;ExpectUnknown("disabled bridge");
     Reset();g_gameThread++;ExpectUnknown("not engine thread");
-    Reset();g_shared=nullptr;ExpectUnknown("no shared memory");
-    Reset();shared.hostHeartbeat=0;ExpectUnknown("zero heartbeat");
-    Reset();shared.hostHeartbeat=fakeNow-5001;ExpectUnknown("expired host");
+    Reset();g_gameThread=0;ExpectUnknown("engine thread not established");
+    Reset();g_shared=nullptr;ExpectUnknown("no shared memory",false);
+    Reset();shared.hostHeartbeat=0;ExpectUnknown("zero heartbeat",false);
+    Reset();shared.hostHeartbeat=fakeNow-5001;ExpectUnknown("expired host",false);
+    Reset();shared.hostHeartbeat=fakeNow-5000;Check(Read().controllable,"heartbeat boundary remains admitted");
     Reset();fakeNow=100;shared.hostHeartbeat=0xFFFFFF00;Check(Read().controllable,"heartbeat wrap accepted");
     Reset();fault=true;ExpectUnknown("read access fault fail closed");fault=false;
     Reset();At<uintptr_t>(0x5CBA28+120)=g_base+0x404C60;ExpectUnknown("Sora predicate pointer replaced");
@@ -225,7 +241,7 @@ void Guards() {
         Reset();denied=g_base+rva;deniedSize=1;ExpectUnknown("required memory unreadable");
     }
     Reset();std::vector<BYTE> before(reinterpret_cast<BYTE*>(g_base),reinterpret_cast<BYTE*>(g_base)+ImageSize);
-    GameplayStateCapabilities();GameplayStateSnapshot(Context());
+    GameplayStateCapabilities();GameplayStateSnapshot(Context());gameplay_state::InspectNative(Context());
     Check(!memcmp(before.data(),reinterpret_cast<void*>(g_base),ImageSize),"observation leaves every synthetic game byte unchanged");
     for(unsigned i=456;i<=462;++i) {
         Check((shared.supported[i/64]&(uint64_t(1)<<(i%64)))!=0,"capability published");

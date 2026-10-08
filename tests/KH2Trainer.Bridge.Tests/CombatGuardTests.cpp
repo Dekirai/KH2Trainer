@@ -379,11 +379,99 @@ void TargetRegression() {
     const double args[8]{};TrainerResult r{};
     Check(!CombatHandle(Context(),109,args,r)&&!CombatHandle(Context(),111,args,r),"unclaimed slots stay unclaimed");
 }
+// Joint regression: actual gameplay, movement, role and Actor-lifetime code in a
+// private image. Native callback forwarding uses the existing fixture doubles.
+uint64_t movementOperation=0;
+void SetupMovement(unsigned character=1) {
+    Setup(character,character==4?11:0);
+    for(auto& l:movement_tx::leases)l={};
+    for(auto& r:movement_tx::receipts)r={};
+    movement_tx::nextLease=0;movementOperation=0;
+    At<uintptr_t>(Actor+360)=g_base+Actor;
+    const BYTE normal[]={0x48,0x8B,0xCA,0xE9,0xE8,0x3F,0xFA,0xFF};
+    const BYTE mickey[]={0x48,0x8B,0xCA,0xE9,0xB8,0x3A,0xF9,0xFF};
+    memcpy(reinterpret_cast<void*>(g_base+0x404FB0),normal,sizeof(normal));
+    memcpy(reinterpret_cast<void*>(g_base+0x4154E0),mickey,sizeof(mickey));
+    At<uintptr_t>(0x5CBA28+296)=g_base+0x404FB0;
+    At<uintptr_t>(0x5D15A0+296)=g_base+0x4154E0;
+    At<float>(Actor+296)=2;At<float>(Actor+300)=8;
+    Check(actor_movement::MovementReady(Context()) && gameplay_state::Inspect(Context()).controllable,
+        "real movement and gameplay guards admit synthetic supported role");
+}
+movement_tx::Request MovementAcquire() {
+    using namespace movement_tx;
+    Request q{};q.magic=Magic;q.schema=Schema;q.size=sizeof(q);q.operation=Operation::Acquire;
+    q.clientId=1;q.opId=++movementOperation;q.bridgeInstance=actor_lifetime::BridgeInstance();
+    q.actorGeneration=Generation();q.effectOwnerId=10;q.mask=3;
+    q.expectedBits[0]=Bits(At<float>(Actor+296));q.expectedBits[1]=Bits(At<float>(Actor+300));
+    q.desiredBits[0]=Bits(5.f);q.desiredBits[1]=Bits(20.f);return q;
+}
+movement_tx::Response ApplyMovement() {
+    const auto q=MovementAcquire();const auto r=movement_tx::Execute(Context(),q,static_cast<uint32_t>(q.opId));
+    Check(r.outcome==movement_tx::Outcome::Applied && r.leaseId && At<float>(Actor+300)==20,
+        "joint fixture acquires real movement lease before disconnect");
+    return r;
+}
+void DisconnectedMovementCleanup() {
+    using namespace movement_tx;
+    for(unsigned character:{1u,14u,4u})for(unsigned heartbeat=0;heartbeat<3;++heartbeat) {
+        SetupMovement(character);const auto acquired=ApplyMovement();
+        state.hostHeartbeat=heartbeat==0?0:heartbeat==1?GetTickCount()-6001:GetTickCount()+6000;
+        Check(!gameplay_state::Inspect(Context()).controllable && gameplay_state::InspectNative(Context()).controllable,
+            "missing stale or future heartbeat blocks admission while native controls remain available");
+        auto q=MovementAcquire();auto rejected=Execute(Context(),q,static_cast<uint32_t>(q.opId));
+        Check(rejected.outcome==Outcome::Rejected && rejected.reason==Reason::NotReady && At<float>(Actor+300)==20,
+            "disconnected Acquire cannot apply through the native cleanup gate");
+        q.opId=++movementOperation;q.operation=Operation::Reapply;q.leaseId=acquired.leaseId;q.expectedLeaseRevision=acquired.revision;
+        rejected=Execute(Context(),q,static_cast<uint32_t>(q.opId));
+        Check(rejected.outcome==Outcome::Rejected && rejected.reason==Reason::NotReady && At<float>(Actor+300)==20,
+            "disconnected Reapply cannot extend an existing effect");
+        Tick(Context(),true);const auto* lease=FindLease(acquired.leaseId);
+        Check(lease && lease->state==State::Released && lease->restored==3 && !lease->pinned &&
+            At<float>(Actor+296)==2 && At<float>(Actor+300)==8 && Pins(acquired.actorGeneration)==0,
+            "host-expiry tick restores exact originals for Sora Roxas and rescue Mickey without reconnect");
+    }
+    // Every blocker remains in the same real native-control path during cleanup.
+    for(unsigned gate=0;gate<12;++gate) {
+        SetupMovement();const auto acquired=ApplyMovement();state.hostHeartbeat=0;
+        uintptr_t address=0;uint32_t prior=0;
+        switch(gate) {
+        case 0: address=0x9006B0;break; // menu
+        case 1: address=0x2A11478;break; // event pointer, only presence is read
+        case 2: address=0x9BA928;break; // transition
+        case 3: address=0xABAC58;break; // loading
+        case 4: address=0x2A10500;break; // input lock
+        case 5: address=Actor+1612;break; // actor stop
+        case 6: address=0xABB854;break; // unknown timer owner
+        case 7: address=0x716884;break; // suspended field
+        case 8: address=Pool;break; // dead
+        case 9: address=0x2A105D0;break; // original actor temporarily not current
+        case 10: g_disabled=1;break;
+        case 11: ++g_gameThread;break;
+        }
+        if(address) {prior=At<uint32_t>(address);At<uint32_t>(address)=gate==6?4:gate==7?2:gate==8||gate==9?0:1;}
+        Tick(Context(),true);const auto* lease=FindLease(acquired.leaseId);
+        Check(lease && !Terminal(lease->state) && At<float>(Actor+296)==5 && At<float>(Actor+300)==20,
+            "native blocker defers disconnected cleanup without altering either field");
+        if(address)At<uint32_t>(address)=prior;g_disabled=0;g_gameThread=GetCurrentThreadId();
+        Tick(Context(),true);lease=FindLease(acquired.leaseId);
+        Check(lease && lease->state==State::Released && At<float>(Actor+296)==2 && At<float>(Actor+300)==8,
+            "clearing native blocker completes pending release without heartbeat recovery");
+    }
+    SetupMovement();auto acquired=ApplyMovement();state.hostHeartbeat=0;At<float>(Actor+296)=11;
+    Tick(Context(),true);auto* lease=FindLease(acquired.leaseId);
+    Check(lease && lease->state==State::Superseded && lease->superseded==1 && lease->restored==2 &&
+        At<float>(Actor+296)==11 && At<float>(Actor+300)==8,"disconnected cleanup preserves external field replacement");
+    SetupMovement();acquired=ApplyMovement();state.hostHeartbeat=0;
+    actor_lifetime::SoraDeathHook(g_base+combat::SoraDescriptor,g_base+Actor);Tick(Context(),true);lease=FindLease(acquired.leaseId);
+    Check(lease && lease->state==State::Destroyed && At<float>(Actor+300)==20,
+        "observed Actor death discards cleanup intent without writing the old allocation");
+}
 }
 int main() {
     g_base=reinterpret_cast<uintptr_t>(VirtualAlloc(nullptr,kImageSize,MEM_COMMIT|MEM_RESERVE,PAGE_READWRITE));
     if(!g_base)return 2;
-    RolesAndAbi();LifetimeAndPhases();OwnersAndIpc();PinsTablesProtection();TargetRegression();
+    RolesAndAbi();LifetimeAndPhases();OwnersAndIpc();PinsTablesProtection();TargetRegression();DisconnectedMovementCleanup();
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     std::printf("CombatGuardTests: %u checks, %u failures. Synthetic memory; no game code executed.\n",checks,failures);
     return failures?1:0;

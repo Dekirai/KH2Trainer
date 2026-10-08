@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "reviewer": "drain_audit_v2",
+  "date": "2026-10-08",
+  "status": "ACCEPTED_BOUNDED_STATIC_RESEARCH",
+  "blockingFindings": [],
+  "reviewedFolder": "C:\\Users\\shinz\\source\\repos\\KH2Trainer\\docs\\research\\app-execution-context-20261008",
+  "sourceHashes": {
+    "additional-data.json": "b71417768c490229921a305765c42014b857314c659f02c3ddc943d105d29df3",
+    "build_report.py": "e1164874b74ab07d33c212518e292e9a492ec0ba695d9f349069c06508493b24",
+    "chunk-capture.json": "20b1ecf2e81dd60036496b80c77fb218d3c3c230683ec8df082384646c8a53f4",
+    "claims.json": "1a328f6b5f0f655e9e99b18c54474f54be8d676b0c47e3d45b312917cda3a978",
+    "clr-evidence.json": "3be7695626a6b6cade34cec8f82abc37393b6816022af2ff5d2bfa5f21736355",
+    "evidence.json": "71136a6c1d400910f88384062b900ebd8a7bfac8a8a89bab7e4633d5497cda8c",
+    "managed-listings.txt": "ef44216cf35336e752c30c13ece4415c57951f2d1d3354688da06e5f0161ffcd",
+    "manifest.json": "9f463c4195a31f041974434e661c5bad4c6e372a40f8bf01aacb7634412b567e",
+    "MetadataDump.cs": "e8adb2990b68211f763b754e561e5c502ee9098a87fe74de0c97fb7a387e3a9e",
+    "MetadataDump.csproj": "031da6a6f6d810b9f23ffe7818f3acefb7b0ff54b0eb8c6752735ad58d254904",
+    "native-listings.txt": "3c86373f2d93c30c64c3c49189b4fcbbde6d2ca8ddd36f05b12f3173f9cecda9",
+    "prepare_evidence.py": "bdb0fcb7e4422efecb47b486f09f0e2d2efd52d16277aeaa51cb87273d25ec1a",
+    "report.json": "833a8a61eeb205535956c22a01759c190a3affd5557deeb6e44e72331aa0ad04",
+    "report.txt": "362dae5245ffa3a0ba2ae838488bdc315aca6b2ac5eb8ae028d953315a2de2d3",
+    "verification.json": "90921ec251a94bd51ec073cb5d4a7632bd365b8a83f7dd75f0e3610471f6bd29",
+    "verify.py": "5d766237e732088de805e7a7e94361ed844caed624c19787757f086969e4aa50"
+  },
+  "independentRuns": [
+    {
+      "command": "dotnet run --project artifacts/review-app-execution-context-20261008/MetadataReview.csproj -- <original PE> <artifact clr-reproduced.json>",
+      "result": "597 MethodDefs / 507 fixup groups; JSON exactly equals frozen clr-evidence.json. Reads PE metadata only; target assembly never loaded or executed."
+    },
+    {
+      "command": "python -B docs/research/app-execution-context-20261008/verify.py --output artifacts/review-app-execution-context-20261008/native-verifier-run.json",
+      "result": "PASS: 29 contiguous bodies, 1737 instructions, 7833 native bytes, 269 data spans, 266 incoming xrefs; managed byte inventory verified."
+    },
+    {
+      "command": "python -B artifacts/review-app-execution-context-20261008/independent_bytes.py",
+      "result": {
+        "success": true,
+        "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+        "contiguousFunctions": 29,
+        "chunkedFunctions": 2,
+        "chunks": 6,
+        "nativeListedInstructions": 1871,
+        "nativeBytes": 8308,
+        "paddingBytesOutsideListedInstructions": 1,
+        "dataSpans": 269,
+        "clrMethods": 597,
+        "clrIlBodies": 439,
+        "clrFixupGroups": 507,
+        "exactIsolatedClrReproduction": true,
+        "frozenManifestVerified": true,
+        "scope": "Independent PE section reader, original native/data/IL/fixup byte comparison, independent Capstone boundaries and selected entry/vtable checks. No target assembly execution; this does not prove every external call or runtime interleaving."
+      }
+    }
+  ],
+  "reviewConclusions": [
+    "Original PE/COR entry, native wrappers, original App pointer cell and managed fixup token bindings support the stated normal entry chain. 4391D8 and 143720 chunks remain separately represented rather than inflated contiguous coverage.",
+    "Actual IL event delegate registration and native _beginthreadex sites establish distinct UI, App and timing contexts. 11D070 register forwarding is supported by assembly despite misleading decompilation.",
+    "121D90 virtual dispatch and original 5B1190 table establish the selected App update/cleanup return protocol. App publication precedes derived-vtable installation; an exit request occurs after a dispatch in 14EB70 and is not a completed Actor drain.",
+    "Device pause is a request flag without acknowledgement or a universal exclusion barrier. Optional timing callbacks precede pause handling; the GPU wait is unbounded in this path.",
+    "Shutdown sets myFormClosed before native worker polling. ExitApplication uses synchronous Control.Invoke only on the required branch. A UI/worker wait cycle is a conditional static possibility, not an observed failure: it needs the worker to have passed the prior myFormClosed guard while UI shutdown begins, with a worker-completion cause already in flight.",
+    "Native shutdown polls two worker exit codes and ignores API failure outputs; successful normal completion establishes only those two workers have ended. No transitive guarantee for all actors, callbacks, fibers, resource owners or OS/CLR internals is claimed.",
+    "Framework semantics checked against Microsoft documentation; complete IL inventory is clearly separated from semantic review of 21 selected IL bodies."
+  ],
+  "limits": [
+    "No game execution, runtime scheduling experiment, injection, attachment or UI operation.",
+    "CLR reproduction shares the reviewed MetadataDump.cs parser, with a separate independent raw PE/IL/fixup byte reader and native instruction boundary check. It is not a second independent CLR metadata semantic implementation.",
+    "Transitive CRT initialization, TLS/SEH callbacks, optional device callbacks, external WinForms/Win32/CLR behavior and all Actor-writer contexts remain bounded as documented.",
+    "Saved native listings and claims reviewed; fresh IDA capture was not needed or performed for this independent review."
+  ],
+  "primaryReferences": [
+    "https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.application.run?view=windowsdesktop-10.0",
+    "https://learn.microsoft.com/en-us/dotnet/desktop/winforms/controls/how-to-make-thread-safe-calls",
+    "https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/beginthread-beginthreadex?view=msvc-170"
+  ],
+  "artifactHashes": {
+    "clr-reproduced.json": "3be7695626a6b6cade34cec8f82abc37393b6816022af2ff5d2bfa5f21736355",
+    "independent-byte-review.json": "1de247af882876020507acea8ff3d046472bf75711ea0d0a0e5a655b08527a23",
+    "independent_bytes.py": "01ead0b5ea7d67a9e8bc6e7b844b89229c7204b59cee9528a1310855de63bc79",
+    "MetadataReview.csproj": "ae1769bd12efbfb98d5cfcdc05363b87d98707cab093bf35a70d90011e1adfef",
+    "native-verifier-run.json": "90921ec251a94bd51ec073cb5d4a7632bd365b8a83f7dd75f0e3610471f6bd29"
+  }
+}

@@ -11,14 +11,18 @@ namespace {
 DWORD g_gameThread=0;
 struct TrainerContext { uintptr_t base=0,player=0,status=0;bool sceneReady=true; } context;
 alignas(16) unsigned char actors[3][512];
-bool canMove=true,controlled=true,canWrite=true;
+bool canMove=true,controlled=true,canWrite=true,hostFresh=true;
 namespace actor_movement {
 constexpr unsigned Offsets[]={296,300,312,304};
 constexpr double Minima[]={0,0,.1,0},Maxima[]={32,64,100,1000};
 bool MovementReady(const TrainerContext& c,bool=false){return canMove && c.player && c.sceneReady;}
 }
 namespace combat { template<class T>T& Field(uintptr_t actor,unsigned offset){return *reinterpret_cast<T*>(actor+offset);} }
-namespace gameplay_state { struct State{bool controllable;};State Inspect(const TrainerContext&){return {controlled};} }
+namespace gameplay_state {
+struct State{bool controllable;};
+State Inspect(const TrainerContext&){return {controlled&&hostFresh};}
+State InspectNative(const TrainerContext&){return {controlled};}
+}
 namespace actor_lifetime {
 struct Watch {uint64_t gen;uintptr_t actor;bool retired;unsigned pins;};
 Watch watch[64]{};bool ready=true;unsigned status=1;
@@ -44,7 +48,7 @@ float Get(unsigned index,unsigned actor=0){float value;memcpy(&value,actors[acto
 void Reset(){
     for(auto& l:leases)l=Lease{};for(auto& p:receipts)p=Receipt{};nextLease=0;operation=0;testFailAfterWrites=-1;testWriteCalls=0;
     memset(actors,0,sizeof(actors));for(auto& w:actor_lifetime::watch)w={};
-    g_gameThread=GetCurrentThreadId();canMove=controlled=canWrite=actor_lifetime::ready=true;actor_lifetime::status=1;
+    g_gameThread=GetCurrentThreadId();canMove=controlled=canWrite=hostFresh=actor_lifetime::ready=true;actor_lifetime::status=1;
     context={1,reinterpret_cast<uintptr_t>(actors[0]),1,true};
     actor_lifetime::watch[0]={1,context.player,false,0};
     actor_lifetime::watch[1]={2,reinterpret_cast<uintptr_t>(actors[1]),false,0};
@@ -131,12 +135,12 @@ void Lifetimes(){
     Check(FindLease(r.leaseId)->state==State::Uncertain&&Get(1)==20&&actor_lifetime::watch[0].pins==1,"observer failure does not pretend actor destruction or discard originals");
 }
 void Gates(){
-    for(unsigned mode=0;mode<5;++mode){Reset();auto q=Acquire();if(mode==0)controlled=false;if(mode==1)canMove=false;if(mode==2)canWrite=false;if(mode==3)context.sceneReady=false;if(mode==4)g_gameThread=0;
+    for(unsigned mode=0;mode<6;++mode){Reset();auto q=Acquire();if(mode==0)controlled=false;if(mode==1)canMove=false;if(mode==2)canWrite=false;if(mode==3)context.sceneReady=false;if(mode==4)g_gameThread=0;if(mode==5)hostFresh=false;
         auto r=Run(q);Check(r.outcome==Outcome::Rejected&&Get(0)==2&&Get(1)==8,"all command gates precede cohort writes");}
     Reset();auto r=Run(Acquire());controlled=false;auto release=Run(LeaseRequest(Operation::ReleaseIntent,r));
     Check(release.journalState==State::ReleasePending&&Get(1)==20,"release intent accepted in menu without game writes");
     Tick(context);Check(Get(1)==20,"menu continues to defer restoration");controlled=true;Tick(context);Check(Get(1)==8,"control recovery finishes exact-generation cleanup");
-    Reset();r=Run(Acquire());controlled=false;Tick(context,true);Check(Get(1)==20&&FindLease(r.leaseId)->state==State::ReleasePending,"host expiry marks intent while control blocked");
+    Reset();r=Run(Acquire());hostFresh=false;controlled=false;Tick(context,true);Check(Get(1)==20&&FindLease(r.leaseId)->state==State::ReleasePending,"host expiry marks intent while control blocked");
     controlled=true;Tick(context,true);Check(Get(1)==8,"host expiry cleanup does not need a live host");
     for(auto reason:{Reason::Expired,Reason::HostExpired,Reason::InvalidRequest}){Reset();auto q=Acquire();auto rejected=Execute(context,q,987,reason);
         Check(rejected.clientId==q.clientId&&rejected.opId==q.opId&&rejected.requestSequence==987&&rejected.reason==reason&&!(rejected.flags&HasReceipt),"global rejection carries fresh typed response");Check(Get(1)==8,"pre-rejected command writes nothing");}

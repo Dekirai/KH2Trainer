@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "reviewer": "/root/drain_audit_v2",
+  "date": "2026-10-08",
+  "status": "accepted within documented static catalog scope",
+  "blockers": [],
+  "productFilesModified": false,
+  "gameOrNativeExecution": false,
+  "originalExecutableSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "sourceAndEvidenceSha256": {
+    "src/KH2Trainer.Core/BdxNativeCallCatalog.cs": "82739d620a3e91ea13273f7fb6a174c7f004fb2d31979985f649e5912dd4dcb3",
+    "src/KH2Trainer.Core/Data/BdxNativeCalls.json": "4dbaa172a91195c6b3c98253ab3cfa6e1e37e5c74ab00d38ef48789e633a22a3",
+    "src/KH2Trainer.Core/KH2Trainer.Core.csproj": "777990005dbeda6a831b037d79e0c2256f44a81de54364d837a09a315014fde9",
+    "tests/KH2Trainer.Core.Tests/BdxNativeCallCatalogTests.cs": "d2b5266336519442c450f0f37244873bb97bc4d28fa7a8a3394ab0794b0d6748",
+    "docs/research/bdx-trap-catalog-20261008/build_catalog.py": "907446d305cc47113cff443b860fbb0272647934cfb702dd4b3493b8c4f82ddd",
+    "docs/research/bdx-trap-registry-20261008/manifest.json": "5d2ea3254b7a730af94820e744c26f593051b9eba82b8e21757a0db255c07279",
+    "docs/research/bdx-rebind-operands-20261008/evidence.json": "5c497bab015bc9d0d308322a130202852a659d2d9be1521634f2ed0aacca9c63",
+    "artifacts/review-bdx-native-catalog-20261008/Review.cs": "6c0457345933ae1e3a74ef92962e246f6c3772485e9b0093e3870fc3a21ac587",
+    "artifacts/review-bdx-native-catalog-20261008/Review.csproj": "ac7148e2e0cfd810ee33f2ccd30188e684bf8d1c80f90ba2b42963180dbcc361",
+    "artifacts/review-bdx-native-catalog-20261008/check_data.py": "c18dc154bbc8b64a1eb38c77fea597f36ee040e925211353f0c9265478a2543b",
+    "artifacts/review-bdx-native-catalog-20261008/descriptor-oracle.json": "578969e28839704b428dd4cf39236829034ca6c1adcdd4d81d754b9812c59db7",
+    "artifacts/review-bdx-native-catalog-20261008/data-review.json": "5ff9e15c5fcfb38f80da5133ecd6c5e2c41bb900aca3bc2eb3b27246622aaaa6",
+    "artifacts/review-bdx-native-catalog-20261008/api-run.json": "929cffc2dfa97b1dc4f34921293af10af5960d89224fe3242af23d295d9fb13f"
+  },
+  "reviewedBehavior": [
+    "All 150 descriptor addresses, handler RVAs and flag words independently match original PE bytes. Eleven recorded bank identities/states agree with the original slots and verified registration paths.",
+    "Bank and index rejection enforces only the 10-bit and 16-bit opcode representations. Unrecorded banks and descriptors remain unknown, with absent handler/arity/return/flag metadata rather than invented zero values or claimed native bounds.",
+    "The five interior NULL-handler records in bank 0 remain explicit holes; later descriptors are retained. Bank 3 and bank 9 distinguish context-installed tables from original NULL registry slots and do not promise live availability.",
+    "Metadata is held in private frozen dictionaries with immutable scalar/string records and tuple keys. A caller-created record copy does not mutate subsequent lookups.",
+    "The actual compiled Core assembly successfully deserializes its exact embedded System.Text.Json resource. Schema, executable identity, representable metadata keys and descriptor arithmetic are checked; duplicate keys fail construction.",
+    "Annotation 1:6 correctly preserves declared arity 12 while documenting handler reads of scratch slots 12 through 15. Complete original-byte-verified handler 42E220 and callee 3CA0E0 show that the callee consumes slots 12 through 14; slot 15 is copied by the wrapper. The VM scratch array is not initially cleared, so the corrected wording allows uninitialized contents as well as values from earlier calls."
+  ],
+  "independentChecks": {
+    "data": {
+      "success": true,
+      "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+      "productJsonSha256": "4dbaa172a91195c6b3c98253ab3cfa6e1e37e5c74ab00d38ef48789e633a22a3",
+      "banks": 11,
+      "descriptors": 150,
+      "annotations": 44,
+      "metadataComparedToOriginalPe": true,
+      "selectedAnnotationBodies": [
+        {
+          "addr": "0x1403ca0e0",
+          "bytes": 233,
+          "sha256": "fed31d7d0d3ca0cdd525cf0777164abab04e907ff2e52e482202937f6045035f"
+        },
+        {
+          "addr": "0x14042e220",
+          "bytes": 217,
+          "sha256": "199835a72e69ec96e2c9358e81e8a293bd37ab3a543ca6e27a9aa60849340ae4"
+        }
+      ],
+      "scope": "All numeric descriptors/bank snapshot states checked against original bytes. Selected1:6 native bodies rechecked. This does not independently re-prove every descriptive annotation."
+    },
+    "actualPublicApi": {
+      "success": true,
+      "checks": 2559890,
+      "knownDescriptors": 150,
+      "allIndicesTestedPerBank": 65536,
+      "banksWithAllIndices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        1023
+      ],
+      "allRepresentableBanksSampled": 1024,
+      "gameOrNativeExecution": false
+    }
+  },
+  "commands": [
+    "C:/Users/shinz/AppData/Local/Programs/Python/Python313/python.exe -B artifacts/review-bdx-native-catalog-20261008/check_data.py",
+    "dotnet run --project artifacts/review-bdx-native-catalog-20261008/Review.csproj -c Release --artifacts-path artifacts/review-bdx-native-catalog-20261008/build -- artifacts/review-bdx-native-catalog-20261008/descriptor-oracle.json artifacts/review-bdx-native-catalog-20261008/api-run.json"
+  ],
+  "resolvedReviewNote": {
+    "key": "1:6 scratch initialization",
+    "resolution": "Parent corrected generated text to uninitialized scratch contents or values left by an earlier native call before the final data and compiled API runs."
+  },
+  "limits": [
+    "This review independently proves all numeric catalog rows and registry-state semantics, not all 44 descriptive annotations. The selected 1:6 native discrepancy was rederived; the separate 0:84 NaN correction was supplied by another reviewer and is included in the reviewed JSON hash.",
+    "The resource is build-owned data with no public external-JSON loading API. Malformed-resource fuzzing, trim/AOT publication and every future schema change are outside this review.",
+    "The runtime probe covers all 65536 indices in thirteen banks, samples all 1024 representable banks, and exercises representation rejection and copy isolation. It does not execute game/native handlers or prove that a catalogued native call is safe.",
+    "The parent test source was read and hashed, but this receipt attributes the reported 2559890 checks only to the independent probe, not to a rerun of the parent full test suite."
+  ]
+}

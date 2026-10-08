@@ -1,0 +1,31 @@
+Independent bounded review: BDX Actor query 1:367
+Status: ACCEPTED_BOUNDED_NATIVE_ANALYSIS. No blocking finding in the two proposed claims, subject to the conditions below.
+
+Reviewed sources
+docs/research/bdx-actor-query-20261008/{capture,additional-capture,helper-capture,imported-evidence}.json, plus frozen Bank1/2 evidence for adapter 0x14042BB40. Final annotations, claims, report, verifier and manifest were also reviewed. Subject manifest SHA-256: 95d9683efe7191be09202f819e79786f6cce8591e18346a6b7a900e25412b3ec. The uncaptured transitive collision closure remains outside this review.
+
+Verification
+Original PE SHA-256: 9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed.
+Independent read-only PE and Capstone check: 9 complete bodies, 239 instructions, 931 bytes; four data spans / 40 bytes; 18 exact instruction anchors; all 33 captured positive references to shared buffer 0x140756B48. Adapter bytes match the frozen Bank1/2 capture. The original descriptor at 0x140756A60 points to 0x14042BB40 with flags 0x40000003.
+Reproduce from repository root:
+py -3 -B artifacts/review-bdx-actor-query-20261008/independent_check.py
+The checker prints JSON and does not modify study files, load the target module, or execute target instructions.
+The final study verifier was independently rerun with --check: PASS, 9 bodies / 239 instructions / 931 bytes / 34 code xrefs / 20 model checks. All 11 manifest files and one dependency match their hashes. Six claims have nine resolvable evidence references. Both annotation descriptors, 1:147 and 1:367, were separately checked against their original PE records. The final text includes the review clarification requiring stable RN-even and relevant masked SSE exceptions, including precision/inexact. No blocking overstatement remains in these bounded claims.
+
+Claim 1: skipped output and unconditional shared-address return
+At 0x1403B85ED/0x1403B85F0, COMISS(limit, 0) followed by JBE takes the exit for negative values, both zero signs, and unordered NaNs when the invalid-operation exception is masked. An unmasked NaN exception is a different path; it is not a normal return. Actor reads, position selection, and local vector copy occur before this limit check.
+The only direct copy to the supplied output pointer in this body is the call at 0x1403B8651, using 0x1401A8E60 to copy four DWORDs. The entry exit skips it. In mode false, query+116 bit 0 can branch at 0x1403B863B before this copy. A first-iteration break therefore leaves no output from this invocation; a later break preserves the last completed output copy from the current invocation. Mode true skips that flag test.
+The BL/EAX return tracks whether a direct output copy has occurred. Adapter 0x14042BB40 does not inspect it: after the normal return at 0x14042BB7F it encodes shared buffer 0x140756B48 and stores that address plus the @ADR tag in operand slot 0. The adapter has no result initialization or failure branch. This establishes the stale-output hazard, not a guarantee that every possible transitive helper leaves the global unchanged. Unknown reentrant/concurrent writers are not excluded.
+Separate adapter 0x14042B7B0 supplies a concrete second writer: it copies Actor position into the same shared buffer at 0x14042B7DA and returns the same address. Original buffer contents are (0,0,0,1), but runtime contents cannot be inferred from those initial bytes.
+
+Claim 2: precise binary32 non-progress boundary
+The loop forms next_t = min(limit, RN32(t + 100)), stores it in the local query, calls 0x14016FEC0, then continues at 0x1403B865B only when limit > t. The captured MINSS operand order is limit as destination and the rounded sum as source; the formula applies to the ordered positive values considered here.
+The first fixed point reached from t=0 under stable round-to-nearest-even is 2147483648 = 2^31, bits 0x4F000000. Below this point the representable upward spacing is at most 128, so +100 strictly advances. The predecessor is 2147483520, whose +100 rounds to 2^31. At 2^31 the upward spacing is 256 and +100 rounds back to 2^31. An exact integer model of binary32 rounding independently reached it after 18,147,356 strict increments; the next step stagnates.
+If limit == 2^31, JA is false at equality and the loop terminates. If the binary32 limit is greater than 2^31 (smallest such value: 2147483904, bits 0x4F000001), or +infinity, the MINSS result remains 2^31 and JA remains true. This is conditional nontermination: helpers must keep returning normally, preserved loop registers must remain intact, the rounding mode must remain RN-even, relevant floating-point exceptions must be masked, and no flag break may intervene. Mode true bypasses the documented flag break. A very large source-language number that rounds down to exactly 2^31 is not a counterexample to the strict binary32-limit condition.
+Intel SDM Volume 1, December 2024, Table D-6 supports masked COMISS NaN flags; Table D-9 documents MINSS exceptional operand behavior. Source: https://cdrdv2-public.intel.com/843827/253665-sdm-vol-1-dec-24.pdf . No target-specific behavior is inferred from the manual alone.
+
+Boundaries and useful follow-up
+This review establishes no retail script witness for invalid/huge limits, actual hang, complete collision semantics, global writer census, Actor lifetime guarantee, or native thread exclusivity. Limit validation is too late to protect an invalid Actor. The model does not substitute no-ops for native collision helpers: their return and break decisions are explicit premises.
+For any future caller, use a finite practical input bound and an explicit success result; copy successful output into caller-owned storage before another shared-buffer operation. A native loop hardening proposal would also need an iteration/progress guard and a defined failure result. No product change or patch was made in this review.
+
+Concrete source hashes, checker hash, and machine-readable verification are pinned in review-bdx-actor-query-20261008.json and review-bdx-actor-query-20261008/independent-checks.json.

@@ -1,0 +1,337 @@
+[
+  {
+    "addr": "0x1401f9aac",
+    "instruction": "call sub_1403E16B0",
+    "meaning": "VM allocator is installed before Bank 3 pointer"
+  },
+  {
+    "addr": "0x1401f9ab1",
+    "instruction": "lea rcx, off_14072F1A0",
+    "meaning": "Static Bank 3 table address"
+  },
+  {
+    "addr": "0x1403e1710",
+    "instruction": "mov cs:qword_1407534A8, rcx",
+    "meaning": "Only captured bank slot setter writes pointer"
+  },
+  {
+    "addr": "0x1401f9a84",
+    "instruction": "xor ecx, ecx",
+    "meaning": "Shutdown selects NULL"
+  },
+  {
+    "addr": "0x1401f9a86",
+    "instruction": "call sub_1403E1710",
+    "meaning": "Shutdown clears Bank 3 first"
+  },
+  {
+    "addr": "0x1401f9a8f",
+    "instruction": "jmp sub_1403E1620",
+    "meaning": "VM retirement follows bank clear"
+  },
+  {
+    "addr": "0x1401e225d",
+    "instruction": "movsxd rcx, ecx; Key",
+    "meaning": "Object ID sign-extended into CRT key"
+  },
+  {
+    "addr": "0x1401e2276",
+    "instruction": "mov r9d, 60h ; '`'; SizeOfElements",
+    "meaning": "Object row size 96"
+  },
+  {
+    "addr": "0x1401e227c",
+    "instruction": "movsxd r8, dword ptr [rdx+4]; NumOfElements",
+    "meaning": "Object row count sign-extended"
+  },
+  {
+    "addr": "0x1401e2284",
+    "instruction": "call cs:__imp_bsearch",
+    "meaning": "CRT bsearch imported call"
+  },
+  {
+    "addr": "0x1401e228a",
+    "instruction": "movzx ecx, byte ptr [rax+4]",
+    "meaning": "Search result read without NULL branch"
+  },
+  {
+    "addr": "0x1401e22ca",
+    "instruction": "mov edx, 1",
+    "meaning": "Type 8 category 1"
+  },
+  {
+    "addr": "0x1401e22d1",
+    "instruction": "mov edx, 3",
+    "meaning": "Type 4 category 3"
+  },
+  {
+    "addr": "0x1401e22d8",
+    "instruction": "mov edx, 2",
+    "meaning": "Type 3 category 2"
+  },
+  {
+    "addr": "0x1401e53c6",
+    "instruction": "jz short loc_1401E53D3",
+    "meaning": "Attached-object condition before detach"
+  },
+  {
+    "addr": "0x1401e53d3",
+    "instruction": "or edx, 1",
+    "meaning": "Removal request sets mask 1"
+  },
+  {
+    "addr": "0x1401e4186",
+    "instruction": "or ecx, 1",
+    "meaning": "Base removal also sets mask 1"
+  },
+  {
+    "addr": "0x1401e4b23",
+    "instruction": "call qword ptr [r8]",
+    "meaning": "Collector destroys previous retirement objects first"
+  },
+  {
+    "addr": "0x1401e4b37",
+    "instruction": "mov rdi, cs:qword_140AE9688",
+    "meaning": "Active list traversal follows destruction"
+  },
+  {
+    "addr": "0x1401e4b4c",
+    "instruction": "mov cs:qword_140AE9698, 0",
+    "meaning": "Previous retirement head cleared"
+  },
+  {
+    "addr": "0x1401e4c2c",
+    "instruction": "mov cs:qword_140AE9698, rbx",
+    "meaning": "Newly retired object appended after destructor phase"
+  },
+  {
+    "addr": "0x1401e4c99",
+    "instruction": "call sub_1401E4AE0",
+    "meaning": "Cleanup invokes collector once"
+  },
+  {
+    "addr": "0x1401e4ca6",
+    "instruction": "jmp sub_1401E4AE0",
+    "meaning": "Cleanup invokes collector a second time"
+  },
+  {
+    "addr": "0x1401e6fd0",
+    "instruction": "movzx eax, byte ptr [rcx+1FCh]",
+    "meaning": "Removal query dereferences flags"
+  },
+  {
+    "addr": "0x1401e6fd9",
+    "instruction": "and al, 1",
+    "meaning": "Removal query returns only inverse mask 1"
+  },
+  {
+    "addr": "0x1401e71d3",
+    "instruction": "movaps xmm6, xmm2",
+    "meaning": "3:1 speed arrives in XMM2"
+  },
+  {
+    "addr": "0x1401e71ff",
+    "instruction": "movaps xmm0, xmm6",
+    "meaning": "3:1 native helper returns speed in XMM0"
+  },
+  {
+    "addr": "0x1401e7202",
+    "instruction": "movss dword ptr [rdi+54h], xmm6",
+    "meaning": "3:1 speed storage"
+  },
+  {
+    "addr": "0x1401e7122",
+    "instruction": "movaps xmm6, xmm1",
+    "meaning": "3:18 speed arrives in XMM1"
+  },
+  {
+    "addr": "0x1401e712e",
+    "instruction": "movaps xmm0, xmm6",
+    "meaning": "3:18 returns speed in XMM0"
+  },
+  {
+    "addr": "0x1401e7131",
+    "instruction": "movss dword ptr [rbx+54h], xmm6",
+    "meaning": "3:18 speed storage"
+  },
+  {
+    "addr": "0x1401e704a",
+    "instruction": "jnz short locret_1401E705D",
+    "meaning": "Shrink request has already-active branch"
+  },
+  {
+    "addr": "0x1401e704c",
+    "instruction": "mov dword ptr [rcx+3DCh], 0BD800000h",
+    "meaning": "Shrink alpha rate is literal -0.0625"
+  },
+  {
+    "addr": "0x1401e7056",
+    "instruction": "or dword ptr [rcx+1FCh], 2",
+    "meaning": "Shrink mask 2"
+  },
+  {
+    "addr": "0x1401e7870",
+    "instruction": "or dword ptr [rcx+1F8h], 8",
+    "meaning": "Skip model-motion mask"
+  },
+  {
+    "addr": "0x1401e7220",
+    "instruction": "and dword ptr [rcx+1F8h], 0FFFFFFF7h",
+    "meaning": "Allow model-motion mask"
+  },
+  {
+    "addr": "0x1401e4dfb",
+    "instruction": "call sub_140216350",
+    "meaning": "Scheduler applies model motion at this guarded site"
+  },
+  {
+    "addr": "0x1401e75ab",
+    "instruction": "call sub_1401E8300",
+    "meaning": "Scroll conversion uses inverse for current position"
+  },
+  {
+    "addr": "0x1401e75c1",
+    "instruction": "call sub_1401E8300",
+    "meaning": "Scroll conversion of forward direction"
+  },
+  {
+    "addr": "0x1401e75da",
+    "instruction": "xor edx, edx",
+    "meaning": "Movement conversion deliberately uses point selector zero"
+  },
+  {
+    "addr": "0x1401e75dc",
+    "instruction": "mov dword ptr [rbx+54h], 3F800000h",
+    "meaning": "Movement W temporarily becomes one"
+  },
+  {
+    "addr": "0x1401e75e8",
+    "instruction": "movss dword ptr [rbx+54h], xmm6",
+    "meaning": "Movement speed restored"
+  },
+  {
+    "addr": "0x1401e727b",
+    "instruction": "call sub_1401E8140",
+    "meaning": "World conversion uses forward matrix"
+  },
+  {
+    "addr": "0x1401e72aa",
+    "instruction": "xor edx, edx",
+    "meaning": "World movement conversion also point mode"
+  },
+  {
+    "addr": "0x1401e7244",
+    "instruction": "xorps xmm1, xmm1",
+    "meaning": "Stop movement uses float zero"
+  },
+  {
+    "addr": "0x1401e63c8",
+    "instruction": "divss xmm0, xmm1",
+    "meaning": "Alpha rate divides by caller float"
+  },
+  {
+    "addr": "0x1401e76d2",
+    "instruction": "mov dword ptr [rbx+64h], 0",
+    "meaning": "Scale setter forces W zero"
+  },
+  {
+    "addr": "0x1401e6440",
+    "instruction": "mov rax, [rcx+400h]",
+    "meaning": "Parent is a borrowed raw pointer"
+  },
+  {
+    "addr": "0x1401e63e0",
+    "instruction": "mov eax, [rcx+40Ch]",
+    "meaning": "Attachment ordinal field read"
+  },
+  {
+    "addr": "0x1401e557a",
+    "instruction": "mov [rcx+40Ch], r9d",
+    "meaning": "Attachment ordinal field write"
+  },
+  {
+    "addr": "0x140227730",
+    "instruction": "mov dword ptr [rbx+4], 544C4640h",
+    "meaning": "Distance return tag FLOAT"
+  },
+  {
+    "addr": "0x140227900",
+    "instruction": "retn 0",
+    "meaning": "No-op adapter RET"
+  },
+  {
+    "addr": "0x1401e7f5c",
+    "instruction": "mov r8d, 59D8h",
+    "meaning": "Scroll priority 23000"
+  },
+  {
+    "addr": "0x14014f7b3",
+    "instruction": "mov [rax+64h], ebp",
+    "meaning": "Task stores signed priority"
+  },
+  {
+    "addr": "0x14014f7ba",
+    "instruction": "mov [rax+70h], r9",
+    "meaning": "Ordinary task starts without fiber state"
+  },
+  {
+    "addr": "0x14014f7e7",
+    "instruction": "jl short loc_14014F7EE",
+    "meaning": "Task insertion compares priority with signed branch"
+  },
+  {
+    "addr": "0x14014fdfc",
+    "instruction": "call qword ptr [rbx]",
+    "meaning": "Scheduler direct callback path"
+  },
+  {
+    "addr": "0x1401e5344",
+    "instruction": "call sub_1403E1840",
+    "meaning": "Object initial event 0 call"
+  },
+  {
+    "addr": "0x1401e535a",
+    "instruction": "call sub_1403E1790",
+    "meaning": "Object event 1 setup"
+  },
+  {
+    "addr": "0x1401e536f",
+    "instruction": "call kh2_YSVM_UpdateTree",
+    "meaning": "Object script tree update"
+  },
+  {
+    "addr": "0x1401e538c",
+    "instruction": "call sub_1403E1410",
+    "meaning": "Object completed-script destruction may run exit event"
+  },
+  {
+    "addr": "0x1401e539e",
+    "instruction": "mov qword ptr [rbx+3A0h], 0",
+    "meaning": "Object script link cleared after destruction"
+  },
+  {
+    "addr": "0x1401e4951",
+    "instruction": "call sub_1403E1410",
+    "meaning": "Object destruction invokes VM teardown"
+  },
+  {
+    "addr": "0x1401e4983",
+    "instruction": "call qword ptr [rbx+48h]",
+    "meaning": "Object destruction invokes model virtual callback"
+  },
+  {
+    "addr": "0x1401e49a8",
+    "instruction": "call sub_14039DA10",
+    "meaning": "Object destruction invokes external resource release"
+  },
+  {
+    "addr": "0x1404ad274",
+    "instruction": "xor eax, eax",
+    "meaning": "Zero encoded pointer decodes to NULL"
+  },
+  {
+    "addr": "0x1404ad277",
+    "instruction": "jmp kh2_Ptr32_DecodeCore",
+    "meaning": "Nonzero decode uses region decoder"
+  }
+]

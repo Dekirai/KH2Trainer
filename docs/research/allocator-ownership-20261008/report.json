@@ -1,0 +1,272 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-08",
+  "scope": "Bounded native allocator ownership and size checks; 49 fresh complete captures, 20 selected reused bodies reverified; not a whole-program lifetime proof.",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "evidence": "docs/research/allocator-ownership-20261008/evidence.json",
+  "verification": "docs/research/allocator-ownership-20261008/verification.json",
+  "claims": [
+    {
+      "addr": "0x14014ed40",
+      "Domain": "native",
+      "Title": "Normale Startup-Initialisierung verwendet mehrere Allocators gleichzeitig.",
+      "Finding": "14ED63 erzeugt einen TASK_MANAGER samt eigenem Allocator in der statischen Region 8CC5B0/0x20000 und speichert ihn in 9BA888. Unmittelbar danach ruft 14ED6F 39DC50 auf, das einen zweiten Allocator über 29F3400/0x8000 erzeugt und in 29F33E8 speichert. Im geradlinigen Zwischenstück wird die erste Instanz nicht zerstört. Der Konstruktor 19C3A0 verwendet für beide denselben globalen Semaphore AC0FD8.",
+      "Evidence": [
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x14014ed40]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x14014f600]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x14039dc50]",
+        "docs/research/allocator-blocks-20261008/evidence.json#functions[addr=0x14019c3a0]",
+        "docs/research/allocator-ownership-20261008/verification.json"
+      ],
+      "Limitations": "Statische native Erfolgsfolge, kein beobachteter Spielstart. Gültige statische Regionen und erfolgreiche Semaphore-/Allokationserstellung werden vorausgesetzt."
+    },
+    {
+      "addr": "0x14014f600",
+      "Domain": "native",
+      "Title": "TASK_MANAGER besitzt den Allocator als Zeiger an +8.",
+      "Finding": "14F600 konstruiert in der übergebenen Region zuerst den Allocator und fordert über dessen Slot +8 genau 72 Payloadbytes an. Das TASK_MANAGER-Objekt erhält Tabelle 5B13E8 und den Allocator an+8. Slot +8 der Taskmanager-Tabelle führt über 14F740 zum Allocate des gespeicherten Allocators. Slot 0=14F590 setzt die Basistabelle und ruft bei Delete-Bit 1 CRTfree auf das Taskmanagerobjekt auf; er zerstört den gespeicherten Allocator nicht. Der Konstruktor prüft weder sein Konstruktorresultat noch den 72-Byte-Allocate-Rückgabewert vor Dereferenzierung.",
+      "Evidence": [
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x14014f600]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x14014f740]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x14014f590]",
+        "docs/research/allocator-blocks-20261008/evidence.json#functions[addr=0x14019c2b0]",
+        "docs/research/allocator-ownership-20261008/verification.json"
+      ],
+      "Limitations": "Keine beobachtete native Slot 0-Aufrufstelle auf diesen eingebetteten Taskmanagerobjekten. Ein Aufruf mit Delete-Bit 1 wäre ohne passende CRT-Herkunft nicht als sicher belegt; kein Vorschlag für externe Zerstörung."
+    },
+    {
+      "addr": "0x140150a20",
+      "Domain": "native",
+      "Title": "Titelregion besitzt eine 4-MiB-Arena mit getrennten Teardown-Schritten.",
+      "Finding": "150A20 reserviert0x400000 über 39D300, konstruiert den Allocator und speichert900650. Der String ovl_title.rel und der Aufruf2B4F00(0,716990) ordnen diese Instanz dem Titelkontext zu.150910 ruft zuerst2B4F00(1,716990), dann 39D400(900650),39CCA0(0), Ressourcenhelfer und setzt 900650=0.2B4F00 erzeugt zusätzlich einen TASK_MANAGER über der statischen Region B0D550/0x10000.",
+      "Evidence": [
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140150a20]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140150910]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x1402b4f00]",
+        "docs/research/actor-free-closure-20261008/evidence.json#functions[addr=0x14039d300]",
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14039d400]",
+        "docs/research/allocator-ownership-20261008/verification.json"
+      ],
+      "Limitations": "Die vielen Subsystem- und dynamischen Cleanup-Callbacks in 2B4F00 sind hier keine vollständige transitive Closure. Die Reihenfolge der aufgezeichneten direkten Owner-Schritte ist belegt."
+    },
+    {
+      "addr": "0x140150af0",
+      "Domain": "native",
+      "Title": "9006C8/9006D0 sind je nach Modus eigene Arenen oder geliehene Aliase.",
+      "Finding": "Ohne Fremdallocator und außerhalb Modus 2 erzeugt 150AF0 zwei aneinander anschließende statische Regionen:900730/0x38000 und 938730/0x68000. In Modus 2 übernimmt C8 den 9A8780-Alias über 151AD0 und setzt D0=NULL. Bei nichtnull Fremdallocator setzt der frühe Zweig C8 und Flag9006B1=1, schreibt D0 aber nicht.1512B0 verwendet das Paar erneut oder baut es neu und erzeugt außerdem den Taskmanager in 9A0730/0x8000.",
+      "Evidence": [
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140150af0]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x1401512b0]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140151ad0]",
+        "docs/research/allocator-ownership-20261008/verification.json"
+      ],
+      "Limitations": "Das Vorhandensein eines C8-/D0-Zeigers ist kein eindeutiger Eigentumsnachweis. Der frühe Fremdallocator-Zweig erfordert passende bestehende D0-Zustände; ein tatsächlicher falscher Folgezugriff ist nicht bewiesen."
+    },
+    {
+      "addr": "0x140150b70",
+      "Domain": "native",
+      "Title": "Variable Zweiteilung besitzt keine Untergrenzenprüfung; der geschlossene Aufrufer verwendet eine passende feste Größe.",
+      "Finding": "150B70 berechnet firstSize als 32-Bit(total-0x68000), konstruiert C8 bei base und D0 bei base+firstSize mit 0x68000. Ein total unter0x68000 würde in der 32-Bit-Subtraktion umlaufen. Der einzige aufgezeichnete direkte Aufrufer38DFE0 reserviert0x100000 und übergibt exakt diesen Wert, also firstSize0x98000. Er setzt das externe Eigentumsflag.38DFA0 lässt150C50 beide Aliase löschen und gibt anschließend genau die gespeicherte BF2A28-Region über 39D400 zurück.",
+      "Evidence": [
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140150b70]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x14038dfe0]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x14038dfa0]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140150c50]",
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14039d400]",
+        "docs/research/allocator-ownership-20261008/verification.json"
+      ],
+      "Limitations": "Kein realer Aufrufer mit zu kleiner Größe belegt. Weitere indirekte oder externe Aufrufer sind durch den Xref-Ausschnitt nicht ausgeschlossen."
+    },
+    {
+      "addr": "0x1405280a0",
+      "Domain": "native",
+      "Title": "Der Fremdallocator-Pfad besitzt einen konkreten0xA0000-Regionseigentümer.",
+      "Finding": "5280A0 reserviert0xA0000, konstruiert2B561E0 und verleiht ihn mit 150AF0(1,allocator) an 9006C8.528050 ruft zuerst150C50 zum Löschen der geliehenen C8/D0-Aliase auf, danach39D400(2B561E0), nullt den Eigentümer und setzt den Modus zurück. Dies ist eine zweite direkt aufgezeichnete Anwendung des Eigentumsflags.",
+      "Evidence": [
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x1405280a0]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140528050]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140150af0]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140150c50]",
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14039d400]",
+        "docs/research/allocator-ownership-20261008/verification.json"
+      ],
+      "Limitations": "Die Auslösung der übergeordneten Zustandswechsel ist nicht transitive vollständig untersucht."
+    },
+    {
+      "addr": "0x140151a50",
+      "Domain": "native",
+      "Title": "Modus 2 besitzt eine 0xCE0000-Region und einen darin verschachtelten1-MiB-Allocator.",
+      "Finding": "151A50 erzeugt 9A8780 über einer 0xCE0000-Region und startet1E18F0(0).1E13B0 setzt über 1E2060/151AD0 den Parent AE94F0=9A8780 und erreicht212290. Dieser fordert0x100000 über den Parent-Allocate-Forwarder1E1FA0 an, speichert den RohblockAF75E0 und konstruiert darin den KindallocatorAF75E8. Beide Instanzen bleiben auf diesem normalen Pfad gleichzeitig gültig.",
+      "Evidence": [
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140151a50]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x1401e18f0]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x1401e13b0]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x1401e2060]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140151ad0]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x1401e1fa0]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140212290]",
+        "docs/research/allocator-ownership-20261008/verification.json"
+      ],
+      "Limitations": "Normale erfolgreiche Initialisierung und unveränderte native Parent-Vtable werden vorausgesetzt. Die dazwischenliegenden Subsysteminitialisierer wurden nicht alle transitiv geschlossen."
+    },
+    {
+      "addr": "0x140212210",
+      "Domain": "native",
+      "Title": "Die 1-MiB-Kindarena wird als Parent-Block freigegeben; ihr Alias bleibt stehen.",
+      "Finding": "212210 übergibtAF75E0 an 1E2030, der den Parent AE94F0 über Slot +16 freigeben lässt. Danach wird AF75E0=NULL; AF75E8 wird in diesem Körper nicht gelöscht.1E18F0(1) führt 212210 vor 1E2020 aus, das AE94F0 löscht;151980 gibt danach die äußere9A8780-Region über 39D400 zurück und nullt9A8780.212300 kopiert AF75E8 in ein übergebenes Objekt an+48; dies ist ein realer Verbraucher des Alias.",
+      "Evidence": [
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140212210]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x1401e2030]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x1401e18f0]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x1401e2020]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140151980]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140212300]",
+        "docs/research/allocator-blocks-20261008/evidence.json#functions[addr=0x14019c470]",
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14039d400]",
+        "docs/research/allocator-ownership-20261008/verification.json"
+      ],
+      "Limitations": "Kein tatsächlicher Aufruf von 212300 nach der Freigabe bewiesen. Die direkte Parent-Free-Kette ruft keinen Kind-Destruktor auf; Seiteneffekte früherer Subsystem-Callbacks bleiben getrennt offen."
+    },
+    {
+      "addr": "0x140151d30",
+      "Domain": "native",
+      "Title": "Modus 4 erstellt vier Allocators auf zwei reservierten Regionen.",
+      "Finding": "151D30 reserviert0xF00000 für 9A8800 und zusätzlich0x1E0000. Die zweite Region enthält drei aneinander anschließende Allocators:9A8808 bei+0 mit 0x40000,9A8810 bei+0x40000 mit 0x180000 und 9A8818 bei+0x1C0000 mit 0x20000. Die Größen decken exakt0x1E0000 ab.151C20 bereinigt den Modus, poppt zuerst die gemeinsame Dreierregion über 9A8808 und dann die 0xF00000-Region über 9A8800.",
+      "Evidence": [
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140151d30]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140151c20]",
+        "docs/research/actor-free-closure-20261008/evidence.json#functions[addr=0x14039d300]",
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14039d400]",
+        "docs/research/allocator-ownership-20261008/verification.json"
+      ],
+      "Limitations": "Die Reservierung39D300 kann selbst Ressourcen recyceln. Die geometrische Trennung der beiden erfolgreichen Regionen setzt intakte native Top-/Größenverwaltung voraus."
+    },
+    {
+      "addr": "0x140151c20",
+      "Domain": "native",
+      "Title": "Der dritte Split-Alias 9A8818 wird im Cleanup nicht gelöscht.",
+      "Finding": "Nach den beiden Regions-Pops löscht151C20 ausschließlich9A8810,9A8808 und 9A8800.9A8818 behält seinen Wert.151E60 gibt genau 9A8818 zurück, besitzt aber keine aufgezeichneten IDA-Xrefs. Die gespeicherte Adresse kann damit nach dem Regionsende verbleiben; ein tatsächlich ausgeführter stale Zugriff ist nicht nachgewiesen.",
+      "Evidence": [
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140151c20]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140151e60]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140151d30]",
+        "docs/research/allocator-ownership-20261008/verification.json"
+      ],
+      "Limitations": "Abwesenheit einer Store-Instruktion bezieht sich auf 151C20, nicht auf sämtliche transitiven oder externen Schreiber. Kein Retail-Crash-Claim."
+    },
+    {
+      "addr": "0x140253cb0",
+      "Domain": "native",
+      "Title": "Ein weiterer Kindallocator liegt als normaler Block innerhalb des Modus 4-Elternallocators.",
+      "Finding": "243BC0 ruft 2513E0 vor 253CB0 auf;2513E0 setzt AFB420=151E40()=9A8800.253CB0 fordert3864000 (0x3AF5C0) Payloadbytes über Parent-Slot +8 an und konstruiert darinAFBA60.253C60 gibtAFBA60 über Parent-Slot +16 zurück und nullt den Alias.243A10(1) führt 253C60 vor 2513D0 aus, dasAFB420 löscht. Damit ist der Parent während dieser direkten Kindfreigabe noch benannt; der Kindallocator erhält keinen eigenen Destruktoraufruf in dieser Kette.",
+      "Evidence": [
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140243bc0]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x1402513e0]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140151e40]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140253cb0]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140253c60]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140243a10]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x1402513d0]",
+        "docs/research/allocator-blocks-20261008/evidence.json#functions[addr=0x14019c470]",
+        "docs/research/allocator-ownership-20261008/verification.json"
+      ],
+      "Limitations": "Die native Vtable-Identität und erfolgreiches Allocate sind Voraussetzungen. Andere Subsystem-Callbacks vor der Kindfreigabe bleiben offen; keine allgemeine Thread- oder Alias-Exklusivität."
+    },
+    {
+      "addr": "0x1402530c0",
+      "Domain": "native",
+      "Title": "Taskmanager-Unterregion wird separat ausgerichtet; die Eingaben sind ungesichert.",
+      "Finding": "243A10 fordert über 2530C0 vom 9A8800-Parent eine Region mit Nutzgröße 0x30000 und Alignment 16 an und übergibt die ausgerichtete Adresse an 14F600. 2530C0 berechnet die Anforderung zuerst modulo 2^32 und übergibt sign_extend_64(int32(uint32(a3+a4-1))) an Allocate: MOVSXD RDX,EAX bei 2530DA erweitert das Ergebnis vor dem Aufruf mit Vorzeichen. Der Payloadzeiger wird mit der 64-Bit-Maske ~(uint64_t)(uint32_t)(a4-1) aufgerundet. Nullresultat, Potenz-von-zwei-Alignment und Größenüberlauf werden nicht geprüft. Der konkrete Taskmanager-Aufruf verwendet 16 und 0x30000.",
+      "Evidence": [
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140243a10]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x1402530c0]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x14014f600]",
+        "docs/research/allocator-ownership-20261008/verification.json"
+      ],
+      "Limitations": "Keine unzulässigen Parameter aus diesem konkreten Aufrufer belegt. Das allgemeine Hilfsverfahren ist nur unter gültigem Alignment/Größenvertrag sinnvoll."
+    },
+    {
+      "addr": "0x140152680",
+      "Domain": "native",
+      "Title": "Der Feldübergang ersetzt dieselbe9BA920-Bindung mehrfach und besitzt einen 32-Bit-Größen-Zwischenschritt.",
+      "Finding": "152680 reserviert im Wiederholungszweig0x380000, konstruiert9BA920, initialisiert Buffer und kann via150060 yielden. Vor der Rückgabe dieser Region ruft es14FF10,2C4240,19FFD0,39D400 und 39CCA0 auf, nullt9BA920 und springt zurück. Nach dem Zweig berechnet es2*uint32([2A0F7B0]+[2A0F7B4]); das ADD EDI,ECX verwirft Überlauf vor dem 64-Bit-Verdoppeln. Der neue Allocator wird wieder in 9BA920 gespeichert.152450 bietet zusätzlich einen Größenparameter-Pfad ohne aufgezeichneten direkten Aufrufer.",
+      "Evidence": [
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140152680]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140152450]",
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x140150060]",
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14039d400]",
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14019ffd0]",
+        "docs/research/allocator-ownership-20261008/verification.json",
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x140135470]"
+      ],
+      "Limitations": "Keine schädlichen Originalwerte der Größenglobals oder tatsächliche Threadkonkurrenz belegt. Der Yield verhindert eine pauschale Annahme, dass der ganze Owner-Lebenslauf ein ununterbrochener Stackabschnitt ist."
+    },
+    {
+      "addr": "0x14019e4f0",
+      "Domain": "native",
+      "Title": "Die Feldarena bezahlt drei konkrete Buffer; ihre Erstellung prüft keine Allocate-Fehler.",
+      "Finding": "19E4F0 speichert count inAC1C54, fordert bufferBytes fürAC1C58 sowie count*144 fürAC1C60 und count*1864 fürAC1C68 an. Für count 256 und bufferBytes 0x100000 sind das 1562624 Nutzbytes und 1562768 Bytes einschließlich dreier48-Byte-Allocatoroverheads, zusätzlich zur128-Byte-Instanzpräfixregion. Die Aufrufer verwenden außerdem count 512 bzw. 1024. In diesem Körper gibt es keine Nullprüfung der drei Allocate-Ergebnisse vor Weitergabe/anschließendem Initialisierer.",
+      "Evidence": [
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x14019e4f0]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140152680]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x1401e13b0]",
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x140243bc0]",
+        "docs/research/allocator-blocks-20261008/evidence.json#functions[addr=0x14019c2b0]",
+        "docs/research/allocator-ownership-20261008/verification.json"
+      ],
+      "Limitations": "Die nachfolgenden Initialisierer1AEC50 und 19EC20 sind keine neue vollständige Closure dieser Runde. Die Rechnung zählt nur diese drei Blöcke, keine Gesamtkapazitätsgarantie für den Modus."
+    },
+    {
+      "addr": "0x14041f920",
+      "Domain": "native",
+      "Title": "Debugbereich besitzt eine eigene statische32-KiB-Arena.",
+      "Finding": "41F920 konstruiert über 2AEAA00/0x8000 einen Allocator und speichert2AEA9C0. Der aufgezeichnete direkte Caller liegt bei 41FCEE in kh2_DebugRootInitialize. In der ausgewerteten Global-Xrefmenge sind ein Allocate-Forwarder, ein Free-Forwarder, ein Getter und diese Initialisierung sichtbar.",
+      "Evidence": [
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x14041f920]",
+        "docs/research/allocator-ownership-20261008/verification.json"
+      ],
+      "Limitations": "Die komplette DebugRootInitialize-Funktion und alle Debug-Verbraucher wurden hier nicht erneut exportiert. Kein End-of-process-Destruktor aus dieser Referenzmenge ableitbar."
+    },
+    {
+      "addr": "0x14019bfb0",
+      "Domain": "native",
+      "Title": "Zweiter Konstruktor setzt denselben globalen Semaphore voraus.",
+      "Finding": "19BFB0 initialisiert eine vorgegebene Instanz mit getrennt übergebenem Anfang/Ende, derselben MemoryAllocator-Vtable, Sentinel undAC0FD8-Erzeugung nur beiNULL. In der aufgezeichneten Referenzmenge besitzt er lediglich eine.pdata-Zeile. Anders als 19C3A0 enthält dieser Körper keinen Vergleich von Regionsende gegen aligned base+176.",
+      "Evidence": [
+        "docs/research/allocator-ownership-20261008/evidence.json#functions[addr=0x14019bfb0]",
+        "docs/research/allocator-blocks-20261008/evidence.json#functions[addr=0x14019c3a0]",
+        "docs/research/allocator-ownership-20261008/verification.json"
+      ],
+      "Limitations": "Kein normaler Caller dieses Konstruktors belegt. Nicht als extern aufrufbare Alternative lizenziert."
+    },
+    {
+      "addr": "0x14019c560",
+      "Domain": "native",
+      "Title": "Globales Ersetzen und Semaphore-Zerstörung besitzen weiterhin keinen belegten realen Besitzerpfad.",
+      "Finding": "19C560 zerstört vor einer neuen Größenprüfung den bisherigenAC0FD0 über Slot 0 mit Delete-Bit 1 und ersetzt oder nulltAC0FD0. Die wiederverifizierten Destruktoren19C050/19C0C0 schließen den gemeinsamenAC0FD8-Wrapper und setzen ihnNULL, ohne Instanzreferenzzahl. Die frische Xrefaufnahme von 19C560 enthält nur.pdata;AC0FD0 wird nur dort unmittelbar referenziert. 19C050 besitzt ebenfalls nur.pdata;19C0C0 ist über die Vtable und den this-adjusting19C0AC erreichbar. Die nun belegten parallelen native Instanzen werden in den ausgewählten Owner-Pfaden durch Parent-Free oder Regions-Pop beseitigt, statt ihren eigenen Allocator-Destruktor aufzurufen.",
+      "Evidence": [
+        "docs/research/allocator-blocks-20261008/evidence.json#functions[addr=0x14019c560]",
+        "docs/research/allocator-blocks-20261008/evidence.json#functions[addr=0x14019c050]",
+        "docs/research/allocator-blocks-20261008/evidence.json#functions[addr=0x14019c0c0]",
+        "docs/research/allocator-blocks-20261008/evidence.json#functions[addr=0x14019c0ac]",
+        "docs/research/allocator-blocks-20261008/helper-evidence.json",
+        "docs/research/allocator-ownership-20261008/evidence.json",
+        "docs/research/allocator-ownership-20261008/verification.json"
+      ],
+      "Limitations": "Keine Aussage, dass diese Destruktoren niemals real laufen; dynamische Aufrufer, Shutdown, Exceptions und fremde Schreiber sind nicht vollständig geschlossen. Statische Überlappung beweist deshalb noch keinen realen Semaphore-Lifetime-Fehler."
+    }
+  ],
+  "limits": [
+    "Static original PE only; no game, attachment, injection, UI, build or package modification.",
+    "Selected constructor/owner/global incoming references were materialized and byte checked. Indirect callers, aliased global writes, callbacks, exception cleanup, thread concurrency and shutdown remain incomplete.",
+    "No selected allocator constructor/parent-free/global getter constitutes a universal Actor/STATUS invalidation boundary.",
+    "Fresh captures include functions previously studied by other rounds; fresh capture count is not a claim of 49 previously unknown functions."
+  ],
+  "useCases": [
+    "Model allocator ownership as root region plus suballocator and distinguish pointer aliases from live ownership.",
+    "Design read-only diagnostics that show owning region, payload overhead, mode and generation only after a separate admission/lifetime contract is established.",
+    "Use checked 64-bit sizing and explicit lower bounds in external tooling; keep the original/native unchecked helpers out of an untrusted parameter API.",
+    "Invalidate Actor/STATUS observations before any relevant parent-free, region-pop or region-reconstruction path once its callers and synchronization are actually closed."
+  ],
+  "runtimeWitness": false
+}

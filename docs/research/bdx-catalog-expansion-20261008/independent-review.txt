@@ -1,0 +1,19 @@
+Independent v0.12.12 offline BDX catalog integration review - ACCEPTED
+
+No blockers.
+- Original PE: all 150 descriptors and 11 original registry slots verified independently.
+- Exact text transfer: 60 new annotations (System33 + Object27), 104 total; old44 changed only by permitted 2:9/95 notes/evidence suffixes.
+- Actor+4 self-link text correctly avoids a separate-wrapper requirement and does not claim an Event27 rebind witness.
+- API, decoder, resource registration, BDX UI files and52 packaged Bridge sources remain byte-identical to v0.12.11.
+- Compiled real catalog source/resource plus current bounded tests:1692 checks,0 failures; includes35 existing catalog checks and all150 rows.
+- Builder --check and upstream manifests PASS. Root UI receipt79 checks/6 renders/0 binding errors/0 windows inspected; new Keyblade render visually checked dark/readable.
+
+The review pins concrete source hashes. It does not reanalyze all native semantics, rerun the large unchanged numeric oracle, or validate an unbuilt release EXE. Expansion manifest can include this receipt later without circular hashing.
+See JSON receipt and artifacts/review-bdx-catalog-expansion-20261008/ for independent checker, descriptor bytes, source diff and compiled probe.
+
+Reproduce from repository root:
+py -3 -B artifacts/review-bdx-catalog-expansion-20261008/check_catalog.py --check
+py -3 -B docs/research/bdx-catalog-expansion-20261008/build_catalog.py --check
+dotnet run --project artifacts/review-bdx-catalog-expansion-20261008/Probe.csproj --configuration Release -- src/KH2Trainer.Core/Data/BdxNativeCalls.json
+
+Probe.csproj + Program.cs are portable within this repository: the project resolves Directory.Build.props above its location. The metadata checker likewise discovers the repository and uses --check for a read-only receipt comparison; retain metadata-checks.json beside it. That checker also requires the original EXE and v0.12.11 Source.zip. The repository path discovery was compiled and rerun from the original review directory:1692/0.

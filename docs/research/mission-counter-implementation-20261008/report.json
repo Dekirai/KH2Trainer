@@ -1,0 +1,131 @@
+{
+  "schema": 1,
+  "status": "IMPLEMENTED_AND_SYNTHETICALLY_TESTED",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "sourceStudy": {
+    "path": "../bdx-bank4-calls-20261008",
+    "manifestSha256": "97057b0fd176c11c929178ae1ed1f1d5d8fcf80b55892961d9e10373ca3679e5"
+  },
+  "commands": [
+    {
+      "slot": 477,
+      "commandId": 1477,
+      "id": "mission.counter.add",
+      "arguments": [
+        "counter index: integer 0..2",
+        "delta: signed int32"
+      ],
+      "operation": "int64(current)+delta; reject target outside 0..configured maximum / INT32_MAX; no clamp/wrap"
+    },
+    {
+      "slot": 478,
+      "commandId": 1478,
+      "id": "mission.counter.digit",
+      "arguments": [
+        "counter index: integer 0..2",
+        "decimal position: integer 0..9; 0=units",
+        "digit: integer 0..9"
+      ],
+      "operation": "Replace the selected decimal digit using int64 power/product/subtraction/addition; reject out-of-bounds target"
+    }
+  ],
+  "snapshot": [
+    {
+      "slot": 479,
+      "offset": 56,
+      "type": "int32",
+      "meaning": "configured current combo"
+    },
+    {
+      "slot": 480,
+      "offset": 80,
+      "type": "int32",
+      "meaning": "stored native peak, independent of current/maximum"
+    },
+    {
+      "slot": 481,
+      "offset": 84,
+      "type": "float32 widened to double",
+      "meaning": "allowance in native update units; finite <=0 has no active countdown"
+    }
+  ],
+  "mutationGates": "All 8 arguments finite; exact index/domain checks; ReadView + Stable living-player/scene/menu/transition/progression guards; exact counter registry/class/ID/HUD validation; full original byte signatures; EventsReady always for both new actions, including interior/no-change targets; fresh ReadView/SameView/Stable/ReadWidget/SameWidget and EventsReady; final Allowed. Exactly Native(230, ...) once; no post-call game-pointer reads.",
+  "snapshotGates": "Existing allowed game thread/host/module-base context and ReadView; active mission phase 1, flags initialized and not finishing; Range 88, registered COMBOCOUNTER vtable 5C9DF8 and ID 0. Two matching View/Combo captures including exact allowance bits before grouped publication. Paused field is permitted for read-only data; active HUD flag is not required.",
+  "dispatcher": "Existing commandId=1000+slot dispatcher and 512-value protocol already carry all five slots. No dispatcher or protocol source change; capabilities added only by the two owned mission modules.",
+  "testing": "15,451 checks, 0 failures in three targeted MSVC suites; decimal arithmetic uses an independent fixed-width string replacement oracle. Synthetic tests cover extremes, bounds, all indices/positions/digits, old-value drift, metadata/host/event gates, callback teardown, exact one-call dispatch, no post-call reads, negative/zero/large finite allowances, independent peaks and bitwise -0 freshness.",
+  "nativeFindings": [
+    {
+      "addr": "0x1403fbae0",
+      "Domain": "native",
+      "Finding": "The existing absolute mission-counter wrapper reaches the native class setter. The added trainer commands calculate a checked absolute target and reuse this call once, preserving native boundary dispatch and threshold handling.",
+      "Evidence": [
+        "imported-evidence.json#functions[addr=0x1403fbae0]",
+        "imported-evidence.json#functions[addr=0x1403fa230]"
+      ]
+    },
+    {
+      "addr": "0x1403fb2b0",
+      "Domain": "native",
+      "Finding": "The raw relative adapter uses DWORD arithmetic. Its wrap-before-native-clamp behavior is not the new checked int64 trainer contract.",
+      "Evidence": [
+        "imported-evidence.json#functions[addr=0x1403fb2b0]",
+        "imported-evidence.json#functions[addr=0x1403fa230]"
+      ]
+    },
+    {
+      "addr": "0x1403fbb30",
+      "Domain": "native",
+      "Finding": "The raw digit helper constructs a DWORD decimal divisor and uses signed division; unconstrained positions can produce divisor zero. The trainer uses positions 0..9, digits 0..9 and bounded int64 replacement instead of invoking this helper.",
+      "Evidence": [
+        "imported-evidence.json#functions[addr=0x1403fbb30]"
+      ]
+    },
+    {
+      "addr": "0x1403a2c30",
+      "Domain": "native",
+      "Finding": "The mission storage contains one embedded COMBOCOUNTER at +880. Registry membership and ID validation distinguish a configured object from constructor-initialized storage.",
+      "Evidence": [
+        "imported-evidence.json#functions[addr=0x1403a2c30]",
+        "imported-evidence.json#functions[addr=0x1403fa610]",
+        "imported-evidence.json#functions[addr=0x1403fc150]",
+        "imported-evidence.json#functions[addr=0x1403fa0d0]"
+      ]
+    },
+    {
+      "addr": "0x1403fa790",
+      "Domain": "native",
+      "Finding": "Combo current is signed integer +56, peak +80 and allowance float +84. Native delta/clamp and peak update are distinct; configuration/reset and the peak-only setter do not establish peak>=current or peak<=maximum as universal invariants.",
+      "Evidence": [
+        "imported-evidence.json#functions[addr=0x1403fa790]",
+        "imported-evidence.json#functions[addr=0x1403fa440]",
+        "imported-evidence.json#functions[addr=0x1403fa860]",
+        "imported-evidence.json#functions[addr=0x1403fa8b0]",
+        "imported-evidence.json#functions[addr=0x1403fb600]",
+        "imported-evidence.json#functions[addr=0x1403fb750]"
+      ]
+    },
+    {
+      "addr": "0x1403fa820",
+      "Domain": "native",
+      "Finding": "A positive finite combo allowance is reduced by the native float update step at 717480. At expiry current becomes min(maximum,0), allowance becomes zero and the completion bit is cleared, while peak is retained. Thus current becomes zero for the nonnegative maximum accepted by the trainer snapshot. Finite allowance<=0 bypasses the countdown; this study establishes no seconds conversion.",
+      "Evidence": [
+        "imported-evidence.json#functions[addr=0x1403fa820]",
+        "imported-evidence.json#functions[addr=0x1403a35c0]",
+        "imported-evidence.json#functions[addr=0x1403fa860]"
+      ]
+    }
+  ],
+  "limitations": [
+    "ReadView/SameView and SameWidget are fresh metadata comparisons on the existing game-thread command path, not a global lock, reference-counted lifetime lease or proof that all workers/bulk teardown are serialized. Static mission storage can be reconstructed identically; no general ABA/generation guarantee is added.",
+    "EventsReady checks the existing immediate allocator, event pool, Actor/controller/script, resource-cache and handler structures. It is not a proof of all transitive native callback/script behavior. Boundary callbacks retain rewards, progression and transition effects.",
+    "A command calls the native absolute setter at most once after validation and does not inspect old pointers afterward. Native AL is unspecified. An acknowledgement means dispatch; there is no undo, delayed retry or durable request journal added by these commands.",
+    "Combo values are conservative read-only snapshots of an active configured mission object; invalid/unavailable groups publish no values. Current must be nonnegative and <=nonnegative maximum, peak nonnegative, allowance finite. These acceptance checks do not claim all other bit patterns are impossible in retail scripts.",
+    "Two matching snapshots do not prove global atomicity against every concurrent writer. Finite float-to-double publication preserves native float value and signed zero; NaN/Inf are unavailable. Native update units are deliberately not relabeled seconds.",
+    "The tests exercise synthetic fixtures and controlled callback models. No live game, injection, GUI, mod/save write or original-code execution occurred. The tests do not validate live installation or retail mission coverage."
+  ],
+  "reproduction": [
+    "py -3 -B docs/research/mission-counter-implementation-20261008/verify.py --check --repo .",
+    "& tests/KH2Trainer.Bridge.Tests/run-tests.ps1 -Suite MissionEventGuardTests,MissionGuardTests,PlayerBridgeTests -LogDirectory artifacts/mission-counter-implementation-20261008"
+  ],
+  "reproductionNote": "Run from the repository root. Verifier can run portably without --repo against the study snapshots and --exe PATH. Compiled suites use the normal repository bridge dependencies; their pinned changed sources and runner are included here."
+}

@@ -1,0 +1,103 @@
+{
+  "date": "2026-10-08",
+  "scope": "Typed STATUS field journal implementation with private-memory native tests; no installer, bridge, IPC, release or game integration",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "claims": [],
+  "freshNativeFunctionCount": 0,
+  "implementation": "src/KH2Trainer.Bridge/StatusFieldTransactionSupport.h",
+  "tests": "tests/KH2Trainer.Bridge.Tests/StatusFieldTransactionTests.cpp",
+  "productionDefine": "STATUS_FIELDS_PRODUCTION_COMPILE",
+  "checkCount": 1976,
+  "failures": 0,
+  "compilerWarnings": 0,
+  "fields": [
+    {
+      "name": "General",
+      "offset": 430,
+      "width": 1,
+      "encoding": "uint8",
+      "minimum": 0,
+      "maximum": 255
+    },
+    {
+      "name": "Draw",
+      "offset": 520,
+      "width": 4,
+      "encoding": "Float32 exact bits",
+      "minimum": 0,
+      "maximum": 5000
+    },
+    {
+      "name": "Jackpot",
+      "offset": 568,
+      "width": 4,
+      "encoding": "Float32 exact bits",
+      "minimum": 0,
+      "maximum": 9
+    },
+    {
+      "name": "Lucky",
+      "offset": 572,
+      "width": 4,
+      "encoding": "Float32 exact bits",
+      "minimum": 0,
+      "maximum": 99
+    },
+    {
+      "name": "Retention",
+      "offset": 580,
+      "width": 4,
+      "encoding": "Float32 factor exact bits",
+      "minimum": 0,
+      "maximum": 1
+    }
+  ],
+  "reusedEvidence": [
+    "docs/research/status-rebuild-ownership-20261007/evidence.json",
+    "docs/research/status-rebuild-ownership-20261007/verification.json",
+    "docs/research/status-observer-wrappers-20261007/verification.json",
+    "docs/research/status-worker-observation-20261007/report.json"
+  ],
+  "capacities": {
+    "leases": 32,
+    "receipts": 64,
+    "permanentClientTombstones": 16
+  },
+  "prerequisites": [
+    "Five native entry observers, exact code integrity and bootstrap barrier before Observing",
+    "Trusted Actor lifetime/current-role/control provider with noncyclic metadata lock order and stable no-yield transaction lifetime",
+    "Route every participating direct manual field store through writer revisions",
+    "Typed IPC and host integration; no wire schema assigned",
+    "Retail writer closure is conditional and does not detect arbitrary identical mod writes"
+  ],
+  "sourceHashes": [
+    {
+      "path": "src/KH2Trainer.Bridge/StatusFieldTransactionSupport.h",
+      "sha256": "7a3a931cdfdb9f7261d8d4f8e9f0ab7615b4af916c22ba30a6be3375c2de2fb8"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/StatusFieldTransactionTests.cpp",
+      "sha256": "b2edc8229037b344f6f9ad11a9b2781bdc22ad403fbde7c83defb1b24fa62445"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/StatusObserverSupport.h",
+      "sha256": "98277fd5c5df27b3f49b0bf259549d544432a4a70c2e900cebb127c314cee042"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/StatusRevisionLedger.h",
+      "sha256": "fc9c2f0aecb6a094fb0a0f5ce1553654cbb222331ff9b4c4c3c47c50794a7396"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/LootFeatures.inl",
+      "sha256": "24d9cc80ece0e6facfebda825da26df0c0c6c819008974d0db5ee851d9c3bbcb"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/DamageTuningFeatures.inl",
+      "sha256": "6de4c05f2377875566cbfe7261f81b407fc2448b9589023bb7c26dcda5c8821c"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/ActorLifetimeSupport.inl",
+      "sha256": "af75f86b8179cc12047dab5b8aff1e9a6c3f4fb57a3b7bfa74b8e6a263132671"
+    }
+  ]
+}

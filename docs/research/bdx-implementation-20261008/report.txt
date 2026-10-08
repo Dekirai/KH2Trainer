@@ -1,0 +1,91 @@
+BDX INSPECTOR IMPLEMENTATION — 8 October 2026
+
+Result
+The Asset Explorer now provides a dark, read-only BDX script view. It opens
+loose .bdx files and BAR type-3 entries automatically. Explicit Inspect BDX
+also works for unnamed payloads. An explicit script designation takes priority
+over container magic because the first sixteen BDX bytes are an arbitrary name.
+
+The view shows stored header values, events, instruction PCs and file offsets,
+raw words, operation names, operands and control-flow edges. Event selection
+navigates to its entry. Search accepts operation text, PC, words and native
+bank:index identity. Selected instruction details describe conditional call,
+yield and native continuations and the dynamic return boundary. Two verified
+Actor STATUS rebind descriptors have additional argument and handler details.
+
+This helps inspect enemy and event scripts and locate candidate behavior for
+future mods. Changing such scripts will require separate editing, packaging
+and runtime validation. This implementation reads scripts without executing them.
+
+Contract
+The independent native study is ../bdx-inspection-20261008. Its original-byte
+evidence determines widths, selector defaults, signed PC arithmetic and event
+lookup behavior. BdxInspection.cs follows each first event-ID entry and its
+stored control-flow edges. Duplicate IDs remain visible as shadowed entries.
+There is no raw-word scan that treats literals as native calls.
+
+File bounds, header exclusion, instruction overlap detection, cancellation and
+explicit size/event/instruction/diagnostic limits are added reader policy.
+Malformed metadata either raises a bounded parsing error or produces a partial
+document with visible diagnostics. The view clears stale results when selection
+or source changes; a cancelled operation cannot republish an old document.
+
+Validation
+1. Core regression suite: 3,215 passing checks. The 73 BDX checks cover native
+   width families, signed targets including values beyond sixteen bits, event
+   lookup, dynamic returns, conditional continuations, null/scratch selectors,
+   overlap, resource limits, cancellation, stale source identity and real file IO.
+2. Independent review: all 65,536 opcode words compared with an oracle derived
+   from the original native dispatch tables. The actual production decoder
+   passes 233,581 checks. Its IO stubs are never used. This is a structural
+   comparison with one selected operand pair and additional targeted tests,
+   not exhaustive testing of operand values or native execution states.
+3. Original archive comparison: 8,995 checks. Two original kh2_fifth.hed/pkg
+   payloads equal the independently inspected loose asset slices. All 4,480
+   instruction PCs, widths and normalized edges match the independent Python
+   implementation. The report records HED identity, entry and BAR ordinals,
+   payload offsets, lengths and SHA256 hashes. Full retail assets are excluded.
+4. Offscreen WPF checks: see ui-checks.json and the release Validation folder.
+   Synthetic loose, unnamed and nested assets exercise automatic/manual opening,
+   event navigation, search, errors, cancellation and stale-result handling.
+   Rendering and binding checks run without opening an application window.
+   An independent managed build and full offscreen run also pass all 48 BDX
+   checks. See ui-review.json. Viewmodel state follows the normal WPF UI thread
+   and one-operation-at-a-time contract; arbitrary concurrent API calls are
+   outside the review. The general browser relies on that same serialization.
+
+decoder-review contains an unchanged copy of the independent review receipt,
+plus its replay source. Only the copied project's source reference and the
+Python repository-root calculation were adapted to this portable location.
+The adapted reproduction was run again successfully. oracle.bin is generated
+test data; oracle_review.py reproduces it from native switch tables. The
+Research package includes it; a source-only extraction should regenerate it.
+
+Reproduce from the repository root
+  dotnet run --project tests/KH2Trainer.Core.Tests -c Release -- src/KH2Trainer/Data/features.json
+  py -3 -B docs/research/bdx-implementation-20261008/decoder-review/oracle_review.py
+  dotnet run --project docs/research/bdx-implementation-20261008/decoder-review/Review.csproj -c Release
+  dotnet run --project tests/KH2Trainer.UiTests -c Release -- --fixture artifacts/bdx-ui-replay
+
+Original archive comparison, substituting the local game collection directory:
+  dotnet run --project docs/research/bdx-implementation-20261008/BdxRetailProbe.csproj -c Release -- "<game-root>" docs/research/bdx-inspection-20261008/selected-structure.json artifacts/bdx-retail-replay.json
+
+The native oracle expects the exact locally installed executable named in its
+script, Python 3 and Capstone. The retail comparison also needs the original
+Image/dt archives, the existing OpenKH name list and extracted reference assets.
+It opens these files read-only. The C# probes require .NET 8 on Windows x64.
+
+Frozen file/source verification:
+  py -3 -B docs/research/bdx-implementation-20261008/verify.py --check
+
+Limits
+The UI displays stored bytes. Native compatibility fixes may change literal
+values or header sizes after loading. Runtime stack values, pointer tags,
+native callback effects, dynamic return destinations and self-modification
+are not evaluated. Conditional continuations describe possible structure.
+Unvisited bytes may contain data or additional code. No actual Event27 rebind
+execution or valid Actor operand provenance has been established.
+
+No bridge opcode, feature-catalog slot or runtime game behavior was added in
+this implementation. Existing Drive second-Keyblade preparation is preserved.
+No game was started, attached, injected, controlled or modified for these tests.

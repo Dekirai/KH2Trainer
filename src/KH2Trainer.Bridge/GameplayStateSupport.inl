@@ -478,9 +478,12 @@ static const Pin pins[] = {
 bool Range(uintptr_t address,SIZE_T size) {
     return address && address<=UINTPTR_MAX-size && Readable(reinterpret_cast<const void*>(address),size);
 }
+bool NativeReady() {
+    return g_base && !InterlockedCompareExchange(&g_disabled,0,0) &&
+        g_gameThread && g_gameThread==GetCurrentThreadId();
+}
 bool HostReady() {
-    return g_base && g_shared && !InterlockedCompareExchange(&g_disabled,0,0) &&
-        g_gameThread==GetCurrentThreadId() && g_shared->hostHeartbeat &&
+    return NativeReady() && g_shared && g_shared->hostHeartbeat &&
         static_cast<DWORD>(GetTickCount()-g_shared->hostHeartbeat)<=5000;
 }
 bool CodeReady() {
@@ -511,9 +514,9 @@ bool OwnActorFreeze() {
         (At<unsigned>(0x2A11400)&0x20)!=0;
 }
 void UnknownState(State& s) { s.known=false;s.blockers|=Unknown;s.controllable=false; }
-State InspectUnsafe(const TrainerContext& c) {
+State InspectNativeUnsafe(const TrainerContext& c) {
     State s;
-    if(c.base!=g_base || !HostReady() || !CodeReady() || !GlobalsReady()) return s;
+    if(c.base!=g_base || !NativeReady() || !CodeReady() || !GlobalsReady()) return s;
     s.known=true;s.blockers=0;s.fieldState=At<int>(0x716884);
     const BYTE ready=At<BYTE>(0x9BA8D0), closing=At<BYTE>(0x9BA8D1);
     if(ready>1 || closing>1 || s.fieldState<0 || s.fieldState>3) UnknownState(s);
@@ -606,8 +609,15 @@ State InspectUnsafe(const TrainerContext& c) {
     s.controllable=s.known && s.blockers==0;
     return s;
 }
+// Existing leases must be able to finish conditional cleanup after host expiry.
+// This observes native control only: callers still need their own lifetime and
+// ownership checks. It does not authorize new commands or publish readiness.
+State InspectNative(const TrainerContext& c) {
+    __try { return InspectNativeUnsafe(c); }
+    __except(EXCEPTION_EXECUTE_HANDLER) { return State{}; }
+}
 State Inspect(const TrainerContext& c) {
-    __try { return InspectUnsafe(c); }
+    __try { return HostReady()?InspectNativeUnsafe(c):State{}; }
     __except(EXCEPTION_EXECUTE_HANDLER) { return State{}; }
 }
 } // namespace gameplay_state

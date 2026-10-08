@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "Domain": "native",
+  "claims": [
+    {
+      "addr": "0x140012e00",
+      "Finding": "Copies DWORD 72FCD0 and DWORD 72FCD4 separately into 72FE2C/72FE44, while using DWORD AF9300 for the other recorded stores. These immediately follow the 179 Bank 3 descriptors and form distinct data accesses.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140012e00]"
+      ],
+      "Limitations": "Bounded original instructions; does not establish a native descriptor limit or the complete following data type."
+    },
+    {
+      "addr": "0x14002ce60",
+      "Finding": "Masks QWORD 757630 to its low 40 bits. This address lies in the initialized data region after the 59-record Bank 4 cluster.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14002ce60]"
+      ],
+      "Limitations": "Bounded original instructions; does not establish a native descriptor limit or the complete following data type."
+    },
+    {
+      "addr": "0x14002cf10",
+      "Finding": "Reads QWORD 7576D0, adds 0x8000 and stores the resulting pointer at 2AF8D58. This separately consumes data beyond the Bank 4 descriptor region.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14002cf10]"
+      ],
+      "Limitations": "Bounded original instructions; does not establish a native descriptor limit or the complete following data type."
+    },
+    {
+      "addr": "0x1400304a0",
+      "Finding": "Reads QWORD 789E10, adds 0x8000 and stores the resulting pointer at 2B59BA8. The source qword immediately follows the 35-record Bank 5 cluster and is a non-code pointer.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400304a0]"
+      ],
+      "Limitations": "Bounded original instructions; does not establish a native descriptor limit or the complete following data type."
+    },
+    {
+      "addr": "0x14002f570",
+      "Finding": "Masks QWORD 788330 to its low 40 bits in the initialized region after the 72-record Bank 6 cluster.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14002f570]"
+      ],
+      "Limitations": "Bounded original instructions; does not establish a native descriptor limit or the complete following data type."
+    },
+    {
+      "addr": "0x14002f5a0",
+      "Finding": "Reads QWORD 7883D0, adds 0x8000 and stores the resulting pointer at 2B59540, separately consuming data after the Bank 6 descriptor region.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14002f5a0]"
+      ],
+      "Limitations": "Bounded original instructions; does not establish a native descriptor limit or the complete following data type."
+    },
+    {
+      "addr": "0x14002f630",
+      "Finding": "Masks QWORD 788670 to its low 40 bits in the initialized region after the 37-record Bank 7 cluster.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14002f630]"
+      ],
+      "Limitations": "Bounded original instructions; does not establish a native descriptor limit or the complete following data type."
+    },
+    {
+      "addr": "0x14002eeb0",
+      "Finding": "Masks QWORD 7875F0 to its low 40 bits in the initialized region after the 9-record Bank 8 cluster.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14002eeb0]"
+      ],
+      "Limitations": "Bounded original instructions; does not establish a native descriptor limit or the complete following data type."
+    },
+    {
+      "addr": "0x14002edb0",
+      "Finding": "Masks QWORD 787460 to its low 40 bits in the initialized region after the 60-record Bank 10 cluster.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14002edb0]"
+      ],
+      "Limitations": "Bounded original instructions; does not establish a native descriptor limit or the complete following data type."
+    },
+    {
+      "addr": "0x140433510",
+      "Finding": "Bank 4 descriptor 14 points at this five-byte direct branch to 3FB1C0. It is not a function start in the recorded IDB.",
+      "Evidence": [
+        "evidence.json#code_ranges[addr=0x140433510]"
+      ],
+      "Limitations": "Explicit code range only, decoded from original bytes and matched to IDA reads. No transitive semantics or promotion to canonical function count."
+    },
+    {
+      "addr": "0x140433520",
+      "Finding": "Bank 4 descriptor 15 points at this five-byte direct branch to 3FB4D0. It is not a function start in the recorded IDB.",
+      "Evidence": [
+        "evidence.json#code_ranges[addr=0x140433520]"
+      ],
+      "Limitations": "Explicit code range only, decoded from original bytes and matched to IDA reads. No transitive semantics or promotion to canonical function count."
+    },
+    {
+      "addr": "0x140433830",
+      "Finding": "Bank 4 descriptor 25 points at this 16-byte range: MOVSS XMM1,[RCX]; XOR R8D,R8D; LEA ECX,[R8+1]; JMP 3FB250. Declared argc 1 is retained.",
+      "Evidence": [
+        "evidence.json#code_ranges[addr=0x140433830]"
+      ],
+      "Limitations": "Explicit code range only, decoded from original bytes and matched to IDA reads. No transitive semantics or promotion to canonical function count."
+    }
+  ]
+}

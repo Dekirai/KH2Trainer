@@ -1,0 +1,175 @@
+ACTOR TASK AND FIBER EXECUTION CONTEXT â€” 2026-10-08
+
+The normal App -> module fiber -> Field scheduler path is closed by original bindings and concrete registration stores. Parked child fibers and deferred deletion prevent treating an idle current OS stack or an empty task list as universal Actor-lifetime quiescence.
+
+SCOPE
+Fresh static analysis of 38 complete function bodies, registration/dispatch bindings, original data, imports and incoming xrefs. This is a bounded context study, not a claim of complete transitive semantics or whole-program thread safety.
+Full virtual addresses in evidence and claims; six-digit hexadecimal addresses in prose are RVAs added to 0x140000000. Structure offsets marked +N are decimal unless prefixed 0x.
+Retail SHA256: 9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed
+38 complete bodies; 1,588 instructions; 6,268 body bytes; 862 data spans / 7,560 bytes; 859 verified xref occurrences; 5 verified fiber imports / 6 call sites. Verification: PASS, zero failures.
+
+NORMAL REGISTRATION AND DISPATCH
+1. 14ED40 -> 14F600 -> global 9BA888; 14EDDD -> 150740 installs Field callbacks.
+2. 153160 -> 150820 returns &716860 -> original vtable 5B14B8 slot +8 -> 1505A0.
+3. 1505A0 -> 14F8A0(root manager 9BA888, callback 150310); returned task+24 = module descriptor.
+4. App update 14EB70 at 14ECD9 -> 14FC20 -> 14FD60(root manager). The root task runs as a fiber through 14F650.
+5. 150310 -> original module vtable +16 -> 150590 -> descriptor+40 -> 150770, which creates Field manager at 716868 and registers 152680.
+6. 150310 while state1 -> 14FC20(module+8 = Field manager) -> 14FD60; child task fibers yield to this module fiber, which yields to its root parent.
+7. 150310 when state3 -> 1500D0(child tasks) BEFORE module exit slot -> 1504F0 -> descriptor+48 -> 150710 -> 1524E0; then any residual tasks are dispatched until empty before 14FA60 destroys the manager.
+
+PARKED STACKS AND CANCELLATION
+Field task yielded
+  Sites: 0x140152787, 0x1401527CB, 0x1401528F5
+  Continuations: 0x14015278C, 0x1401527D0, 0x1401528FA
+  152680 and its non-tail callers remain on the suspended child fiber; 150060 has no frame.
+  The active parent/OS stack can be outside this lifetime root while its suspended frame remains.
+
+Module yielded after child scheduler
+  Sites: 0x1401503C3
+  Continuations: 0x1401503C8
+  150310 remains on its suspended module fiber; earlier child callbacks may simultaneously remain on other parked fibers.
+  Nested suspended stacks must be accounted for independently.
+
+Field exit final tail-yield
+  Sites: 0x14015073A
+  Continuations: 0x1401503E5
+  150310 remains; 150710, 1504F0 and the already returned 1524E0 have no retained frame at this final-yield site.
+  Do not infer a retained exit/heap-root frame merely from a decompiler return expression.
+
+Task normal completion
+  Sites: 0x14014F659, 0x14014F67B
+  The task callback has returned and 14F650 removes its frame before the parent switch; the OS trampoline stack still exists until deletion.
+  Parent observes null callback, retires the fiber and removes the task.
+
+Task cancelled while parked
+  Sites: 0x140150180, 0x1401354E0, 0x1401351ED
+  An abandoned callback stack can remain allocated in the deferred-deletion queue after task/context storage is removed.
+  Deletion discards the fiber stack without a native guarantee of resumption and normal callback return. A wrapper exit counter alone is insufficient.
+
+Microsoft's SwitchToFiber contract describes the saved/restored execution state; DeleteFiber releases the fiber's stack. Combining those contracts with the queue/destructor code establishes that native cancellation does not guarantee resumption and normal return of the cancelled callback. This final point is a code/API inference.
+https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-switchtofiber
+https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-deletefiber
+
+THREAD AND WORKER BOUNDARY
+- Direct tasks execute on the invoking scheduler's current stack. Fiber tasks execute on the Windows thread which schedules the fiber. The normal nested path is therefore concrete, but it is not a universal ownership proof.
+- The captured switching code uses globals 713420, 8BBCF8, 713430/713438 and 713440 rather than a visible TLS lookup. No thread-ID gate or lock is visible in 135470; the absence of a local gate cannot establish an external invariant.
+- App update 14EB70 has original vtable/data references, including 5B11B0. The final outer virtual dispatch and its OS-thread owner remain unresolved in this bounded set.
+- 152990 has 25 incoming xref occurrences: 23 code sites, its own RUNTIME_FUNCTION.BeginAddress entry, and the preceding RUNTIME_FUNCTION.EndAddress reference. Source sites are verified; their complete caller chains and thread identities are not captured here.
+- Existing worker research demonstrates six motion worker dispatch/join paths and a separate resource worker, plus a possible worker-to-BDX route. This set does not identify an actual shipped event/asset that reaches these transition/task mutations from a worker, and does not exclude one.
+- Microsoft permits suitably synchronized fibers to be switched by a different thread. The use of CreateFiber/SwitchToFiber alone is not evidence against migration or concurrency.
+- Task cleanup slot +104, manager allocation/free virtual slots, other scheduler callers, and transitive actor/heap callees remain dynamic or outside this capture. No full no-yield or no-worker closure is claimed.
+API context: https://learn.microsoft.com/en-us/windows/win32/procthread/fibers
+Cross-thread caveat: https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-switchtofiber
+
+ERROR AND ABORT PATHS
+Allocation and API preconditions
+  14F8A0 and 14F770 use allocator results without local null recovery. 135250 returns null when its object allocator returns null, and stores a failed CreateFiber result without checking it; 14FD60/135470 do not locally recover. ConvertThreadToFiber's result is likewise stored without a local failure branch.
+  Boundary: Static missing checks, not induced or observed failures; allocator semantics and system resource conditions were not tested.
+
+Deferred retirement is not idempotent
+  1352E0 checks only next==0, not its +40 marked flag. Requeueing the current tail makes next point to itself. 135470 reads that next before destructing the queued object, so this input violates the queue's one-retirement-per-object precondition.
+  Boundary: The shown callers clear their fiber pointer. No reachable duplicate-retirement bug in an unmodified playthrough is claimed.
+
+Cancellation skips normal callback completion
+  Cleanup callbacks execute from the canceller. Task/context are removed, then deferred DeleteFiber releases the suspended stack. No normal return path is supplied for the cancelled callback.
+  Boundary: The claim is about this native mechanism and the API stack-deletion contract; transitive custom cleanup callbacks may perform additional work.
+
+Unexpected fiber callback return
+  135220 enters an unconditional self-loop after its callback returns. Normal 14F650 completion tail-switches away instead.
+  Boundary: This is a fallback behavior, not an observed hang.
+
+Transition deferral
+  152A90 decrements task+24 and returns while positive, or returns when 1515C0/19BA60 report busy. Its destructive section is reached only after those branches; direct registration 152990 is therefore not itself the whole teardown boundary.
+  Boundary: Readiness helper semantics and every side effect were not exhaustively re-proven.
+
+CONCRETE FUNCTION-SCOPED FINDINGS
+0x14014ED40: App initialization creates the root task manager through 14F600 at 14ED63, stores it at global 9BA888 at 14ED68, and installs Field module callbacks through 150740 at 14EDDD. App update 14EB70 dispatches that root manager at 14ECD9 through 14FC20 -> 14FD60.
+  Evidence: evidence.json#functions[addr=0x14014ED40], evidence.json#functions[addr=0x14014F600], evidence.json#functions[addr=0x14014EB70], evidence.json#functions[addr=0x14014FC20], evidence.json#functions[addr=0x14014FD60], verification.json
+  Boundary: The App update is reached through original vtable data 5B11B0; the outer runtime dispatch and exclusive OS-thread ownership remain unclosed.
+
+0x140153160: A concrete Field-start path calls 150820 at 153192, obtains the exact descriptor 716860, and tail-dispatches its original vtable+8 at 1531A2. Original table 5B14B8 binds that slot to module registration 1505A0.
+  Evidence: evidence.json#functions[addr=0x140153160], evidence.json#functions[addr=0x140150820], evidence.json#functions[addr=0x1401505A0], verification.json
+  Boundary: This closes one concrete registration path, not all initiating caller contexts. Descriptor and vtable bytes are original-image evidence, not a live pointer validation.
+
+0x140150740: Field lifecycle setup installs initializer 150770 into descriptor+40 (716888) and exit callback 150710 into descriptor+48 (716890). The module vtable initializer/exit wrappers 150590 and 1504F0 tail-dispatch those fields.
+  Evidence: evidence.json#functions[addr=0x140150740], evidence.json#functions[addr=0x140150590], evidence.json#functions[addr=0x1401504F0], evidence.json#functions[addr=0x140150770], evidence.json#functions[addr=0x140150710], verification.json
+  Boundary: Callback identity follows these setup stores and original vtable bindings; later arbitrary runtime mutation is not excluded.
+
+0x1401505A0: Module registration loads root manager 9BA888, registers fiber callback 150310 through 14F8A0 at 15061F, then stores the module descriptor in returned task+24 at 150629. Conflicting active modules are marked state 3 before registration.
+  Evidence: evidence.json#functions[addr=0x1401505A0], evidence.json#functions[addr=0x14014F8A0], evidence.json#functions[addr=0x140150310], verification.json
+  Boundary: No exclusive thread admission is established. The body assumes manager allocation succeeds and does not prove all called helpers are non-yielding.
+
+0x140150310: The module fiber synchronously dispatches module+8 through 14FC20 while state is 1, skips that dispatch while state is 2, and yields through 150060. On state 3 it calls 1500D0(child manager) at 1503D4 BEFORE the exit slot at 1503E2, then drains any remaining/new child tasks and destroys the manager at 150416.
+  Evidence: evidence.json#functions[addr=0x140150310], evidence.json#functions[addr=0x1401500D0], evidence.json#functions[addr=0x14014FC20], evidence.json#functions[addr=0x14014FA60], evidence.json#functions[addr=0x14014F750], evidence.json#functions[addr=0x1401504F0], verification.json
+  Boundary: The pre-exit cancellation is a proven ordering boundary for this module path. Arbitrary cleanup callbacks, all scheduler callers, and all Actor writers are not closed by it.
+
+0x1401525A0: 1525A0 and 1525F0 prepare Field parameters and register callback 152680 with fiber-task creator 14F8A0 on manager 716868, flags 1 and priority 5000. Field initializer 150770 creates and publishes that child manager.
+  Evidence: evidence.json#functions[addr=0x1401525A0], evidence.json#functions[addr=0x1401525F0], evidence.json#functions[addr=0x140150770], evidence.json#functions[addr=0x14014F8A0], evidence.json#functions[addr=0x140152680], verification.json
+  Boundary: Registration does not immediately run the callback; the subsequent task dispatch owns its execution context.
+
+0x140152990: When 9BA8D1 is clear, 152990 registers 152A90 as a direct task through 14F770 at 152A0C on manager 716868, flags 0 and priority 300000, then writes its parameters. 152A90 later waits for its countdown/readiness conditions, cancels matching tasks, runs heap teardown, registers replacement fiber 152680, and marks itself complete through 1500B0.
+  Evidence: evidence.json#functions[addr=0x140152990], evidence.json#functions[addr=0x14014F770], evidence.json#functions[addr=0x140152A90], evidence.json#functions[addr=0x14014FF10], evidence.json#functions[addr=0x14014F8A0], evidence.json#functions[addr=0x1401500B0], verification.json
+  Boundary: The alternate 9BA8D1-set branch updates transition state. Registration callers include unresolved outer contexts; no complete no-yield closure of 152A90's callees is claimed.
+
+0x14014FD60: Scheduler 14FD60 invokes tasks with null task+112 directly at 14FDFC. For fiber tasks it records the parent fiber in manager+40, lazily creates a fiber via 135250(14F650, task), applies frame/time delays, and switches through 135470. It restores global current-task bookkeeping on return and removes callbacks marked complete.
+  Evidence: evidence.json#functions[addr=0x14014FD60], evidence.json#functions[addr=0x140135440], evidence.json#functions[addr=0x140135250], evidence.json#functions[addr=0x14014F650], evidence.json#functions[addr=0x140135470], evidence.json#functions[addr=0x14014F680], verification.json
+  Boundary: Synchronous dispatch explains the captured normal path; it does not prove exclusive thread ownership, absence of other callers, or safe arbitrary reentrancy.
+
+0x140150060: 150060 writes context+28 and tail-jumps to 135470 at 150076; 150080 writes the floating delay at context+32 and tail-jumps at 1500A0. The yielding task's calling frame remains on its suspended fiber, while these yield wrappers have no retained frame.
+  Evidence: evidence.json#functions[addr=0x140150060], evidence.json#functions[addr=0x140150080], evidence.json#functions[addr=0x140135470], verification.json
+  Boundary: A tail jump must not be mistaken for a retained wrapper frame. Specific caller epilogues and suspension sites determine which outer frames remain.
+
+0x140152680: 152680 calls the yield helper at 152787, 1527CB and 1528F5, leaving its own frame parked with continuation addresses 15278C, 1527D0 and 1528FA. The 1527D0 continuation later clears 9BA8D1 and reaches task cleanup plus heap teardown at 1527E6/1527F7/152803/15280A.
+  Evidence: evidence.json#functions[addr=0x140152680], evidence.json#functions[addr=0x140150060], evidence.json#functions[addr=0x14014FF10], verification.json
+  Boundary: These are direct-body suspension sites. Transitive helpers may add other suspension sites. The prior actor-bulk report supplies the deeper heap semantics.
+
+0x140150710: Field exit calls 1524E0 at 150723, then 1DC3C0, restores its own stack at 150735/150739, and tail-jumps to 150060(task,1) at 15073A. At that final yield 150710 has no retained frame; the module fiber's 150310 caller remains parked with continuation 1503E5.
+  Evidence: evidence.json#functions[addr=0x140150710], evidence.json#functions[addr=0x1401504F0], evidence.json#functions[addr=0x140150310], evidence.json#functions[addr=0x140150060], verification.json
+  Boundary: On this direct final-yield path 1524E0 has already returned. This does not exclude earlier transitive yields inside exit callees or other entry paths.
+
+0x1401352E0: 1352E0 marks fiber-object+40 and appends the object to the global deferred-deletion queue if object+8 is null; it does not call DeleteFiber or resume the fiber. Its duplicate test is not idempotent for the current tail: a repeated tail argument would write tail->next = tail at 13530F.
+  Evidence: evidence.json#functions[addr=0x1401352E0], evidence.json#functions[addr=0x140135470], evidence.json#functions[addr=0x1401351D0], evidence.json#functions[addr=0x1401500D0], verification.json
+  Boundary: The self-link is a conditional static consequence, not an observed or proven reachable retail crash. Captured Task cleanup paths clear their context fiber pointer after queueing; no duplicate injection was performed.
+
+0x140135470: 135470 uses process-global current-fiber/sentinel, original-thread fiber and deletion-list state. The sentinel branch converts the scheduling thread to a fiber, switches to the target, converts back after return, then invokes queued virtual destructors before clearing the queue. The ordinary branch updates current-fiber state and switches directly.
+  Evidence: evidence.json#functions[addr=0x140135470], evidence.json#functions[addr=0x140135440], evidence.json#functions[addr=0x1401351D0], verification.json
+  Boundary: No TLS access, thread-ID admission check or lock is visible in this body. That fact does not prove an external single-owner contract or actual concurrent execution. Import identities are verified from the retail PE.
+
+0x1401500D0: 1500D0 unlinks child tasks, invokes a non-null task+104 cleanup callback on the cancelling caller's stack, enqueues any task-context fiber via 1352E0, clears its context pointer, and releases task/context storage. Related remove/destroy/filter paths use the same deferred retirement mechanism.
+  Evidence: evidence.json#functions[addr=0x1401500D0], evidence.json#functions[addr=0x14014F680], evidence.json#functions[addr=0x14014FA00], evidence.json#functions[addr=0x14014FA60], evidence.json#functions[addr=0x14014FF10], evidence.json#functions[addr=0x1401352E0], evidence.json#functions[addr=0x140135470], evidence.json#functions[addr=0x1401351D0], verification.json
+  Boundary: Cancelled callbacks are not resumed by this mechanism. The deferred fiber stack may outlive task-list membership; normal callback return or current-stack inspection alone cannot establish drainage. Cleanup callbacks remain dynamic.
+
+0x140135250: 135250 allocates a 48-byte fiber object and stores CreateFiber's result in object+32 without checking that Windows result for null. The scheduler subsequently passes the object to 135470. The OS trampoline 135220 calls object+16 with object+24 and loops indefinitely if that callback unexpectedly returns.
+  Evidence: evidence.json#functions[addr=0x140135250], evidence.json#functions[addr=0x140135220], evidence.json#functions[addr=0x14014FD60], evidence.json#functions[addr=0x140135470], verification.json
+  Boundary: The ordinary allocation-null branch returns null; the captured scheduler has no local recovery for that result. Allocation/API failures were not induced, and allocator transitive semantics were not re-proven.
+
+0x14014F650: After the task callback returns normally, 14F650 clears the callback and delay, removes its own frame, and tail-switches to the parent at 14F67B. The scheduler then queues the completed fiber; virtual destructor 1351D0 calls DeleteFiber at 1351ED and optionally frees the 48-byte object.
+  Evidence: evidence.json#functions[addr=0x14014F650], evidence.json#functions[addr=0x14014FD60], evidence.json#functions[addr=0x1401352E0], evidence.json#functions[addr=0x140135470], evidence.json#functions[addr=0x1401351D0], verification.json
+  Boundary: Normal completion and forced cancellation have different stack histories. No general promise that a cancelled callback resumes or executes an ordinary return follows from DeleteFiber.
+
+PRACTICAL USES
+- Explain Field loading, unloading and task timing with concrete scheduler identities and continuation addresses.
+- Build a read-only task/fiber diagnostic model with states registered, active, parked, retired and deleted; include the module parent relationship and deferred deletion list.
+- Design future lifetime instrumentation around explicit task admission, suspension, cancellation and deletion events, with durable metadata independent of task storage.
+- Keep any future Actor/STATUS write provider gated until outer dispatch ownership, worker entry paths, binding stores and heap invalidation have a compatible proven serialization contract.
+
+LIMITATIONS AND EVIDENCE HYGIENE
+- No game process, injection, UI action, runtime experiment or product modification occurred.
+- The existing IDA session was revalidated and read only; it was not restarted, closed or saved.
+- 38 captured bodies do not mean all their callees, all runtime callbacks, all workers or every actor lifetime path are understood.
+- Original import-table bytes differ from IDA's zero-filled view at 57B288. evidence.json preserves idaBytes separately and identifies originalBytes as read directly from the retail file. Import identity is a PE parse, not live IAT validation.
+- Five incoming data references are RUNTIME_FUNCTION.EndAddress metadata. The other captured RUNTIME_FUNCTION.BeginAddress entries are also unwind metadata, not callers or callback registrations; verification.json records both kinds.
+- No implementation or installer approval follows from this study.
+
+PRIOR RESEARCH
+../actor-binding-lifetime-20261008/report.json
+../actor-bulk-lifetime-20261008/report.txt
+../status-bootstrap-20261007/report.md
+../status-worker-observation-20261007/report.md
+These reports supply earlier Actor binding, heap teardown and worker findings. Their bodies were not silently counted as fresh functions in this study.
+
+REPRODUCTION
+Run: py -3 -B docs/research/actor-task-context-20261008/verify.py
+The verifier reads the exact retail PE, validates complete capture metadata and bytes, decodes instruction boundaries independently with Capstone, checks registration/dispatch/yield/retirement sites, validates xrefs and classifies unwind metadata, and parses import descriptors by name. It writes verification.json. Its shared PE-validation dependency is ../actor-scale-contract-20261007/verify.py. No game execution is involved.
+The manifest hashes the final evidence, verifier, reports, claims and validation result.
+

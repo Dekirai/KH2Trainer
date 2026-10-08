@@ -1,0 +1,111 @@
+--- v0.12.11/tests/KH2Trainer.Core.Tests/BdxNativeCallCatalogTests.cs
++++ current/tests/KH2Trainer.Core.Tests/BdxNativeCallCatalogTests.cs
+@@ -11,7 +11,7 @@
+             try { call(); Check(false, text); }
+             catch (ArgumentOutOfRangeException) { Check(true, text); }
+         }
+-        Check(catalog.DescriptorCount == 150 && catalog.AnnotatedCount == 44, "embedded snapshot loads with bounded descriptor and annotation counts");
++        Check(catalog.DescriptorCount == 150 && catalog.AnnotatedCount == 104, "embedded snapshot loads with bounded descriptor and annotation counts");
+         var integer = catalog.Lookup(0, 16);
+         Check(integer.DescriptorRva == 0x752F00 && integer.HandlerRva == 0x41DBF0 && integer.Flags == 0x40000001 &&
+             integer.DeclaredOperandCount == 1 && integer.HasReturnSlot == true, "original RNG descriptor identity and flags are preserved");
+@@ -25,9 +25,9 @@
+         }
+         Check(catalog.Lookup(0, 11).DescriptorState == BdxNativeDescriptorState.Present &&
+             catalog.Lookup(0, 73).DescriptorState == BdxNativeDescriptorState.Present, "valid records after holes remain visible");
+-        var unannotated = catalog.Lookup(0, 9);
++        var unannotated = catalog.Lookup(9, 0);
+         Check(unannotated.DescriptorState == BdxNativeDescriptorState.Present && !unannotated.HasAnnotation &&
+-            unannotated.HandlerRva == 0x41DA20, "captured but unannotated handler is distinct from unknown descriptor");
++            unannotated.HandlerRva == 0x288150, "captured but unannotated handler is distinct from unknown descriptor");
+         var after = catalog.Lookup(0, 105);
+         Check(after.BankState == BdxNativeBankState.OriginalTable && after.DescriptorState == BdxNativeDescriptorState.Uncatalogued &&
+             after.HandlerRva is null && after.DeclaredOperandCount is null && after.HasReturnSlot is null,
+@@ -67,6 +67,24 @@
+             "native rounding and integer overflow caveats are retained");
+         Check(BdxNativeCallCatalog.Scope.Contains("not native bounds") && BdxNativeCallCatalog.Scope.Contains("declared operand count"),
+             "catalog scope separates metadata from safe execution");
++        Check(Enumerable.Range(0, 105).All(i => catalog.Lookup(0, i).HasAnnotation ==
++            (catalog.Lookup(0, i).DescriptorState == BdxNativeDescriptorState.Present)), "all recorded nonnull Bank0 handlers have reviewed annotations");
++        Check(catalog.Lookup(0, 76).DisplayName == "Set Drive Form Keyblade" &&
++            catalog.Lookup(0, 76).Notes.Contains("validated fallback") && catalog.Lookup(0, 76).Notes.Contains("not checked"),
++            "raw script weapon write is distinguished from the trainer transition fallback");
++        Check(catalog.Lookup(0, 90).DeclaredOperandCount == 5 && catalog.Lookup(0, 90).HasReturnSlot == false &&
++            catalog.Lookup(0, 90).Notes.Contains("discarded") && catalog.Lookup(0, 90).Notes.Contains("NaN"),
++            "local transform describes both discarded output and input mutation");
++        Check(catalog.Lookup(0, 46).Summary.Contains("local direction w") && catalog.Lookup(0, 46).Notes.Contains("antiparallel"),
++            "direction metadata retains the nonfinite-output and degenerate-axis limits");
++        Check(catalog.Lookup(0, 52).SearchText.Contains("cleanup") && catalog.Lookup(0, 52).Notes.Contains("seconds"),
++            "effect duration does not invent a seconds unit or hide cleanup");
++        Check(catalog.Lookup(0, 61).Notes.Contains("null") && catalog.Lookup(0, 62).Notes.Contains("signed"),
++            "save-record metadata includes null and full-count limits");
++        Check(catalog.Lookup(0, 9).SearchText.Contains("exit") && catalog.Lookup(0, 9).HasReturnSlot == true,
++            "child VM metadata retains teardown script effects");
++        Check(catalog.Lookup(2, 9).Notes.Contains("self-link") && catalog.Lookup(2, 95).Notes.Contains("not prove an Event27"),
++            "Actor self-wrapper evidence does not invent an Event27 rebind witness");
+         Reject(() => catalog.Lookup(-1, 0), "negative bank rejected by opcode representation");
+         Reject(() => catalog.Lookup(1024, 0), "bank wider than ten bits rejected");
+         Reject(() => catalog.Lookup(0, -1), "negative index rejected");
+--- v0.12.11/tests/KH2Trainer.UiTests/BdxInspectionUiChecks.cs
++++ current/tests/KH2Trainer.UiTests/BdxInspectionUiChecks.cs
+@@ -133,11 +133,12 @@
+             Reject<InvalidDataException>(()=>vm.OpenFileAsync(Path.Combine(output,"truncated.bdx")),"truncated BDX file");
+             Check(!vm.HasScript&&vm.ScriptDiagnostics==""&&!vm.Busy,"auto-inspection failure clears old diagnostics and busy state");
+             CheckNativeCatalog(output,app);
++            CheckExpandedCatalog(output,app);
+             Settle(panel);Check(log.ToString().Length==0,"BDX WPF binding errors: "+log);
+             Check(app.Windows.Count==0&&app.MainWindow==null,"offscreen checks create no windows");
+             Check(File.ReadAllBytes(loose).SequenceEqual(script)&&File.ReadAllBytes(unknown).SequenceEqual(script),"inspection preserves source bytes");
+-            var report=new {success=true,checks,renders=5,width=780,bindingErrors=0,windowCount=app.Windows.Count,
+-                renderFiles=new[]{"script-780.png","script-event-780.png","script-error-780.png","script-native-catalog-780.png","script-native-context-780.png"},
++            var report=new {success=true,checks,renders=6,width=780,bindingErrors=0,windowCount=app.Windows.Count,
++                renderFiles=new[]{"script-780.png","script-event-780.png","script-error-780.png","script-native-catalog-780.png","script-native-context-780.png","script-native-equipment-780.png"},
+                 scope="Actual BDX view and viewmodel, synthetic loose/BAR/unknown payloads, native catalog labels/details/search, null and context-dependent metadata, long-name wrapping, event scrolling, virtualization, cancellation, replaced selection, failures and dark offscreen rendering. No window, script execution, game, input or process attachment."};
+             File.WriteAllText(Path.Combine(output,"report.json"),JsonSerializer.Serialize(report,new JsonSerializerOptions {WriteIndented=true}));return report;
+         }
+@@ -160,9 +161,9 @@
+         Check(vm.ScriptRows.Count==9,"catalog metadata does not change decoded instructions");
+         var rows=vm.ScriptRows.ToArray();
+         Check(rows[0].NativeCall=="0:16 · Random integer"&&rows[1].NativeCall=="0:7 · Normalize vector and retain length","annotated calls show bank:index and descriptive name");
+-        Check(rows[2].NativeCall=="0:9"&&rows[2].NativeInfo?.DescriptorState==BdxNativeDescriptorState.Present,"unannotated native handler keeps numeric label and descriptor details");
++        Check(rows[2].NativeCall=="0:9 · Create child VM context"&&rows[2].NativeInfo?.DescriptorState==BdxNativeDescriptorState.Present,"new child context annotation reaches its native row");
+         Check(rows[3].NativeCall=="0:10"&&rows[3].Details.Contains("NULL handler")&&rows[3].Details.Contains("does not terminate"),"null descriptor hole stays explicit in details");
+-        Check(rows[4].Details.Contains("Context-dependent bank")&&rows[4].Details.Contains("original registry slot is NULL"),"context bank is not presented as a live installed handler");
++        Check(rows[4].NativeCall=="9:0"&&rows[4].NativeInfo?.HasAnnotation==false&&rows[4].Details.Contains("Context-dependent bank")&&rows[4].Details.Contains("original registry slot is NULL"),"unannotated context bank keeps numeric label and is not presented as a live installed handler");
+         Check(rows[5].NativeInfo?.BankState==BdxNativeBankState.ContextInstalled&&rows[5].Details.Contains("not been catalogued"),"known context bank can have an uncatalogued descriptor");
+         Check(rows[6].NativeCall=="11:1023"&&rows[6].Details.Contains("runtime state is unknown"),"unknown bank:index preserves its stored identity");
+         Check(rows[7].NativeCall=="0:105"&&rows[7].Details.Contains("not been catalogued"),"outside catalog extent is not labeled invalid");
+@@ -187,6 +188,33 @@
+         vm.SelectedScriptInstruction=vm.ScriptRows.Single(r=>r.Instruction.TrapBank==9);Render(panel,output,"script-native-context-780.png");
+         Check(File.ReadAllBytes(path).SequenceEqual(bytes),"catalog inspection preserves synthetic script bytes");
+     }
++    private static void CheckExpandedCatalog(string output,Application app)
++    {
++        (int Bank,int Index)[] calls=[(0,76),(0,52),(0,62),(0,31),(0,9),(0,90),(2,9)];
++        var words=calls.SelectMany(c=>new ushort[]{(ushort)((c.Bank<<6)|10),(ushort)c.Index}).Append((ushort)0x49).ToArray();
++        byte[] bytes=new byte[44+words.Length*2];"Equipment"u8.CopyTo(bytes);
++        BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(20),128);
++        BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(24),128);
++        BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(32),14);
++        for(int n=0;n<words.Length;n++)BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(44+n*2),words[n]);
++        string path=Path.Combine(output,"equipment-catalog.bdx");File.WriteAllBytes(path,bytes);
++        using var vm=new AssetExplorerViewModel(_=>{});Await(vm.OpenFileAsync(path));
++        Check(vm.ScriptRows.Count==8&&vm.ScriptRows.Take(7).All(r=>r.NativeInfo?.HasAnnotation==true),"new metadata does not alter the decoded native-call sequence");
++        var view=new AssetExplorerView {DataContext=vm};var panel=Panel(view,app);
++        vm.ScriptFilter="Keyblade";
++        Check(vm.ScriptRows.Count==1&&vm.ScriptRows[0].Instruction.TrapIndex==76,"form equipment is searchable by its purpose");
++        vm.SelectedScriptInstruction=vm.ScriptRows[0];Settle(panel);
++        var details=(TextBox)view.FindName("ScriptInstructionDetails");
++        Check(details.Text.Contains("Set Drive Form Keyblade")&&details.Text.Contains("validated fallback")&&details.Text.Contains("not checked"),"weapon details expose the raw script write and separate trainer validation");
++        Render(panel,output,"script-native-equipment-780.png");
++        vm.ScriptFilter="";vm.SelectedScriptInstruction=vm.ScriptRows.Single(r=>r.Instruction.TrapIndex==90);
++        Check(vm.ScriptInstructionDetails.Contains("Declared operands: 5")&&vm.ScriptInstructionDetails.Contains("discarded")&&vm.ScriptInstructionDetails.Contains("NaN"),"discarded transform still exposes input mutation and declared arity");
++        vm.ScriptFilter="self-link";
++        Check(vm.ScriptRows.Count==1&&vm.ScriptRows[0].Instruction.TrapBank==2,"new Actor self-link evidence reaches metadata search");
++        vm.ScriptFilter="cleanup";
++        Check(vm.ScriptRows.Any(r=>r.Instruction.TrapIndex==52),"effect cleanup notes participate in search");
++        Check(File.ReadAllBytes(path).SequenceEqual(bytes),"expanded inspection preserves its source bytes");
++    }
+     private static Border Panel(AssetExplorerView view,Application app)
+     {
+         var panel=new Border {Background=(Brush)app.Resources["BackgroundBrush"],Padding=new Thickness(24),Child=view};

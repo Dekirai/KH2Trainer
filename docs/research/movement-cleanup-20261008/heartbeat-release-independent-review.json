@@ -1,0 +1,78 @@
+{
+  "date": "2026-10-08",
+  "reviewer": "status_fields_v2",
+  "status": "no blocking findings in the reviewed heartbeat cleanup change",
+  "scope": "Independent read-only source review and isolated native synthetic builds. No product or test source edits.",
+  "sources": [
+    {
+      "file": "src/KH2Trainer.Bridge/GameplayStateSupport.inl",
+      "sha256": "c99b3265de75cc806638e8b734a08ba2c187e603c408e651dc95d8121e710f1b"
+    },
+    {
+      "file": "src/KH2Trainer.Bridge/MovementTransactionSupport.inl",
+      "sha256": "14b4d8746e07811b865e0e7447082124e9a9e11a6cc16be83127d5d1328124f5"
+    },
+    {
+      "file": "tests/KH2Trainer.Bridge.Tests/CombatGuardTests.cpp",
+      "sha256": "b82593533cea90866c5064b4f068f02cd6014079e98dd856824cd1516d055482"
+    },
+    {
+      "file": "tests/KH2Trainer.Bridge.Tests/GameplayStateGuardTests.cpp",
+      "sha256": "ec82370655946719f2be7d2111b3f0e5f25e86deb967625ee61c2f79a3e8908d"
+    },
+    {
+      "file": "tests/KH2Trainer.Bridge.Tests/MovementTransactionTests.cpp",
+      "sha256": "72dc74793c419a4511bbc44600d06d4197175befc1e6dba2e680bee49139348d"
+    }
+  ],
+  "checks": [
+    "NativeReady retains g_base, disabled-state and current game-thread requirements. HostReady still additionally requires a shared mapping and a nonzero heartbeat within the existing 5-second unsigned tick window.",
+    "InspectNative executes the same code, globals, current-player, role, backlinks, scene, controller and input checks previously used by Inspect. Inspect continues to gate this native path with HostReady.",
+    "Only CompleteRelease requests Access::Cleanup. Acquire and Reapply still pass Preflight with Access::Mutation and therefore Inspect. Observation uses the existing snapshot admission.",
+    "CompleteRelease still requires the resolved Actor generation, MovementReady, pending-release state, exact applied field bits, valid originals and writable addresses. External replacement is preserved, and terminal completion unpins.",
+    "TrainerFrame invokes the release path at first host expiry and continues Tick with g_hostExpired. The former repeated HostReady refusal is removed without bypassing native blockers.",
+    "The joint fixture exercises the shared TrainerBridge, GameplayState, Movement, Role and ActorLifetime guard and journal paths. Besides native callback forwarders and private image setup, KH2_ACTOR_LIFETIME_TESTS hooks replace installation provenance: MEM_IMAGE classification, query/protect bindings, random instance generation and module pinning. The fixture does not validate installation in the live game.",
+    "The joint tests cover Sora, Roxas and rescue Mickey with missing, stale and future heartbeats; reject new Acquire/Reapply; defer cleanup behind native blockers; restore after blockers clear; preserve changed fields; and avoid writes after observed Actor death."
+  ],
+  "builds": {
+    "compiler": "MSVC x64",
+    "options": [
+      "/std:c++17",
+      "/O2",
+      "/W4",
+      "/MT",
+      "/EHsc"
+    ],
+    "isolatedOutput": "artifacts/heartbeat-release-review",
+    "suites": [
+      {
+        "name": "CombatGuardTests",
+        "checks": 2024,
+        "failures": 0,
+        "log": "heartbeat-release-review/CombatGuardTests.txt"
+      },
+      {
+        "name": "GameplayStateGuardTests",
+        "checks": 1066,
+        "failures": 0,
+        "log": "heartbeat-release-review/GameplayStateGuardTests.txt"
+      },
+      {
+        "name": "MovementTransactionTests",
+        "checks": 440,
+        "failures": 0,
+        "log": "heartbeat-release-review/MovementTransactionTests.txt"
+      }
+    ],
+    "totalChecks": 3530,
+    "failures": 0,
+    "compilerWarnings": 0
+  },
+  "findings": [],
+  "limits": [
+    "This validates the heartbeat cleanup change under the existing actor-lifetime contract. It does not resolve the separately documented native lifetime, worker or bulk-teardown coverage gaps.",
+    "MovementReady still requires the shared mapping through damage_tuning::Ready; the reviewed scenario is a stale or missing heartbeat in a retained mapping, as used by TrainerFrame.",
+    "Lifetime installation provenance is supplied by test hooks; passing the shared guard, role and journal paths does not validate the live installer.",
+    "No game process, native KH2 function, injection, UI or save operation was used."
+  ]
+}

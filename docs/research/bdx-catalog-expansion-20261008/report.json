@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "version": "0.12.12",
+  "status": "VERIFIED_OFFLINE_CATALOG_INTEGRATION",
+  "result": "60 reviewed descriptions added; 150 original descriptors, 104 annotated entries. Every recorded nonnull Bank0 descriptor is annotated, but the recorded 105-entry extent is not a native bounds proof.",
+  "changes": [
+    "33 System and 27 Object descriptions copied exactly from their reviewed studies.",
+    "Existing 44 annotations preserved except the explicit Actor+4 self-link clarification and Motion Evidence suffix for 2:9/95.",
+    "No API, decoder, BDX UI or native Bridge implementation change."
+  ],
+  "verification": {
+    "originalDescriptorRows": 150,
+    "originalRegistrySlots": 11,
+    "compiledProbeChecks": 1692,
+    "compiledProbeFailures": 0,
+    "existingCatalogChecksWithinProbe": 35,
+    "uiChecks": 79,
+    "uiRenders": 6,
+    "uiBindingErrors": 0,
+    "uiWindows": 0
+  },
+  "evidence": [
+    "metadata-checks.json",
+    "independent-review.json",
+    "review-addendum.json",
+    "source-comparison.json",
+    "test-diff.txt",
+    "compiled-probe.json",
+    "ui-bdx-report.json",
+    "implementation.json"
+  ],
+  "scope": [
+    "Native semantics derive from the separately reviewed System/Object/Motion studies. This integration repeats original numeric metadata and exact annotation transfer checks, not full native execution.",
+    "The compiled probe uses the actual production catalog source and embedded JSON; source loading, immutability and all 150 records are checked. No unchanged multi-million-case decoder/numeric oracle rerun.",
+    "UI results are copied from the actual offscreen root run. The new Keyblade render was visually reviewed. The study itself performs no live UI automation.",
+    "An intact Actor+4 self-link can satisfy the wrapper ABI. A separate allocation is not universally required; no Event27 call to 2:9/95 is inferred.",
+    "The final package EXE/build validation is recorded separately. No game start, attachment, injection, script execution or save/mod write."
+  ],
+  "reproduction": [
+    "py -3 -B docs/research/bdx-catalog-expansion-20261008/verify.py --check",
+    "pwsh -File docs/research/bdx-catalog-expansion-20261008/run-probe.ps1 -Check"
+  ]
+}

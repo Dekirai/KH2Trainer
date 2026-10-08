@@ -1,0 +1,160 @@
+{
+  "status": "ACCEPTED_BOUNDED_OFFLINE_INSPECTION",
+  "date": "2026-10-08",
+  "reviewer": "drain_audit_v2",
+  "blockingFindings": [],
+  "findings": [],
+  "independentVerification": {
+    "status": "PASS",
+    "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+    "nativeBodies": 11,
+    "nativeInstructions": 1529,
+    "nativeBodyBytes": 6260,
+    "opcodeCases": 65536,
+    "widthErrorFlowTriples": 65536,
+    "validIntegerUnary": [
+      0,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "validFloatUnary": [
+      1,
+      2,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "validControl": [
+      0,
+      1,
+      2,
+      3,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "bank2PointerAndDescriptorsChecked": true,
+    "oracleSha256": "3712ef44f18b68d3a553f5f4de7be3e923723b1f55398e94fef22e46158e2640",
+    "scope": "Independent PE extraction, complete body instruction boundaries, native table-derived valid sets; exhaustive width/status/edge classes and signed relative targets. No native VM execution."
+  },
+  "actualProductSourceProbe": {
+    "status": "PASS",
+    "opcodeCases": 65536,
+    "checks": 233581,
+    "scope": "Actual linked BdxInspection.cs in isolated process; Asset IO stub never called."
+  },
+  "authorVerifierIndependentRun": {
+    "command": "python -B docs/research/bdx-inspection-20261008/verify.py --check",
+    "status": "PASS",
+    "nativeBodies": 11,
+    "nativeInstructions": 1529,
+    "nativeBodyBytes": 6260,
+    "syntheticChecks": 44,
+    "localLooseScripts": 921,
+    "selectedInstructions": 4480
+  },
+  "rootRetailRun": {
+    "independentlyRerunByThisReviewer": false,
+    "checks": 8995,
+    "reportedPass": true,
+    "scope": "Two selected original HED/PKG payloads equal loose slices; all 4480 PCs, widths and normalized edges agree. Root-provided run, not game execution."
+  },
+  "analysis": [
+    "Reviewed all16 opcode groups and native selector defaults, not only artifact hashes. Integer unary1 and float unary0/3/4 are invalid; integer binary sub>11 remains nonterminal.",
+    "Signed PC field is loaded with MOVSXD; relative16 uses MOVSX and relative32 is two unsigned words merged before DWORD addition. File offset uses signed PC widened in the reader.",
+    "PC0 terminates event lookup regardless of ID. Duplicate ID uses first match. Invalid first entry is not replaced by a later duplicate.",
+    "Normal continuation for unsupported address push differs from NULL load/store; group2 selector3 retains native scratch. Both prototype and C# distinguish these cases.",
+    "Native call bank=word>>6 and unsigned16 index use16-byte descriptors. Independently verified original bank2 pointer at7534A0 ->756B60 and indices9/95 plus counts3/2 and no return-value bit.",
+    "Conditional branch alternatives, call continuations, yields and trap continuations remain conditional. Return has a dynamic boundary without sequential fallthrough.",
+    "Bounds, header exclusion, overlap detection, visited identities, output/diagnostic limits and cancellation are appropriate for the C# offline reader. Unvisited bytes are not searched for trap-like words.",
+    "Selected event0 witnesses and their immediate IDs are meaningful static paths. No Event27 runtime witness or valid operand0 Actor provenance is claimed."
+  ],
+  "limits": [
+    "The exhaustive oracle covers every16-bit opcode with one selected operand pair FFFE/8000; it does not enumerate every operand value or native VM state. Target sign/width extremes are also covered by authored synthetic tests, which were reviewed.",
+    "This review never executes the original VM or script. Native callbacks, tag validity, stack bounds, memory side effects, exceptions, compatibility patches and self-modification remain outside CFG proof.",
+    "Root product UI and AssetArchiveReader implementation were not covered by this decoder-specific receipt. Probe links exact production BdxInspection.cs; Asset IO stubs are never invoked.",
+    "Prototype and C# deliberately differ in invalid-event policy, resource limits and representation of null terminal edges; these differences are documented.",
+    "Global trap-table mutability is not removed by original image pointer verification."
+  ],
+  "sourceHashes": [
+    {
+      "path": "docs/research/bdx-inspection-20261008/evidence.json",
+      "bytes": 740879,
+      "sha256": "6cd2d2214ddd0710f3305c74982a1334c21baf09441cd64a09e00d3c2c190cb1"
+    },
+    {
+      "path": "docs/research/bdx-inspection-20261008/opcode-contract.json",
+      "bytes": 6596,
+      "sha256": "3a10958ccc46ee69429610a044f2054b76530f9669157e8b2493ad1a511d60c3"
+    },
+    {
+      "path": "docs/research/bdx-inspection-20261008/bdx_inspect.py",
+      "bytes": 8103,
+      "sha256": "c44d4bc65e0e36f7baec216098a4e8c6002b83029035d45aacca70576fdfaba2"
+    },
+    {
+      "path": "docs/research/bdx-inspection-20261008/verify.py",
+      "bytes": 10984,
+      "sha256": "d3d0f5a4dc846c778a17de530fbe826d0d541d4cb1c075ce7ee7d8c900f41835"
+    },
+    {
+      "path": "docs/research/bdx-inspection-20261008/report.json",
+      "bytes": 10033,
+      "sha256": "d7dbb771a65c753db09e17d367ca23b97f2c1629532d3e5410f613b7bc2e8e7d"
+    },
+    {
+      "path": "docs/research/bdx-inspection-20261008/report.txt",
+      "bytes": 7456,
+      "sha256": "f4589133508cc171c5d26669ae300513047d29754fa007e3af769e4d3a3e320d"
+    },
+    {
+      "path": "docs/research/bdx-inspection-20261008/claims.json",
+      "bytes": 6570,
+      "sha256": "0eed52f9127e6d668864a40d0c7361d664a38a0e5e884d2ff801cbde5418a04e"
+    },
+    {
+      "path": "docs/research/bdx-inspection-20261008/manifest.json",
+      "bytes": 4190,
+      "sha256": "3d2fae920c966e02a8eff97d5e9432173c40ba8563386f1da2b0cc750545258f"
+    },
+    {
+      "path": "docs/research/bdx-inspection-20261008/asset-witnesses.json",
+      "bytes": 221328,
+      "sha256": "53a7df02dbb0c2af3d86fab63148dc07b69967b6db07a8cc0bfcb5dd8809f226"
+    },
+    {
+      "path": "docs/research/bdx-inspection-20261008/selected-structure.json",
+      "bytes": 883976,
+      "sha256": "6d343cbd9ee825ddb20ddda9f7f2c4cc7ab9f99b7ceb39641341d870bad5f9a1"
+    },
+    {
+      "path": "docs/research/bdx-inspection-20261008/retail-comparison.json",
+      "bytes": 1950,
+      "sha256": "73fc0522aec082f60b0b757116a214389daac0422499a5f392c89038596fff78"
+    },
+    {
+      "path": "src/KH2Trainer.Core/BdxInspection.cs",
+      "bytes": 15833,
+      "sha256": "ba429164062c10d855a8e0a9a70579372a9a34d1277ad5ddef195ae62f5c4cd4"
+    },
+    {
+      "path": "tests/KH2Trainer.Core.Tests/BdxInspectionTests.cs",
+      "bytes": 12614,
+      "sha256": "d5bd551f6ea2e99df7e2ab28b5f6787764d90f00cb8b50faab26e36dc8025e1b"
+    }
+  ]
+}

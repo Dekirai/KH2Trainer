@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-08",
+  "status": "implemented_and_tested_prerequisite_not_installed",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "claims": [],
+  "evidence": "evidence.json",
+  "proof": "verification.json",
+  "sourceHashes": {
+    "src/KH2Trainer.Bridge/StatusThreadDrain.h": "f001f2448feab948855f3ba78cddbcb3582a00faa55e3042d41c2944fe414c98",
+    "tests/KH2Trainer.Bridge.Tests/StatusThreadDrainTests.cpp": "37888e1c97dcaf6b6eb734677f69bcd9387ef3992bc525d0b2df3d7226765994",
+    "tests/KH2Trainer.Bridge.Tests/StatusThreadDrainProductionCompile.cpp": "e5c1999e98017d8a1584a153d47a0db87d0451b7d9b11b74eb7cb1822895e0dd"
+  },
+  "tests": {
+    "checks": 812,
+    "failures": 0,
+    "log": "native-tests.txt",
+    "productionCompile": "Separate translation unit without KH2_STATUS_THREAD_DRAIN_TESTS; MSVC /O2 /W4.",
+    "scope": "Private synthetic memory and real threads belonging to the test process; no game code executed."
+  },
+  "implementation": [
+    "After all five entry gates are published, retain real handles for every enumerated process thread. The owner also has a retained handle so DWORD thread-ID reuse cannot transfer authority.",
+    "Preallocate and touch up to 2 MiB of snapshot storage before any suspension. Capture CONTEXT_FULL and the entire active RSP..StackBase span. Read the current TIB only after suspending a remote thread.",
+    "Resume the remote thread before inspecting the copy. A failed resume retains its handle and debt; subsequent owner-thread Poll or Close retries it before further work.",
+    "ResumePending exposes debt without acquiring metadata locks. The coordinator must defer Observer.Fault/Inspect and other lock-taking work until repayment; an interrupted thread could hold those locks.",
+    "Inspect RIP and every aligned eight-byte word. Any value in any original writer body remains PotentialWriter, including ordinary data. Missing or truncated copies remain Unknown.",
+    "The verified normal closure guarantees an active old writer has either a root RIP or an aligned retained root continuation. Therefore a complete negative scan is sufficient within this contract; positives do not prove a live writer.",
+    "Capture the current thread in a noinline frame kept alive throughout copying. Poll bounds the number of threads examined. Ready revalidates gates and requires all retained threads to be clear or exited.",
+    "Observed code/gate loss or failed resume faults confidence permanently. A separately bound Observer must still serialize arming and require no tracked native calls."
+  ],
+  "meaningfulCases": [
+    "OldWriter calls a helper blocked in WaitForSingleObject; its root continuation prevents readiness even though current RIP is outside the root.",
+    "After OldWriter returns, the same thread remains alive and a fresh complete copy clears. The old copy remains positive and cannot be reused as a new observation.",
+    "Retained signaled handles prove exit; closed or wrong-ID handles, invalid TEBs, truncated buffers and preexisting suspend counts never clear.",
+    "Injected ResumeThread failure preserves debt, invalidates the snapshot and requires repayment. Foreign suspend counts are preserved.",
+    "Every byte in all five root ranges and every aligned fixture slot is checked, together with malformed boundaries and contexts."
+  ],
+  "limits": [
+    "Conservative data matches can defer readiness indefinitely. No timeout or repeated frame count converts uncertainty to success.",
+    "The 2 MiB cap and thread budget bound bytes/work, not elapsed suspension time. Paging and kernel waits can take longer.",
+    "The normal-call proof excludes parked writer fibers, arbitrary exception callbacks, foreign SetThreadContext/stack writes, and concurrent foreign ResumeThread. Suspend counts cannot detect a foreign resume/re-suspend ABA.",
+    "R8D=0 in the recorded WaitForSingleObjectEx fallback disables ordinary alertable-wait APC dispatch only; it does not exclude special APCs or arbitrary external callbacks.",
+    "Code/import identity, exact roots, resident routing, process-lifetime objects and stable trusted API behavior must be supplied by the installer.",
+    "No TrainerBridge installation, typed STATUS IPC, Actor-provider integration or in-game validation is claimed."
+  ],
+  "freshProof": {
+    "bodies": 5,
+    "instructions": 377,
+    "bytes": 2222,
+    "rootCallContinuations": 22,
+    "evidenceSha256": "3dbc13aa1cd1d2eac7cda0ed0db8a3c8e35936a808be247c668b70587d2974e6"
+  },
+  "references": [
+    "https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-suspendthread",
+    "https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getthreadcontext",
+    "https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-readprocessmemory",
+    "../status-bootstrap-20261007/contract.json"
+  ],
+  "liveGame": false,
+  "liveTwitch": false,
+  "gameOrSaveWrites": false
+}

@@ -1,0 +1,145 @@
+Typed STATUS field transactions -- implementation prerequisite
+==============================================================
+
+Scope
+-----
+New StatusFieldTransactionSupport.h and isolated StatusFieldTransactionTests.cpp.
+No TrainerBridge integration, installer, IPC schema, feature catalog, reward
+metadata, executable release, game process, save, UI or Twitch action. Existing
+product features are unchanged. No fresh IDA body or additional native-function
+coverage is claimed; this work uses the previously verified retail research.
+
+Native fields and meaning
+-------------------------
+General: STATUS+430, one BYTE, received-hit coefficient 0..255.
+Draw: STATUS+520, Float32, accepted trainer range 0..5000.
+Jackpot: STATUS+568, Float32, accepted trainer range 0..9.
+Lucky: STATUS+572, Float32, accepted trainer range 0..99.
+Retention: STATUS+580, Float32 factor 0..1, not displayed percent encoding.
+
+Offsets/defaults/writers: status-rebuild-ownership-20261007/report.txt and its
+verified evidence for 3C0010, 3C1D90, 4016B0, 401730, 3C2650 and 3D7470.
+Ranges match existing DamageTuningFeatures.inl and LootFeatures.inl. These are
+trainer admission limits, not a claim about all possible native scalar values.
+No value is clamped. Float32 signs, payloads and exact bits are retained. Invalid
+NaN/infinite/out-of-range desired or adopted originals are refused. An external
+NaN at cleanup is an exact-bit mismatch and is preserved as superseding input.
+
+The native pool contains 80 slots of 632 bytes; positive refcount+612, bounded
+unique free-list membership, Actor+1472, STATUS selfpointer+504 and packed Actor
+backlink+616 are checked again inside Observer.WithMetadata. Packed decode uses
+the native 64-entry base table (retail RVA 2B0D720) and the original OR formula;
+the caller supplies its trusted live address. The pool is supplied by the bound
+Observer, not by an IPC request.
+
+Roles
+-----
+An independent trusted Actor provider must validate the real current role and
+control state. General/Draw/Jackpot are admitted for coherent Sora, Roxas and
+rescue Mickey. Lucky/retention are admitted for Sora/Roxas. Mickey's ordinary
+prize path bypasses the intended Lucky item-roll/retained-munny effects, so those
+two fields are refused for that role. The module does not enable Drive forms.
+This is a conditional role policy based on the prior native evidence, not a live
+claim that every gameplay mode consumes each scalar.
+
+Transaction ownership
+---------------------
+ReadCurrent returns exact selected bits plus bridge instance, Actor generation,
+pool epoch, slot allocation token and all five writer revisions. Acquire and
+ManualWrite require that snapshot: both exact bits AND selected revisions must
+still match. Every selected value and page is checked before any store.
+
+Acquire reserves a receipt, pins the Actor observation token, publishes a lease
+including original bits, and only then writes the selected native scalar widths.
+Commit sends ManualWrite into the shared Ledger before any store, even when the
+desired bits equal the current bits. The acquired lease captures the resulting
+revision stamp. A native same-value rebuild or same-value manual store therefore
+supersedes prior ownership. Disjoint fields can coexist; overlap conflicts on
+the actual pool allocation, including different Actors sharing a STATUS.
+
+ReleaseIntent can remain pending while control is blocked or the Actor is not
+current. Native revision takeover can be identified without reading an off-current
+Actor or its STATUS. Restoration requires current provider identity, allocated
+pool/backlinks, exact saved revisions and exact applied bits. Changed fields are
+preserved. Temporarily read-only owned fields can remain pending while other
+independent fields restore. An observed pool reset/release/reinitialization ends
+allocation ownership. A still-current Actor switching STATUS is BindingChanged,
+not falsely reported as Actor death or pool destruction.
+
+There is no Reapply or automatic recapture of a new baseline after native takeover.
+Tick(releaseAll=true) queues cleanup without bypassing the gameplay gate. This
+helper does not own reward duration clocks; host integration must continue using
+the existing control-aware timing layer.
+
+Durable bounded journal
+-----------------------
+32 lease records, 64 immutable mutation receipts and 16 client tombstones.
+Mutations are Acquire, ReleaseIntent and ManualWrite. Each client must use strictly
+increasing nonzero operation IDs. An exact duplicate returns its prior result;
+the same ID with changed payload conflicts. Receipts are reserved before any
+mutation, including rejected operations. Capacity failure occurs before writes.
+
+Acknowledge drops one explicitly named receipt. A persistent per-client high-water
+token prevents an acknowledged old ID from being treated as a new mutation. Client
+identities are never evicted; reaching the client bound refuses a new identity.
+No arithmetic wrap accepts a reused operation ID. QueryOperation can recover a
+lost result. QueryLease reports retained ownership; if an in-flight native writer
+prevents current inspection, the result says ObserverUnavailable.
+
+Terminal leases auto-collect only after their final referencing receipt is
+acknowledged. AcknowledgeLease allows explicit GC when asynchronous completion
+happens after all operation receipts were already acknowledged. It requires the
+right owner, exact terminal revision, no references and no Actor pin. Active,
+pending and uncertain leases cannot be collected. Lease serials never reuse.
+
+Exceptions and uncertainty
+--------------------------
+The scalar write block catches only its own SEH. A fault after zero or more field
+stores marks the observer and ownership uncertain; it does not roll back or retry.
+The receipt retains exact originals/applied bits and, for an acquired/restoring
+lease, identity and the retained Actor token. Duplicate calls, Tick, host-expiry
+cleanup and new release requests do not repeat ambiguous writes. Unknown Actor
+observer state is not treated as destruction. Native observer originals and their
+exception semantics remain the responsibility of StatusObserverSupport.h.
+
+Integration prerequisites that remain open
+-----------------------------------------
+1. The actual five native entry hooks, intact code checks and proven bootstrap
+   barrier must exist before Observer can enter Observing. This header proves none
+   of those prerequisites and does not call ArmAfterProvenBarrier.
+2. The Actor provider must bind the genuine lifetime observer, current-player role
+   and gameplay checks. A generation integer alone is insufficient. Pin retains
+   a metadata token, not a native Actor reference. Integration must prove that
+   Actor destruction/rebinding cannot race the whole no-yield game-thread commit.
+3. Provider calls run under STATUS metadata locking. They must not enter native
+   game code, reenter Observer/Journal, wait for a callback, throw or change game
+   state. Any lock order with Actor metadata must be noncyclic.
+4. Existing direct manual DamageTuning/Loot writes must be routed through the same
+   ManualWrite revision event when runtime integration is enabled. Their current
+   production handlers have deliberately not been modified here.
+5. IPC/host transport, scheduling, reconnect policy and user-visible diagnostics
+   need a typed integration; this C++ API has no assigned wire schema or capability.
+6. The observer contract covers the verified retail writer closure. Arbitrary mod
+   writes that change a field and restore identical bits without an observed entry
+   are not detectable. This is not a universal memory-write observer.
+
+Validation
+----------
+MSVC x64 /std:c++17 /O2 /W4 /MT /EHsc. The shipping header path is compiled with
+STATUS_FIELDS_PRODUCTION_COMPILE (test controls absent), followed by execution of
+the synthetic native suite: 1976 checks, zero failures, no compiler warnings.
+The suite uses private VirtualAlloc memory and synthetic native originals. It
+executes no KH2 code and does not inject or access any game process.
+
+Coverage includes all 31 nonempty masks and all 80 slots; exact byte widths;
+same-value rebuild/manual takeovers; per-field restore; negative zero; native
+General-only revision changes; pool reset/final release/reinitialization; nonfinal
+references; Actor generation and STATUS-binding changes; off-current no-access
+Actor memory; menu/cutscene gates; capacity limits; duplicate/conflicting/retired
+request IDs; immutable rejected receipts; terminal GC; faults before each of five
+Acquire, ManualWrite and restore stores; wrong-thread requests; and a synthetic
+native writer blocked on another thread while typed requests are attempted.
+
+Runner integration by the parent should use suite StatusFieldTransactionTests and
+ProductionDefine STATUS_FIELDS_PRODUCTION_COMPILE. Local test binaries/objects
+remain under artifacts/status-field-transactions, outside this research folder.

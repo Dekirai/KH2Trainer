@@ -1,0 +1,211 @@
+BDX TRAP REGISTRY — 2026-10-08
+
+Result
+
+The original bank table has an identifiable eleven-slot data cluster at RVA
+753490, followed by an independently used object at 7534E8. Eleven is a bounded
+static catalogue extent, not a native dispatch limit. The captured interpreter
+does not check bank/index bounds, a NULL bank, a NULL handler, or a sentinel.
+
+Banks 3 and9 are initially NULL. Each can be activated with a separate static
+descriptor table. Bank 9's table is not dynamically allocated: registration
+changes the pointer to the writable image table 73D080. It contains 41 consecutive
+descriptors before the distinct following data family at 73D310. The observed
+registration paths install or clear the bank pointer; they do not allocate,
+resize, copy or release that descriptor array.
+
+The important lifetime distinction is between that persistent table storage and
+the mode-owned objects/allocator used by its handlers. Installing a pointer does
+not prove the handler's objects are valid. Removing it does not drain VM work.
+Both bank-specific cleanup wrappers clear their pointer before the generic VM
+cleanup, even though generic cleanup can execute a VM's recorded exit event.
+No actual bad exit-event script or runtime failure is claimed here.
+
+All short hexadecimal identifiers in this report are RVAs added to140000000.
+Structure offsets after '+' are decimal unless prefixed0x. The exact executable
+SHA256 is 9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed.
+
+1. Static snapshot, boundaries and NULL entries
+
+Bank   Original table RVA   Observed installed variant
+0      752E00               same original table
+1      755370               same original table
+2      756B60               same original table
+3      NULL                 72F1A0 through 3E1710
+4      757250               same original table
+5      789BE0               same original table
+6      787E80               same original table
+7      7883F0               same original table
+8      787530               same original table
+9      NULL                 73D080 through 3E1720(9,...)
+10     787070               same original table
+
+These are original-image values and observed setter targets. They are not a live
+snapshot and do not prove that unobserved indirect writes can never change them.
+The registry and both installed variant tables reside in writable .data.
+
+The next qword at 7534E8 is0x142B047D0. The independent function 02B6B0 reads that
+cell, adds0x8000 bytes and stores the result at2AEA878. Its original bytes and
+the distinct IDA data label separate that object from the preceding registry.
+IDA supplies no authoritative C array size at 753490. No captured instruction
+checks for bank < 11. Thus the eleven-slot cluster is an explicit static capture
+range [753490, 7534E8), rather than a proved source-language array declaration or
+VM safety guarantee. There is no terminal NULL after slot10.
+
+NULL also does not delimit the descriptor tables in general. Bank 0 descriptor 10
+at 752EA0 is sixteen zero bytes, between nonzero descriptors 9 and11. A catalogue
+must retain this hole and must not stop scanning at the first zero record. This
+counterexample is byte-verified, without invoking the NULL entry.
+
+Bank 9 descriptors occupy [73D080, 73D310):41 records of 16 bytes. The final handler
+is 2885D0. At 73D310 the next qword is0x60, not a code pointer or NULL sentinel;
+the following initialized data family includes 73D340, directly masked by 01A6D0,
+and 73D3E0, separately consumed by 01A720. This supports a structural boundary,
+not a native count field. No count is passed to either setter. The catalogue
+snapshot gives all41 handler/flags/count records; the remaining banks' full
+descriptor inventory and semantic naming are a separate root-agent study.
+
+2. Native access and setter rules
+
+3E1720 consists of four instructions: sign-extend ECX to RAX, take the registry
+base, write RDX to[base+RAX*8], return. It neither restricts the signed index nor
+checks the pointer. Its only recorded direct code references are the Bank 9
+install/clear wrappers. The return value is the sign-extended supplied index,
+not a validation result. 3E1710 is a separate two-instruction setter that writes
+RCX directly to Bank 3's cell 7534A8.
+
+The group-A native-call path in 41B400 is 41C4AA.. 41C518:
+  bank = zero_extend_16(opcode) >> 6;          // representable0.. 1023
+  table = registry[bank];
+  index = unsigned16(script[PC+1]);            // representable0.. 65535
+  descriptor = table +16*index;
+  argc = unsigned16(descriptor+8);
+  pop argc eight-byte VM values into the native operand vector;
+  call descriptor.handler(operandVector);
+  if flags &0x40000000: push operandVector[0];
+
+The interpreter advances the PC by two words before the call. The bank and index
+are used directly: no registry-size check, descriptor count, NULL test, sentinel
+scan or handler check precedes the dereference/call. The argument-count loop also
+has no maximum-count comparison in this captured path. Its source is the stored
+U16 count; valid descriptors and enough VM operand values are preconditions.
+The return flag reads the operand vector, not native RAX. The metadata is read
+again after the handler call, so a blanket immutability assumption is unwarranted.
+
+This describes the native instructions. It does not assert that shipped scripts
+reach invalid indices or that malformed scripts can be safely executed. An
+offline catalogue may impose its own captured ranges, while keeping unavailable,
+NULL, unknown and context-dependent entries distinct.
+
+3. Bank 9 registration, owners and ordering
+
+Startup chain:
+  243BC0 calls 2513E0 early;
+  2513E0 gets 9A8800 through 151E40 and stores that allocator alias at AFB420;
+  243BC0 registers task callbacks and calls 26ACE0 at 243D5F;
+  26ACE0 calls 3E16B0(AFB420), then 3E1720(9, 73D080).
+
+3E16B0 first sets the shared VM allocator2A250A0 and zeros the shared VM list
+head/tail2A25090/2A25098. It does not destroy a previous list, test that it was
+empty, synchronize with readers, or reset the registry. Registering the bank is
+therefore a caller-coordinated context transition, not ownership acquisition of
+the static descriptor array. 244230 calls 243BC0 as its startup body; 243A10's
+zero branch creates a task manager and registers 244230 through 14F8A0. The task
+manager/fiber internals are outside this bounded registration closure.
+
+Cleanup occurs through 2438F0 or the a1==1 branch of 243A10. Both call 19FFD0 before
+26ACC0. Both call 26ACC0 before the later 2513D0 that clears AFB420. 26ACC0 first
+stores NULL in Bank 9, then calls 3E1620. This is not an early barrier before every
+resource cleanup: several native cleanup calls, including 19FFD0, precede it.
+The separate earlier actor-bulk-lifetime study analyzes 19FFD0's bulk cleanup;
+this study establishes the original call ordering, not a new transitive proof
+of all the caller's many cleanup helpers.
+
+Bank 9 descriptor0 invokes 288150. That handler allocates 1408 bytes through
+AFB420's virtual+8 function, constructs through 27BB10 when allocation is nonzero,
+then unconditionally dereferences the resulting object for virtual+128. It
+stores 25DC50's result at object+1344 and returns an encoded pointer in operand0
+with its pointer tag. Thus the table's presence alone cannot validate either
+allocator or allocation/object lifetime. This is a checked wrapper body, not a
+complete semantic review of 27BB10 or the virtual target.
+
+Descriptor1 invokes 2881D0: decode operand0, then directly dereference its vtable
+and call slot+48. Descriptor40 invokes 2885D0: decode operand0, read object+72,
+and forward that value and operand1's low DWORD to 1A8A90. Neither captured wrapper
+validates object lifetime. These examples establish why static table lifetime
+and runtime argument lifetime must remain separate concepts.
+
+4. Bank 3 and shared VM state
+
+Bank 3 follows the parallel wrappers 1F9AA0 and 1F9A80. Startup obtains the allocator
+via 1E2050, calls 3E16B0, then stores table 72F1A0 through 3E1710. Cleanup clears
+Bank 3 with 3E1710(NULL), then calls 3E1620.
+
+The allocator getter 1E2050 reads AE94F0. 1E2060 initializes it from 9A8780 through
+151AD0; 1E2020 clears it. The captured 1E13B0 startup calls 1E2060 before 1F9AA0.
+The captured 1E12C0 cleanup and 1E18F0(a1==1) call 1F9A80 before 1E2020. These are
+concrete caller orderings, not a proof of global mode exclusion or immutable
+allocator ownership. 1E1FA0/1E1FC0/1E2030 demonstrate ordinary allocator uses of
+the alias. Their many incoming references are retained as xrefs; their callers
+are not all claimed as semantically analyzed.
+
+Other VM-context transitions reuse 3E16B0/3E1620 without a Bank 3/9 change in those
+helpers themselves. 39CA10 supplies its allocator from 152590. 3A1840 supplies
+9BA888, allocates and starts common-script event7, updates it, destroys/frees the
+context and ends with 3E1620. 39C830 also calls 3E1620. This prevents treating one
+global VM allocator or a non-NULL bank as an independent per-script owner.
+Transitive callees can do additional work; no universal exclusivity is inferred.
+
+5. Removal is not a VM drain
+
+3E1620 walks the shared head list. For each context it records the next encoded
+link, calls 3E1410, then frees the context through the current2A250A0 virtual+16.
+Only after the walk does it clear the head/tail and reset the allocator to 9BA888.
+
+If context+64 is nonzero, 3E1410 first prepares that event through 41B320 and calls
+41B400 with the same registry root 753490. It then destroys child contexts, frees
+its work/stack allocations, releases its optional reference-counted block, and
+updates its finished/owner count state. 3E1530 performs the corresponding optional
+context-object release after 3E1410. Since the Bank 3/9 wrappers clear their slot
+before entering this loop, a cleanup event must not assume that the removed
+bank remains callable. An actual exit-event witness using those banks has not
+been established here; there is no reproduced crash claim.
+
+3E1C80 also passes the same registry root to 41B400 and manages current-context
+globals, child traversal and completed-child release. It has no registry lock,
+generation test, reader count or snapshot. Captured setters likewise have no
+lock or wait. This does not prove concurrent mutation occurs: scheduling and all
+possible alias writes remain outside this study. It does establish that these
+functions alone do not provide a global Actor/STATUS lifetime barrier.
+
+6. Reproduction and scope
+
+Run:
+  python -B docs/research/bdx-trap-registry-20261008/verify.py --check
+
+Requires Python3 and Capstone5. 0. 7, plus the exact original executable path.
+The verifier parses PE sections/imports independently, checks the original SHA,
+compares every captured function/data span, decodes every listed instruction,
+checks page completeness, and verifies 404 distinct direct code xrefs and the
+selected semantic anchors. Full native listings and paginated IDA results are
+saved. The large interpreter was explicitly recaptured in eleven 100-row pages
+because an oversized tool response can silently retain fewer rows than its count.
+
+Verified scope:44 bodies, 2328 listed instructions, 10147 original function bytes.
+Of these, 9916 bytes are instructions and231 bytes are the interpreter's3-byte
+NOP plus 228 switch-table bytes. 15 data spans total1072 original-file bytes and
+80 loader-zero-fill bytes; overlapping capture spans are not unique-byte counts.
+368 original import identities are checked. Ordinal imports retain their exact
+ordinal; an IDA friendly name is not claimed as proven by that ordinal alone.
+
+The eleven-slot registry and41-record Bank 9 range are disclosed structural
+captures. The data-pointer xref census covers each registry qword and both
+qwords of every Bank 9 descriptor: only the known table-base install reference
+appears for Bank 9. This is an IDA direct-reference census, not an exhaustive
+proof against computed aliases, external patches or unknown indirect writers.
+All image data may be writable; static registration targets are not immutable.
+
+No live game, injection, process attachment, visible UI, script execution or
+IDB modification was performed. No executable was patched. No complete native
+handler catalogue, all-handler semantic proof, runtime index guarantee or
+global quiescence claim is made by this study.

@@ -1,0 +1,222 @@
+BDX Bank 0 system calls - 2026-10-08
+
+Result and scope
+================
+33 previously unannotated Bank 0 descriptors now have bounded descriptive
+names, parameter/return metadata, side effects and explicit limits. The proposed
+labels are in annotations.json, keyed as "0:index". No product source changed.
+Names describe observed behavior; they are not recovered debug symbols.
+
+The original-file verifier checks 103 newly captured helper bodies and 37 reused
+bodies (the 33 adapters plus four selected existing context/owner bodies).
+All 4,804 listed instructions are decoded independently from the SHA-pinned PE.
+Primary captured spans total 18,725 bytes; actual listed instruction bytes total
+18,679. These are span sums, not a claim of unique executable coverage. An
+out-of-line 8-byte tail of 3E39E0 at 41E930 is captured separately. Complete
+paginated ASM and pseudocode are retained; lookup first resolves the true entry
+before pagination, avoiding partial captures from an interior address.
+
+82 selected instruction anchors, 33 raw descriptors and 114 direct-reference
+encodings are checked. Three extra IDA spans contain the shared tail and two
+sound diagnostic strings. The PE import table supplies 368 original identities;
+two referenced import sites are recorded. An IDA reference to a .pdata record's
+end field is distinguished from a call to the following function. No exhaustive
+alias-writer, transitive-callgraph or runtime race exclusion is inferred.
+
+1. Child VM contexts and resource lifetime: 0:9, 11, 12, 47, 48
+================================================================
+0:9 creates a child of the current context at 2A25048. The mask operand has
+conditional replacement behavior: when nonzero, all existing children for which
+(childMask & mask) == mask are removed. Their teardown can execute an exit PC
+before the allocator frees them. Creation allocates 112 bytes through 2A250A0,
+constructs a VM with the parent's script/stack configuration, sets child bit 1
+at +56, stores the mask at +60, and initializes the PC from operand 1. A nonzero
+operand 2 overwrites exit-PC +64. A decoded non-NULL operand 3 selects one tagged
+stack argument, copied from the adapter's scratch slot. The child pointer is
+returned as @ADR. An allocation failure is followed by an unchecked child write.
+PC validity, non-NULL context/allocator and stable owner storage are prerequisites.
+
+0:11 only tests the resource request list at 2A0D628. A request already marked
+complete can remain there until 3A0790 dispatches its callback and frees it.
+3A0C60 processes named resource requests, including explicit obj/ and .bar paths;
+the list is not a universal loading fence. No lock is taken by the BDX predicate.
+
+0:12 calls 39D460(NULL). Its 39D590/39E690 closure assigns region placements,
+relocates resource bytes, adjusts selected pointers, releases BAR resources,
+unlinks records and invokes the owning allocator's free slot. It can also enqueue
+loads. This is resource repacking with lifetimes and callbacks, not a safe
+unload-all primitive. The remaining resource-specific callback graph is open.
+
+0:47 sign-extends a signed DWORD byte request before Allocate through the current
+9BA920 owner; 0:48 decodes and frees through whichever owner is current then.
+The imported, byte-rechecked 152680 owner transition replaces this allocator.
+There is no adapter proof that a later Free uses the same allocator as Allocate,
+nor any nonnegative size/null-owner check. No executable allocator command is
+implemented by this research.
+
+2. Three flag families and cascading rules: 0:14,15,19,20,69,70,73,89,101
+========================================================================
+The grouped reader 39A980 special-cases 65535 as false; other values use
+  DWORD index = 8*(signed(id)>>10) + ((id & 1023)>>5)
+  bit = id & 31
+at 9AB540. The grouped layout is recorded exactly; it is not simplified into
+a guessed uniform bit-array layout. The signed negative-ID case is not guarded.
+0:70 is the direct 9AB5C4 & 0x800 predicate. 0:101 is a short-circuit conjunction
+of grouped IDs 4215, 9289 and 11325; their named game milestones remain unknown.
+
+0:14 first sets a grouped flag and then consumes variable-length action records
+through BF30B0. It can clear other flags, recursively apply records, modify
+stored state and call other native handlers. IDs 6215/6221/6223 additionally
+dispatch 210540 with constants 14/15/16; that callee's full semantics are not
+re-proved here. Follow-up rule/native operations make this much more than a bit
+setter. Input bounds, a malformed record limit and recursion termination are
+not enforced in the captured body. The arbitrary action table is not decoded
+as if every possible row had been witnessed.
+
+0:19 updates 9AD8E8 and can append an ID byte to a queue. IDs 37/42/45/46 have
+additional suppression conditions. The ID is sign-extended into a pointer-valued
+bsearch key; its comparator compares the low DWORD value with a record byte.
+The lookup result is dereferenced without a NULL guard. ID 0 yields a NULL key;
+CRT validation/error-handler behavior remains an external boundary. The flag
+write precedes the lookup. The byte queue cursor 9ADA07 wraps. 0:20 only reads
+the unsigned-indexed flag family and does not consume the queue.
+
+0:69/73/89 set/clear/read 9ABC40. Set calls 3F0EA0; clear does not. The rule
+evaluator reads a loaded table rooted at 2AE5B60, counts up to thirteen typed
+conditions, compares with its required count and dispatches the matching setter.
+Those setters can reenter the rule/action logic. Unknown loaded rule tables
+preclude a global termination or complete side-effect claim.
+
+3. Shared rendering state and native time: 0:28..32,77,87,88
+==========================================================
+0:28 writes the first 28 bytes of a caller parameter record. 0:29 enables a
+shared screen rendering object ABC690, takes mode/alpha/coordinates/rate/count
+from that record and writes an interpolation pair at +28/+32. Rate at +20 is
+a float; duration/count at +24 is a signed DWORD, with zero replaced by one.
+The render update compares this integer against truncated float elapsed time.
+The BDX adapter
+passes zero duration in XMM1, which the helper clamps to one. Activation thus
+needs more caller storage than initialization alone writes. 0:30 disables the
+global effect even if another buffer enabled it. None of these pointer adapters
+validates NULL or the buffer size. The coordinate offsets wrap at 16 bits before
+conversion using current render dimensions. The helper at 3E39E0 and its shared
+tail are unrelated record-table setup, not part of this screen effect.
+
+0:31/32/87/88 configure overlay ABB3B0. White/black selects RGB 255/0, render mode
+72/68, and no decompiler omission is treated as an unspecified argument: the
+adapters set R8B to 1/1/0/0 in the original assembly. State 3 increases opacity
+to 128; state 1 performs two delay passes before state 2 decreases opacity.
+Updates subtract the float delta at 717484, and may dispatch an additional
+native continuation in state 4. That continuation's complete effect is open.
+
+The duration conversion is especially easy to misread:
+  n = CVTTSS2SI(floatOperand / (1.0f * 2.0f))
+  if n == 0: duration=2.0f; slope=1.0f
+  else: duration=float(uint64(uint32(2*n))); slope=128.0f/duration
+LEA ECX zero-extends before CVTSI2SS from RCX. Thus this is not a signed-float
+conversion of 2*n. Negative or out-of-range operands can give unexpectedly large
+durations or zero after wrapping; the latter reaches floating-point division by
+zero. No synthetic crash or runtime use is claimed. Native floating-point
+exception configuration remains outside the captured contract.
+
+0:77 instead starts task-based blending. Its float is divided by two and then
+doubled into task state without the integer truncation above. Tasks are replaced,
+rendering work is scheduled and the update uses 717480 to adjust two globals
+within 0..128. It is asynchronous and allocates task state. Zero duration can
+reach 128/duration. Neither family establishes a wall-clock-seconds guarantee.
+
+4. Shared timers: 0:55/56
+=========================
+These start countdown/count-up using uint32 multiplication by 60, counter
+snapshot ABB858, limit ABB85C, displayed value ABB860 and state ABB864. The first
+unpaused task pass changes state 1 to 2. The timing callback 154700 reaches
+1570F0, which increments ABB850 unless pause field ABB854 is set. The separately
+registered 1571B0 task computes the difference and updates the displayed count.
+This callback/task split is not an atomic timer contract.
+
+Countdown clamps at zero and stops. Count-up clamps at 215999; while it remains
+at or below that ceiling, a positive configured limit can stop it. Completion
+dispatches 3AABE0(74,0). The literal factor 60 establishes native units; no exact
+seconds claim is derived just from that multiplication. Counter wraparound,
+negative arguments and unknown scheduling remain material limits.
+
+5. Inventory-like records and completion: 0:63,97,100,103
+========================================================
+0:63 uses loaded entry metadata (24-byte records rooted at 2A25370) and destination
+selectors. 100 selects global storage. Character mapping accepts 1..15, remaps
+14->1 and 15->6, and invalid mappings can fall back to global storage on add.
+Unique entries use bits; ordinary quantities are bytes with the add policy capped
+at 99. Character type-0 slots and type-19 slots have distinct insertion logic.
+The latter scans at most 80 WORDs at +84, but returning without insertion when
+full does not make the outer add return false. The returned @INT means policy
+selection succeeded, not that every requested state change completed.
+
+0:97's helper returns an internal value, but its descriptor lacks the VM return
+flag. Global removal clears a unique bit or subtracts one with a zero floor.
+Character removal searches the ordinary slot array backward and clears the last
+match; it does not run the 80-slot type-19 algorithm. It is therefore not a
+universal inverse of 0:63. Missing item-table rows can be dereferenced, and the
+character-remove path does not guard a NULL mapped record. Loaded metadata and
+native ownership remain required. Descriptive inventory/character labels do not
+assign unproved item names or promise complete equipment propagation.
+
+0:100 increments WORD 9AD880 below 999. An existing value >=999 is preserved,
+not clamped. Its exact named game statistic is left open.
+
+0:103 selects a completion predicate from stored difficulty: selector 0/default
+is false; 1 requires native percentage 100 plus a 27-value aggregate 100; 2 only
+requires the percentage; 3 checks positive global counts for 593/594/595. The
+percentage path 2F3AB0 -> 348B30 is not a pure getter: it can initialize managers,
+create temporary heaps/regions, mutate totals and free resources. The full
+completion-table traversal and the exact reward/ending associated with this test
+are not established. A nonempty lookup row is not a runtime-call license.
+
+6. Input masks and request/sound controls: 0:64,65,80,81,104
+================================================================
+0:80 reads the current mapped input mask; 0:81 reads its rising-edge mask, both
+from record zero via 39B780. 39BF00 derives current/rising/falling masks after
+mapping source data; reset/disabled state clears them and resynchronization can
+suppress edges. The adapter executes BT on a register, so the bit index is modulo
+64. It is not an unbounded memory bit access, physical button identifier or raw
+keyboard scan-code API. The adapter neither refreshes nor locks the input state.
+
+0:64 sets request admission byte AD93C0. Captured allocation paths reject new
+pool entries while it is set; existing records are not walked or stopped.
+0:104 walks AD93B0 and toggles bit 8 at record+40 only where byte+53 is 2:
+signed-positive operand clears it; zero/negative sets it. The semantic meaning
+of this flag is not promoted to a generic pause/resume command.
+
+0:65 has stronger semantic evidence: the native path contains the original
+diagnostic "SslSePlay : bank=%d no=%d id=%d -> ". The adapter ultimately passes
+bank 2, sound number operand0, ID0, and the wrapper's 16383 scaling constant.
+It may allocate/start/register a playback object, but a missing singleton/bank
+or backend rejection can produce no sound. There is no VM success return and
+no guessed mapping from numeric sound IDs to audible names.
+
+Processor semantics
+===================
+Register BT reduces the offset modulo the operand width. CVTTSS2SI truncates;
+invalid masked conversions have an architecture-defined indefinite result.
+These instruction rules were checked in Intel's primary manuals; they do not
+establish the game's runtime floating-point exception mask.
+BT: [Intel SDM Vol. 2A, BT](https://cdrdv2-public.intel.com/812383/253666-sdm-vol-2a.pdf), printed p. 3-130.
+CVTTSS2SI: [Intel SDM, CVTTSS2SI](https://cdrdv2-public.intel.com/868137/325462-089-sdm-vol-1-2abcd-3abcd-4.pdf), Vol. 2A p. 3-255.
+
+Reproduction and limits
+=======================
+From repository root:
+  py -3 -B docs/research/bdx-system-calls-20261008/build_annotations.py
+  py -3 -B docs/research/bdx-system-calls-20261008/verify.py --check
+Pass --original PATH to select another copy of the exact SHA-pinned original PE.
+Python requires Capstone 5.x. No IDA process is needed for offline verification.
+The captured pages remain available in ida-capture.json; evidence.json normalizes
+their original-byte checks and records reused source hashes. listings.txt includes
+every decoded instruction; semantic-anchors.json makes key observations explicit.
+The manifest includes every file in this package other than itself.
+
+No game was started, attached, injected, saved or modified. No native instruction,
+script event, trainer action or external callback was executed by this study.
+The new descriptions support offline script reading, argument checking and a
+future editor. Executable mods would additionally require valid native context,
+thread/task placement and owner lifetime. This package proves these selected
+observations; it does not claim complete game or transitive-callgraph coverage.

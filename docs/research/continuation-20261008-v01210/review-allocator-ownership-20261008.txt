@@ -1,0 +1,22 @@
+UNABHÄNGIGE REVIEW: ALLOCATOR OWNERSHIP — 2026-10-08
+Ergebnis: PASS. Keine offenen Befunde.
+
+Geprüfte Fassung
+Manifest SHA256: 218a1d93d6b5b59a3c20cbba98ba1e0fede36358decaadd964f8f1da22ccae45
+Original-EXE: 9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed
+
+Erneuter Studienverifier mit --check: PASS, ohne Schreibzugriff auf die Studienartefakte.
+49 neue Erfassungen:1.780 Instruktionen/7.961 Bytes;20 wiederverwendete Bodies:653 Instruktionen/2.500 Bytes.32 Tabellenbytes.835 ausgewählte eingehende Referenzen (780 normale Instruktionsreferenzen,52 statische Daten,1 RuntimeFunction-Endgrenze,2 unzugeordnete Instruktionen).550 direkte/dynamische CALL/JMP-Kanten sind klassifiziert. Alle fünf eigenen und fünf wiederverwendeten Manifestbelege passen.
+17 native Claims,96 erfolgreich aufgelöste Evidence-Verweise. Zentraler Coverageparser und Coveragezustand blieben unverändert.
+
+Zwei Reviewbefunde wurden durch den Autor behoben:
+1. Der nicht unterstützte Fragmentverweis #globalXrefs wurde durch die gesamte evidence.json ersetzt.
+2.2530C0 wird jetzt korrekt als32-Bit-Summenbildung mit nachfolgender Vorzeichenerweiterung durch MOVSXD beschrieben. Die tatsächliche Anforderung ist sign_extend_64(int32(uint32(a3+a4-1))); die Maskenbildung benutzt ein64-Bit-Komplement. Sieben konkrete Byte-/Instruktionsanker wurden ergänzt. Der konkrete Taskmanageraufruf0x30000/16 bleibt gültig.
+
+Inhaltlich geprüft
+Die gleichzeitigen Instanzen im Startup, die Parent-/Kindbeziehungen, die Mode4-Teilregionen, die ausgewählten Parent-Free-/Regions-Pop-Reihenfolgen und die getrennt dokumentierten stehenbleibenden Aliase sind durch die Bodies gedeckt. Die Größenrechnung unterscheidet Payload,48-Byte-Blockoverhead und128-Byte-Instanzpräfix. Ein ausgeführter Zugriff über stale Aliase, ein echter Semaphorefehler und universelle Actor-/STATUS-Synchronisierung werden ausdrücklich nicht behauptet.
+
+Zusätzlich wurde die CRT-free-Kette des TASK_MANAGER-Destruktors unabhängig bis zur originalen IAT geprüft:14F5AD→4390A0→43A4B4→471B68→57B790; der PE-Import lautet api-ms-win-crt-heap-l1-1-0.dll!free. Die drei kurzen Originalbytefolgen stehen im JSON-Receipt. Dies ist ein statischer Zusatzcheck, kein neuer Runtime- oder Destruktoraufruf.
+
+Grenzen
+Indirekte Caller, transitive Cleanup-Callbacks, Ausnahme-/Shutdownpfade und Threadkonkurrenz bleiben offene Grenzen der Studie. Die Review bestätigt die konkreten statischen Claims, keine vollständige Subsystemsemantik oder Live-Freigabe. Keine Produktdateien oder Spielprozesse wurden verändert.

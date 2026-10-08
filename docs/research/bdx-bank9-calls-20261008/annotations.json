@@ -1,0 +1,620 @@
+{
+  "schema": 1,
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "annotations": {
+    "9:0": {
+      "bank": 9,
+      "index": 0,
+      "name": "Create OBJ3D model object",
+      "summary": "Allocates and constructs a 1408-byte gm::OBJ3D, initializes its model from operand 0, attaches the current AFBE90 camera, and returns an encoded ADR pointer.",
+      "notes": "Requires the current AFB420 allocator and valid resource/model context. Allocation failure still reaches the virtual model initializer; no safe NULL result path is established. The object is registered in the native task/list system.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288150]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027bb10]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027c260]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025dc50]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14024b720]",
+      "declaredOperandCount": 1,
+      "hasReturnSlot": true,
+      "helperRvas": [
+        "0x27bb10",
+        "0x27c260",
+        "0x25dc50",
+        "0x24b720"
+      ]
+    },
+    "9:1": {
+      "bank": 9,
+      "index": 1,
+      "name": "Request OBJ3D removal",
+      "summary": "Invokes operand 0 object's virtual slot +48; the captured OBJ3D implementation marks deletion flag 2 after confirming list membership.",
+      "notes": "This is a deletion-mark and task-removal request; the later object collector ordering is outside this bounded closure. It does not synchronously free the object. A stale pointer can already fault when the adapter reads its vtable.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402881d0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14024c590]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14024c180]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14024b7e0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027bfe0]",
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x24c590",
+        "0x24c180",
+        "0x24b7e0",
+        "0x27bfe0"
+      ]
+    },
+    "9:2": {
+      "bank": 9,
+      "index": 2,
+      "name": "Accumulate OBJ3D target-position delta",
+      "summary": "Adds operand 1 vector minus the object's current position (+1072) into pending displacement (+1120). The normal object update later applies and clears that displacement.",
+      "notes": "Sanitizes four NaN components in the caller's vector to zero in place; infinities remain. Multiple calls before update accumulate multiple deltas rather than replacing the pending target.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402881f0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14013fd20]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14013fce0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027ce30]",
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x13fd20",
+        "0x13fce0",
+        "0x27ce30"
+      ]
+    },
+    "9:3": {
+      "bank": 9,
+      "index": 3,
+      "name": "Read OBJ3D position into shared vector",
+      "summary": "Copies the object's +1072 position vector into the shared 16-byte buffer at 0x14073D458 and returns that buffer as ADR.",
+      "notes": "Borrowed shared result: subsequent 9:3, 9:31 or 9:34 calls overwrite it. This operation does not apply pending displacement or validate object lifetime.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402882a0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027bb10]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027ce30]",
+      "declaredOperandCount": 1,
+      "hasReturnSlot": true,
+      "helperRvas": [
+        "0x27bb10",
+        "0x27ce30"
+      ]
+    },
+    "9:4": {
+      "bank": 9,
+      "index": 4,
+      "name": "Select OBJ3D motion and start time",
+      "summary": "Passes operand 1 motion selector and operand 2 float start position to gm::MOTION at object+1264. On success it sets current/start time and clears end-crossing flag 2.",
+      "notes": "Operand 2 is carried in XMM2 even though the adapter pseudocode omits it. The helper traverses BAR records (nested types 9 and 16) and does not safely reject every missing nested record; arbitrary selectors are not validated here. Time units remain native motion units.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402882f0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027e460]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027e0e0]",
+      "declaredOperandCount": 3,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x27e460",
+        "0x27e0e0"
+      ]
+    },
+    "9:5": {
+      "bank": 9,
+      "index": 5,
+      "name": "Select OBJ3D render queue flag",
+      "summary": "Stores bool(operand 1) in object DWORD+32. The normal task update uses value 1 to select one of two ordinary object queues when flags 0x10/0x20 are absent.",
+      "notes": "This is a queue-selection field, not a proven general visibility, pause, or collision toggle. Existing object flags and virtual predicates still control queue insertion.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288360]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14024c180]",
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x24c180"
+      ]
+    },
+    "9:6": {
+      "bank": 9,
+      "index": 6,
+      "name": "Create task-backed VM_THREAD",
+      "summary": "Allocates gm::VM_THREAD from AFB420, creates a base VM from global 0x142A25048, and starts operand 1 event with one VM operand copied from operand 2. Task ordering uses DWORD(operand 0+25000). Returns ADR.",
+      "notes": "The 80-byte thread object is native task-owned. VM/resource/task/allocator preconditions are external; creation has unchecked allocations. Operand 2 includes its original eight-byte VM value/tag. No OS-thread creation is shown.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402885f0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140292ed0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140292d10]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140293220]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1403e1970]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027ba80]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027bb00]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402930c0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140293150]",
+      "declaredOperandCount": 3,
+      "hasReturnSlot": true,
+      "helperRvas": [
+        "0x292ed0",
+        "0x292d10",
+        "0x293220",
+        "0x3e1970",
+        "0x27ba80",
+        "0x27bb00",
+        "0x2930c0",
+        "0x293150"
+      ]
+    },
+    "9:7": {
+      "bank": 9,
+      "index": 7,
+      "name": "Read motion end-crossing flag",
+      "summary": "Returns INT ((object DWORD+1272 >> 1) & 1), the embedded motion's sticky end-crossing flag.",
+      "notes": "Motion update sets this flag when current time reaches/exceeds length, then can wrap, add a resource-provided offset, or clamp. A selected motion clears it. It does not necessarily mean playback has stopped.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288330]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027e190]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027e460]",
+      "declaredOperandCount": 1,
+      "hasReturnSlot": true,
+      "helperRvas": [
+        "0x27e190",
+        "0x27e460"
+      ]
+    },
+    "9:8": {
+      "bank": 9,
+      "index": 8,
+      "name": "Reset transition-table append count",
+      "summary": "Writes zero to the caller-provided transition table's first DWORD.",
+      "notes": "Does not clear any of the 32 name/record slots used by lookup. Old named entries remain visible unless the caller clears them separately. The pointer is a table, not a VM_THREAD.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288720]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140292db0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140293040]",
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x292db0",
+        "0x293040"
+      ]
+    },
+    "9:9": {
+      "bank": 9,
+      "index": 9,
+      "name": "Append named VM transition record",
+      "summary": "Appends name pointer (operand 1), payload pointer (operand 2), unsigned priority (operand 3), event (operand 4), and exit event (operand 5) to the table in operand 0, then increments its signed DWORD count.",
+      "notes": "Descriptor argc stays 6. The adapter also copies scratch operands 6..15 into a local array, but immediate callee 292FA0 reads only array element 0 (= operand 5); the ten extra values have no observed downstream use in that callee. No capacity/count guard or string/payload copy; lookup scans exactly 32 records regardless of count.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288740]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140292fa0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140293040]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402932c0]",
+      "declaredOperandCount": 6,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x292fa0",
+        "0x293040",
+        "0x2932c0"
+      ]
+    },
+    "9:10": {
+      "bank": 9,
+      "index": 10,
+      "name": "Attach transition table to VM_THREAD",
+      "summary": "Stores the decoded operand 1 table pointer in VM_THREAD+16.",
+      "notes": "Borrowed pointer only; no copy, capacity check, queue reset, or ownership transfer is established. Table strings and payloads must remain usable through later named-event processing.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402886d0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140293040]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402930c0]",
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x293040",
+        "0x2930c0"
+      ]
+    },
+    "9:11": {
+      "bank": 9,
+      "index": 11,
+      "name": "Request named VM transition immediately",
+      "summary": "Finds operand 1 name in the attached table, resets both queue indices, and requests the matching transition. It replaces an active transition only when the new unsigned priority is at least as high.",
+      "notes": "Lookup examines 32 slots and may return NULL, which the transition starter dereferences. A rejected lower-priority request still discards queued indices. Nonzero new events can run the old record's exit event and replace the active child VM.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288650]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140293380]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140293040]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402932c0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14026ad10]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14026add0]",
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x293380",
+        "0x293040",
+        "0x2932c0",
+        "0x26ad10",
+        "0x26add0"
+      ]
+    },
+    "9:12": {
+      "bank": 9,
+      "index": 12,
+      "name": "Queue named VM transition",
+      "summary": "Looks up operand 1 name and stores its record pointer in a four-slot ring at VM_THREAD+40, advancing the producer index modulo four.",
+      "notes": "No full-ring check, lookup-success guard, or record ownership. A missing name can queue NULL; four unconsumed pushes can make producer equal consumer. The updater starts queued records after active-child completion.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288690]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402931e0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140293040]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402930c0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402932c0]",
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x2931e0",
+        "0x293040",
+        "0x2930c0",
+        "0x2932c0"
+      ]
+    },
+    "9:13": {
+      "bank": 9,
+      "index": 13,
+      "name": "Find registered OBJ3D by ID",
+      "summary": "Searches the AFA780 object list for the first object whose DWORD+64 equals operand 0, returning ADR or NULL.",
+      "notes": "Returns a borrowed pointer; does not exclude deletion-marked objects or reserve their lifetime. The numeric ID namespace is not established as the actor/STATUS namespace.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288380]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14024c500]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14024c690]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14024b7e0]",
+      "declaredOperandCount": 1,
+      "hasReturnSlot": true,
+      "helperRvas": [
+        "0x24c500",
+        "0x24c690",
+        "0x24b7e0"
+      ]
+    },
+    "9:14": {
+      "bank": 9,
+      "index": 14,
+      "name": "Check OBJ3D list membership and deletion flag",
+      "summary": "Returns INT 1 only for a non-NULL pointer found in AFA780 with object flag 2 clear; otherwise returns 0.",
+      "notes": "A momentary list-membership check does not pin the object, prevent ABA reuse, or validate arbitrary pointer types. No global lifetime barrier is provided.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402883b0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14024c640]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14024b7e0]",
+      "declaredOperandCount": 1,
+      "hasReturnSlot": true,
+      "helperRvas": [
+        "0x24c640",
+        "0x24b7e0"
+      ]
+    },
+    "9:15": {
+      "bank": 9,
+      "index": 15,
+      "name": "Set indexed AFC0C4 bit",
+      "summary": "Sets bit (operand 0 & 31) in DWORD array AFC0C4[uint32(operand 0)>>5].",
+      "notes": "No index bound. The captured initializer clears only the first DWORD; this study does not infer a larger supported capacity or a gameplay meaning for these bits.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288820]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140243bc0]",
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x243bc0"
+      ]
+    },
+    "9:16": {
+      "bank": 9,
+      "index": 16,
+      "name": "Clear indexed AFC0C4 bit",
+      "summary": "Clears bit (operand 0 & 31) in DWORD array AFC0C4[uint32(operand 0)>>5].",
+      "notes": "No index bound, ownership check or synchronization. Only the first DWORD's initialization is established; do not treat arbitrary indices as a safe flag bank.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288850]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140243bc0]",
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x243bc0"
+      ]
+    },
+    "9:17": {
+      "bank": 9,
+      "index": 17,
+      "name": "Read indexed AFC0C4 bit",
+      "summary": "Returns INT for bit (operand 0 & 31) in DWORD array AFC0C4[uint32(operand 0)>>5].",
+      "notes": "No index bound. Flags are shared native state; their wider gameplay names and safe index set remain open.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288880]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140243bc0]",
+      "declaredOperandCount": 1,
+      "hasReturnSlot": true,
+      "helperRvas": [
+        "0x243bc0"
+      ]
+    },
+    "9:18": {
+      "bank": 9,
+      "index": 18,
+      "name": "Retire VM_THREAD child and clear transition binding",
+      "summary": "Queues the child VM referenced by VM_THREAD+72 for later destruction, then clears that pointer, table+16 and active-record+24.",
+      "notes": "Does not directly free the child VM, thread, base VM+8, or clear queue indices/slots. The thread updater can request task termination and calls the global VM retirement-queue drain. Thread cleanup queues the base VM then frees the thread through its task allocator. Later VM destruction can execute exit script code.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288700]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402931b0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14026ad30]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402930c0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140292e60]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140293150]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1403e1910]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1403e15a0]; docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x1403e1410]",
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x2931b0",
+        "0x26ad30",
+        "0x2930c0",
+        "0x292e60",
+        "0x293150",
+        "0x3e1910",
+        "0x3e15a0"
+      ]
+    },
+    "9:19": {
+      "bank": 9,
+      "index": 19,
+      "name": "Assign OBJ3D camera pointer",
+      "summary": "Stores decoded operand 1 directly in object+1344.",
+      "notes": "Borrowed camera reference; no lifetime or type check. Captured rendering/projection paths use a global fallback when NULL, but a non-NULL stale camera is not made safe.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288480]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027cbc0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027c3e0]",
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x27cbc0",
+        "0x27c3e0"
+      ]
+    },
+    "9:20": {
+      "bank": 9,
+      "index": 20,
+      "name": "Create task-backed CAMERA",
+      "summary": "Allocates and constructs a 2368-byte gm::CAMERA with task ordering 65000 and returns ADR, or NULL when the outer allocation fails.",
+      "notes": "Constructor registers its update and cleanup callbacks and copies current projection state. Requires valid AFB420 allocator and current task context. Constructor-internal failures are not fully handled here.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402888b0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140271d00]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140151e50]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140272070]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140272090]",
+      "declaredOperandCount": 0,
+      "hasReturnSlot": true,
+      "helperRvas": [
+        "0x271d00",
+        "0x151e50",
+        "0x272070",
+        "0x272090"
+      ]
+    },
+    "9:21": {
+      "bank": 9,
+      "index": 21,
+      "name": "Request CAMERA removal",
+      "summary": "Sets bit 1 in camera DWORD+2352. The camera task observes it and requests termination; cleanup invokes the deleting destructor.",
+      "notes": "Asynchronous removal request. No detachment of borrowed OBJ3D camera references is performed by this adapter.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288920]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140272070]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140272090]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140272010]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140271f90]",
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x272070",
+        "0x272090",
+        "0x272010",
+        "0x271f90"
+      ]
+    },
+    "9:22": {
+      "bank": 9,
+      "index": 22,
+      "name": "Set CAMERA eye position",
+      "summary": "Sanitizes and copies operand 1 vector to camera+2152, the eye/position input consumed by the camera's look-at rebuild.",
+      "notes": "Four NaNs are replaced by zero in the caller's vector. Does not immediately rebuild matrices; the normal camera task or 9:24 does that. No pointer/lifetime validation.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288940]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140272480]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14019dec0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14019c910]",
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x272480",
+        "0x19dec0",
+        "0x19c910"
+      ]
+    },
+    "9:23": {
+      "bank": 9,
+      "index": 23,
+      "name": "Set CAMERA look-at target",
+      "summary": "Sanitizes and copies operand 1 vector to camera+2168, the target input consumed by the camera's look-at rebuild.",
+      "notes": "Mutates NaNs in the input vector in place; does not immediately rebuild matrices. Coincident eye/target and invalid resources are not guarded by this adapter.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402889c0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140272480]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14019dee0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14019c910]",
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x272480",
+        "0x19dee0",
+        "0x19c910"
+      ]
+    },
+    "9:24": {
+      "bank": 9,
+      "index": 24,
+      "name": "Rebuild CAMERA matrices",
+      "summary": "Invokes camera virtual slot +8; captured gm::CAMERA target 272480 rebuilds view/projection-derived matrices and related vectors.",
+      "notes": "This also uses shared camera bank 1 as working state. No lifetime pin or synchronization is established; it is not a destructor or a pure accessor.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288a40]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140272480]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14019c910]",
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x272480",
+        "0x19c910"
+      ]
+    },
+    "9:25": {
+      "bank": 9,
+      "index": 25,
+      "name": "Bind SELECTBODY source and schedule group rebuild",
+      "summary": "Fetches group AFBE58[operand 0+1], selects the source record via 151C80 for selector 0 or 151CC0(selector-1) otherwise, and requests a rebuild using operand 1 rotation vector. Returns the group ADR.",
+      "notes": "Operand 2 is a positive number of elements per cooperative yield, default 10, not a duration. A source pointer equal to the current one makes the helper a no-op, including rotation/chunk changes. Group/source indexing and per-source element count lack proven capacity guards. The vector's four NaNs are zeroed in place.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288aa0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025c850]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140151c80]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140151cc0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025d5a0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025c7d0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025cc50]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025c860]",
+      "declaredOperandCount": 3,
+      "hasReturnSlot": true,
+      "helperRvas": [
+        "0x25c850",
+        "0x151c80",
+        "0x151cc0",
+        "0x25d5a0",
+        "0x25c7d0",
+        "0x25cc50",
+        "0x25c860"
+      ]
+    },
+    "9:26": {
+      "bank": 9,
+      "index": 26,
+      "name": "Unbind SELECTBODY source",
+      "summary": "Requests source=NULL, default rotation and chunk size 10 through the same group-binding helper.",
+      "notes": "When source changes it clears attachment/scaling state. An outstanding build task is invalidated by replacing its stored task pointer, not synchronously joined. Repeated NULL binding can be a no-op; group objects are not freed by this adapter.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288b80]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025d5a0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025cc50]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025d290]",
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x25d5a0",
+        "0x25cc50",
+        "0x25d290"
+      ]
+    },
+    "9:27": {
+      "bank": 9,
+      "index": 27,
+      "name": "Attach SELECTBODY objects to an OBJ3D transform",
+      "summary": "Stores group target, joint selector, rotation vector and optional camera. Across 300 non-NULL object slots, it applies attachment fields only when the target is non-NULL. An absent camera uses the group camera as its effective camera; the object camera is overwritten only when that effective camera is non-NULL.",
+      "notes": "Operand order: group, target OBJ3D, selector, rotation-vector ADR, camera ADR. A NULL target does not clear existing object attachments here; use9:28 for that operation. Selector0x10000 selects the whole object transform; ordinary selectors use model joint matrices. Borrowed references and unbounded joint selection remain caller responsibilities.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288bb0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025cb70]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027c3e0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1401a7af0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1401aae60]",
+      "declaredOperandCount": 5,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x25cb70",
+        "0x27c3e0",
+        "0x1a7af0",
+        "0x1aae60"
+      ]
+    },
+    "9:28": {
+      "bank": 9,
+      "index": 28,
+      "name": "Clear SELECTBODY attachment and restore callbacks",
+      "summary": "Clears group target/camera overrides and each non-NULL object's attachment/rotation fields, restores group screen-offset callbacks, and assigns the group's camera.",
+      "notes": "Scans 300 object slots. Offset values are passed through WORD-sized object fields; this is not group destruction or a guarantee that any previous external target remains alive.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288c60]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025d160]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027cdf0]",
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x25d160",
+        "0x27cdf0"
+      ]
+    },
+    "9:29": {
+      "bank": 9,
+      "index": 29,
+      "name": "Set OBJ3D scale vector",
+      "summary": "Sanitizes and copies operand 1 to object+1104, the three-axis scale input used to build its transform.",
+      "notes": "Four input NaNs are zeroed in place. Scale reaches the transform at a later rebuild/update; no resource, pointer or lifetime guard.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288400]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027cb50]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1401aa7d0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14013fcc0]",
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x27cb50",
+        "0x1aa7d0",
+        "0x13fcc0"
+      ]
+    },
+    "9:30": {
+      "bank": 9,
+      "index": 30,
+      "name": "Set SELECTBODY scale override",
+      "summary": "Stores a group scale override and applies it to each non-NULL object among 300 slots, updating scale fields +1104/+1720 and clearing +1704.",
+      "notes": "For objects whose +2264 record exists with byte+8 <= 3, scales are multiplied by float bits 0x3F7D70A4 (approximately 0.99). The helper keeps the override for subsequently built group objects. Input NaNs are zeroed in place.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288c80]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025d6c0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025c670]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025cc50]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027cb50]",
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x25d6c0",
+        "0x25c670",
+        "0x25cc50",
+        "0x27cb50"
+      ]
+    },
+    "9:31": {
+      "bank": 9,
+      "index": 31,
+      "name": "Transform vector by OBJ3D or joint matrix",
+      "summary": "Transforms operand 2 vector with the matrix selected by operand 1 and returns the result through shared ADR buffer 73D458.",
+      "notes": "Selector 0x10000 uses object+160. Other selectors with bit 0x10000 set leave identity; selectors without it enter model/joint lookup without an index guard. Input NaNs are zeroed in place. Result is overwritten by 9:3/31/34.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402884c0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027ca30]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1401a7af0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14013f850]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14013f900]",
+      "declaredOperandCount": 3,
+      "hasReturnSlot": true,
+      "helperRvas": [
+        "0x27ca30",
+        "0x1a7af0",
+        "0x13f850",
+        "0x13f900"
+      ]
+    },
+    "9:32": {
+      "bank": 9,
+      "index": 32,
+      "name": "Set CAMERA field of view in radians",
+      "summary": "Sets camera projection FOV using operand 1 float angle and operand 2 mode: zero selects horizontal FOV; nonzero selects vertical FOV. Derives the other angle and projection distance using tan(angle/2) and atan.",
+      "notes": "Writes projection fields in camera+16. Uses native 512/416 dimensions and projection scale fields; no finite-angle, zero-divisor or pointer validation. Later matrix rebuild remains separate.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288a60]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14019dde0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140471bec]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140471be6]",
+      "declaredOperandCount": 3,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x19dde0",
+        "0x471bec",
+        "0x471be6"
+      ]
+    },
+    "9:33": {
+      "bank": 9,
+      "index": 33,
+      "name": "Rebuild OBJ3D projection and pose transform",
+      "summary": "Runs virtual projection update, evaluates the motion pose when a motion resource is present, then invokes the object transform rebuild.",
+      "notes": "Does not advance motion time or apply/clear pending position displacement; those occur in 27CE30. Derived object virtual targets can differ from the captured gm::OBJ3D targets.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288590]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027c170]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027cbc0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027e240]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027cb50]",
+      "declaredOperandCount": 1,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x27c170",
+        "0x27cbc0",
+        "0x27e240",
+        "0x27cb50"
+      ]
+    },
+    "9:34": {
+      "bank": 9,
+      "index": 34,
+      "name": "Read SELECTBODY source extents into shared vector",
+      "summary": "Computes three source-record extents from packed nibbles minus absolute signed-byte offsets, multiplied by 10; sets w=max(x,y,z), returning shared ADR buffer 73D458.",
+      "notes": "Requires a non-NULL bound source record at group+2424. This is a packed-source extent calculation, not the group's world position. Result shares storage with 9:3/31; negative component extents are possible.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288d00]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025d300]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14052e520]",
+      "declaredOperandCount": 1,
+      "hasReturnSlot": true,
+      "helperRvas": [
+        "0x25d300",
+        "0x52e520"
+      ]
+    },
+    "9:35": {
+      "bank": 9,
+      "index": 35,
+      "name": "Set SELECTBODY object flag 4",
+      "summary": "Sets or clears bit 4 of each non-NULL group object's DWORD+80 according to bool(operand 1), across 300 slots.",
+      "notes": "The bit is in the object/model rendering parameter area. This bounded closure does not establish a universal visibility or collision meaning.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288d70]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025d730]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025d580]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025d590]",
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x25d730",
+        "0x25d580",
+        "0x25d590"
+      ]
+    },
+    "9:36": {
+      "bank": 9,
+      "index": 36,
+      "name": "Select motion across SELECTBODY objects",
+      "summary": "Invokes motion selection with operand 1 selector and float start position 0 on each non-NULL object among 300 slots.",
+      "notes": "Shares the nested BAR/resource preconditions and missing-record hazards of 9:4. Group/object lifetime is not validated.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288d50]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025d520]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14027e460]",
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x25d520",
+        "0x27e460"
+      ]
+    },
+    "9:37": {
+      "bank": 9,
+      "index": 37,
+      "name": "Dispatch model backend slot 120 across group",
+      "summary": "For each non-NULL group object with a non-NULL model, forwards operand 1 to model helper 1A7CF0 and backend virtual slot +120.",
+      "notes": "Passes backend, model's +832 context and the DWORD selector. The backend implementation and selector meaning remain open; no animation/material/visibility name is inferred.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288da0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025d350]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1401a7cf0]",
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x25d350",
+        "0x1a7cf0"
+      ]
+    },
+    "9:38": {
+      "bank": 9,
+      "index": 38,
+      "name": "Dispatch model backend slot 112 across group",
+      "summary": "For each non-NULL group object with a non-NULL model, forwards operand 1 to model helper 1A8A90 and backend virtual slot +112.",
+      "notes": "Passes backend, model's +832 context and the DWORD selector. Backend semantics remain an explicit analysis boundary.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x140288dc0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x14025d7a0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1401a8a90]",
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x25d7a0",
+        "0x1a8a90"
+      ]
+    },
+    "9:39": {
+      "bank": 9,
+      "index": 39,
+      "name": "Dispatch OBJ3D model backend slot 120",
+      "summary": "Forwards operand 1 through the object's model+72 to helper 1A7CF0 and backend virtual slot +120.",
+      "notes": "Unlike 9:37, this adapter does not check whether the model pointer is NULL. Backend selector semantics are not established.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402885b0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1401a7cf0]",
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x1a7cf0"
+      ]
+    },
+    "9:40": {
+      "bank": 9,
+      "index": 40,
+      "name": "Dispatch OBJ3D model backend slot 112",
+      "summary": "Forwards operand 1 through the object's model+72 to helper 1A8A90 and backend virtual slot +112.",
+      "notes": "Unlike 9:38, this adapter does not check whether the model pointer is NULL. Backend selector semantics are not established.",
+      "evidence": "docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1402885d0]; docs/research/bdx-bank9-calls-20261008/evidence.json#functions[addr=0x1401a8a90]",
+      "declaredOperandCount": 2,
+      "hasReturnSlot": false,
+      "helperRvas": [
+        "0x1a8a90"
+      ]
+    }
+  }
+}

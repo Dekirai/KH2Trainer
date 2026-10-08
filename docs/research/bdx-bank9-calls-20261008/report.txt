@@ -1,0 +1,250 @@
+BDX BANK 9 â€” NATIVE OBJECTS, CAMERAS AND TASK-BACKED SCRIPT CONTROL
+2026-10-08
+
+Result and scope
+
+All 41 structural descriptors at RVA 73D080 have bounded semantic annotations.
+The evidence contains fresh complete paginated IDA ASM/pseudocode for 154 selected
+bodies, independently matched against 21,031 original-file primary bytes and
+5,051 instructions. Five native RTTI identities, 23 captured data spans and 35
+selected direct xrefs are also checked. Eighty semantic anchors preserve
+important argument, field, control-flow and lifetime distinctions. Five previously
+verified registry bodies are separately rechecked against the original PE.
+
+This is a bounded study, not a claim that all transitive callees or all of KH2 are
+understood. No game was started, attached, injected into or modified. No IDB was
+edited. Existing releases and product source were unchanged.
+
+Original SHA256:
+9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed
+
+Short hexadecimal addresses below are RVAs added to 0x140000000. Structure offsets
+after '+' are decimal unless written with 0x. Names in annotations.json are
+descriptive analyst labels. gm::OBJ3D, gm::MOTION, gm::CAMERA, gm::VM_THREAD and
+gm::SELECTBODY are independently anchored through original vtable/COL/type-name
+bytes. They must not be conflated with an arbitrary gameplay Actor or STATUS.
+
+1. What these calls can do
+
+The bank groups into five useful families:
+
+- 9:0..5,7,13,14,19,29,31,33,39,40: native 3D objects, pending movement, model
+  motions, transform inspection, scale, camera references and backend forwarding.
+- 9:20..24,32: create a native camera, change eye/target/FOV, rebuild its matrices,
+  and request asynchronous removal.
+- 9:6,8..12,18: task-backed VM_THREAD objects, caller-owned named-transition
+  tables, priorities, a small ring queue and deferred VM retirement.
+- 9:25..28,30,34..38: preallocated SELECTBODY object groups, source-record rebuild,
+  attachment to another object's joint/transform, scale and group operations.
+- 9:15..17: indexed shared-bit operations at AFC0C4, without a native index bound.
+
+This supports better offline script explanations and targeted experiments such
+as model/camera previews, tracking scripted scene objects, explaining named
+script transitions or identifying group rebuild work. A safe live editor would
+still need validated mode/allocator/task context, object ownership, source and
+joint bounds, and execution on the appropriate native scheduling path. These
+bindings are not an unconditional trainer API.
+
+The complete per-entry names, summaries, arities, return flags, side effects and
+limits are in annotations.json; report.json gives addressed claims and body refs.
+The descriptor flags are copied exactly. No argument counts were repaired.
+
+2. Table storage is not object lifetime
+
+The previous registry study established that Bank 9 is originally NULL. 26ACE0
+resets the VM context allocator/state and installs the static writable image table
+73D080 through 3E1720(9,...). 26ACC0 clears the registry slot before generic cleanup.
+Those bodies and 3E1410/3E1620 are rechecked by this verifier; their source hashes
+are pinned in reused-evidence.json. The 41-row structural extent is not a runtime
+bounds check. Installing a pointer cannot create a valid object/allocator context.
+
+Native object allocations are separate:
+- gm::OBJ3D: 1,408 bytes, allocator AFB420, task/list registration in 24B720.
+- gm::CAMERA: 2,368 bytes, AFB420, separate update/cleanup task.
+- gm::VM_THREAD: 80 bytes, allocator saved in its native task.
+- gm::SELECTBODY: 2,544 bytes, AFB420; pooled objects and camera are separate.
+
+SELECTBODY creation 25C860 handles four mask-selected slots at AFBE58. The
+classification table [0,0,1,1] makes groups 0/1 allocate 300 pooled objects and
+groups 2/3 allocate 64, while every group has 300 pointer slots initialized to
+NULL. Group operations scan all 300 slots and skip NULL objects. Source rebuild
+25CC50 instead indexes by the source's signed WORD counts at +8/+10; this body
+does not compare them with either 64 or 300.
+
+The SELECTBODY deleting destructor 25C780 only releases the group block; it does
+not detach the camera, pooled objects or outstanding build-task references.
+The wider owner teardown order is outside this bounded study. The captured OBJ3D
+and CAMERA deleting destructors consult current AFB420. Borrowed camera/target/
+source pointers do not acquire ownership.
+
+9:1 invokes the OBJ3D deletion-mark method, and its task update can request task
+termination. The later object collector order is not closed here. Camera removal
+is more directly linked: 9:21 sets camera+2352 bit1, 272070 asks task termination,
+272090 invokes the deleting destructor and clears an optional owner-out pointer.
+It does not clear every object's borrowed camera reference.
+
+3. OBJ3D positions, transforms and motion
+
+9:2 performs:
+    pendingDisplacement += sanitizedTarget - currentPosition
+The position is +1072; pending displacement is +1120. 27CE30 later adds pending
+displacement to position, clears all four pending components, and rebuilds the
+transform. Repeated target requests before that update accumulate repeated
+deltas. They do not implement a simple last-writer-wins target setter.
+
+9:29 sets scale at +1104. 27CB50 builds the matrix by scaling its first three
+vectors, applying rotation from +1088 and adding translation from +1072. 9:33
+runs projection update, optional motion-pose evaluation and transform rebuild;
+it does not advance the motion clock or apply pending displacement.
+
+9:3,9:31 and9:34 all return the same temporary vector at 73D458. A later call
+overwrites an earlier result. Most vector setters sanitize all four components
+with the original CRT _isnan import and write zero into the caller's vector
+for NaNs. They do not reject infinity or validate that the vector pointer is live.
+
+9:4's operand 2 is a float passed through XMM2 to 27E460, although Hex-Rays omits
+it in the adapter's recovered prototype. A successful motion selection walks
+nested BAR records (including types9 and16), initializes current/start time and
+clears the embedded motion's end-crossing bit. Several missing nested-record
+cases still dereference NULL. Motion units are left as native units.
+
+9:7 reads that sticky bit. 27E190 sets it on reaching/exceeding clip length, then
+may wrap/add a resource-provided offset/clamp. It does not imply stopped playback.
+The normal object update supplies a delta through XMM1 from154430; this study
+does not establish a universal seconds/frame conversion for that delta.
+
+9:31 uses selector0x10000 for the object's matrix. Other values with that bit set
+leave the initialized identity matrix. Values without the bit use model/joint
+lookup; the captured helper directly indexes the matrix array and does not prove
+the selector is in range.
+
+9:5 is the DWORD+32 queue-selection flag. Ordinary object update chooses one of
+two queues based on whether it equals1; flags0x10/0x20 and virtual predicates can
+take other paths. A generic visibility or pause label would overstate the proof.
+
+4. Camera control
+
+9:22 writes camera eye/position (+2152);9:23 writes target (+2168). Camera update
+272480 passes these plus up(+2184) to view bank1, constructs its look-at matrix
+and updates stored view/projection-derived fields. 9:24 invokes that update now;
+setters alone do not rebuild it. The rebuild uses shared view-bank working state,
+so it is not a pure object-local accessor.
+
+9:32 calls19DDE0 on camera+16. With angle a:
+    t = tan(a/2)
+    halfX = (512 / projectionScaleX)/2
+    halfY = (416 / projectionScaleY)/2
+Mode0: distance=halfX/t; horizontal=a; vertical=2*atan(halfY/distance).
+Mode!=0: distance=halfY/t; vertical=a; horizontal=2*atan(halfX/distance).
+The original tanf/atanf import identities establish radians. Stored fields are
+distance+64, horizontal+68 and vertical+72 inside the projection structure.
+Zero divisors, pathological angles, nonfinite input and stale pointers are not
+guarded by the adapter.
+
+5. Named VM transitions and the six-versus-sixteen distinction
+
+9:6 creates a native task-backed gm::VM_THREAD, not an OS thread. It creates a
+base VM from2A25048, then starts the requested event with exactly one tagged
+eight-byte VM value from operand2. Task ordering is uint32(operand0+25000).
+
+The caller owns the transition table:
+    table DWORD+0: append count
+    record[i] at table+8+32*i:
+        +0 QWORD name pointer
+        +8 QWORD payload pointer
+        +16 DWORD unsigned priority
+        +20 DWORD event
+        +24 DWORD exit event
+Names and payloads are borrowed, not copied. 9:8 resets only the count.
+293040 scans exactly32 name slots, irrespective of that count, using an inlined
+bytewise NUL-terminated comparison. Consequently old names can survive a reset.
+
+9:9's descriptor declares six operands. Its adapter reads all low DWORDs from
+scratch slots0..15: slots5..15 are copied into an11-DWORD local array. The callee
+292FA0 is a complete leaf body: it dereferences only the first DWORD of that array,
+corresponding to declared operand5. No operation uses the other ten copied values.
+The extra reads therefore do not support an argc16 metadata change. This differs
+from a different adapter,1:6, whose extra values have separate proven consumers.
+Decoded table/name/payload pointers are passed in full64-bitRCX/RDX/R8; the
+decompiler's inferred32-bit argument types are wrong here.
+
+Append count is sign-extended and multiplied by32 without a capacity guard.
+Reset, append, lookup and queueing do not provide a memory-safe container API.
+
+9:11 resets both queue indices before requesting an immediate named transition.
+2932C0 rejects a new unsigned priority below the active priority. A missing name
+becomes NULL and is dereferenced. A lower-priority rejection can still leave the
+queue discarded. A nonzero new event can dispatch the old record's exit event
+and replace the child VM.
+
+9:12 appends to a four-slot ring without checking fullness. Producer equals
+consumer is used as empty, so four unconsumed pushes can erase apparent pending
+work. NULL records can also be queued.2930C0 dequeues when26AD60 reports actual
+child completion; an attached table with no active child does not by itself
+make26AD60 report completion.
+
+6. VM retirement is deferred and can run script code
+
+3E1910 appends the VM to global queue2A25090/98 using encoded link+68. It does not
+destroy or free it immediately.9:18 calls that queueing path for the child, clears
+the child/table/active-record pointers, but leaves ring indices/slots untouched.
+The thread destructor also queues its base VM.
+
+2930C0 calls3E15A0, the global retirement drain. That drain saves each next link,
+calls3E1410, frees the VM block through2A250A0, then clears queue endpoints.
+The separately rechecked3E1410 can execute the VM's exit script before its
+resource/child teardown. No duplicate-retirement check, global queue lock,
+reentrant-callback closure or no-callback lifetime boundary is established here.
+
+7. SELECTBODY source rebuild and operations
+
+9:25 maps selector to AFBE58[selector+1], then obtains a source via151C80
+(selector0) or151CC0(selector-1). Neither the group getter nor these adapter
+calculations establish a valid user index range. It passes a rotation vector and
+an element batch count to25D5A0.
+
+The third operand is not time: positive values become elements per yield;
+nonpositive values use10.25CC50 uses signed division/remainder and calls150060
+after each chunk.150060 reaches135470 and the original SwitchToFiber import.
+The source/pool/model helper chain is not otherwise closed into a universal
+scheduler contract.
+
+When source pointer equals the current source,25D5A0 skips the entire update.
+A request with only a different rotation or chunk count can thus be a no-op.
+A changed source replaces the saved task pointer. Old callbacks compare against
+this identity after yields; this does not pin group/source storage through yield.
+
+9:27 applies OBJ3D/joint attachment fields only when the supplied target is
+non-NULL; a NULL target leaves existing object attachments unchanged. The
+effective camera (explicit pointer or group fallback) replaces object cameras
+only when non-NULL. 9:28 clears attachments and restores the group callbacks/camera.
+9:30 retains a scale override for current and subsequently built objects.
+Certain source subtypes use scale*0.99, established by exact float bits3F7D70A4.
+
+9:34 reads the bound source's packed extents:
+    xyz = (corresponding4-bit extent - abs(corresponding signed8-bit offset))*10
+    w = max(x,y,z)
+It is not the group's world position. A non-NULL source is required.
+
+The meanings of model backend virtual slots+112/+120 (9:37..40) and object
+DWORD+80 bit4 (9:35) remain open. Their argument and forwarding mechanics are
+documented without speculative animation/material/visibility labels.
+
+8. Reproduction and remaining limits
+
+Run from the repository root:
+    py -3 -B docs/research/bdx-bank9-calls-20261008/verify.py --check
+Use --original PATH for a different location containing the exact same PE.
+
+The verifier checks original SHA, every primary body, IDA/Capstone instruction
+boundaries/mnemonics, all paginated rows, data spans, descriptors, selected anchors,
+RTTI chains, referenced import identities, selected xref encodings, pinned reused
+registry evidence and the complete local manifest. Derived files can be regenerated
+without --check. It never loads or executes the target binary.
+
+The named runtime contracts stop at explicit boundaries: allocators, model/render
+backend virtuals, resource record validity, script content, wider owner teardown
+and native task scheduling. Native/CRT/Win32 implementation hooks or external
+concurrent mutation are not assessed. Pseudocode is retained for readability;
+claims about widths, hidden arguments and control flow use original ASM.
+

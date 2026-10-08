@@ -1,0 +1,146 @@
+{
+  "date": "2026-10-08",
+  "scope": "Bounded static bulk/heap lifetime research. Fifteen fresh captures include earlier studied functions; no live process or product edit.",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "evidence": "docs/research/actor-bulk-lifetime-20261008/evidence.json",
+  "verification": "docs/research/actor-bulk-lifetime-20261008/verification.json",
+  "verdict": "No single common early Actor/STATUS invalidation boundary or all-thread serialization was proved. Task cleanup may free allocations before the shared field-heap suffix.",
+  "claims": [
+    {
+      "addr": "0x14019ffd0",
+      "Finding": "After the call-free reset helper1AE6B0, conditionally frees each of three global blocks through the supplied allocator's vtable+0x10 and clears each pointer afterwards. This common field suffix is later than task/context frees on three recorded paths.",
+      "Evidence": [
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14019ffd0]"
+      ],
+      "Limitations": "Assembly, not the incomplete decompiler argument list, establishes RDX payloads. No universal pre-destruction boundary."
+    },
+    {
+      "addr": "0x14039d400",
+      "Finding": "Calls BAR resource release or a range helper, then advances749740 by the saved size and increments749750. The full body contains no call to19C470 or Actor destructor iteration.",
+      "Evidence": [
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14039d400]"
+      ],
+      "Limitations": "Region-return semantics follow the pointer/index updates; downstream12EF30/3A6A10 and inverse39D300 remain outside this round."
+    },
+    {
+      "addr": "0x14039cca0",
+      "Finding": "Walks resource records and changes state+0x48; only argument5000 reaches the immediate removal/resource-free loop. All four captured field suffixes pass0.",
+      "Evidence": [
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14039cca0]"
+      ],
+      "Limitations": "Resource records are not established as Actor objects; no universal resource lifetime proof."
+    },
+    {
+      "addr": "0x1401524e0",
+      "Finding": "Clears ready, resets control globals, and calls14FF10(mask1,value1) before additional cleanup and the19FFD0/39D400/39CCA0(0) suffix. The field heap pointer is cleared only after that suffix.",
+      "Evidence": [
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x1401524e0]"
+      ],
+      "Limitations": "Ready sampling is not mutual exclusion; direct caller150710 body remains unexamined this round."
+    },
+    {
+      "addr": "0x140152570",
+      "Finding": "Four-instruction thunk forwards caller payload inRDX and field allocator9BA920 inRCX through allocator vtable+0x10. It performs no destructor itself.",
+      "Evidence": [
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x140152570]"
+      ],
+      "Limitations": "182 direct incoming reference sites were byte-decoded, not182 complete caller bodies."
+    },
+    {
+      "addr": "0x140152680",
+      "Finding": "The load task yields through150060, constructs and publishes the field allocator, and on its inline teardown path calls14FF10(mask8,value8) before the shared heap suffix. It may construct a new allocator later.",
+      "Evidence": [
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x140152680]"
+      ],
+      "Limitations": "Whole-body entry is long lived and contains cooperative suspension; current-thread active-stack coverage is insufficient to prove all older instances gone."
+    },
+    {
+      "addr": "0x140152a90",
+      "Finding": "After countdown/predicate logic it clears ready and calls14FF10 before the heap suffix; then registers152680 through14F8A0 with manager716868 before task completion.",
+      "Evidence": [
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x140152a90]"
+      ],
+      "Limitations": "Earlier predicates/optional3A5650 and registration caller152990 are not closed transitively; OS-thread provenance remains open."
+    },
+    {
+      "addr": "0x1401524a0",
+      "Finding": "Directly executes19FFD0/39D400/39CCA0(0), then clears9BA920. It contains no ready-byte clear or14FF10 call.",
+      "Evidence": [
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x1401524a0]"
+      ],
+      "Limitations": "Only a static unwind/data reference is present in the captured IDA xref query; indirect reachability is not disproved."
+    },
+    {
+      "addr": "0x1401ae6b0",
+      "Finding": "Resets AC7970..AC79B0 globals without making calls; it is not itself a block deallocator.",
+      "Evidence": [
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x1401ae6b0]"
+      ],
+      "Limitations": "The meanings and aliases of all reset globals are not established."
+    },
+    {
+      "addr": "0x14019c3a0",
+      "Finding": "Initializes an allocator over the supplied region and writes primary vtable1405B2BB0. Its captured+0x10 slot resolves to19C470;152680 stores this constructor result in the field heap global.",
+      "Evidence": [
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14019c3a0]",
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json"
+      ],
+      "Limitations": "The mapping applies to this verified constructor/table, not arbitrary runtime allocator objects.",
+      "DataEvidence": [
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#data[addr=0x1405b2bb0]"
+      ]
+    },
+    {
+      "addr": "0x14039b640",
+      "Finding": "Sets flags and clears BF31xx/BF32xx globals. The complete body contains no call or allocation free.",
+      "Evidence": [
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14039b640]"
+      ],
+      "Limitations": "Resetting control globals provides no transaction lock or all-thread lifecycle proof."
+    },
+    {
+      "addr": "0x14014ff10",
+      "Finding": "Unlinks tasks matching flags, conditionally calls Task+0x68, processes Task+0x70 context and frees context/task through Task+0x58 allocator vtable+0x10. Three field teardown bodies call it before19FFD0.",
+      "Evidence": [
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14014ff10]"
+      ],
+      "Limitations": "Earlier task frees are proved; exact cleanup callback targets and whether their objects are Actors remain open."
+    },
+    {
+      "addr": "0x14019c470",
+      "Finding": "For nonnull payload calls3A08F0 on its block span, updates allocator/list metadata, overwrites the released block withEFACCAFE and clears header+8 before its final helper. Primary allocator-vtable+0x10 points here.",
+      "Evidence": [
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14019c470]"
+      ],
+      "Limitations": "Callers can already have destructed Actor state. Free helper closure and runtime allocator identity need separate proof."
+    },
+    {
+      "addr": "0x14014f8a0",
+      "Finding": "Allocates context/task records, stores its fourth argument as callback, sets flag0x80000 and inserts the task by priority.152A90 uses it to register152680.",
+      "Evidence": [
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x14014f8a0]"
+      ],
+      "Limitations": "Registration does not identify the eventual OS thread or prove every callback dispatch route."
+    },
+    {
+      "addr": "0x140150060",
+      "Finding": "Sets the task context delay then tail-jumps135470. Reused original-byte-verified135470 calls actual fiber-switching imports, so152680 can suspend on a nonactive fiber stack.",
+      "Evidence": [
+        "docs/research/actor-bulk-lifetime-20261008/evidence.json#functions[addr=0x140150060]",
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x140135470]"
+      ],
+      "Limitations": "Cooperative machinery is proved; exclusive same-OS-thread Actor lifecycle execution is not."
+    }
+  ],
+  "coverageLimits": [
+    "15 fresh captures,762 instructions,3154 code bytes and56 vtable bytes; previously studied bodies are included.",
+    "Five reused scheduler/fiber bodies are independently byte-rechecked and excluded from fresh totals.",
+    "Incoming xrefs enumerate this IDA query and do not exhaust indirect callers.",
+    "No universal alias census, native generation counter, stable Actor pin, installer contract or fixed Drive Form crash is claimed."
+  ],
+  "nextBoundedWork": [
+    "Free closure3A08F0/0FDD90/0FDC90 and resource/region12EF30/3A6A10/39D300.",
+    "Task context14F650/1352E0 and registration/callers150710/1525A0/1525F0/152990, including nested-manager thread provenance.",
+    "A covering early native entry set and older-call/fiber proof before any native Actor provider is enabled."
+  ]
+}

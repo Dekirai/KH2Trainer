@@ -1,0 +1,30 @@
+Unabhängiger BDX-Review — ACCEPTED_BOUNDED_OFFLINE_INSPECTION
+
+Keine blockierenden Befunde.
+
+Elf vollständige native Bodies wurden mit eigenem PE-Reader erneut gegen
+SHA 9002b2de…5849ed geprüft: 1.529 Instruktionen und 6.260 Originalbytes.
+Alle Gruppenbreiten, Unary-/Binary-Sonderfälle, signed PC und Sprünge,
+Event-Terminierung, Speicher-Selektoren und Trap-Metadaten wurden gegen
+die ASM gelesen. Auch Bank2-Pointer und Deskriptoren stammen direkt aus
+dem Original-PE; ihre Unveränderlichkeit im laufenden Spiel wird nicht behauptet.
+
+Die separate Oracle nutzt die nativen Dispatchtabellen. Der Python-Prototyp
+besteht den Strukturvergleich für sämtliche 65.536 Opcodewörter. Eine private
+C#-Probe bindet die echte BdxInspection.cs ein und besteht 233.581 Prüfungen
+über dieselben 65.536 Wörter. Geprüft werden Breite, Status5, Kantenklassen,
+signed Ziele und Bank/Index. Die Probe ruft ihre Asset-IO-Stubs nicht auf.
+Native Ausführung und alle möglichen Operandenwerte werden nicht simuliert.
+
+verify.py --check wurde separat ausgeführt und besteht einschließlich
+44 synthetischer Tests, 921 lokaler Scripts und der 4.480 ausgewählten
+Instruktionen. Der 8.995-Check-Vergleich der Original-HED/PKG-Dateien bleibt
+ausdrücklich eine Root-Ausführung; dieser Reviewer hat ihn nicht erneut gestartet.
+
+Die dokumentierten Grenzen passen: gespeicherter Steuerfluss, bedingte
+Fortsetzungen, dynamische Returns, unbesuchte Bytes, veränderbare native
+Callbacks und fehlende Actor-Operandherkunft. Die Event0-Zeugen sind keine
+beobachtete Ausführung und kein Event27-Zeuge.
+
+Keine Produktdateien geändert. UI und ArchiveReader waren nicht Gegenstand
+dieses Decoder-Reviews. Vollständige Hashbindung und Detailgrenzen: review.json.

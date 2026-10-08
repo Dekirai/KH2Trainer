@@ -1,0 +1,176 @@
+{
+  "schema": 1,
+  "domain": "native",
+  "imageBase": "0x140000000",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "derivedFrom": {
+    "evidence.json": "ca89139dbb0f9806141260dd0761be8f4ffee92fad16c4ee2bb8aa39be5a3f1b",
+    "report.json": "032082e676e4d043cf72bb2985c0e269f44c739a4fab2cba953dba8ee4806b03"
+  },
+  "scope": "Schema adaptation of frozen evidence only; no new analysis or claims of completeness.",
+  "claims": [
+    {
+      "addr": "0x1404112b0",
+      "Finding": "Releases old Actor+0x5c0 through 3C07E0 if non-null, calls 3C06B0, stores the returned STATUS pointer into Actor+0x5c0, then stores EncodeNullable(Actor) into STATUS+0x268 if non-null. The Release observer has already returned before the later binding stores. In 3C06B0, a cache-hit path increments +0x264 at 3C07CA and returns without Init/Rebuild. Thus a five-writer inFlight counter alone does not cover the outer rebinding interval.",
+      "Evidence": [
+        "coverage-evidence.json#functions[addr=0x1404112b0]",
+        "coverage-evidence.json#functions[addr=0x1403c06b0]"
+      ],
+      "Limitations": "Bounded static claim only. No complete writer/alias census, common thread exclusion, live-game validation or complete semantic review.",
+      "sourceFindingId": "rebind_shared",
+      "sourceSummary": "Releases old Actor+0x5c0 through 3C07E0 if non-null, calls 3C06B0, stores the returned STATUS pointer into Actor+0x5c0, then stores EncodeNullable(Actor) into STATUS+0x268 if non-null."
+    },
+    {
+      "addr": "0x140411350",
+      "Finding": "Releases old Actor+0x5c0, calls 3C0280 to allocate/initialize enemy STATUS, writes the Actor pointer slot, then encodes the Actor into the new STATUS backlink. Observed initialization returns before the pointer/backlink stores.",
+      "Evidence": [
+        "coverage-evidence.json#functions[addr=0x140411350]",
+        "coverage-evidence.json#functions[addr=0x1403c0280]"
+      ],
+      "Limitations": "Bounded static claim only. No complete writer/alias census, common thread exclusion, live-game validation or complete semantic review.",
+      "sourceFindingId": "rebind_new",
+      "sourceSummary": "Releases old Actor+0x5c0, calls 3C0280 to allocate/initialize enemy STATUS, writes the Actor pointer slot, then encodes the Actor into the new STATUS backlink."
+    },
+    {
+      "addr": "0x1403a7a40",
+      "Finding": "Publishes the current-player global before fetching STATUS via 3C0620 and before writing the Actor slot and encoded STATUS backlink. Reading the global alone does not establish completion of this constructor.",
+      "Evidence": [
+        "coverage-evidence.json#functions[addr=0x1403a7a40]"
+      ],
+      "Limitations": "Bounded static claim only. No complete writer/alias census, common thread exclusion, live-game validation or complete semantic review.",
+      "sourceFindingId": "construct_player",
+      "sourceSummary": "Publishes the current-player global before fetching STATUS via 3C0620 and before writing the Actor slot and encoded STATUS backlink. Reading the global alone does not establish completion of this constructor."
+    },
+    {
+      "addr": "0x1403c2db0",
+      "Finding": "After the common 3D5840 construction path, obtains STATUS via 3C02E0 and writes Actor+0x5c0 plus encoded STATUS+0x268. These stores occur after the observed STATUS rebuild/initialization routines return.",
+      "Evidence": [
+        "coverage-evidence.json#functions[addr=0x1403c2db0]"
+      ],
+      "Limitations": "Exact playable role is not established by this census. Bounded static claim only. No complete writer/alias census, common thread exclusion, live-game validation or complete semantic review.",
+      "sourceFindingId": "construct_other",
+      "sourceSummary": "After the common 3D5840 construction path, obtains STATUS via 3C02E0 and writes Actor+0x5c0 plus encoded STATUS+0x268. These stores occur after the observed STATUS rebuild/initialization routines return."
+    },
+    {
+      "addr": "0x1403b3200",
+      "Finding": "Known common Actor initialization clears its +0x5c0 slot with zeroed, preserved R14. Full body is included.",
+      "Evidence": [
+        "coverage-evidence.json#functions[addr=0x1403b3200]"
+      ],
+      "Limitations": "Bounded static claim only. No complete writer/alias census, common thread exclusion, live-game validation or complete semantic review.",
+      "sourceFindingId": "zero_actor_slot",
+      "sourceSummary": "Known common Actor initialization clears its +0x5c0 slot with zeroed, preserved R14. Full body is included."
+    },
+    {
+      "addr": "0x1403c0010",
+      "Finding": "STATUS initialization stores the null EncodeNullable result in +0x268. This known writer is inside the existing Initialize observer root.",
+      "Evidence": [
+        "coverage-evidence.json#functions[addr=0x1403c0010]"
+      ],
+      "Limitations": "Bounded static claim only. No complete writer/alias census, common thread exclusion, live-game validation or complete semantic review.",
+      "sourceFindingId": "zero_backlink",
+      "sourceSummary": "STATUS initialization stores the null EncodeNullable result in +0x268. This known writer is inside the existing Initialize observer root."
+    },
+    {
+      "addr": "0x1403a80e0",
+      "Finding": "Moves CurrentPlayer to global RVA 0x2A11268 and clears CurrentPlayer.",
+      "Evidence": [
+        "coverage-evidence.json#functions[addr=0x1403a80e0]"
+      ],
+      "Limitations": "The two exported bodies prove parking/restoration; transitive callees and concurrent lifetime exclusion are not established here. Bounded static claim only. No complete writer/alias census, common thread exclusion, live-game validation or complete semantic review.",
+      "sourceFindingId": "park_restore",
+      "sourceSummary": "3A80E0 moves CurrentPlayer to global 2A11268 and clears CurrentPlayer. 3A8140 copies that parked pointer back and clears 2A11268. OffCurrent is therefore not positive retirement evidence."
+    },
+    {
+      "addr": "0x1403a8140",
+      "Finding": "Copies the parked pointer from global RVA 0x2A11268 back to CurrentPlayer and clears the parked global. OffCurrent alone is not retirement evidence.",
+      "Evidence": [
+        "coverage-evidence.json#functions[addr=0x1403a8140]",
+        "coverage-evidence.json#functions[addr=0x1403a80e0]"
+      ],
+      "Limitations": "The two exported bodies prove parking/restoration; transitive callees and concurrent lifetime exclusion are not established here. Bounded static claim only. No complete writer/alias census, common thread exclusion, live-game validation or complete semantic review.",
+      "sourceFindingId": "park_restore",
+      "sourceSummary": "3A80E0 moves CurrentPlayer to global 2A11268 and clears CurrentPlayer. 3A8140 copies that parked pointer back and clears 2A11268. OffCurrent is therefore not positive retirement evidence."
+    },
+    {
+      "addr": "0x1403a7120",
+      "Finding": "The instruction at 0x1403a7133 directly stores CurrentPlayer (global RVA 0x2A105D0). It is one of the five direct stores in the recorded 186 direct IDA xrefs; this does not exclude aliased writes.",
+      "Evidence": [
+        "coverage-evidence.json#functions[addr=0x1403a7120]"
+      ],
+      "Limitations": "Does not exclude writes through computed aliases, bulk copies or unknown code. Bounded static claim only. No complete writer/alias census, common thread exclusion, live-game validation or complete semantic review.",
+      "sourceFindingId": "direct_current_stores",
+      "sourceSummary": "These five direct stores are present in the recorded 186 direct IDA xrefs to CurrentPlayer; all xref instructions are independently decoded from original PE bytes."
+    },
+    {
+      "addr": "0x1403a7a40",
+      "Finding": "The instruction at 0x1403a7af4 directly stores CurrentPlayer (global RVA 0x2A105D0). It is one of the five direct stores in the recorded 186 direct IDA xrefs; this does not exclude aliased writes.",
+      "Evidence": [
+        "coverage-evidence.json#functions[addr=0x1403a7a40]"
+      ],
+      "Limitations": "Does not exclude writes through computed aliases, bulk copies or unknown code. Bounded static claim only. No complete writer/alias census, common thread exclusion, live-game validation or complete semantic review.",
+      "sourceFindingId": "direct_current_stores",
+      "sourceSummary": "These five direct stores are present in the recorded 186 direct IDA xrefs to CurrentPlayer; all xref instructions are independently decoded from original PE bytes."
+    },
+    {
+      "addr": "0x1403a80e0",
+      "Finding": "The instruction at 0x1403a8132 directly stores CurrentPlayer (global RVA 0x2A105D0). It is one of the five direct stores in the recorded 186 direct IDA xrefs; this does not exclude aliased writes.",
+      "Evidence": [
+        "coverage-evidence.json#functions[addr=0x1403a80e0]"
+      ],
+      "Limitations": "Does not exclude writes through computed aliases, bulk copies or unknown code. Bounded static claim only. No complete writer/alias census, common thread exclusion, live-game validation or complete semantic review.",
+      "sourceFindingId": "direct_current_stores",
+      "sourceSummary": "These five direct stores are present in the recorded 186 direct IDA xrefs to CurrentPlayer; all xref instructions are independently decoded from original PE bytes."
+    },
+    {
+      "addr": "0x1403a8140",
+      "Finding": "The instruction at 0x1403a8163 directly stores CurrentPlayer (global RVA 0x2A105D0). It is one of the five direct stores in the recorded 186 direct IDA xrefs; this does not exclude aliased writes.",
+      "Evidence": [
+        "coverage-evidence.json#functions[addr=0x1403a8140]"
+      ],
+      "Limitations": "Does not exclude writes through computed aliases, bulk copies or unknown code. Bounded static claim only. No complete writer/alias census, common thread exclusion, live-game validation or complete semantic review.",
+      "sourceFindingId": "direct_current_stores",
+      "sourceSummary": "These five direct stores are present in the recorded 186 direct IDA xrefs to CurrentPlayer; all xref instructions are independently decoded from original PE bytes."
+    },
+    {
+      "addr": "0x1403a8f30",
+      "Finding": "The instruction at 0x1403a8f43 directly stores CurrentPlayer (global RVA 0x2A105D0). It is one of the five direct stores in the recorded 186 direct IDA xrefs; this does not exclude aliased writes.",
+      "Evidence": [
+        "coverage-evidence.json#functions[addr=0x1403a8f30]"
+      ],
+      "Limitations": "Does not exclude writes through computed aliases, bulk copies or unknown code. Bounded static claim only. No complete writer/alias census, common thread exclusion, live-game validation or complete semantic review.",
+      "sourceFindingId": "direct_current_stores",
+      "sourceSummary": "These five direct stores are present in the recorded 186 direct IDA xrefs to CurrentPlayer; all xref instructions are independently decoded from original PE bytes."
+    },
+    {
+      "addr": "0x1403bb2d0",
+      "Finding": "The same +0x5c0 displacement occurs in WINDOW_BASE construction. The explicit WINDOW_BASE vtable assignment and WIN_SEQ member construction establish a different object role.",
+      "Evidence": [
+        "coverage-evidence.json#functions[addr=0x1403bb2d0]"
+      ],
+      "Limitations": "Bounded static claim only. No complete writer/alias census, common thread exclusion, live-game validation or complete semantic review.",
+      "sourceFindingId": "offset_counterexample",
+      "sourceSummary": "The same +0x5c0 displacement occurs in WINDOW_BASE construction. The explicit WINDOW_BASE vtable assignment and WIN_SEQ member construction establish a different object role."
+    },
+    {
+      "addr": "0x1403bc990",
+      "Finding": "Allocates and constructs a WINDOW_BALLOON object, then stores that window pointer at receiver+0x5c0 at 0x1403bca13. The receiving object's role remains unresolved.",
+      "Evidence": [
+        "coverage-evidence.json#functions[addr=0x1403bc990]"
+      ],
+      "Limitations": "Their receiving object's role is not closed here. They are not counted as confirmed Actor STATUS writers merely because the displacement matches. Bounded static claim only. No complete writer/alias census, common thread exclusion, live-game validation or complete semantic review.",
+      "sourceFindingId": "window_pointer_candidates",
+      "sourceSummary": "These routines allocate and construct WINDOW_BALLOON objects, then store those window pointers at receiver+0x5c0."
+    },
+    {
+      "addr": "0x1403bca40",
+      "Finding": "Allocates and constructs a WINDOW_BALLOON object, then stores that window pointer at receiver+0x5c0 at 0x1403bcafe. The receiving object's role remains unresolved.",
+      "Evidence": [
+        "coverage-evidence.json#functions[addr=0x1403bca40]"
+      ],
+      "Limitations": "Their receiving object's role is not closed here. They are not counted as confirmed Actor STATUS writers merely because the displacement matches. Bounded static claim only. No complete writer/alias census, common thread exclusion, live-game validation or complete semantic review.",
+      "sourceFindingId": "window_pointer_candidates",
+      "sourceSummary": "These routines allocate and construct WINDOW_BALLOON objects, then store those window pointers at receiver+0x5c0."
+    }
+  ]
+}

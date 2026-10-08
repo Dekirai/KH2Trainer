@@ -1,0 +1,192 @@
+Bank 3: gb object, movement, scroll coordinates and retirement
+============================================================
+
+Scope and result
+----------------
+Original executable SHA256:
+9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed
+Image base: 0x140000000. Addresses below are RVAs unless prefixed 0x140.
+
+This is a bounded semantic study of the gb object family. Fresh IDA captures
+cover all 179 structurally identified Bank 3 adapters at table 72F1A0 and
+152 selected helpers: 331 bodies, 7,502 instructions, 30,521 original bytes.
+Thirty calls receive annotations. Capturing the other adapters does not close
+their semantics or the entire subsystem. No game was run, attached, patched,
+or saved; neither product source nor earlier studies were changed.
+
+RTTI proves gb::OBJ::VTABLE<gb::OBJ>, gb::OBJ::VTABLE<gb::ENEMY>, and gb::SCROLL.
+The object stores an encoded descriptor at +0 and encoded object/self link
+at +4; the descriptor itself holds the C++ vtable. Do not treat the first
+object DWORD as an ordinary 64-bit C++ vptr. The gb names, object resources
+and scroll organization identify this separate battle-object subsystem;
+they do not make Bank 3 a general Sora/Actor command bank.
+
+1. Bank installation is a context contract
+------------------------------------------
+1F9AA0 obtains the gb allocator, installs it for VM allocation with 3E16B0,
+then installs table 72F1A0 through 3E1710. That setter writes 7534A8, which is
+root 753490 + 3*8. The 179 captured 16-byte descriptors are a static snapshot;
+their count is not an established VM access guard. All 179 snapshot handlers
+are non-NULL, but no sentinel or safe out-of-range behavior follows.
+
+1F9A80 writes NULL to the Bank 3 slot before entering 3E1620 VM retirement.
+The captured mode cleanup callers 1E12C0 and 1E18F0 perform other resource
+cleanup before that, then later destroy task manager AD9478 and clear the gb
+allocator AE94F0. Consequently bank removal is not the earliest universally
+safe point for arbitrary stored object references. VM destructor 3E1410 can
+execute a selected exit event; model/resource cleanup also calls outside this
+closure. No actual exit script calling Bank 3 after removal was observed.
+These facts do not prove a runtime crash, a global barrier, or a safe hook.
+
+2. Object creation and lifetime
+-------------------------------
+3:0 -> 1E2250 uses bsearch on 96-byte rows from AE95E0, with signed ID encoded
+as the CRT key pointer. It reads returned row+4 without a missing-row check.
+ID 0 also produces a NULL CRT key; CRT invalid-parameter behavior is external.
+Found type 3/4/8 rows enter 212F80 with category 2/3/1. Type 13 enters 1F66D0
+with category 4. Other found types return NULL.
+
+The normal ENEMY allocation is 1160 bytes and is linked into both the base
+object and ENEMY lists. A NULL allocation still reaches 206740 and its object
+position read; arbitrary allocation failure is not safely handled here.
+The type-13 allocation is 1176 bytes and checks allocation locally; its
+resource and nested construction obligations remain. The adapter supplies
+(0,0,0,1) for each of its two initial vector arguments. Existing data IDs,
+resource availability and a live subsystem are prerequisites, not optional
+validation performed by the adapter.
+
+3:2 calls descriptor slot +40. For the captured OBJ/ENEMY implementations it
+detaches an attached object and sets +508 mask 0x1. These captured
+implementations do not free it inline.
+Collector 1E4AE0 runs these two phases on normal callback return:
+  A. destroy the objects already in retirement list AE9698/AE96A0;
+  B. remove newly marked objects from active list AE9688/AE9690 and enqueue
+     them into retirement.
+Cleanup callback 1E4C90 invokes that collector twice. Other descriptor
+overrides and destructor reentry can have additional behavior.
+
+3:22 merely reads the inverse of removal mask 1. The wrapper and actual
+object are already dereferenced. The encoded-pointer format (region index
+plus offset) contains no per-object allocation generation; it is not a lease.
+Do not retain an ADR across mode teardown/collection or use 3:22 to probe an
+arbitrary address. 3:153 likewise returns a borrowed parent pointer.
+
+3. Scheduler and script update
+-------------------------------
+1E4FC0 registers ordinary tasks on AD9478:
+  priority 30000: object work, through child manager AE96B0;
+  priority 71000: collector.
+1E7F10 registers SCROLL work at priority 23000. 14F770 inserts tasks in signed
+ascending priority and initializes +112 fiber state to zero. 14FD60 directly
+calls a task with zero fiber state; its separate fiber path remains visible.
+This proves local task registration/order under ordinary traversal, not an
+OS-thread identity, absence of later task mutation, or global synchronization.
+
+1E4D30 loops category +172 values 0..6. In each category it processes
+nonattached objects before attached objects, then descriptor/model work.
+This does not prove cross-category parent-before-child ordering.
+
+The base and ENEMY script update checks object+928 non-NULL and clear +504
+mask 1. On its first run it dispatches event 0 with one ADR object argument,
+sets event 1, then calls 3E1C80 to update the VM tree. A completed tree is
+destroyed/freed and +928 is cleared. The VM executor, arbitrary native
+subcalls, allocator callbacks and exit-script effects are boundaries.
+
+1E7880 skips already marked objects. Its normal update block additionally
+requires global 2A11400 mask 0x20 clear. It calls descriptor updates, snapshots
+previous position, applies positive movement speed, then handles attachment
+and fade/shrink state. An unmarked object still enters the later work list
+when this global update block is skipped; this is not a universal pause.
+
+4. Movement and coordinate contract
+-----------------------------------
+3:1 sets target-minus-stored-position direction and speed (normalizing XYZ
+only when length is nonzero);
+3:18 copies stored forward into movement and sets speed.
+Both return the caller's speed in XMM0 as FLOAT. The helper pseudocode misses
+this ABI fact; original ASM has MOVAPS XMM0,XMM6 at 1E71FF and 1E712E.
+
+The eligible update normalizes XYZ and adds one step scaled by stored speed
+only when speed > 0. There is no additional time-scalar multiplication at
+this movement step, nor an arrival/overshoot rule. This is not a homing target.
+Attachment and subclass/postmovement work can change the resulting position.
+3:96 multiplies all four movement values by zero; it stops finite values,
+but IEEE NaN/infinity do not necessarily become zero.
+
+Coordinate mask +504 bit 0x2 selects scroll storage. M at 72975C is the current
+gb::SCROLL transform. 1E8140 applies M; 1E8300 applies a rigid inverse obtained
+by rotation transpose and negative transformed translation. This does not
+establish a valid inverse for arbitrary non-rigid matrices.
+
+3:45 enters scroll storage, 3:46 world storage, converting position, previous
+position, forward, up and movement only on a mode transition. Orientation
+uses direction mode. Notably movement also uses POINT mode with W temporarily
+1 before restoring speed +84. That translation-affecting operation is native
+behavior; it must not be silently reinterpreted as a direction transform.
+
+3:60..65 set position/forward/up from explicit world or scroll vectors. The
+setters force W=1 for position and W=0 for orientation but do not normalize
+directions. Position writes do not reset previous position or movement.
+Attached objects may be repositioned from the parent later.
+
+3:66..71 read these vectors into ONE shared buffer at 72FE50, also used by
+3:125 and other adapters. The ADR is borrowed; copy values before another
+getter. 3:124 sets scale and W=0. 3:127 reports the XYZ distance between current
+and previous stored position transformed with the current M as needed. It
+does not divide by time or reconstruct the previous scroll matrix.
+
+3:19/20 set/clear +504 mask 8, which gates 216350 model-motion application.
+The model must also exist. These commands do not pause the VM or all motion.
+
+3:17 starts shrink/fade once: rate -0.0625, mask 2. Eligible updates scale by
+approximately 0.85 per call, advance factor +984 using scalar 717480, and
+request removal when the factor reaches zero. +984 multiplies the fourth
+color byte in the model submission path 1E3DD0 (the alpha interpretation).
+3:113 independently sets its rate to -1/divisor without checking zero/sign/
+finite values or setting the shrink flag. Native time units are unproved;
+do not advertise these operands as seconds. 3:136 is a literal RET/no-op
+despite its one declared operand. 3:145 reads the child ordinal field +1036.
+
+5. Useful bounded mod possibilities
+-----------------------------------
+The 30 descriptions can improve the offline BDX native-call catalog now.
+Within a valid gb scene/script context they also explain how a future script
+mod could place and orient existing objects in world or scroll coordinates,
+alter movement steps and scale, suppress model-motion application, inspect
+per-update displacement, or request the native shrink/removal behavior.
+Creating a data-defined object is possible through the native path only when
+its row/resources and allocator context satisfy the constructor contract.
+
+This study supplies no new injection hook or proof for calling these adapters
+from an external trainer thread. A future live implementation needs object
+ownership/lifetime tracking and scheduler-compatible dispatch. An out-of-
+context call, stale ADR, arbitrary data ID or script override is not made safe
+by the catalog description.
+
+Reproduction and evidence boundaries
+------------------------------------
+Run from the repository:
+  py -3 -B docs/research/bdx-bank3-calls-20261008/verify.py --check
+
+verify.py hashes the original PE and independently decodes every captured
+instruction with Capstone, checks page chains/counts and full original body
+bytes, all 179 table rows, 67 semantic ASM anchors, 3 RTTI chains, used virtual
+slots, 78 IDA xref encodings, data spans and imported API identities. The
+primary and instruction-byte totals are equal for these 331 bodies.
+One auxiliary helper, 1E2110, failed Hex-Rays decompilation; its complete
+38-instruction ASM is preserved. Four paginated pseudocode responses retained
+the tool's truncated flag on their last page: a fresh full single-page copy
+corroborates each exact concatenated body. No completion flag was fabricated.
+
+capture-session.json records the adopted IDB session. IDA health reports
+status OK and Hex-Rays ready, but auto_analysis_ready=false; captured bytes
+are therefore checked against the original executable independently. Xrefs
+describe the current database's indexed references, not a complete census of
+indirect accesses or all possible runtime writers.
+
+evidence.json uses domain=native and retains source pages, bytes, decoded
+instructions, RTTI, imports, xrefs and unexpanded call boundaries. These
+boundaries are deliberately not a claim that every reached target is analyzed.
+annotations.json contains only the 30 approved-by-this-study candidates;
+independent review is required before product integration. claims.json and
+report.json reference exact native bodies. manifest.json pins every file.

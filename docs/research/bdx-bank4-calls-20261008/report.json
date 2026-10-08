@@ -1,0 +1,227 @@
+{
+  "schema": 1,
+  "Domain": "native",
+  "title": "Bank4 mission widgets, result transitions and unsafe numeric adapters",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "scope": "Read-only adopted existing session 83662637/PID46464, KH2_round_20261007_lifetime.i64. is_analyzing=false but auto_analysis_ready=false. ASM/decomp pagination complete for captured bodies. Positive xrefs are verified against original bytes; absence is not a global reachability proof. No game or target-code execution.",
+  "structuralExtent": {
+    "bank": 4,
+    "tableRva": 7696976,
+    "records": 59,
+    "nullIndices": [
+      0,
+      1
+    ],
+    "notNativeBounds": true
+  },
+  "findings": [
+    {
+      "addr": "0x1403a2c30",
+      "Finding": "Mission construction initializes one56-byte timer at+296, three80-byte counters at+352, three72-byte gauges at+592, one72-byte watch at+808, one88-byte combo at+880 and score at+1088. It builds msn/<language>/<name>.bar; original RTTI names corroborate these classes. The constructor sets base flag1 before descriptor registration.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a2c30]",
+        "evidence.json#functions[addr=0x1403a3fa0]",
+        "evidence.json#functions[addr=0x1403fa0b0]",
+        "evidence.json#functions[addr=0x1403fa610]",
+        "evidence.json#functions[addr=0x1403fac10]",
+        "verification.json"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    },
+    {
+      "addr": "0x1403fc150",
+      "Finding": "Descriptor-driven widget registration calls reset+8 and configure+48, optionally resolves HUD data, appends at mission+976 and increments count+1048 without a capacity guard. Native index helpers likewise do not enforce the constructor counts.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403fc150]",
+        "evidence.json#functions[addr=0x1403fc210]",
+        "evidence.json#functions[addr=0x1403fc230]",
+        "evidence.json#functions[addr=0x1403fc290]",
+        "evidence.json#functions[addr=0x1403a31a0]",
+        "evidence.json#functions[addr=0x1403a3fd0]"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    },
+    {
+      "addr": "0x1403fa410",
+      "Finding": "Base configuration always changes start+32 and threshold+40. A nonzero maximum clears input bit30 before storing maximum+36 and copies bit30 to widget flag2; zero preserves maximum and flag2. Counter/combo3FA440 additionally write current+56=start.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403fa410]",
+        "evidence.json#functions[addr=0x1403fa440]",
+        "evidence.json#functions[addr=0x1403fbe40]",
+        "evidence.json#functions[addr=0x1403fbbf0]",
+        "evidence.json#functions[addr=0x1403fbd10]",
+        "evidence.json#functions[addr=0x1403fba20]"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    },
+    {
+      "addr": "0x1403fa230",
+      "Finding": "Counter zero/max crossings synchronously call3AABE0(14,id)/(123,id) only when old current crosses, id!=-1 and active flag4. Threshold virtual calls occur before the final current store. State can be affected by downstream callbacks before the saved widget is used again.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403fa230]",
+        "evidence.json#functions[addr=0x1403aabe0]",
+        "evidence.json#functions[addr=0x1403fa4c0]",
+        "evidence.json#functions[addr=0x1403fa1d0]"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    },
+    {
+      "addr": "0x1403fa310",
+      "Finding": "Gauge zero/max crossings call3AABE0(136,id)/(137,id) before final float store under id/active checks. Integer-converted current drives threshold virtual calls. Absolute gauge setter rejects nonzero mission+1696, while raw configuration changes different fields.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403fa310]",
+        "evidence.json#functions[addr=0x1403fbcb0]",
+        "evidence.json#functions[addr=0x1403fbd10]",
+        "evidence.json#functions[addr=0x1403fa510]",
+        "evidence.json#functions[addr=0x1403fa200]"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    },
+    {
+      "addr": "0x1403aabe0",
+      "Finding": "Messages14,74,123,136,137 take the default arm and synchronously call3F4980,3B4270,then3F60D0. The latter selects among16 96-byte records, prefers an exact parameter match over retained negative wildcard matches, applies3F61A0 and can enter transition/event helpers.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403aabe0]",
+        "evidence.json#functions[addr=0x1403f60d0]",
+        "evidence.json#functions[addr=0x1403f6070]",
+        "evidence.json#functions[addr=0x1403f61a0]",
+        "verification.json"
+      ],
+      "Limitations": "Dispatch/record boundaries established. Arbitrary script effects, Actor virtual handlers, heap/STATUS mutation and global drain safety are not closed by this study."
+    },
+    {
+      "addr": "0x1403fbb30",
+      "Finding": "4:48 computes10^position in DWORD arithmetic then uses signed IDIV without guarding zero. Every position>=32 has zero divisor if the loop completes. Negative positions skip the loop. Counter delta helpers and combo addition likewise wrap before clamping.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403fbb30]",
+        "evidence.json#functions[addr=0x1403fb2b0]",
+        "evidence.json#functions[addr=0x1403fa790]",
+        "arithmetic-model.json"
+      ],
+      "Limitations": "Conditional arithmetic result; no original-code execution, game crash observation, or retail script invoking an extreme position is established."
+    },
+    {
+      "addr": "0x1403fb3a0",
+      "Finding": "Gauge delta is selectively multiplied by0.5 for captured filename substrings when globalstep<2, before addition and absolute setter. Normalized setter multiplies signed maximum by input; normalized getters divide without maximum-zero guard.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403fb3a0]",
+        "evidence.json#functions[addr=0x1403fbd90]",
+        "evidence.json#functions[addr=0x1403fb690]",
+        "evidence.json#functions[addr=0x1403fb6f0]",
+        "verification.json"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    },
+    {
+      "addr": "0x1403fa5d0",
+      "Finding": "Restart chooses countdown for positive seconds, count-up otherwise, starts phase1 and clears pause bit2. Activation uses the same global timer. Deactivation sets bit2 and clears widget active flag4. Timer vtable+32 sets warning8; +40 clears8.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403fa5d0]",
+        "evidence.json#functions[addr=0x1403f9ec0]",
+        "evidence.json#functions[addr=0x1403f9fe0]",
+        "evidence.json#functions[addr=0x140157140]",
+        "evidence.json#functions[addr=0x140157170]",
+        "evidence.json#functions[addr=0x140157190]",
+        "evidence.json#functions[addr=0x140157130]",
+        "evidence.json#functions[addr=0x140157110]",
+        "evidence.json#functions[addr=0x1403fa560]",
+        "evidence.json#functions[addr=0x1403a4620]"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    },
+    {
+      "addr": "0x1401571b0",
+      "Finding": "The global App timer is blocked by any pause bit. Phase1 advances to2 without calculating a new value that invocation. Positive countdown expiry and configured count-up limit can set phase0 and dispatch74/0. Count-up values>215999 saturate and bypass the configured-limit test on that branch.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401571b0]",
+        "evidence.json#functions[addr=0x1403fb790]",
+        "evidence.json#functions[addr=0x1403fb7e0]",
+        "evidence.json#functions[addr=0x1403aabe0]"
+      ],
+      "Limitations": "Clock increments/OS-thread ownership and timer callback audience are separate research boundaries; message74 is not intrinsically mission failure."
+    },
+    {
+      "addr": "0x1403fa790",
+      "Finding": "Combo current+56 uses wrapped addition and signed clamp, peak+80 rises on a new high, threshold handling can raise nonzero threshold+40, and float allowance from XMM2 is stored at+84. Mission task calls3FA820, which subtracts globalstep and resets current/flag8 when a positive allowance expires; peak stays.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403fa790]",
+        "evidence.json#functions[addr=0x1403fb250]",
+        "evidence.json#functions[addr=0x1403fa820]",
+        "evidence.json#functions[addr=0x1403a35c0]",
+        "evidence.json#functions[addr=0x1403fa860]",
+        "evidence.json#functions[addr=0x1403fa8b0]",
+        "evidence.json#functions[addr=0x1403fa880]",
+        "evidence.json#code_ranges[addr=0x140433830]"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    },
+    {
+      "addr": "0x1403a41e0",
+      "Finding": "Mission result handling performs score and1DE0C0 helpers, ORs missionflags0x14, stops the timer, changes global/HUD state and either dispatches immediately or stores pending message/parameter with phase2/4. The mission task progresses2->3->4 and can call3A3540; cleanup releases scripts/resources through helpers and nulls global mission pointer.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a41e0]",
+        "evidence.json#functions[addr=0x1403a33c0]",
+        "evidence.json#functions[addr=0x1403a3440]",
+        "evidence.json#functions[addr=0x1403a35c0]",
+        "evidence.json#functions[addr=0x1403a3540]",
+        "evidence.json#functions[addr=0x1403a3460]",
+        "evidence.json#functions[addr=0x1403a3800]",
+        "evidence.json#functions[addr=0x1403a37a0]"
+      ],
+      "Limitations": "Static storage is reused by3A3FA0, so pointer equality is not a generation. No universal success/failure or immediate-free claim, and no safe trainer outcome command is established."
+    },
+    {
+      "addr": "0x140437c80",
+      "Finding": "4:35/36 read decoded record byte0/DWORD4 without pointer checks;4:37 performs signed rank and unsigned value comparisons with inverse equal-rank preference for ranks4/6.4:38 returns unchecked9AD664+8*index. Larger accepted ranks truncate to byte.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140437c80]",
+        "evidence.json#functions[addr=0x1404338f0]",
+        "evidence.json#functions[addr=0x140433920]",
+        "evidence.json#functions[addr=0x140433950]",
+        "evidence.json#functions[addr=0x1404339a0]",
+        "evidence.json#functions[addr=0x1403e6690]"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    },
+    {
+      "addr": "0x140406bf0",
+      "Finding": "4:42 increments a global byte at pointer[750740]+3*a0+a1 only below99; original pointer value is9AD874. It may enqueue achievement147 and latch bit8 when the rounded-timer helper result>0 and counter1==0. This is not a pure read.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140406bf0]",
+        "evidence.json#functions[addr=0x1404339d0]",
+        "evidence.json#functions[addr=0x1400fee50]",
+        "evidence.json#functions[addr=0x1403fb7e0]",
+        "evidence.json#functions[addr=0x1403fb640]",
+        "verification.json"
+      ],
+      "Limitations": "No index bounds, disk persistence, completed achievement delivery or retail triggering witness is established. The timer helper uses unsigned division after DWORD wrap, so a positive helper result alone does not prove valid positive elapsed/remaining time."
+    },
+    {
+      "addr": "0x1403a57f0",
+      "Finding": "Selector0 returns whether any supplied flag bit is nonzero.4:55 supplies selector0 and2A10500, whereas4:54 sets only bit0 using3A5810.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a57f0]",
+        "evidence.json#functions[addr=0x1403a5810]",
+        "evidence.json#functions[addr=0x140433560]",
+        "evidence.json#functions[addr=0x140433570]"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    }
+  ],
+  "annotations": 51,
+  "trainerComparison": {
+    "sources": "source-snapshots.json",
+    "existing": "MissionFeatures exposes guarded timer restart/snapshots. MissionEventFeatures slots230..232 use3FBAE0/3FBCB0/3FA230 with bounded indexes, finite/range checks, registered widget/vtable/HUD checks, code-byte checks, scene/heartbeat checks, fresh revalidation and boundary-event preflight. This study adds no runtime path.",
+    "proposed": "Later: checked relative/decimal counter action, with int64 arithmetic on the freshly validated current value, position0..9 and digit0..9, reject values outside0..min(max,INT_MAX), then reuse the existing absolute setter/event gates exactly once. Never call4:48 or unchecked3FB2B0 directly. Required semantics: reject an invalid argument/result rather than silently clamp; preserve request receipts and uncertain-write policy.",
+    "secondaryProposal": "Read-only combo current/peak/expiry allowance display, verifying registration/vtable and mission context first. Label allowance in native update units until unit conversion and pause ownership are proven. No always-on freeze, mission-win button or raw pause-bit ownership claim."
+  },
+  "openBoundaries": [
+    "No retail script census or malformed operand witness in this study.",
+    "Callback dispatch is synchronous in these native bodies, but arbitrary handlers, script/Actor effects and bulk teardown remain separate lifetime proofs.",
+    "Static mission address reuse and baseflag1 are insufficient readiness/generation checks.",
+    "Original RTTI names establish captured class metadata; no type-safe dynamic cast or global object census follows.",
+    "Positive IDB xrefs are original-byte verified; missing xrefs are not evidence of absent reachability.",
+    "Selected data-record changes are in memory; no save-file flush semantics or valid record-array extent is inferred.",
+    "Existing Bridge gates are a compared implementation, not newly certified global drain safety."
+  ]
+}

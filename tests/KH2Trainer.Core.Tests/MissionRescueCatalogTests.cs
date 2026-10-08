@@ -52,5 +52,29 @@ internal static class MissionRescueCatalogTests
             events.Single(f=>f.CapabilitySlot==232).Arguments.Count==1,
             "counter/gauge send index plus value while score sends exactly one value");
         check(events.All(f=>Rejected(f.Id,f.DefaultValue)),"profiles cannot replay mission boundary events or score changes");
+
+        var counterActions = new[] { byId["mission.counter.add"], byId["mission.counter.digit"] };
+        check(counterActions.Select(f => f.CapabilitySlot).SequenceEqual(new[] { 477, 478 }) &&
+            counterActions.All(f => f.Kind == FeatureKind.Action && f.CommandId == 1000 + f.CapabilitySlot &&
+                f.ValueSlot == -1 && f.RequiresScene && f.ChangesProgression && !f.CanSaveInProfile),
+            "counter arithmetic uses two distinct one-time commands with native event effects");
+        check(counterActions[0].Arguments.Select(a => (a.Minimum, a.Maximum)).SequenceEqual(
+            new[] { (0d, 2d), ((double)int.MinValue, (double)int.MaxValue) }),
+            "counter delta transport accepts the full signed integer range after the counter index");
+        var digit = counterActions[1];
+        check(digit.Arguments.Select(a => (a.Minimum, a.Maximum)).SequenceEqual(
+            new[] { (0d, 2d), (0d, 9d), (0d, 9d) }) &&
+            digit.Arguments.Skip(1).All(a => a.Choices.Select(c => c.Value).SequenceEqual(Enumerable.Range(0, 10).Select(i => (double)i))),
+            "decimal position and digit selectors cannot offer the native adapter's unchecked positions");
+        check(counterActions.All(f => Rejected(f.Id, 0)), "profiles cannot replay relative or digit counter actions");
+        var combo = new[] { byId["mission.combo.current"], byId["mission.combo.peak"], byId["mission.combo.allowance"] };
+        check(combo.Select(f => f.ValueSlot).SequenceEqual(new[] { 479, 480, 481 }) &&
+            combo.All(f => f.Kind == FeatureKind.ReadOnly && f.CommandId == 0 && f.CapabilitySlot == f.ValueSlot &&
+                f.Arguments.Count == 0 && !f.ChangesProgression && !f.CanSaveInProfile && Rejected(f.Id, 0)),
+            "mission combo observations issue no commands and cannot become profile edits");
+        check(combo[2].Unit == "native units" && combo[2].Minimum < 0,
+            "combo allowance preserves signed native update units without an unproven seconds conversion");
+        check(counterActions.Concat(combo).All(f => catalog.Count(other => other.CapabilitySlot == f.CapabilitySlot) == 1),
+            "new mission slots do not collide with an existing domain");
     }
 }

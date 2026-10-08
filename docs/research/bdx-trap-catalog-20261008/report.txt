@@ -1,0 +1,98 @@
+BDX native-call catalog — 2026-10-08
+
+Result
+======
+The offline script view now has a partial, immutable catalog for the SHA-pinned
+retail executable. There are 150 recorded descriptors and 44 behavioral
+annotations. They are metadata for inspection, not callable trainer commands.
+The structural decoder and native bridge behavior are unchanged by this round.
+
+Inventory and scope
+===================
+Bank 0 is captured over [RVA 752E00,753490): 105 records, of which five have
+NULL handlers (10,33,34,71,72). All 100 non-NULL adapters have complete IDA
+assembly and pseudocode captures. Captured helper bodies clarify vector and
+numeric behavior. Shared out-of-line tails are preserved separately; a primary
+IDA function size alone does not contain all their instructions.
+Bank 9 contributes 41 descriptors from the separately verified registry study.
+Four selected descriptors are Bank1:3/6 and Bank2:9/95. The registry snapshot
+records eleven slots, including the context-installed tables for Bank3/9.
+No native upper-bound check, safe arity or live callback availability is inferred
+from these capture extents. Unrecorded descriptors remain unknown.
+
+Names in the product are descriptive analysis labels, not recovered debug symbols.
+Only 44 descriptors receive behavioral names. The remaining records retain their
+original handler, flags and declared count without a guessed game feature name.
+Even a full adapter capture does not prove its complete transitive behavior.
+
+Findings useful for mod development
+==================================
+1. Vector operations have visible memory effects.
+   Many adapters first replace NaNs in their caller's vectors with zero. They
+   return pointers to fixed shared result buffers. Results must be copied before
+   another call overwrites them; separate calls sometimes share the same buffer.
+   0:78 interpolates all four components; 0:82 returns xyz cross product/w=0;
+   0:102 returns horizontal/vertical angles. 0:7 normalizes xyz in place, stores
+   the original length in w and returns that length. Zero length is handled.
+   This can guide scripted movement, effects or an eventual offline script editor.
+
+2. Declared arity is not a validation contract.
+   Bank1:6 declares12 operands but reads low DWORDs from scratch slots12..15 too.
+   The callee uses three of those values. The scratch buffer has16 slots, so the
+   observation is not an out-of-bounds or reproduced crash claim. The UI reports
+   'Declared operands' and shows the discrepancy explicitly.
+
+3. RNG details matter for reproducible scripts.
+   0:16/17/18 share a DWORD seed multiplied by69069 modulo2^32. The float paths
+   zero-extend the seed before signed64-to-float conversion: the mathematical
+   input is unsigned32, despite the decompiler's signed cast. Multiplication by
+   2^-32 can round to1.0. Integer range0 divides by zero after seed/tag writes.
+   The catalog documents these details; it does not implement an RNG write hook.
+
+4. Simple numeric operations contain edge cases.
+   Integer absolute value wraps INT_MIN to0x80000000. Float absolute value passes
+   through double conversion. Angle-from-dot does not normalize its input.
+   A script editor or emulator must use the actual scalar instructions and input
+   conventions, rather than assuming ideal real-number arithmetic.
+
+5. Availability depends on native registration and lifetime.
+   Banks3/9 are originally NULL and can be installed or cleared by mode setup.
+   Their descriptor storage is static, while the objects consumed by handlers
+   have separate owners. Removing a bank does not drain already active VM work.
+   A future executable script feature needs a valid execution context and object
+   lifetime evidence beyond this read-only catalog.
+
+6. STATUS rebind annotations now have a script operand witness.
+   Two selected retail Event0 prefixes explicitly initialize a work-region
+   wrapper with an encoded Actor at+4 before Bank2:9/95 consume it. The proof is
+   conditional on normal setup/allocations and stable storage. It does not prove
+   every script caller, a runtime race exclusion, or Event27 reachability.
+
+Implementation
+==============
+Core embeds Data/BdxNativeCalls.json and loads a frozen dictionary. Lookup
+accepts all representable opcode bank/index values. It distinguishes an original
+table, a context-installed table and an unknown bank; independently it distinguishes
+a present callback, a captured NULL callback and an uncatalogued descriptor.
+Unknown entries have null counts/flags/handler rather than invented zero values.
+Catalog text is separate from the structural decoder and adds no execution edge.
+The view uses the catalog in row labels, details and text search.
+
+Evidence
+========
+evidence.json: Bank0 descriptors and100 complete adapter captures.
+helpers.json:17 helper captures and original constant/shared-tail spans.
+chunk-bytes.json: independently identified instruction chunks with original-byte checks.
+catalog-data.json: the exact embedded catalog snapshot.
+build_catalog.py: reconstructs catalog data from captures and explicit reviewed labels.
+verify.py / verification.json: independent original-PE and semantic-anchor verification.
+claims.json: addressed, bounded behavioral findings, with source references.
+Related frozen studies: bdx-trap-registry-20261008, bdx-rebind-operands-20261008,
+timing-callback-context-20261008. No complete game analysis is claimed.
+
+Validation boundaries
+=====================
+Original binary data is read and disassembled. Tests use synthetic script data,
+catalog lookup and offscreen WPF rendering. No game is started, attached or
+modified; no save or mod file is written. No runtime feature is enabled merely
+because a descriptor or callback address is now known.

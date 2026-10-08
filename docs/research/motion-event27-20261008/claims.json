@@ -1,0 +1,158 @@
+{
+  "schema": 1,
+  "claims": [
+    {
+      "addr": "0x1403b3200",
+      "Finding": "The Actor constructor obtains BAR type23 occurrence0 from Actor+0x920 and decodes its data pointer into Actor+0xAB8. The same constructor writes EncodeNullable(Actor) at Actor+4.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b3200]",
+        "evidence.json#functions[addr=0x1403a6420]",
+        "evidence.json#functions[addr=0x1404ad240]",
+        "evidence.json#functions[addr=0x1404ad270]"
+      ],
+      "Limitations": "The constructor proves initial provenance and Self-Link only. 3B6310 can replace Actor+0xAB8; later writes/lifetime corruption and all Actor+4 writers were not exhaustively excluded."
+    },
+    {
+      "addr": "0x1403c9b80",
+      "Finding": "The contact-definition enumerator consumes a signed DWORD count at header+0, a64-byte header,20-byte entries and typeBYTE+4. The caller filters groupBYTE+0; it enumerates types10 then11.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c9b80]",
+        "evidence.json#functions[addr=0x1403b4f10]",
+        "evidence.json#functions[addr=0x1403c8070]"
+      ],
+      "Limitations": "Native enumeration receives no payload length. The offline parser adds strict bounds and nonnegative-count checks; this is not a claim of native validation."
+    },
+    {
+      "addr": "0x1403ba550",
+      "Finding": "Group selection first tests the enable then disable bitsets at Actor+1448, then the enable then disable bitsets at Actor+1440, then headerDWORD+4. Both helpers receive the same group index; the decompiler omitted one argument at some calls.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ba550]",
+        "evidence.json#functions[addr=0x1403f1fe0]",
+        "evidence.json#functions[addr=0x1403f1fc0]"
+      ],
+      "Limitations": "This is per-group priority, not an allow-all flag. Actual runtime mask writes were not followed. B_LK120 groups12/13 are clear in the stored default mask and need an effective enable override."
+    },
+    {
+      "addr": "0x1403c8070",
+      "Finding": "Types10/11 produce32-byte runtime records. u16 definition+6 is joint ID; i16 definition+18 becomes float height. Runtime+28 receives skeletonJointDescriptor[jointId].WORD+4, +30 the joint ID, +24 the height. +20 bit0x80000 marks explicit height, bit0x100000 distinguishes type11; a terminal record has bit0x200000.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c8070]",
+        "evidence.json#functions[addr=0x1401a8670]",
+        "evidence.json#functions[addr=0x1401a8d90]",
+        "evidence.json#functions[addr=0x1403ba940]",
+        "evidence.json#functions[addr=0x1403da520]"
+      ],
+      "Limitations": "Requires Motion+360 bit0, no Actor+288 bit0x40000000, and either3BA940 or Actor+1736 bit0x20. Valid model virtual methods/joint indices and resources remain prerequisites."
+    },
+    {
+      "addr": "0x1401c3a30",
+      "Finding": "The blended evaluator clears runtime contact flags, requires a matching mode from both cached poses with mode>=2 and record+28 matching the processed joint, then sets runtime+16 bit0 and stores the returned position only when1712B0 returns nonzero.3C6AA0 reaches this evaluator via1A4CD0 when Motion+72 is ordered-positive.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401c3a30]",
+        "evidence.json#functions[addr=0x1401712b0]",
+        "evidence.json#functions[addr=0x1401a4cd0]",
+        "evidence.json#functions[addr=0x1403c6aa0]"
+      ],
+      "Limitations": "The tested contact query combines two lower queries whose whole transitive implementation is not captured. Actual B_LK120 pose-cache contents/mode activation and geometry hits are not execution-proven."
+    },
+    {
+      "addr": "0x1403c6aa0",
+      "Finding": "For records with +16 bit0, the dispatcher extracts jointID+30 and compares it with the previous list at Motion+528/count+560. Only an ID absent from that previous list calls3B5E80. The fresh list replaces the prior list; matching uses IDs, not record addresses.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c6aa0]",
+        "evidence.json#functions[addr=0x1401a78d0]",
+        "evidence.json#functions[addr=0x1401a7d90]",
+        "evidence.json#functions[addr=0x1403b5e80]"
+      ],
+      "Limitations": "This is a previous-pass comparison, not deduplication within the new list. No runtime count bounds or latency guarantee are inferred."
+    },
+    {
+      "addr": "0x1403b5e80",
+      "Finding": "Event27 receives three tagged operands in order: Encode(Actor)/@ADR, jointID/@INT, Encode(runtimeRecord)/@ADR.3E1840 locates the Event27 PC and synchronously invokes the VM;41B320 pushes arguments in source order, so the script initially pops record,ID,Actor.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b5e80]",
+        "evidence.json#functions[addr=0x1403e1840]",
+        "evidence.json#functions[addr=0x14041b320]",
+        "evidence.json#functions[addr=0x14041c690]",
+        "../status-worker-observation-20261007/evidence.json"
+      ],
+      "Limitations": "Requires nonnull Actor+1456 and a positive first-match event PC. Worker provenance is inherited from the frozen worker study; this report does not prove B_LK120 enters that worker scheduling branch at runtime."
+    },
+    {
+      "addr": "0x1403c9b80",
+      "Finding": "Fresh bounded structural census inspected2238 direct obj/*.mdlx loose files:1397 nonempty BAR23 payloads,613 contact definitions, maximum9 per payload;920 nonempty BDX scripts, exactly one first-match Event27.279 zero-length BAR3/BAR23 entries were recorded separately and there were0 parse errors.",
+      "Evidence": [
+        "asset-census.json",
+        "asset_audit.py",
+        "verification.json",
+        "evidence.json#functions[addr=0x1403c9b80]"
+      ],
+      "Limitations": "This fully covers the listed direct loose-file class only. No recursive BAR/other extension/archive-wide absence claim. Only selected B_LK120 has independently demonstrated original-package identity."
+    },
+    {
+      "addr": "0x1403b5e80",
+      "Finding": "Original obj/B_LK120.mdlx from kh2_fifth.hed ordinal6513 has Event27 PC2904 in BAR ordinal2/type3 and9 type10 definitions in BAR ordinal3/type23. Groups12/13 contain IDs103,83,127,121 also tested by the Event27 script; group13 additionally hasID94.",
+      "Evidence": [
+        "retail-witness.json",
+        "asset-census.json",
+        "retail-probe/Program.cs",
+        "verification.json",
+        "evidence.json#functions[addr=0x1403b5e80]"
+      ],
+      "Limitations": "Static asset and exact package identity are proven; spawning, group enable, current animation modes, contact geometry and actual event execution were not observed."
+    },
+    {
+      "addr": "0x14041b320",
+      "Finding": "The B_LK120 Event27 syntactic closure has201 stored-byte instructions, including static callees and possible continuations, with8 trap sites:1:15 twice,1:87,2:10,2:61,2:11,2:62,2:22. It contains no direct2:9/95 opcode. Whole-script2:9 atPC21314 is outside this closure.",
+      "Evidence": [
+        "asset-census.json",
+        "asset_audit.py",
+        "../bdx-inspection-20261008/bdx_inspect.py",
+        "evidence.json"
+      ],
+      "Limitations": "An over-approximation of ordinary stored script flow; not dynamic execution. Unknown native effects/callbacks, VM debug callback, script mutation and abnormal control flow remain external. This does not exclude all indirect native rebinds."
+    },
+    {
+      "addr": "0x14042b480",
+      "Finding": "Before first effectful1:87, the Event27 script gates on Work+932, the DWORD read by1:15 from decode(Work+580)+384, Work+5044 for value47, and a per-ID timer. Incoming IDs103/83/127/121 select parameter213/214/215/216 respectively.576 concrete representative prefix checks establish first1:87 arguments[incoming Actor,selectedParameter,1,0] whenever the tested gate and timer conditions pass.",
+      "Evidence": [
+        "event27-prefixes.json",
+        "event_prefix.py",
+        "asset-census.json",
+        "evidence.json#functions[addr=0x14042b480]",
+        "evidence.json#functions[addr=0x14042d540]"
+      ],
+      "Limitations": "The model stops before1:87. Work+580 is assumed to decode to a readable gate source; it is not proven equal to incoming Actor. Work/timer initial states and native post-call effects are not execution-proven."
+    },
+    {
+      "addr": "0x14042d540",
+      "Finding": "Adapter1:87 decodes operand0, reads encodedActor at decodedPointer+4 and decodes again before3B6670. The actual Event27 prefix passes direct incoming Actor; constructor Actor+4 self-link makes that value structurally compatible with this wrapper ABI while intact. This refines the older open direct-Actor-versus-wrapper distinction.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14042d540]",
+        "evidence.json#functions[addr=0x1403b3200]",
+        "event27-prefixes.json"
+      ],
+      "Limitations": "No old frozen study is changed. Compatibility requires the original/self-linked Actor and valid lifetime; it is neither a general pointer-validity guarantee nor a shipped Event27→2:9/95 witness."
+    },
+    {
+      "addr": "0x1401a4d40",
+      "Finding": "The nonblended path invokes currentMotion.vtable+0x10 and forwards the record pointer. This target was not resolved in this bounded round. Alternate3C6F60 has equivalent flagged-ID Event27 dispatch, but fresh IDA xrefs returned no direct code caller.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401a4d40]",
+        "evidence.json#functions[addr=0x1403c6f60]",
+        "capture.json"
+      ],
+      "Limitations": "No claim of exhaustive indirect-call exclusion or full motion evaluator coverage. These are explicit next-work boundaries."
+    },
+    {
+      "addr": "0x1403c8070",
+      "Finding": "The native caller initializes16 local32-byte records and appends a sentinel after all selected definitions. Every nonempty BAR23 payload in the scanned loose class contains at most9 type10/11 definitions, so these stored lists fit that16-record allocation even before group filtering.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c6aa0]",
+        "evidence.json#functions[addr=0x1403c8070]",
+        "asset-census.json"
+      ],
+      "Limitations": "This bounded count observation does not prove general memory safety: runtime replacements, other asset classes, corrupt prior counts, invalid joint indices and modified resources remain outside it."
+    }
+  ]
+}

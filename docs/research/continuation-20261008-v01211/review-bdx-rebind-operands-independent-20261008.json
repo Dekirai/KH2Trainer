@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-08",
+  "reviewer": "status_fields_v2",
+  "subject": "docs/research/bdx-rebind-operands-20261008",
+  "decision": "ACCEPTED_BOUNDED_STATIC_RESEARCH",
+  "blockers": [],
+  "requiredChanges": [],
+  "reviewedHashes": {
+    "manifest.json": "704dbe7eba3a187e03d13485a8a1ee7aeac50840a34b2c2f1089afda4c23e68a",
+    "report.json": "b28f2c18293e9a363c59ee71406dc8ebddacd47b43fd46bc2dae37cfac7e7858",
+    "evidence.json": "5c497bab015bc9d0d308322a130202852a659d2d9be1521634f2ed0aacca9c63",
+    "script-dataflow.json": "97c13df5fbc3220291639bf42b9947c610988966956f1f8e7456e65d56fa46a4",
+    "trace_model.py": "dd71a7afd8103c2e3a0301d3f2b4a3887b9218b2f445ad23f6d72a043e59edee",
+    "verify.py": "414d8c09347f8b6f8ee095fecbfac01cfd46f364fa87f1583ec043bdf289e52c",
+    "verification.json": "f51adf423f7fbe08b2b5fb447bcc45f1f638977b72fa3fa0f12ee2ab3e875e04",
+    "claims.json": "adbfc61bef63a6a6e03d674e17d9ba89416cf54ceb2309c60652be980edc7fdf"
+  },
+  "verificationPolicy": {
+    "productionVerifierRerun": false,
+    "reason": "Parent already passed --check. Reading the model, native bodies and saved traces introduced no unresolved question requiring another full derive run. Independent read-only byte/hash/path/range checks below were performed instead.",
+    "productionReceipt": "257 bounded model cases, 3 unique paths and 6 rejected mutants; source and receipt inspected, mutation cases not independently re-executed."
+  },
+  "independentChecks": [
+    {
+      "check": "Manifest and imported dependencies",
+      "result": "PASS",
+      "details": "All 12 manifest member sizes and SHA256 values match; all 7 pinned dependency hashes match."
+    },
+    {
+      "check": "Retail executable and native body bytes",
+      "result": "PASS",
+      "details": "Retail SHA256 9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed verified independently. All 24 recorded native bodies match direct PE reads. This is separate from the prior production --check."
+    },
+    {
+      "check": "Original script witnesses",
+      "result": "PASS",
+      "details": "Both original asset SHA256 and extracted script SHA256 match. The 37 AL020 and 104 EX400 name strings are bounded by NUL inside the original script and distinct on each saved path. Header storage sizes: AL020 work4592/frame512/temp512, EX400 work4432/frame512/temp512."
+    },
+    {
+      "check": "CALL and RETURN semantics",
+      "result": "PASS",
+      "details": "Model g8/g11 enters the callee and writes frame size/return PC; g9/sub2 reads those slots. Native 41C1D0..41C230 and41C2DA..41C2FC corroborate this. Independent walk of each stored PC sequence follows actual callee targets and a nested return stack. AL020 each path: 9 calls/8 returns, pending outer returnPC4648. EX400:6 calls/5 returns, pending outer returnPC3816. All end at active frames[16,32]; no unconditional continuation shortcut was found."
+    },
+    {
+      "check": "Native1:5 destination summary",
+      "result": "PASS",
+      "details": "42E200 decodes the first argument;3CA790 writes only the encoded-NULL key DWORD at each of128 records with32-byte stride. The summary correctly clears keys rather than pretending to initialize every numeric field."
+    },
+    {
+      "check": "Native1:6 destination summary",
+      "result": "PASS",
+      "details": "42E220 passes table/name/fields to3CA0E0.3CA700 searches128 keys by strcmp;3CA0E0 uses an existing matching name or the first empty key and writes fields4..31. Saved prefixes initialize once and insert fewer than128 distinct bounded names. The full-table NULL dereference path is therefore outside these conditional prefixes, not asserted impossible in general."
+    },
+    {
+      "check": "Native1:7 association summary",
+      "result": "PASS",
+      "details": "42C620 decodes wrapper+4 as Actor, stores the motion table at Actor+1184 and wrapper at Actor+1176, each as8-byte pointers. It does not rewrite wrapper+4 or an Actor STATUS field."
+    },
+    {
+      "check": "Protected wrapper/main-frame intervals",
+      "result": "PASS",
+      "details": "Independent half-open interval scans of every saved store show exactly one write to AL020 Work196 atPC237 and main Frame32 atPC4651; EX400 Work148 atPC1899 and main Frame32 atPC3819. Values are Actor and the expected wrapper respectively. Native1:5/6 writes remain in [480,4576) or [320,4416); actual maximum written end is4548/4388. No protected four-byte interval overlap occurs in the saved traces."
+    },
+    {
+      "check": "257 cases and six mutants",
+      "result": "PASS_BY_SOURCE_AND_RECEIPT_INSPECTION",
+      "details": "AL020 case records contain each byte0..255 exactly once, partitioned255+1 into two paths (representatives0 and10). EX400 has one path. The verifier creates the advertised wrong-Actor-field, wrong-ID and wrong-wrapper mutants for both assets and requires fail-closed rejection. Six stored mutation receipts are true. These are bounded regression cases, not a completeness proof for all VM errors."
+    },
+    {
+      "check": "Slots12..15 and arity",
+      "result": "PASS",
+      "details": "Descriptor1:6 declares12 QWORD arguments;41C4CF..41C4FA copies only slots0..11 to the native scratch array.42E220 reads the Low32 parts of slots0..15. Source offsets+0x60/+0x68/+0x70 reach3CA0E0 WORD fields26/28/30; slot15 at+0x78 is copied to adapter local element11 but is not consumed by3CA0E0. The16-QWORD scratch extent is recorded in the native frame and all extra reads are within it. The report correctly leaves actual values and visible effects unknown and claims no OOB/crash."
+    },
+    {
+      "check": "Native rebind mapping and scope",
+      "result": "PASS",
+      "details": "431A70/431AA0 decode argument0 then wrapper+4 and tail-call411350/4112B0 with argument1. Conditional tuples [Work192,138,0] and [Work144,216] are supported. The report explicitly excludes Event27, live invocation, rebind success, allocation failure, concurrent mutation, exclusive thread ownership and numeric motion-field identity."
+    }
+  ],
+  "nonBlockingObservations": [
+    {
+      "id": "N1",
+      "topic": "Opaque byte naming",
+      "detail": "The internal names difficulty and difficultyRepresentative should be read only as the byte from717008 returned by42E330. This review establishes no difficulty-setting semantics. The report itself correctly says byte-valued native branch input, so its factual claims do not need correction."
+    },
+    {
+      "id": "N2",
+      "topic": "Model reuse boundary",
+      "detail": "The symbolic memory model uses pointer identities and selected native write summaries rather than a byte-complete VM/tag/alias model. It also does not emulate native float compatibility adjustments. The independently checked write intervals and explicit non-overlap/stability/normal-return preconditions support these two prefixes; they must not be generalized automatically to other scripts, aliases, failures or reentrant native calls."
+    }
+  ],
+  "scope": "Independent bounded source/native-evidence review plus static hash, original-byte, saved-call/return, name and write-interval checks. No gameplay, script/native execution, injection, UI, IDA mutation or frozen-study write. Only this review's JSON/TXT were written.",
+  "referenceCorrectionReview": {
+    "result": "PASS_REFERENCE_ONLY_CORRECTION",
+    "changedStudyFiles": [
+      "report.json",
+      "claims.json",
+      "manifest.json"
+    ],
+    "details": "Compared against the exact pre-correction report, claims and manifest saved before the author edit. Only the eight Evidence lists in each claim carrier changed; all addr/Finding/Limitations fields and all other report metadata are identical. Only the two matching file entries changed inside the manifest. The other ten manifest members, including trace_model.py, verify.py, evidence.json, script-dataflow.json and verification.json, retain their prior bytes and hashes.",
+    "referencesPerFile": 43,
+    "resolution": "Independently checked every referenced file and all functions[addr=...] targets in both files. Native references now resolve to full recorded functions; descriptive data/script references name their existing evidence files.",
+    "previousHashes": {
+      "report.json": "0af2a3b653038e4e14e3afb5b96008ed6dd1157af21fab1618774d9d10f03ed0",
+      "claims.json": "d5db397570c7482fc05acf9fc5d15c317b0c7698ec6b96b302a1bf37b846d42b",
+      "manifest.json": "d97a514392bbd4ad2b394a6f2a50abb931d146046d8ad07adf0625b31e673dfb"
+    },
+    "finalHashes": {
+      "report.json": "b28f2c18293e9a363c59ee71406dc8ebddacd47b43fd46bc2dae37cfac7e7858",
+      "claims.json": "adbfc61bef63a6a6e03d674e17d9ba89416cf54ceb2309c60652be980edc7fdf",
+      "manifest.json": "704dbe7eba3a187e03d13485a8a1ee7aeac50840a34b2c2f1089afda4c23e68a"
+    },
+    "fullModelRerun": false,
+    "reason": "No semantic, model, code or source-byte change; prior substantive review and checked model receipt remain applicable.",
+    "authorRecheck": "The author additionally reported --check PASS after the reference edit; this reviewer did not repeat that full model run."
+  }
+}

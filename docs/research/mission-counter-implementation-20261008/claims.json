@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "Domain": "native",
+  "claims": [
+    {
+      "addr": "0x1403fbae0",
+      "Domain": "native",
+      "Finding": "The existing absolute mission-counter wrapper reaches the native class setter. The added trainer commands calculate a checked absolute target and reuse this call once, preserving native boundary dispatch and threshold handling.",
+      "Evidence": [
+        "imported-evidence.json#functions[addr=0x1403fbae0]",
+        "imported-evidence.json#functions[addr=0x1403fa230]"
+      ]
+    },
+    {
+      "addr": "0x1403fb2b0",
+      "Domain": "native",
+      "Finding": "The raw relative adapter uses DWORD arithmetic. Its wrap-before-native-clamp behavior is not the new checked int64 trainer contract.",
+      "Evidence": [
+        "imported-evidence.json#functions[addr=0x1403fb2b0]",
+        "imported-evidence.json#functions[addr=0x1403fa230]"
+      ]
+    },
+    {
+      "addr": "0x1403fbb30",
+      "Domain": "native",
+      "Finding": "The raw digit helper constructs a DWORD decimal divisor and uses signed division; unconstrained positions can produce divisor zero. The trainer uses positions 0..9, digits 0..9 and bounded int64 replacement instead of invoking this helper.",
+      "Evidence": [
+        "imported-evidence.json#functions[addr=0x1403fbb30]"
+      ]
+    },
+    {
+      "addr": "0x1403a2c30",
+      "Domain": "native",
+      "Finding": "The mission storage contains one embedded COMBOCOUNTER at +880. Registry membership and ID validation distinguish a configured object from constructor-initialized storage.",
+      "Evidence": [
+        "imported-evidence.json#functions[addr=0x1403a2c30]",
+        "imported-evidence.json#functions[addr=0x1403fa610]",
+        "imported-evidence.json#functions[addr=0x1403fc150]",
+        "imported-evidence.json#functions[addr=0x1403fa0d0]"
+      ]
+    },
+    {
+      "addr": "0x1403fa790",
+      "Domain": "native",
+      "Finding": "Combo current is signed integer +56, peak +80 and allowance float +84. Native delta/clamp and peak update are distinct; configuration/reset and the peak-only setter do not establish peak>=current or peak<=maximum as universal invariants.",
+      "Evidence": [
+        "imported-evidence.json#functions[addr=0x1403fa790]",
+        "imported-evidence.json#functions[addr=0x1403fa440]",
+        "imported-evidence.json#functions[addr=0x1403fa860]",
+        "imported-evidence.json#functions[addr=0x1403fa8b0]",
+        "imported-evidence.json#functions[addr=0x1403fb600]",
+        "imported-evidence.json#functions[addr=0x1403fb750]"
+      ]
+    },
+    {
+      "addr": "0x1403fa820",
+      "Domain": "native",
+      "Finding": "A positive finite combo allowance is reduced by the native float update step at 717480. At expiry current becomes min(maximum,0), allowance becomes zero and the completion bit is cleared, while peak is retained. Thus current becomes zero for the nonnegative maximum accepted by the trainer snapshot. Finite allowance<=0 bypasses the countdown; this study establishes no seconds conversion.",
+      "Evidence": [
+        "imported-evidence.json#functions[addr=0x1403fa820]",
+        "imported-evidence.json#functions[addr=0x1403a35c0]",
+        "imported-evidence.json#functions[addr=0x1403fa860]"
+      ]
+    }
+  ]
+}

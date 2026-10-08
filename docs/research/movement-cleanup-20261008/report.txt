@@ -1,0 +1,26 @@
+Movement effect cleanup after trainer disconnect — 2026-10-08
+
+Problem
+TrainerFrame marked active movement leases ReleasePending after host expiry, but CompleteRelease called the host-gated gameplay observation. It could never restore while the heartbeat remained expired.
+
+Correction
+Only CompleteRelease uses InspectNative after the same Actor identity and movement readiness checks. Native code pins, game-thread affinity, disabled state, player role, scene, input and control gates remain required. Acquire/Reapply, snapshots and dispatch remain host-gated.
+
+Regression
+- Real TrainerBridge, movement journal, Actor lifetime, PlayerRole and GameplayState path acquires a valid lease before disconnect; it then checks successful cleanup for Sora, Roxas and rescue Mickey with missing, stale and future heartbeats.
+- Offline Acquire and Reapply reject before writes; twelve independent native blockers defer cleanup and their removal permits cleanup without heartbeat recovery.
+- External scalar replacement and observed Actor death preserve values instead of restoring stale originals.
+- Gameplay observation tests compare both views under a fresh host and separately verify retained native guards with missing/stale host admission.
+
+Focused validation: 4171 checks, zero failures in four suites.
+
+Limits
+- Existing Actor observer execution and lifetime assumptions are unchanged; this correction does not prove them for all threads, constructors, rebinds or bulk free paths.
+- The mapping must remain resident as in the existing bridge. This is a heartbeat-disconnect fix, not recovery after loss of shared memory or disabled/faulted bridge execution.
+- Menu, cutscene, loading, transitions, input locks and unavailable identity defer cleanup. Different external values are preserved. Same-value native movement writes remain invisible to value ownership.
+- Partial writes or an observer fault remain uncertain; no speculative retry or original-value recapture is added.
+- Private tests execute trainer guard, role and journal code against synthetic memory. Actor observer installation provenance and native callback forwarding use fixture hooks. No live installer, gameplay test or game injection was performed.
+- STATUS field transaction prerequisites remain uninstalled; no new feature or character compatibility expansion is included.
+
+Reproduce the independent mutation test
+Restore independent-regression/run.ps1 to artifacts/movement-cleanup-regression/run.ps1 in the extracted Source.zip repository before running it. It creates isolated fixed/regressed sources and synthetic executables; it does not modify product sources. Expected mutant result: 22 restoration failures.

@@ -1,0 +1,98 @@
+Original BDX Event0 rebind operands — 2026-10-08
+
+Result
+======
+The missing wrapper construction is present in both original scripts. The native
+Actor setup passes one tagged encoded Actor pointer to Event0. The script moves
+that value into its initial frame, passes it together with a Work-region pointer
+through real nested calls, and stores the Actor into wrapper+4. The later rebind
+trap receives that wrapper. This closes the static operand chain under the normal
+execution and storage assumptions below; it is not a live execution observation.
+
+B_AL020, unique BAR type3 entry2, script SHA e2930b8b37bb7b12e33928dfd1fd1e707d99dfafae76b7c93648e04ca26b577f:
+  Event0 PC4640 pops Actor into initial Frame0.
+  PC4642 pushes Work+192; PC4644 reloads Actor.
+  PC4646 calls PC4649, frame advance16 bytes; the callee pops Actor to frame+4
+  and wrapper to frame+0. Calls4657→6314→231 pass this pair again.
+  PC237 stores the Actor at Decode(frame0)+4 = Work+196.
+  Real nested calls return via saved PC/frame-size fields; the main frame remains
+  at frame allocation+32 through the selected trap.
+  PC6035 bank2/index9 receives [Encode32(Work+192), 138, 0]. Adapter431A70
+  decodes wrapper then wrapper+4 and tail-calls411350(Actor,138). Arg2 is unused.
+
+B_EX400, unique BAR type3 entry2, script SHA bbc9f40c08a52294b6e5aa15f4d16ad55c9b9ff4765ba4aba306abcd79209215:
+  Event0 PC3808 pops Actor into initial Frame0.
+  PC3810 pushes Work+144; PC3812 reloads Actor.
+  PC3814 calls3817; calls3825→7770→1893 pass wrapper and Actor.
+  PC1899 stores Actor at wrapper+4 = Work+148.
+  PC7593 bank2/index95 receives [Encode32(Work+144),216]. Adapter431AA0
+  tail-calls4112B0(Actor,216) after the same two-stage decoding.
+
+Native setup and storage
+========================
+3B44D0 skips setup when Actor flags+1736 has bit0x20, otherwise selects first
+BAR type3 via3A6420. Both original BAR files contain exactly one such entry.
+After successful native resource decoding/context allocation, the caller places
+Encode32(Actor) and tag @ADR in one eight-byte argument, calls3E1840 with ID0 and
+count1, then selects entry1. The temporary Event0 context shares the persistent
+context's work and owner through3E1240. 41B320 creates four initial DWORDs,
+advances the frame by16 and copies the one tagged argument onto the operand stack.
+3E1C80 invokes41B400 with the native bank root and a NULL opcode-trace callback.
+41C900/41C6C0/41C780 supply the frame/work address and tag-preserving load/store
+semantics; the symbolic model represents their decoded pointer identity rather
+than concrete addresses, actual allocation, or all possible VM tag behavior.
+
+The complete prefix matters
+==========================
+The model follows each CALL target and the actual saved return PC and frame size.
+It does not treat a syntactic call-continuation edge as evidence that the call did
+nothing. For AL020, all256 possible byte values returned by1:23 were checked:
+value10 produces one path, the remaining values another. They contain623 and622
+instructions including the target. EX400 has one1432-instruction prefix. Across
+the three paths there are2065 unique script PCs. Maximum frame pointer is+64;
+maximum operand depth is12. No script yield/exit occurs before either target.
+
+All intervening native traps are1:5,1:6,1:7 and AL020's1:23. Their complete native
+bodies are included. 1:5 clears128 four-byte keys at stride32 in a motion table:
+AL020 Work+480, EX400 Work+320. 1:6 finds/reuses bounded string keys or inserts
+into the first empty record, writing only that32-byte record. The prefixes have
+37/104 distinct names, below128. The full tables fit within declared work sizes
+4592/4432, disjoint from wrapper+4. 3CA700 compares strings inline; the decompiler's
+strcmp rendering is not an imported callback. 1:7 stores wrapper at Actor+1176
+and motion table at Actor+1184. It already decodes the wrapper's Actor link before
+the rebind. 1:23 only returns the low byte of global717008, tagged @INT.
+All script writes and native destination ranges are recorded in script-dataflow.
+
+Additional native discrepancy: declared12, reads16
+==================================================
+Descriptor7553D0 is adapter42E220 with flags0x0000000C. 41C4CF–41C4F4 fills only
+argument slots0..11. The adapter additionally reads Low32 slots12..15 at42E288,
+42E28F,42E296,42E29D. Slots12/13/14 flow through its local DWORD array into record
+WORD fields+26/+28/+30 at3CA1AB/3CA1B3/3CA1BB. Slot15 is collected locally but not
+read by3CA0E0. These are inside the16-value native scratch array; they are simply
+not populated by this dispatch. Their concrete values/visible effects are unknown.
+This is not an out-of-bounds or observed-crash finding. Arity metadata should be
+called the declared argument count, not a native access guarantee.
+
+Conditions and limits
+=====================
+Valid, distinct Actor/work/frame/temp storage; successful allocations; live BAR
+and strings; normal pointer encode/decode round-trips; stable scripts/native bank
+tables; no concurrent or reentrant mutation; normal returns from native calls.
+The native runtime float compatibility adjustments are not numerically emulated;
+they do not choose these wrapper addresses or immediate resource IDs. Motion
+field numeric results are not claimed identical to stored-byte values.
+This does not establish when an actor using either asset is spawned, successful
+native resource acquisition/rebind, a thread/fiber/lifetime exclusion, or Event27
+reachability. A different caller of Event0 may supply another initial argument.
+
+Reproduction
+============
+py -3 -B docs/research/bdx-rebind-operands-20261008/verify.py --check
+Requires the original local EXE, the two loose original assets, Python/capstone,
+and SHA-bound frozen source research. The earlier frozen retail-comparison receipt
+proves these loose witnesses match original kh2_fifth package entries6196/6443.
+No game process, IDA mutation, UI control or native code/script execution is used.
+Verification checks24 full native bodies,1974 instruction boundaries,7854 original
+body bytes,26 exact semantic anchors,257 bounded cases and6 rejecting mutations.
+Original raw assets are not copied into this research folder.

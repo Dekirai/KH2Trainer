@@ -1,0 +1,128 @@
+{
+  "claims": [
+    {
+      "addr": "0x14041c690",
+      "Finding": "BDX event lookup scans ID/PC signed32 pairs at script+28, stops on PC0 regardless of ID and returns the first matching ID. ID0 is not intrinsically a terminator.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041c690]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "No file-length or duplicate-ID rejection in this native body; offline reader bounds are additional policy."
+    },
+    {
+      "addr": "0x1403e1240",
+      "Finding": "The context constructor reads declared allocation fields at script+16/+20/+24 and stores script/context pointers; it may raise header+20 from512 to1024 for five specific names.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1240]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "Offline display reports stored header values, not actual native allocation results or post-load mutated header values."
+    },
+    {
+      "addr": "0x14041b320",
+      "Finding": "Entry initialization stores the supplied PC as a DWORD at context+8 and copies supplied tagged8-byte arguments to the operand stack.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041b320]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "Does not validate all subsequent script instructions or resources."
+    },
+    {
+      "addr": "0x14041b400",
+      "Finding": "The interpreter fetches words at script+16+2*PC, dispatches on low4 bits, and implements the complete group-width/control-flow table in opcode-contract.json. Relative calls/branches update a32-bit PC; branch16 sign-extends and call32 combines two words before DWORD addition, without16-bit wrapping.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041b400]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "Stored-byte syntactic CFG only. Native memory writes, runtime compatibility adjustments, callback changes, invalid operands and dynamic return stack are not emulated."
+    },
+    {
+      "addr": "0x14041b400",
+      "Finding": "Unary invalid selectors return status5; integer-binary sub>11 instead follows its default pop2/push-left continuation. G9 halt returnsstatus1 with advancedPC, exit returnsstatus2, return restoresPC fromVM stack and returnsstatus3 only for restoredzero.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041b400]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "Classification is the captured retail native control flow, not an all-build or safe-execution guarantee."
+    },
+    {
+      "addr": "0x14041b400",
+      "Finding": "Trap groupA reads unsigned bank=word>>6 and unsigned16 index; descriptors stride16. Bank2/index9 and95 decode only when visited as instruction starts from declared event roots.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041b400]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "A raw pair8A/9 or8A/5F elsewhere in a payload is not a proven instruction. Native callbacks have unmodeled effects and conditional continuations."
+    },
+    {
+      "addr": "0x14041c900",
+      "Finding": "Address selector helper always consumes one U16 operand. Selectors0..3 resolve frame/work/decoded-object/script-or-scratch forms; others returnNULL.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041c900]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "A NULL address pushed through NullableEncode can continue, whereas a load may fault; does not prove argument validity."
+    },
+    {
+      "addr": "0x14041c6c0",
+      "Finding": "Store helper pops a tagged operand and writes through its supplied destination without a NULL guard on the final stores.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041c6c0]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "Generic native memory writer; malformed script safety and all transitive effects remain outside this inspection task."
+    },
+    {
+      "addr": "0x14041c780",
+      "Finding": "Load helper dereferences its supplied source and pushes the result; no final NULL source guard protects the load.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041c780]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "Offline diagnostics do not execute the helper or establish exception handling behavior."
+    },
+    {
+      "addr": "0x1404ad240",
+      "Finding": "Nullable pointer encoder preserves a NULL input as zero, which permits the interpreter to push @ADR/0 for unsupported address-selector push forms.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404ad240]",
+        "opcode-contract.json",
+        "verification.json"
+      ],
+      "Limitations": "Later consumers may still reject or dereference that value; this is not a valid-object assertion."
+    },
+    {
+      "addr": "0x140431a70",
+      "Finding": "Native bank2/index9 adapter maps to411350 and takes three VM operands. Retail-byte-identical B_AL020 type3 script has a decoded instruction atPC6035 on an event0-rooted static CFG path.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140431a70]",
+        "opcode-contract.json",
+        "verification.json",
+        "asset-witnesses.json",
+        "retail-comparison.json"
+      ],
+      "Limitations": "Original HED/PKG payload and loose slice independently compared byte-for-byte; No observed script execution or operand0 pointer-provenance claim; third argument is unused by adapter body."
+    },
+    {
+      "addr": "0x140431aa0",
+      "Finding": "Native bank2/index95 adapter maps to4112B0 and takes two VM operands. Retail-byte-identical B_EX400 type3 script has a decoded instruction atPC7593 on an event0-rooted static CFG path.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140431aa0]",
+        "opcode-contract.json",
+        "verification.json",
+        "asset-witnesses.json",
+        "retail-comparison.json"
+      ],
+      "Limitations": "Original HED/PKG payload and loose slice independently compared byte-for-byte; No observed script execution or event27 reachability claim."
+    }
+  ]
+}

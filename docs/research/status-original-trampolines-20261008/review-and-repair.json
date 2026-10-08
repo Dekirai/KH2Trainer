@@ -1,0 +1,82 @@
+{
+  "date": "2026-10-08",
+  "reviewer": "/root/status_fields_v2",
+  "scope": "Independent initial source review followed by parent-authorized targeted fixes; parent final re-review still separate",
+  "outcome": "No remaining defect found within the explicitly serialized unpublished/published ownership contract",
+  "initialValidation": {
+    "checks": 72,
+    "failures": 0,
+    "compilerWarnings": 0,
+    "compiler": "MSVC x64 /O2 /W4 /MT /EHsc",
+    "generatedImagesExecuted": false
+  },
+  "findings": [
+    {
+      "severity": "P2",
+      "finding": "VirtualFree failure discarded the owning allocation address and reported cleanup completion",
+      "resolution": "Added Error::Free, retained pointer and Fault state after failed free, explicit unpublished retry, real successful free on retry"
+    },
+    {
+      "severity": "test-gap",
+      "finding": "No tests reached partial RtlAddFunctionTable rollback or failed RtlDeleteFunctionTable retention",
+      "resolution": "Injected exactly one API refusal per configured stage; all other Add/Delete/Free calls use real Windows APIs; tested Add failure at stages 0..4, Delete failure at each table, combined Add/Delete failure and free-only cleanup retry"
+    },
+    {
+      "severity": "contract",
+      "finding": "Batch methods had no explicit concurrency or borrowed Entry/source-module lifetime contract",
+      "resolution": "Documented single serialized installer owner, Entry only borrowed before Bindings, original module/continuations retained and intact for every call, and no destructor teardown"
+    }
+  ],
+  "finalValidation": {
+    "checks": 430,
+    "failures": 0,
+    "compilerWarnings": 0,
+    "productionDefine": "STATUS_ORIGINALS_PRODUCTION_COMPILE",
+    "testHookDefine": "KH2_STATUS_ORIGINALS_TESTS",
+    "generatedImagesExecuted": false,
+    "gameProcessAccess": false,
+    "realWindowsUnwindLookup": true
+  },
+  "reviewedMechanics": [
+    "Each generated page carries a DWORD-relative RUNTIME_FUNCTION at +64, BeginAddress=0 and exact planner codeSize, UnwindData=32; per-page RtlAddFunctionTable BaseAddress matches page address",
+    "Entire five-body retail input is compared by the pure planner before each 80-byte image is copied; no source byte is patched by preparation",
+    "RX protection and cache flush precede registration; all five registrations must succeed before Prepared",
+    "Failed Delete retains every code/unwind/table byte in the whole allocation and every unresolved OS registration; successfully deleted registrations are not deleted again on retry",
+    "Failed VirtualFree after successful deletes retains exact pointer for retry without falsely retaining OS table registrations",
+    "Bindings seals before pointer assignment; ReleaseUnpublished never invokes Delete/Free after Bound; repeated Bindings returns identical pointers",
+    "Default Batch object destruction does not reclaim bound storage; actual Windows lookup and RX memory were tested after a temporary owner went out of scope"
+  ],
+  "remainingLimits": [
+    "Caller must serialize Batch methods; concurrent Bindings versus ReleaseUnpublished is not supported",
+    "Source module lifetime and byte integrity after Prepare remain installer responsibilities; this prerequisite does not independently prove hook installation or thread draining",
+    "Tests never execute copied KH2 instruction streams; earlier StatusEntryPlan tests supply the native unwind-behavior validation",
+    "Prepared owners must explicitly release unpublished allocations; forgotten cleanup intentionally favors a leak over dangling unwind pointers",
+    "The modified final implementation was authored by this reviewer after initial findings; the parent must independently review the final delta"
+  ],
+  "sources": [
+    "https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-rtladdfunctiontable",
+    "https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-rtldeletefunctiontable"
+  ],
+  "files": [
+    {
+      "path": "src/KH2Trainer.Bridge/StatusOriginalTrampolines.h",
+      "sha256": "bc25e0f130e85f423aab272328231e98c63bad5818f39fb5be85b28b46241cae"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/StatusOriginalTrampolinesTests.cpp",
+      "sha256": "d48d35a03812c2634b5466c5eaf80ba596caca2fa305cc9c6348fdfb403af187"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/StatusEntryPlan.h",
+      "sha256": "8077246092503a65390c52828cc8aca77f169564669fc9eefa97b9b1e70f6a9c"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/StatusObserverSupport.h",
+      "sha256": "98277fd5c5df27b3f49b0bf259549d544432a4a70c2e900cebb127c314cee042"
+    },
+    {
+      "path": "artifacts/status-original-trampolines-review-tests.txt",
+      "sha256": "1c1e14b180364da560a217c936a16f885576b616ea80b686a5de6a6afeb772e5"
+    }
+  ]
+}

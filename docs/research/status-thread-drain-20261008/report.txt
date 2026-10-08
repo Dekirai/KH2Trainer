@@ -1,0 +1,34 @@
+Complete-stack bootstrap for STATUS observation
+================================================
+
+An empty observer counter does not cover native writers already running when
+entry hooks were installed. StatusThreadDrain retains every old thread handle
+and copies its complete active stack while the thread is suspended. It resumes
+the thread before inspecting RIP and all aligned words in that copy.
+
+Five fresh original writer bodies contain 377 instructions and 2,222 bytes. The
+22 direct-call continuations remain inside those bodies. Together with the
+previously verified normal helper closure, this means an older writer retains
+either a root RIP or a root return address in its active stack. A complete copy
+with neither can clear that old thread. Any matching data conservatively defers.
+No stack unwinder or arbitrary unwind callback runs while a thread is stopped.
+
+The owner is captured without self-suspension. Its retained handle also prevents
+thread-ID reuse from transferring bootstrap authority. A failed resume preserves
+the handle and retry obligation. No failed, partial, oversized or stale snapshot
+counts as clear. A later gate mismatch permanently faults the component.
+
+Validation: 812 checks, zero failures. Tests use real threads in a separate test
+process, including an old writer inside a waiting helper, return while its thread
+stays alive, signaled thread exit, external suspend counts and failed resume.
+The production preprocessor branch is separately compiled with MSVC /O2 /W4.
+
+The supported contract excludes parked writer fibers, arbitrary callback/context
+intervention and foreign thread control. A 2 MiB cap bounds copied bytes, not wall
+time. Incidental stack matches may remain unresolved indefinitely. The native
+closure, API bindings and five resident gates must stay valid. Observer arming
+must still hold its metadata lock and require no tracked call in flight.
+
+This component is not installed in TrainerBridge. Typed Actor binding and IPC
+remain open. No game was started, attached, injected or written during validation.
+See report.json, evidence.json and verification.json for exact sources and limits.

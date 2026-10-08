@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "date": "2026-10-07",
+  "date": "2026-10-08",
   "target": {
     "path": "E:\\SteamLibrary\\steamapps\\common\\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-\\KINGDOM HEARTS II FINAL MIX.exe",
     "sha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
@@ -11,8 +11,8 @@
     "complete": false,
     "baselineDate": "2026-10-04",
     "nativeFunctions": 36451,
-    "functionsWithSpecificStaticClaims": 1967,
-    "functionsWithoutSpecificStaticClaims": 34484,
+    "functionsWithSpecificStaticClaims": 2289,
+    "functionsWithoutSpecificStaticClaims": 34162,
     "newClaimsMergedIntoGlobalAudit": true,
     "currentAudit": "docs/research/coverage/summary.json",
     "semanticCompleteness": "Not measured or established; a specific claim is not a whole-function proof."
@@ -20,30 +20,109 @@
   "validation": {
     "liveGame": false,
     "liveTwitch": false,
-    "gameOrSaveWrites": false
+    "gameOrSaveWrites": false,
+    "isolatedAllocatorProbe": {
+      "checks": 213611,
+      "failures": 0,
+      "originalBodiesExecuted": 14,
+      "sequenceOperations": 1200,
+      "stubs": [
+        "0FD9C0",
+        "0FDD90",
+        "0FDC90",
+        "3A08F0",
+        "4390A0",
+        "CloseHandle IAT"
+      ],
+      "scope": "Private process, relocated data, original body bytes, normal no-fault paths. No actual semaphore, game resources, threads or live game."
+    },
+    "newProductChanges": true,
+    "coreChecks": 3287,
+    "coreFailures": 0,
+    "opcodeChecks": 233581,
+    "retailChecks": 8995,
+    "uiChecks": 48,
+    "visibleWindows": 0,
+    "gameSaveModWrites": false,
+    "scriptExecution": false,
+    "releaseBuild": "Final native/managed/UI/package validation is recorded beside the packaged EXE.",
+    "catalogDescriptors": 1063,
+    "catalogAnnotations": 239,
+    "bdxUiChecks": 94,
+    "bdxRenders": 8,
+    "fullPackageBuild": "Final results are recorded in package Validation and the final checkpoint.",
+    "catalogIntegrationChecks": 13884,
+    "historicalCatalogApiChecks": 2559890,
+    "historicalApiReviewScope": "Prior v0.12.11 API review; API/decoder unchanged, current metadata separately checked."
   },
   "nextAnalysis": [
-    "Implement a bounded bootstrap audit for retained old-thread handles and complete native stacks; unknown or unverified unwind paths must never count as drained. Apply the read-only stack audit constraints before implementation.",
-    "Bind exact STATUS entry definitions, validated original trampolines, typed wrappers, pool ownership and Actor lifetimes only after the older-writer drain is proved.",
-    "Add typed per-field STATUS transaction receipts and conditional restore that rejects intervening same-value native/manual changes.",
-    "Combine bounded offline root-motion projection with effective runtime resource binding, Actor/Motion lifetime, per-actor scale cleanup and attachment/axis/ramp handling before Tiny/Giant.",
-    "Bind the full primary-plus-remaster resource graph through the actual provider/cache and preconstructor handoff; verify request/resource lifetimes, allocator ownership and failure behavior.",
-    "Refine conservative event/minigame classifications using bounded event-mode witnesses and actual player-input consumers.",
-    "Extend specific semantic analysis into uncovered native functions, preserving the distinction between a finding, complete ASM and full semantic understanding."
+    "Continue the broad executable analysis; many functions still lack a specific claim, and no complete semantic-function count is established.",
+    "Analyze the remaining Gummi and Mission descriptors, live object/resource lifetime prerequisites and mode teardown before adding more native commands.",
+    "Evaluate guarded Mission counter delta/digit operations and a read-only combo display using the existing fresh widget/event gates; do not call the unchecked script adapters directly.",
+    "Follow collision-resource loading, transform invariants, shared-filter ownership and hierarchy lifetime before a live query or geometry editor.",
+    "Trace actual Voice update scheduling, all selected resource/component writers and request consumers only where the component binding is established."
   ],
   "implementedSincePreviousCheckpoint": [
-    "Added a resident one-byte STATUS breakpoint router with exact body comparisons, immutable targets, module pins, cache flush, fault handling and process-lifetime forwarding. It is not installed in TrainerBridge.",
-    "Added breakpoint planning while preserving the original-body definitions and generated original/unwind image from v0.12.8.",
-    "Added five typed STATUS wrappers preserving native arguments, return values, LastError and SEH while serializing metadata around calls. Bootstrap remains distinct from observing.",
-    "Verified actual private-code Windows VEH routing, including callers already running while all five entry gates publish, plus partial failures and full-tail drift. Production MEM_IMAGE-only code compiles separately without test overrides.",
-    "Verified the normal 25-function native writer closure and five retained root frames. HookedUpdate return is not a global writer barrier; runtime stack drain remains unimplemented.",
-    "Research packaging now excludes local IDA databases, working folders and compiled output while preserving all current durable evidence. The 22-check isolated fixture preserves its original files.",
-    "Read-only audit confirms the reported missing or invalid second-Keyblade case is already guarded in the delivered v0.12.8, including revalidation after Revert. No new release or live game test was performed."
+    "Expanded the dark offline BDX catalog from158 to239 annotations, adding30 Gummi-object and51 Mission descriptions. All1063 numeric descriptors and980 untouched rows are preserved; two prior descriptions gain bounded findings.",
+    "Gummi objects use context-installed script banks, stored coordinate spaces and deferred mark/retire/destroy phases. Wrapper pointers have no allocation generation; the removal-bit query is not a lifetime check.",
+    "Mission counters, gauges, timers, combo and result transitions have synchronous callback effects. The raw decimal digit operation can reach a zero divisor at positions>=32 if the loop completes; the timer-seconds helper divides an unsigned wrapped tick value. No retail malformed-input witness is claimed.",
+    "Actor1:367 grows a collision radius and changes shared static/moving collision filters. Candidate count is capped at1023, but traversal and resource lifetimes are not thereby bounded. Scalar NaN handling and signed hierarchy indices are documented.",
+    "The selected BTLNPC virtual operation requests Voice-ID8 at signed priority3. The original objentry flag skips the captured Voice resource binding; a NULL component makes the operation a no-op if no later writer changes it. Both original archive payloads were freshly decoded and compared.",
+    "The native bridge and Drive fallback are unchanged from v0.12.13. Final/Valor/Master offhand initialization remains validated and repeated after Revert. No live-game tests were performed."
   ],
   "lastDeliveredRelease": {
-    "version": "0.12.8",
-    "path": "C:\\Users\\shinz\\source\\repos\\KH2Trainer\\artifacts\\packages\\KH2_Trainer_v0.12.8\\KH2_Trainer.exe",
-    "sha256": "c653f0528be35e6361f71d93ec6d22bb9f832d8a91f058382adf59713ec8cc6d",
-    "newPrerequisitesInstalledInThisRelease": false
+    "version": "0.12.13",
+    "path": "C:\\Users\\shinz\\source\\repos\\KH2Trainer\\artifacts\\packages\\KH2_Trainer_v0.12.13\\KH2_Trainer.exe",
+    "sha256": "94fba0ef53becdd2f7e25dad22025b1f2fcb68e11e3a5601ce6e970bb67cfdf5",
+    "bytes": 164327025,
+    "bridgeSha256": "942ec5c86b0dd08e532c24e74450afd04ba7aaa0e23c95db92103273b1a1ef85",
+    "packageAudit": "artifacts/package-audit-v01213.json",
+    "nativeSourceUnchangedFrom": "0.12.12",
+    "liveGameVerified": false
+  },
+  "activeObjective": "Führe hier C:\\Users\\shinz\\source\\repos\\KH2Trainer die analyse mit IDA weiter durch an der Kingdom Hearts II.exe, einiges wurde eventuell gelöscht da Claude weiter gemacht hat, aber ich möchte dennoch das du eine 100%-ige analyse von Kingdom Hearts II machst und alles relevante dokumentierst und implementierst in das neue Programm",
+  "previousImplementedCheckpoint": "artifacts/goal-checkpoint-20261008-v01213.json",
+  "freshResearchCheckpoint": "artifacts/goal-checkpoint-20261008-v01214.json",
+  "freshResearch": {
+    "passed": true,
+    "studies": [
+      {
+        "folder": "docs/research/bdx-bank3-calls-20261008",
+        "manifestSha256": "79497af2e6f95f98a3a6b03cc39480e8aa9c11497f5674489ca284d6b237bed4",
+        "verifiedOwnFiles": 16
+      },
+      {
+        "folder": "docs/research/bdx-bank4-calls-20261008",
+        "manifestSha256": "97057b0fd176c11c929178ae1ed1f1d5d8fcf80b55892961d9e10373ca3679e5",
+        "verifiedOwnFiles": 12
+      },
+      {
+        "folder": "docs/research/timer-audience-operation-20261008",
+        "manifestSha256": "c71ccac76bf9323b38f45b073e1497fa4233aadadcba10d09adf7cd1653597b1",
+        "verifiedOwnFiles": 14
+      },
+      {
+        "folder": "docs/research/actor-query-collision-20261008",
+        "manifestSha256": "cd280a0a9171b3427c4bd384a6bf2e1644aff4e1473ddea4c2ad6e643a319f7e",
+        "verifiedOwnFiles": 14
+      },
+      {
+        "folder": "docs/research/bdx-mission-gummi-implementation-20261008",
+        "manifestSha256": "21ac30a7db0f7270aefb3a5849e04cff6491398320833c392b7002ea802a7dc7",
+        "verifiedOwnFiles": 27
+      }
+    ],
+    "summary": "docs/research/continuation-20261008-v01214/summary.json",
+    "semanticCompleteness": false
+  },
+  "previousResearchCheckpoint": "artifacts/goal-checkpoint-20261008-native-lifetimes.json",
+  "sourceSnapshotStage": "Prepared for v0.12.14 packaging. Final results are recorded in package Validation and the final checkpoint.",
+  "preparedRelease": {
+    "version": "0.12.14",
+    "path": "C:\\Users\\shinz\\source\\repos\\KH2Trainer\\artifacts\\packages\\KH2_Trainer_v0.12.14\\KH2_Trainer.exe",
+    "runtimeBridgeChange": false,
+    "newOfflineNativeCatalog": true,
+    "fullAnalysisGoalComplete": false,
+    "liveGameTested": false
   }
 }

@@ -1,0 +1,171 @@
+ACTOR COLLISION QUERY: RADIUS, SHARED FILTERS AND GEOMETRY CONTRACTS
+2026-10-08
+
+Result
+
+BDX 1:367 expands a collision radius. Its float operand is not simply a requested
+movement distance. The preceding study showed that 3B8510 copies 136 bytes from
+Actor+1744, zeroes the movement XYZ and repeatedly writes the stepped scalar to
+local fields+32 and+40. This study follows field+32 into 1752E0, which uses it as
+a sphere radius. Field+40 is not assigned an independent meaning here. The
+query can adjust its point after each retained result, so this is not a promise
+that the Actor travels by the requested amount or that the result is usable.
+
+The query also changes shared collision-context filters. The local copy protects
+neither that shared state nor the shared result buffer identified previously.
+No new live collision command is enabled from these findings.
+
+Addresses below are RVAs relative to 0x140000000. Structure offsets are decimal
+unless prefixed with 0x. Original executable SHA256:
+9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed
+
+Immediate call path and shared state
+
+16FEC0 clears state+116 mask4 and sets contact WORDs+98/+100 to FFFF sentinels.
+It queries moving
+contexts through 1638F0, then the static context at ABD448 through 1752E0.
+It clears the borrowed moving-object pointer at state+120 and checks moving
+floor candidates through 163750. A selected moving candidate can produce a
+second static correction; otherwise 172840 tests the static floor segment.
+The native return combines correction results. The BDX helper ignores it.
+
+Moving nodes are reached through the global ABCCC0 list and encoded DWORD+20
+links. Both traversals skip flag mask2, the matching state+128 identity, and
+contexts with a tested matrix-basis squared length below binary32 0.01. The
+correction traversal also skips mask1; the floor traversal does not. No visited
+set, generation check or resource ownership validation is established here.
+The basis test is not a complete matrix-invertibility or finite-value check.
+
+163750 retains the strictly lowest accepted result Y below its initial
+10000000 threshold and copies the entire 136-byte state, including the borrowed
+node pointer. Other hits can reduce the separately returned contact height.
+This selection rule does not prove that a live node remains valid afterward.
+
+1752E0 and 172840 set these fields on the shared collision context:
+  DWORD+92 = 15       attribute mask
+  DWORD+96 = 4        comparison value
+  BYTE+228 = 1        select inequality
+  BYTE+231 = 0        disable the special low-5 bypass
+The captured paths do not restore previous values. 1745C0 is the direct setter;
+172840 performs the same writes inline. A future diagnostic must account for
+these effects even when its Actor-side state is a temporary copy.
+
+Geometry path
+
+1752E0 adjusts start Y by field+108 and derives the end from movement+16. When
+context+229 is zero, it transforms endpoints with the matrix at+164 and later
+transforms results with+100. It computes a substep count with
+CVTTSS2SI(length / radius) followed by an integer increment. There is no local
+positive-radius, finite-input or upper-count guard. The broadphase uses the
+union of the start point and an endpoint box expanded by radius * 1.5.
+
+The collision solver 174640 has face and edge/vertex passes. Its branches use
+the mode bits in state+112, polygon attributes, radius+32, dimension+36 and
+offset+108. Attribute mask0x100000 skips a polygon. With mode bit0 clear, reaching
+ten corrections takes the -1 fallback. 175190 increments a retry counter and
+only recurses again while that counter is at most five. These are correction
+bounds; they do not bound arbitrary resource hierarchy traversal.
+
+For the final secondary segment check, a hit can restore the original point
+and return zero before the common Y-offset addition. Calling this return byte
+an unconditional success indication would conceal that distinction.
+
+172840 builds a Y-directed segment using result+48, abs(movementY+20) and
+offset+108; category zero adds a 0..100 clamp. A hit stores height+104, clears
+state+116 mask2 and calls 172640 to decide acceptance. On a miss it stores
+10000000 and sets mask2. PolygonFFFF makes 172640 set mask1. In the other
+branches, acceptance depends on a height threshold, a plane-side classifier,
+polygon attributes and a special case for offset108 == 620 and ABB920 == 3.
+Consequently mask1 is not a universal grounded/success flag. This study does
+not attach an unverified world or character name to the special case.
+
+Hierarchy and candidate bounds
+
+1741C0 walks 32-byte nodes, 20-byte active leaf records and 16-byte polygons.
+Node/leaf/polygon AABBs use signed 16-bit coordinates with inclusive overlap;
+touching faces count as overlapping. After the shared attribute filter, the
+category checks are:
+  0 or 6: mask0x10        1: mask0x20       2: mask0x40
+  3: mask0x10/0x80000     4: mask0x80       5: mask0x100
+Other categories pass this category stage, but still need the earlier filter.
+The optional low-nibble-5 bypass requires both context bytes+230/+231; the
+current query clears+231. Polygon bounds indexFFFF bypasses that box test.
+
+With a zero initial count, at most 1023 indices are written into the caller's
+1024-WORD array; the last written slot is 1022. This is not an end-to-end buffer
+or termination proof. A child WORDFFFF terminates the child list. Other child
+WORDs are sign-extended before recursion, and no cycle or index-extent check
+appears. The eight-child loop and output cap do not rule out a malformed cycle.
+
+The 1741C0 IDA function extent includes 3 padding bytes and a 64-byte switch
+table after its RET. The verifier checks that tail as data, including all 16
+RVA targets and the actual indexed-jump consumer. It does not count it as code.
+
+173B30 resolves triangle or quad vertices and performs directed segment tests.
+It keeps the first equal-distance hit because replacement requires a strictly
+smaller squared XYZ distance. The initial threshold is binary32 1e14, exclusive.
+A failed query returns polygonFFFF without guaranteeing a freshly written
+output vector. Shared filters and borrowed geometry resources still apply.
+
+Numerical details that matter for a mod or inspector
+
+For ordered finite values, 18B4D0 rejects nonnegative direction/normal dot
+products and accepts segment fractions in [0,1]. Its actual COMISS/JAE and
+COMISS/JA branches allow unordered NaNs through those scalar gates when SSE
+invalid exceptions are masked. That does not prove a NaN hit: downstream
+checks remain data-dependent. It does prove this is not input validation.
+
+18B760 checks triangle edges in order1,2,0, or quad edges1,2,3,0. It rejects
+dot(cross(point-vertex,next-vertex),normal) > binary32 0.01. It neither normalizes
+the normal nor bounds arbitrary vertex counts. Its current caller supplies
+three or four vertices. The helper returns true immediately for a nonpositive
+count; larger malformed counts are outside the caller contract.
+
+179150 loads the projection distance through R9 into XMM2 before calling
+1A8F90. The decompiler omits that implicit scalar argument. The machine code
+establishes center-minus-scaled-normal projection and the following edge test.
+Similarly, signed JL/JG establish AABB comparison semantics even where the
+decompiler renders generic WORD types.
+
+184970 uses margin values [1,10,20,100] and scale values [1,0.1,0.05,0.01].
+It only applies a lower clamp branch to lower endpoints and an upper clamp
+branch to upper endpoints, then converts with CVTTSS2SI and stores low16 bits.
+This is not symmetric saturation or validation of extreme/nonfinite values.
+The signed array index comes from context-header DWORD+12 without a local
+index bound. Normal retail reachability of malformed inputs is not shown.
+
+178CB0 additionally contains a one-time initialization path through ABE780,
+439F50, 4399B0 and 439EF0. Full initialization/teardown and concurrent behavior
+are outside this study. The call inventory retains these external boundaries,
+the pointer decoder, stack-cookie checks, and the sqrt helper, including a
+tail jump. No complete transitive runtime closure is claimed.
+
+Practical use and remaining work
+
+The offline BDX catalog can describe 1:367 as an expanding collision query,
+explain shared filter mutation, and avoid presenting the returned address as a
+fresh success result. A later geometry viewer or placement tool could display
+category filters, candidate truncation and hit ordering. Before a live tool,
+the resource loader, allocation lifetimes, matrix assumptions and state
+restoration need additional evidence. No collision resource file format or
+unit-to-meter conversion is inferred solely from these runtime structures.
+
+The earlier scalar-loop result still applies: under its stated nearest-even,
+masked-exception assumptions, a limit above2^31 can leave the outer step stuck
+if the helpers keep returning and the optional flag break does not apply.
+
+Verification and limits
+
+  py -3 -B docs/research/actor-query-collision-20261008/verify.py --check
+
+The study records 43 complete IDA bodies, 3154 instructions and 13153 original
+body bytes: 13086 instruction bytes plus 67 embedded padding/table bytes. It
+compares original-file bytes, pagination, 44 selected positive code xrefs,
+76 semantic instruction anchors, three data spans, eight scalar constants and
+46 bounded decision-model cases. Twenty-four functions receive specific
+claims; a complete export is not a claim of complete function semantics.
+
+The existing IDA snapshot was idle; full auto-analysis readiness is not
+established. Original-byte comparison confirms the recorded instructions for
+this build but not universal IDA function completeness. This work neither
+executes the original code nor starts, attaches to or modifies the game.

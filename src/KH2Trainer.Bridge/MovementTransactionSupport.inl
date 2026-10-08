@@ -72,18 +72,23 @@ bool Valid(unsigned i,uint32_t bits) {
     const double value=Float(bits);
     return isfinite(value) && value>=actor_movement::Minima[i] && value<=actor_movement::Maxima[i];
 }
-bool Current(const TrainerContext& c,uint64_t generation,bool forWrite) {
-    return actor_lifetime::Ready() && generation && actor_lifetime::Resolve(generation)==c.player &&
-        actor_movement::MovementReady(c,!forWrite) && (!forWrite || gameplay_state::Inspect(c).controllable);
+enum class Access { Snapshot, Mutation, Cleanup };
+bool Current(const TrainerContext& c,uint64_t generation,Access access) {
+    if(!actor_lifetime::Ready() || !generation || actor_lifetime::Resolve(generation)!=c.player ||
+       !actor_movement::MovementReady(c,access==Access::Snapshot))return false;
+    if(access==Access::Snapshot)return true;
+    // Cleanup restores only still-owned fields on the exact live Actor. A lost
+    // host cannot grant new effects, but must not strand an existing lease.
+    return (access==Access::Cleanup?gameplay_state::InspectNative(c):gameplay_state::Inspect(c)).controllable;
 }
 void Observe(const TrainerContext& c,const Lease& l,Response& r) {
-    if(!Current(c,l.generation,false))return;
+    if(!Current(c,l.generation,Access::Snapshot))return;
     for(unsigned i=0;i<4;++i)if(l.mask&(1u<<i))r.observedBits[i]=Bits(combat::Field<float>(c.player,actor_movement::Offsets[i]));
     r.flags|=ObservedKnown;
 }
 Reason Preflight(const TrainerContext& c,const Request& q,uint32_t observed[4]) {
     if(!actor_lifetime::Ready())return actor_lifetime::Status()==2?Reason::ObserverFault:Reason::ObserverUnavailable;
-    if(!Current(c,q.actorGeneration,true))return actor_lifetime::Resolve(q.actorGeneration)!=c.player?Reason::ActorMismatch:Reason::NotReady;
+    if(!Current(c,q.actorGeneration,Access::Mutation))return actor_lifetime::Resolve(q.actorGeneration)!=c.player?Reason::ActorMismatch:Reason::NotReady;
     for(unsigned i=0;i<4;++i)if(q.mask&(1u<<i)) {
         observed[i]=Bits(combat::Field<float>(c.player,actor_movement::Offsets[i]));
         if(!Valid(i,observed[i]) || !Valid(i,q.desiredBits[i]))return Reason::InvalidValues;
@@ -111,7 +116,7 @@ bool Commit(const TrainerContext& c,uint32_t mask,const uint32_t values[4],Lease
 }
 void CompleteRelease(const TrainerContext& c,Lease& l) {
     Refresh(l);
-    if(l.state!=State::ReleasePending || !Current(c,l.generation,true))return;
+    if(l.state!=State::ReleasePending || !Current(c,l.generation,Access::Cleanup))return;
     uint32_t restore=0,superseded=0;
     for(unsigned i=0;i<4;++i)if(l.remaining&(1u<<i)) {
         const auto address=c.player+actor_movement::Offsets[i];

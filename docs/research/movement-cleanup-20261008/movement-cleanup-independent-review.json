@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-08",
+  "reviewer": "/root/drain_audit_v2",
+  "status": "Accepted for the bounded host-expiry cleanup fix; no blocking finding in the changed production paths.",
+  "scope": "Independent read-only source/test review and isolated native builds under artifacts. Production and checked-in test files were not edited. No game process, injection or UI operation.",
+  "reviewedInputs": [
+    {
+      "path": "src/KH2Trainer.Bridge/GameplayStateSupport.inl",
+      "sha256": "c99b3265de75cc806638e8b734a08ba2c187e603c408e651dc95d8121e710f1b"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/MovementTransactionSupport.inl",
+      "sha256": "14b4d8746e07811b865e0e7447082124e9a9e11a6cc16be83127d5d1328124f5"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/TrainerBridge.cpp",
+      "sha256": "f052b69a69254b82f2442ffd0f6e4c36767c02ca4ddcd46daa62789d7d1fff35"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/ActorMovementFeatures.inl",
+      "sha256": "566dca39577184740c9a7a96c7929b4e4b96d05d0afe7bdb71edaae3b2957735"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/DamageTuningFeatures.inl",
+      "sha256": "6de4c05f2377875566cbfe7261f81b407fc2448b9589023bb7c26dcda5c8821c"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/ActorLifetimeSupport.inl",
+      "sha256": "af75f86b8179cc12047dab5b8aff1e9a6c3f4fb57a3b7bfa74b8e6a263132671"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/PlayerRoleSupport.inl",
+      "sha256": "bb9fc7439879e0a6bc9cb86192043179d032995a9fe62aeb2721bbb178beb5f5"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/CombatGuardTests.cpp",
+      "sha256": "b82593533cea90866c5064b4f068f02cd6014079e98dd856824cd1516d055482"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/GameplayStateGuardTests.cpp",
+      "sha256": "ec82370655946719f2be7d2111b3f0e5f25e86deb967625ee61c2f79a3e8908d"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/MovementTransactionTests.cpp",
+      "sha256": "72dc74793c419a4511bbc44600d06d4197175befc1e6dba2e680bee49139348d"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/PlayerBridgeTests.cpp",
+      "sha256": "b3bcff83adf3782d9d599709a57eaa7f8550761c21e9f4bf4984eef628255a2d"
+    },
+    {
+      "path": "artifacts/movement-cleanup-regression/run.ps1",
+      "sha256": "a38e5cdff62f103f57d875cfa7400a00ead30db06d29fc9e0388d49357eb73eb"
+    },
+    {
+      "path": "artifacts/movement-cleanup-regression/result.json",
+      "sha256": "936f83bb8275be59ca5c60b81db24dccb82d492ec43971331b8ee4cbc2899314"
+    }
+  ],
+  "blockingFindings": [],
+  "sourceConclusions": [
+    "NativeReady requires an enabled bridge, nonzero module base, established game-thread ID and the current thread. InspectNative runs the unchanged native-control inspection under its SEH boundary. HostReady adds mapped IPC state, nonzero heartbeat and the existing unsigned 5000ms freshness rule.",
+    "The only production use of InspectNative is Current(...,Access::Cleanup). CompleteRelease is the only caller supplying Access::Cleanup. Preflight uses Access::Mutation, therefore both Acquire and Reapply still require host-bound Inspect. Observe uses Access::Snapshot and cannot write.",
+    "TrainerFrame marks existing effects for release on host expiry and calls movement_tx::Tick outside its !g_hostExpired feature-update block, both before command dispatch and after a refreshed context. Fresh typed commands are also rejected with HostExpired before mutation. ResetTrainerEffects can mark a blocked lease pending; later native-control recovery permits cleanup without a recovered heartbeat.",
+    "GameplayStateSnapshot and PlayerHealthControlReady still use host-bound Inspect. Legacy ActorMovementHandle still explicitly checks combat::HostFresh. No new command or advertised readiness path was redirected to InspectNative.",
+    "The cleanup chain remains ActorLifetime.Ready/Resolve -> MovementReady -> damage_tuning::Ready -> native field/player/live-list/STATUS allocation checks, followed by InspectNative's exact role, code pins, controller/pad identity and loading/menu/event/transition/input/death gates. No hidden heartbeat check remains in that chain.",
+    "damage_tuning::Ready still requires g_shared to exist. Ordinary host disconnection leaves the bridge's IPC view resident, so this is not the removed freshness dependency. The change does not promise cleanup after the mapping itself is destroyed or when the bridge is disabled.",
+    "CompleteRelease still requires ReleasePending on the exact observed generation, restores only fields whose current bits equal the lease's applied bits, checks original-value validity and write access, preserves externally replaced fields as Superseded, and unpins only terminal leases. Observed Actor retirement discards pending writes as Destroyed.",
+    "Expired exact receipt replay can return a previous Applied/Reapplied acknowledgement without invoking a new mutation. This preexisting idempotency rule does not reopen offline acquisition or reapply."
+  ],
+  "independentBuilds": {
+    "command": "artifacts/movement-cleanup-regression/run.ps1",
+    "toolchain": "MSVC x64 /std:c++17 /O2 /W4 /MT /EHsc, same suite linker flags",
+    "checkedInSourcesUnchanged": true,
+    "copiedSourceFiles": 55,
+    "allCopiedSourceHashesStillMatchWorkspace": true,
+    "results": [
+      {
+        "variant": "fixed",
+        "suite": "CombatGuardTests",
+        "compileExitCode": 0,
+        "exitCode": 0,
+        "binarySha256": "1095b13e7e15be230e957f5283a5ed8ca2c843697e0b71f568d3bfa5c57ee37f",
+        "compileLog": "fixed-CombatGuardTests-compile.txt",
+        "runLog": "fixed-CombatGuardTests-run.txt"
+      },
+      {
+        "variant": "fixed",
+        "suite": "GameplayStateGuardTests",
+        "compileExitCode": 0,
+        "exitCode": 0,
+        "binarySha256": "7cd2b0904a42b48462a20e7167fd2b63b5213f8ceab379274ca92d5037f74774",
+        "compileLog": "fixed-GameplayStateGuardTests-compile.txt",
+        "runLog": "fixed-GameplayStateGuardTests-run.txt"
+      },
+      {
+        "variant": "fixed",
+        "suite": "MovementTransactionTests",
+        "compileExitCode": 0,
+        "exitCode": 0,
+        "binarySha256": "b752ab770ad8f55976ab4c363c3d09cc725f8afdc11a0c4057205bc7dacacbc3",
+        "compileLog": "fixed-MovementTransactionTests-compile.txt",
+        "runLog": "fixed-MovementTransactionTests-run.txt"
+      },
+      {
+        "variant": "fixed",
+        "suite": "PlayerBridgeTests",
+        "compileExitCode": 0,
+        "exitCode": 0,
+        "binarySha256": "d3a4a9a6fe970e56a3d15afb63f1473d539f2d8139d86558ddab737fee1d06e7",
+        "compileLog": "fixed-PlayerBridgeTests-compile.txt",
+        "runLog": "fixed-PlayerBridgeTests-run.txt"
+      },
+      {
+        "variant": "regressed",
+        "suite": "CombatGuardTests",
+        "compileExitCode": 0,
+        "exitCode": 1,
+        "binarySha256": "4efb5b841ec1afb333dca9d2e74cbf5e2dc4133218a068797fdf23af8542d9c2",
+        "compileLog": "regressed-CombatGuardTests-compile.txt",
+        "runLog": "regressed-CombatGuardTests-run.txt"
+      }
+    ],
+    "fixedChecks": {
+      "CombatGuardTests": 2024,
+      "GameplayStateGuardTests": 1066,
+      "MovementTransactionTests": 440,
+      "PlayerBridgeTests": 641,
+      "total": 4171,
+      "failures": 0
+    },
+    "warningsObserved": 0,
+    "countingLimit": "These independently rebuilt runs repeat the same suite checks reported by root; they are not 4171 additional distinct test cases."
+  },
+  "regressionDemonstration": {
+    "kind": "One-site current-source behavioral mutation, not a historical v0.12.8 Source.zip build.",
+    "reason": "The complete older source lacks InspectNative and cannot compile the unchanged new regression test. A compile failure would not demonstrate the cleanup regression.",
+    "mutation": {
+      "path": "src/KH2Trainer.Bridge/MovementTransactionSupport.inl",
+      "from": "access==Access::Cleanup?gameplay_state::InspectNative(c):gameplay_state::Inspect(c)",
+      "to": "access==Access::Cleanup?gameplay_state::Inspect(c):gameplay_state::Inspect(c)",
+      "variantDifferences": [
+        "src/KH2Trainer.Bridge/MovementTransactionSupport.inl"
+      ],
+      "regressedSha256": "70d65636a81115cc3197ed87bfbf07711108cdded8aa2eb12303036bafb82b81"
+    },
+    "sameTestSourceInBothVariants": true,
+    "allOtherCopiedSourceFilesByteIdentical": true,
+    "compileExitCode": 0,
+    "runExitCode": 1,
+    "checks": 2024,
+    "failures": 22,
+    "failureBreakdown": [
+      "9 failures: missing, stale and future heartbeat cases across Sora, Roxas and rescue Mickey no longer restore the existing movement lease.",
+      "12 failures: clearing each native blocker still cannot restore while the heartbeat remains absent.",
+      "1 failure: mixed external replacement plus still-owned field cannot complete the expected conditional cleanup."
+    ],
+    "negativeChecks": "Offline Acquire and Reapply remain rejected in both variants; observed death still avoids writing the old allocation.",
+    "artifacts": "artifacts/movement-cleanup-regression/result.json"
+  },
+  "testStrengths": [
+    "The combined Combat fixture executes the actual TrainerBridge inclusion, ActorLifetime metadata, PlayerRole, movement journal, MovementReady and gameplay-control logic against private synthetic memory.",
+    "The new regression distinguishes host admission from native control, exercises three supported roles and twelve real native/bridge blockers, and checks exact original restoration, pin release, superseded fields and observed death.",
+    "The gameplay suite compares native and host-bound inspection while the host is fresh; missing/stale/missing-mapping cases explicitly differ only in host admission. It retains byte-pin, unreadable-memory, thread, controller, role, timer ownership and field-state guard tests.",
+    "The movement suite covers cohort ownership, all field masks, exact-bit comparison, replay, wrong owner/revision, deferred restoration, partial write uncertainty and actor retirement with unit doubles. PlayerBridge separately exercises real TrainerFrame packet admission and replay."
+  ],
+  "knownTestAndProofLimits": [
+    "DisconnectedMovementCleanup directly calls movement_tx::Tick(...,true); it does not demonstrate an acquired lease completing through a full TrainerFrame disconnect in one integrated scenario. The unchanged TrainerFrame expiry/tick wiring was inspected, and PlayerBridge separately covers its stale-host packet boundary. This is a coverage limit, not an observed failure.",
+    "The combined fixture uses test hooks for native forwarding, lifetime installation provenance/module pinning/random identity and memory-origin validation. It does not install or validate these hooks in a retail game process.",
+    "GameplayStateGuardTests executes selected verified leaf clock instructions in a private synthetic image. No running KH2 process or game state was accessed.",
+    "Missing mapping, disabled bridge, uncertain lifetime observation, permanently blocked native controls or lost actor identity may leave a pending/uncertain lease rather than guessing a restoration target.",
+    "This change preserves the existing supported Actor lifetime contract. It does not resolve the separately documented native bulk-free/fiber/binding-serialization proof gaps or establish a universal native Actor pin."
+  ],
+  "logHashes": [
+    {
+      "path": "artifacts/movement-cleanup-regression/fixed-CombatGuardTests-compile.txt",
+      "sha256": "ccaf5605b6db491c324a672a4b16383a82dd6c4301964129af6ff54f306eeb86"
+    },
+    {
+      "path": "artifacts/movement-cleanup-regression/fixed-CombatGuardTests-run.txt",
+      "sha256": "0276e4dd1bbd3ce8b87374cdb309cf45c420eab62c98161e63b059a361992130"
+    },
+    {
+      "path": "artifacts/movement-cleanup-regression/fixed-GameplayStateGuardTests-compile.txt",
+      "sha256": "92fa663a7daca2d79b1b9989255964976cab1d66c2e95c45026c9e4658fb5f78"
+    },
+    {
+      "path": "artifacts/movement-cleanup-regression/fixed-GameplayStateGuardTests-run.txt",
+      "sha256": "cde59e9e564919ed23a9195fd66bbfc28c32800f619643703a1193ea0bef46be"
+    },
+    {
+      "path": "artifacts/movement-cleanup-regression/fixed-MovementTransactionTests-compile.txt",
+      "sha256": "432eddb2aec4350df80b621f9390924a51d64f9130886c342c46024d7881580b"
+    },
+    {
+      "path": "artifacts/movement-cleanup-regression/fixed-MovementTransactionTests-run.txt",
+      "sha256": "d115912c2bae29809990a9f42b6c46a23fc0bd954fb9587d1c27a1b4a3fb74f0"
+    },
+    {
+      "path": "artifacts/movement-cleanup-regression/fixed-PlayerBridgeTests-compile.txt",
+      "sha256": "2763725297a78192e0bc25072940c6940ff98af02129c4c4bab50ab8e5612cb1"
+    },
+    {
+      "path": "artifacts/movement-cleanup-regression/fixed-PlayerBridgeTests-run.txt",
+      "sha256": "e36d0a0f63d94f62e79cfa10f00a7efd06d9bd31e9f246332d03a8ecafa82dd9"
+    },
+    {
+      "path": "artifacts/movement-cleanup-regression/regressed-CombatGuardTests-compile.txt",
+      "sha256": "b679be66ad271a1859533ff3937d50327c8526ee9cdb4f680ed4f0ddb476a492"
+    },
+    {
+      "path": "artifacts/movement-cleanup-regression/regressed-CombatGuardTests-run.txt",
+      "sha256": "1e5de21502ce6b352dfdb221e09d4f18cad5252a59fd1bd66a9db121f5239a79"
+    }
+  ]
+}

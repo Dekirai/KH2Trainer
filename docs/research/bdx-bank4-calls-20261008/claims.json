@@ -1,0 +1,657 @@
+{
+  "schema": 1,
+  "Domain": "native",
+  "claims": [
+    {
+      "addr": "0x1403a2c30",
+      "Finding": "Mission construction initializes one56-byte timer at+296, three80-byte counters at+352, three72-byte gauges at+592, one72-byte watch at+808, one88-byte combo at+880 and score at+1088. It builds msn/<language>/<name>.bar; original RTTI names corroborate these classes. The constructor sets base flag1 before descriptor registration.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a2c30]",
+        "evidence.json#functions[addr=0x1403a3fa0]",
+        "evidence.json#functions[addr=0x1403fa0b0]",
+        "evidence.json#functions[addr=0x1403fa610]",
+        "evidence.json#functions[addr=0x1403fac10]",
+        "verification.json"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    },
+    {
+      "addr": "0x1403fc150",
+      "Finding": "Descriptor-driven widget registration calls reset+8 and configure+48, optionally resolves HUD data, appends at mission+976 and increments count+1048 without a capacity guard. Native index helpers likewise do not enforce the constructor counts.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403fc150]",
+        "evidence.json#functions[addr=0x1403fc210]",
+        "evidence.json#functions[addr=0x1403fc230]",
+        "evidence.json#functions[addr=0x1403fc290]",
+        "evidence.json#functions[addr=0x1403a31a0]",
+        "evidence.json#functions[addr=0x1403a3fd0]"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    },
+    {
+      "addr": "0x1403fa410",
+      "Finding": "Base configuration always changes start+32 and threshold+40. A nonzero maximum clears input bit30 before storing maximum+36 and copies bit30 to widget flag2; zero preserves maximum and flag2. Counter/combo3FA440 additionally write current+56=start.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403fa410]",
+        "evidence.json#functions[addr=0x1403fa440]",
+        "evidence.json#functions[addr=0x1403fbe40]",
+        "evidence.json#functions[addr=0x1403fbbf0]",
+        "evidence.json#functions[addr=0x1403fbd10]",
+        "evidence.json#functions[addr=0x1403fba20]"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    },
+    {
+      "addr": "0x1403fa230",
+      "Finding": "Counter zero/max crossings synchronously call3AABE0(14,id)/(123,id) only when old current crosses, id!=-1 and active flag4. Threshold virtual calls occur before the final current store. State can be affected by downstream callbacks before the saved widget is used again.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403fa230]",
+        "evidence.json#functions[addr=0x1403aabe0]",
+        "evidence.json#functions[addr=0x1403fa4c0]",
+        "evidence.json#functions[addr=0x1403fa1d0]"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    },
+    {
+      "addr": "0x1403fa310",
+      "Finding": "Gauge zero/max crossings call3AABE0(136,id)/(137,id) before final float store under id/active checks. Integer-converted current drives threshold virtual calls. Absolute gauge setter rejects nonzero mission+1696, while raw configuration changes different fields.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403fa310]",
+        "evidence.json#functions[addr=0x1403fbcb0]",
+        "evidence.json#functions[addr=0x1403fbd10]",
+        "evidence.json#functions[addr=0x1403fa510]",
+        "evidence.json#functions[addr=0x1403fa200]"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    },
+    {
+      "addr": "0x1403aabe0",
+      "Finding": "Messages14,74,123,136,137 take the default arm and synchronously call3F4980,3B4270,then3F60D0. The latter selects among16 96-byte records, prefers an exact parameter match over retained negative wildcard matches, applies3F61A0 and can enter transition/event helpers.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403aabe0]",
+        "evidence.json#functions[addr=0x1403f60d0]",
+        "evidence.json#functions[addr=0x1403f6070]",
+        "evidence.json#functions[addr=0x1403f61a0]",
+        "verification.json"
+      ],
+      "Limitations": "Dispatch/record boundaries established. Arbitrary script effects, Actor virtual handlers, heap/STATUS mutation and global drain safety are not closed by this study."
+    },
+    {
+      "addr": "0x1403fbb30",
+      "Finding": "4:48 computes10^position in DWORD arithmetic then uses signed IDIV without guarding zero. Every position>=32 has zero divisor if the loop completes. Negative positions skip the loop. Counter delta helpers and combo addition likewise wrap before clamping.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403fbb30]",
+        "evidence.json#functions[addr=0x1403fb2b0]",
+        "evidence.json#functions[addr=0x1403fa790]",
+        "arithmetic-model.json"
+      ],
+      "Limitations": "Conditional arithmetic result; no original-code execution, game crash observation, or retail script invoking an extreme position is established."
+    },
+    {
+      "addr": "0x1403fb3a0",
+      "Finding": "Gauge delta is selectively multiplied by0.5 for captured filename substrings when globalstep<2, before addition and absolute setter. Normalized setter multiplies signed maximum by input; normalized getters divide without maximum-zero guard.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403fb3a0]",
+        "evidence.json#functions[addr=0x1403fbd90]",
+        "evidence.json#functions[addr=0x1403fb690]",
+        "evidence.json#functions[addr=0x1403fb6f0]",
+        "verification.json"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    },
+    {
+      "addr": "0x1403fa5d0",
+      "Finding": "Restart chooses countdown for positive seconds, count-up otherwise, starts phase1 and clears pause bit2. Activation uses the same global timer. Deactivation sets bit2 and clears widget active flag4. Timer vtable+32 sets warning8; +40 clears8.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403fa5d0]",
+        "evidence.json#functions[addr=0x1403f9ec0]",
+        "evidence.json#functions[addr=0x1403f9fe0]",
+        "evidence.json#functions[addr=0x140157140]",
+        "evidence.json#functions[addr=0x140157170]",
+        "evidence.json#functions[addr=0x140157190]",
+        "evidence.json#functions[addr=0x140157130]",
+        "evidence.json#functions[addr=0x140157110]",
+        "evidence.json#functions[addr=0x1403fa560]",
+        "evidence.json#functions[addr=0x1403a4620]"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    },
+    {
+      "addr": "0x1401571b0",
+      "Finding": "The global App timer is blocked by any pause bit. Phase1 advances to2 without calculating a new value that invocation. Positive countdown expiry and configured count-up limit can set phase0 and dispatch74/0. Count-up values>215999 saturate and bypass the configured-limit test on that branch.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401571b0]",
+        "evidence.json#functions[addr=0x1403fb790]",
+        "evidence.json#functions[addr=0x1403fb7e0]",
+        "evidence.json#functions[addr=0x1403aabe0]"
+      ],
+      "Limitations": "Clock increments/OS-thread ownership and timer callback audience are separate research boundaries; message74 is not intrinsically mission failure."
+    },
+    {
+      "addr": "0x1403fa790",
+      "Finding": "Combo current+56 uses wrapped addition and signed clamp, peak+80 rises on a new high, threshold handling can raise nonzero threshold+40, and float allowance from XMM2 is stored at+84. Mission task calls3FA820, which subtracts globalstep and resets current/flag8 when a positive allowance expires; peak stays.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403fa790]",
+        "evidence.json#functions[addr=0x1403fb250]",
+        "evidence.json#functions[addr=0x1403fa820]",
+        "evidence.json#functions[addr=0x1403a35c0]",
+        "evidence.json#functions[addr=0x1403fa860]",
+        "evidence.json#functions[addr=0x1403fa8b0]",
+        "evidence.json#functions[addr=0x1403fa880]",
+        "evidence.json#code_ranges[addr=0x140433830]"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    },
+    {
+      "addr": "0x1403a41e0",
+      "Finding": "Mission result handling performs score and1DE0C0 helpers, ORs missionflags0x14, stops the timer, changes global/HUD state and either dispatches immediately or stores pending message/parameter with phase2/4. The mission task progresses2->3->4 and can call3A3540; cleanup releases scripts/resources through helpers and nulls global mission pointer.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a41e0]",
+        "evidence.json#functions[addr=0x1403a33c0]",
+        "evidence.json#functions[addr=0x1403a3440]",
+        "evidence.json#functions[addr=0x1403a35c0]",
+        "evidence.json#functions[addr=0x1403a3540]",
+        "evidence.json#functions[addr=0x1403a3460]",
+        "evidence.json#functions[addr=0x1403a3800]",
+        "evidence.json#functions[addr=0x1403a37a0]"
+      ],
+      "Limitations": "Static storage is reused by3A3FA0, so pointer equality is not a generation. No universal success/failure or immediate-free claim, and no safe trainer outcome command is established."
+    },
+    {
+      "addr": "0x140437c80",
+      "Finding": "4:35/36 read decoded record byte0/DWORD4 without pointer checks;4:37 performs signed rank and unsigned value comparisons with inverse equal-rank preference for ranks4/6.4:38 returns unchecked9AD664+8*index. Larger accepted ranks truncate to byte.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140437c80]",
+        "evidence.json#functions[addr=0x1404338f0]",
+        "evidence.json#functions[addr=0x140433920]",
+        "evidence.json#functions[addr=0x140433950]",
+        "evidence.json#functions[addr=0x1404339a0]",
+        "evidence.json#functions[addr=0x1403e6690]"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    },
+    {
+      "addr": "0x140406bf0",
+      "Finding": "4:42 increments a global byte at pointer[750740]+3*a0+a1 only below99; original pointer value is9AD874. It may enqueue achievement147 and latch bit8 when the rounded-timer helper result>0 and counter1==0. This is not a pure read.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140406bf0]",
+        "evidence.json#functions[addr=0x1404339d0]",
+        "evidence.json#functions[addr=0x1400fee50]",
+        "evidence.json#functions[addr=0x1403fb7e0]",
+        "evidence.json#functions[addr=0x1403fb640]",
+        "verification.json"
+      ],
+      "Limitations": "No index bounds, disk persistence, completed achievement delivery or retail triggering witness is established. The timer helper uses unsigned division after DWORD wrap, so a positive helper result alone does not prove valid positive elapsed/remaining time."
+    },
+    {
+      "addr": "0x1403a57f0",
+      "Finding": "Selector0 returns whether any supplied flag bit is nonzero.4:55 supplies selector0 and2A10500, whereas4:54 sets only bit0 using3A5810.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a57f0]",
+        "evidence.json#functions[addr=0x1403a5810]",
+        "evidence.json#functions[addr=0x140433560]",
+        "evidence.json#functions[addr=0x140433570]"
+      ],
+      "Limitations": "Bounded static normal path. Not a complete transitive closure or runtime lifetime guarantee."
+    },
+    {
+      "addr": "0x140433480",
+      "Finding": "4:2: Test result-context pointer. Returns whether global pointer RVA0x2A11478 is nonnull as @INT.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433480]",
+        "evidence.json#functions[addr=0x1403ac220]"
+      ],
+      "Limitations": "This tests pointer presence only; it does not validate the pointed object or its lifetime."
+    },
+    {
+      "addr": "0x1404334c0",
+      "Finding": "4:3: Begin mission result message7. Normally forwards operand0 to the mission result path as message7. For descriptor type30, a matching handler with a non-FFFF state condition can select message156 instead.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404334c0]",
+        "evidence.json#functions[addr=0x1403a33c0]"
+      ],
+      "Limitations": "The result path stops the timer, changes mission flags and may queue presentation phases or immediately dispatch and tear down the mission. Not a universal win primitive; downstream effects depend on current descriptors and handlers."
+    },
+    {
+      "addr": "0x140433670",
+      "Finding": "4:5: Set mission counter. Passes integer value operand0 and counter index operand1 to the clamping counter setter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433670]",
+        "evidence.json#functions[addr=0x1403fbae0]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract."
+    },
+    {
+      "addr": "0x140433680",
+      "Finding": "4:6: Increment mission counter. Adds1 to the counter selected by operand0, using DWORD addition before the clamping setter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433680]",
+        "evidence.json#functions[addr=0x1403fb2b0]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Signed overflow is not prevented: INT_MAX+1 becomes INT_MIN before clamping."
+    },
+    {
+      "addr": "0x1404335a0",
+      "Finding": "4:7: Restart mission timer. Uses seconds operand0 and timer index operand1. Positive seconds configure countdown; nonpositive seconds choose count-up using the widget maximum. Starts phase1 and clears pause bit2.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404335a0]",
+        "evidence.json#functions[addr=0x1403fb9a0]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Seconds are multiplied by60 with DWORD arithmetic. Other pause bits and widget warning bit8 are preserved."
+    },
+    {
+      "addr": "0x140433740",
+      "Finding": "4:8: Set mission gauge. Passes float operand0 and gauge index operand1 to the absolute gauge setter. Any nonzero mission+1696 owner mask blocks this setter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433740]",
+        "evidence.json#functions[addr=0x1403fbcb0]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract."
+    },
+    {
+      "addr": "0x140433750",
+      "Finding": "4:9: Add to mission gauge. Adds float operand0 to the selected gauge. When global step717480<2, mission filename substrings can halve the delta before addition and the absolute setter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433750]",
+        "evidence.json#functions[addr=0x1403fb3a0]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. PO01_MS501, TT12_WORK_BOX and HB32_FM_VEX halve it; TR04_MS104 does so for negative delta and TR07_MS203 otherwise; EH15_MS104 does so for delta>=-5. The tests are sequential; filenames and float comparisons matter. This is not a generic unscaled add."
+    },
+    {
+      "addr": "0x140433760",
+      "Finding": "4:10: Set normalized mission gauge. Multiplies float operand0 by the selected gauge signed-integer maximum, then calls the absolute setter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433760]",
+        "evidence.json#functions[addr=0x1403fbd90]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. No finite/range validation occurs before the multiply; mission owner-mask gating still applies through the absolute setter."
+    },
+    {
+      "addr": "0x140433770",
+      "Finding": "4:12: Read normalized mission gauge. Returns selected gauge float current / float(signed maximum) as @FLT; returns0 when the mission/widget predicate fails.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433770]",
+        "evidence.json#functions[addr=0x1403fb690]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. No maximum-zero guard; division can produce NaN or infinity under masked floating-point exceptions."
+    },
+    {
+      "addr": "0x1404335d0",
+      "Finding": "4:13: Set timer pause bit2. ORs pause mask RVA0xABB854 with2.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404335d0]",
+        "evidence.json#functions[addr=0x140157130]"
+      ],
+      "Limitations": "Global App timer pause ownership is a bitmask. This neither allocates a trainer lease nor preserves independent owners through later lifecycle operations."
+    },
+    {
+      "addr": "0x140433510",
+      "Finding": "4:14: Restart registered mission widgets. When a mission exists, deactivates the registry first if mission flag1 is set, invokes vtable+16 for each registered widget lacking flag0x10, then sets mission flag1.",
+      "Evidence": [
+        "evidence.json#code_ranges[addr=0x140433510]",
+        "evidence.json#functions[addr=0x1403fb1c0]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Timer activation restarts the global timer. Counter/gauge activation reaches HUD resources. The registry loop trusts the stored count."
+    },
+    {
+      "addr": "0x140433520",
+      "Finding": "4:15: Deactivate or suppress mission widgets. If mission flag1 is set, invokes registered widget vtable+24 and clears mission flag1. Otherwise sets mission flag2, which suppresses initial task activation.",
+      "Evidence": [
+        "evidence.json#code_ranges[addr=0x140433520]",
+        "evidence.json#functions[addr=0x1403fb4d0]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract."
+    },
+    {
+      "addr": "0x1404334d0",
+      "Finding": "4:16: Begin mission result message16. Forwards operand0 through the current mission result path with message16.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404334d0]",
+        "evidence.json#functions[addr=0x1403a3440]"
+      ],
+      "Limitations": "No mission-null check in this immediate adapter/helper chain. The path can consume score helpers, stop the timer, enter presentation phases and dispatch transitions; it is not a reversible field update."
+    },
+    {
+      "addr": "0x1404335b0",
+      "Finding": "4:17: Configure mission timer. Passes start operand0, maximum/flags operand1 and threshold operand2 to selected timer vtable+48; index is operand3.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404335b0]",
+        "evidence.json#functions[addr=0x1403fbe40]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. A nonzero maximum replaces maximum after stripping bit30 and copies that bit into widget flag2; zero preserves both. Start/threshold always change. Counter/combo configuration also stores current=start; timer/gauge base configuration does not immediately store current."
+    },
+    {
+      "addr": "0x1404336a0",
+      "Finding": "4:18: Configure mission counter. Passes start operand0, maximum/flags operand1 and threshold operand2 to selected counter vtable+48; index is operand3.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404336a0]",
+        "evidence.json#functions[addr=0x1403fbbf0]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. A nonzero maximum replaces maximum after stripping bit30 and copies that bit into widget flag2; zero preserves both. Start/threshold always change. Counter/combo configuration also stores current=start; timer/gauge base configuration does not immediately store current."
+    },
+    {
+      "addr": "0x1404337a0",
+      "Finding": "4:19: Configure mission gauge. Passes start operand0, maximum/flags operand1 and threshold operand2 to selected gauge vtable+48; index is operand3.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404337a0]",
+        "evidence.json#functions[addr=0x1403fbd10]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. A nonzero maximum replaces maximum after stripping bit30 and copies that bit into widget flag2; zero preserves both. Start/threshold always change. Counter/combo configuration also stores current=start; timer/gauge base configuration does not immediately store current."
+    },
+    {
+      "addr": "0x1404338b0",
+      "Finding": "4:51: Configure mission combo. Passes start operand0, maximum/flags operand1 and threshold operand2 to selected combo vtable+48; index is operand3.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404338b0]",
+        "evidence.json#functions[addr=0x1403fba20]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. A nonzero maximum replaces maximum after stripping bit30 and copies that bit into widget flag2; zero preserves both. Start/threshold always change. Counter/combo configuration also stores current=start; timer/gauge base configuration does not immediately store current."
+    },
+    {
+      "addr": "0x140433690",
+      "Finding": "4:20: Decrement mission counter. Adds-1 to the counter selected by operand0, using DWORD arithmetic before the clamping setter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433690]",
+        "evidence.json#functions[addr=0x1403fb2b0]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract."
+    },
+    {
+      "addr": "0x1404335e0",
+      "Finding": "4:24: Clear timer pause bit2. ANDs pause mask RVA0xABB854 with~2.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404335e0]",
+        "evidence.json#functions[addr=0x140157110]"
+      ],
+      "Limitations": "Other pause bits are retained. This is a raw bit clear, not an ownership-aware resume operation."
+    },
+    {
+      "addr": "0x140433830",
+      "Finding": "4:25: Add one mission combo. Adds1 to combo index0 and sets its float expiry allowance from operand0, forwarded in XMM1 then XMM2.",
+      "Evidence": [
+        "evidence.json#code_ranges[addr=0x140433830]",
+        "evidence.json#functions[addr=0x1403fb250]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Current uses DWORD addition and clamp; a new peak can invoke threshold HUD behavior and raise the stored threshold. The allowance is decremented by global step717480 in the mission task, not by a proven wall-clock seconds unit."
+    },
+    {
+      "addr": "0x1404335f0",
+      "Finding": "4:26: Read mission timer ticks. Returns global timer value RVA0xABB860 when the selected timer passes the mission/widget predicate, otherwise0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404335f0]",
+        "evidence.json#functions[addr=0x1403fb790]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. All indexed timer objects forward to the same global App timer value."
+    },
+    {
+      "addr": "0x140433840",
+      "Finding": "4:27: Reset current mission combo. For combo index0, clears expiry allowance, sets current=min(maximum,0), and clears flag8. Peak+80 is retained.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433840]",
+        "evidence.json#functions[addr=0x1403fb910]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract."
+    },
+    {
+      "addr": "0x1404337c0",
+      "Finding": "4:28: Read normalized gauge threshold. Returns float(signed threshold) / float(signed maximum) for the selected gauge as @FLT, or0 when predicates fail.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404337c0]",
+        "evidence.json#functions[addr=0x1403fb6f0]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Zero maximum is not rejected."
+    },
+    {
+      "addr": "0x1404336c0",
+      "Finding": "4:29: Read mission counter. Returns selected counter+56 as @INT, otherwise0 when predicates fail.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404336c0]",
+        "evidence.json#functions[addr=0x1403fb640]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract."
+    },
+    {
+      "addr": "0x140433850",
+      "Finding": "4:30: Read mission combo peak. Returns combo index0 peak at+80 as @INT, otherwise0 when predicates fail.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433850]",
+        "evidence.json#functions[addr=0x1403fb750]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract."
+    },
+    {
+      "addr": "0x140433870",
+      "Finding": "4:31: Read current mission combo. Returns combo index0 current at+56 as @INT, otherwise0 when predicates fail.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433870]",
+        "evidence.json#functions[addr=0x1403fb600]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract."
+    },
+    {
+      "addr": "0x140433890",
+      "Finding": "4:33: Add mission combo amount. Adds integer operand0 to combo index0 and replaces float expiry allowance from operand1, forwarded through XMM1/XMM2.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433890]",
+        "evidence.json#functions[addr=0x1403fb250]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Addition wraps DWORD before clamp. New peak updates can invoke threshold HUD behavior and raise threshold; no promise of seconds or safe infinite duration."
+    },
+    {
+      "addr": "0x1404337f0",
+      "Finding": "4:34: Test gauge threshold flag. Returns whether selected gauge flag8 is set, after mission/flag1 checks.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404337f0]",
+        "evidence.json#functions[addr=0x1403fb8c0]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract."
+    },
+    {
+      "addr": "0x1404338f0",
+      "Finding": "4:35: Read record rank byte. Decodes operand0 pointer and returns its byte0 as @INT.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404338f0]",
+        "evidence.json#functions[addr=0x140437c80]"
+      ],
+      "Limitations": "The adapter itself performs the byte read. The related comparison helper treats byte0 as a rank. No null, provenance, bounds or lifetime check follows decoding."
+    },
+    {
+      "addr": "0x140433920",
+      "Finding": "4:36: Read record value. Decodes operand0 pointer and returns its DWORD+4 as @INT.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433920]",
+        "evidence.json#functions[addr=0x140437c80]"
+      ],
+      "Limitations": "The adapter itself performs the DWORD read. No null, provenance, bounds or lifetime check follows decoding; the field is compared unsigned by4:37."
+    },
+    {
+      "addr": "0x140433950",
+      "Finding": "4:37: Update ranked record if better. Decodes record operand0; compares rank operand1 and unsigned value operand2. Lower rank is rejected. Equal ranks4/6 accept a smaller value; equal other ranks accept a larger value. Accepted updates store byte0 and DWORD4 and return1; rejected updates return0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433950]",
+        "evidence.json#functions[addr=0x140437c80]"
+      ],
+      "Limitations": "No pointer validation or input rank bound. A larger accepted rank is truncated to one byte on storage. No save-to-disk behavior is established by this helper."
+    },
+    {
+      "addr": "0x1404339a0",
+      "Finding": "4:38: Get global ranked record address. Returns encoded address RVA0x9AD664 + sign_extend(operand0)*8 as @ADR.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404339a0]",
+        "evidence.json#functions[addr=0x1403e6690]"
+      ],
+      "Limitations": "Index is unchecked. The helper establishes address arithmetic only; record count, valid runtime provenance and persistence are not proven here."
+    },
+    {
+      "addr": "0x140433650",
+      "Finding": "4:39: Set mission watch value. Writes integer operand0 to selected watch+64 using index operand1 after mission/flag1 checks.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433650]",
+        "evidence.json#functions[addr=0x1403fbeb0]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Watch activation passes this field to the HUD helper. This setter does not restart the App timer."
+    },
+    {
+      "addr": "0x140433610",
+      "Finding": "4:40: Read rounded mission timer seconds. Returns uint32(timerTicks+59)/60 using DWORD wrap and unsigned division, tagged @INT for selected timer, or0 when predicates fail.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433610]",
+        "evidence.json#functions[addr=0x1403fb7e0]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. The MUL/SHR quotient is unsigned despite the @INT tag. For ticks=-60 the wrapped numerator is0xFFFFFFFF and the result is71582788. It rounds upward only within an appropriate nonnegative timer range; invalid/overflowed ticks must not be interpreted as real positive time."
+    },
+    {
+      "addr": "0x1404336e0",
+      "Finding": "4:41: Add mission counter amount. Adds integer operand0 to counter current using index operand1, then calls the native clamping setter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404336e0]",
+        "evidence.json#functions[addr=0x1403fb2b0]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. DWORD overflow happens before clamp; no checked arithmetic."
+    },
+    {
+      "addr": "0x1404339d0",
+      "Finding": "4:42: Increment global record counter. Uses indices operand0/operand1 at pointer[0x750740]+3*operand0+operand1. Increments the byte only below99 and returns it. Also conditionally queues achievement147 when the rounded-timer helper result>0 and mission counter1 is zero.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404339d0]",
+        "evidence.json#functions[addr=0x140406bf0]"
+      ],
+      "Limitations": "Not a read-only query. The original pointer initializer is0x1409AD874. Indices are unchecked; preexisting bytes>=99 stay unchanged. Achievement latch79CAC5 bit8 is set even if achievement-context79CAC8 is null. No achievement delivery or save-file persistence is proven."
+    },
+    {
+      "addr": "0x1404338a0",
+      "Finding": "4:43: Raise mission combo peak. Raises selected combo peak+80 only when operand0 is greater, then performs threshold HUD handling and can raise a nonzero threshold to the new peak. Index is operand1.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404338a0]",
+        "evidence.json#functions[addr=0x1403fbdf0]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Current and expiry allowance are not updated by this helper."
+    },
+    {
+      "addr": "0x1404336f0",
+      "Finding": "4:44: Deactivate and inhibit mission counter. For selected counter, invokes vtable+24 if active flag4 is set, then sets flag0x10 so registry activation skips it.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404336f0]",
+        "evidence.json#functions[addr=0x1403fb510]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. The action is more than hiding text: timer deactivation sets global pause bit2, and other widgets release/update HUD handles."
+    },
+    {
+      "addr": "0x140433660",
+      "Finding": "4:45: Deactivate and inhibit mission watch. For selected watch, invokes vtable+24 if active flag4 is set, then sets flag0x10 so registry activation skips it.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433660]",
+        "evidence.json#functions[addr=0x1403fb5b0]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. The action is more than hiding text: timer deactivation sets global pause bit2, and other widgets release/update HUD handles."
+    },
+    {
+      "addr": "0x140433640",
+      "Finding": "4:49: Deactivate and inhibit mission timer. For selected timer, invokes vtable+24 if active flag4 is set, then sets flag0x10 so registry activation skips it.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433640]",
+        "evidence.json#functions[addr=0x1403fb560]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. The action is more than hiding text: timer deactivation sets global pause bit2, and other widgets release/update HUD handles."
+    },
+    {
+      "addr": "0x140433700",
+      "Finding": "4:46: Set counter threshold helper id. Writes operand0 to selected counter+52 using index operand1.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433700]",
+        "evidence.json#functions[addr=0x1403fbc60]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Threshold-on handlers call1DE0C0 with this nonzero field when active and flag8 was clear; the numeric ID domain is not validated here."
+    },
+    {
+      "addr": "0x140433630",
+      "Finding": "4:47: Set timer warning state. Calls selected timer vtable+32, reaching HUD warning behavior and setting flag8.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433630]",
+        "evidence.json#functions[addr=0x1403fc030]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. This does not itself expire the global timer or dispatch message74."
+    },
+    {
+      "addr": "0x140433710",
+      "Finding": "4:48: Replace mission counter decimal digit. For counter index operand2, computes DWORD10^operand0, replaces that signed-division decimal position using operand1, then calls the clamping counter setter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433710]",
+        "evidence.json#functions[addr=0x1403fbb30]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Position>=32 produces divisor0 after the counted loop and reaches IDIV with no guard. Negative position behaves as position0. Digits are not restricted to0..9; products/addition wrap. Conditional static fault path, not a demonstrated retail-script crash."
+    },
+    {
+      "addr": "0x140433720",
+      "Finding": "4:50: Set counter threshold state. If selected counter flag8 is clear, calls its vtable+32 threshold-on handler.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433720]",
+        "evidence.json#functions[addr=0x1403fbf50]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract."
+    },
+    {
+      "addr": "0x1404338d0",
+      "Finding": "4:52: Set combo threshold state. If selected combo flag8 is clear, calls its vtable+32 threshold-on handler.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404338d0]",
+        "evidence.json#functions[addr=0x1403fbf00]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract."
+    },
+    {
+      "addr": "0x1404338e0",
+      "Finding": "4:53: Set combo threshold helper id. Writes operand0 to selected combo+52 using index operand1.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404338e0]",
+        "evidence.json#functions[addr=0x1403fba90]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract."
+    },
+    {
+      "addr": "0x140433560",
+      "Finding": "4:54: Set mission flag bit0. Calls the shared bit helper with selector0, setting bit0 in global RVA0x2A10500.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433560]",
+        "evidence.json#functions[addr=0x1403a5810]"
+      ],
+      "Limitations": "No ownership tracking. Paired4:55 is not restricted to this bit."
+    },
+    {
+      "addr": "0x140433570",
+      "Finding": "4:55: Test any mission flag. Calls the shared flag test with selector0. Selector0 returns whether any bit in global RVA0x2A10500 is nonzero, as @INT.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433570]",
+        "evidence.json#functions[addr=0x1403a57f0]"
+      ],
+      "Limitations": "It does not test only bit0 despite4:54 setting that bit."
+    },
+    {
+      "addr": "0x1404334a0",
+      "Finding": "4:56: Mark result context bit0x20. If global pointer RVA0x2A11478 is nonnull, ORs its first DWORD with0x20.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404334a0]",
+        "evidence.json#functions[addr=0x1403abf10]"
+      ],
+      "Limitations": "Presence is checked; pointee validity and lifetime are not established by this helper."
+    },
+    {
+      "addr": "0x140433820",
+      "Finding": "4:57: Set or clear gauge threshold state. Uses boolean operand0 and gauge index operand1 to invoke vtable+32 or+40 respectively after mission/flag1 checks.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433820]",
+        "evidence.json#functions[addr=0x1403fbfd0]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract. Numeric gauge current is unchanged; HUD handlers and an optional1DE0C0 call are reachable."
+    },
+    {
+      "addr": "0x140433730",
+      "Finding": "4:58: Clear counter threshold state. If selected counter flag8 is set, calls its vtable+40 threshold-off handler.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433730]",
+        "evidence.json#functions[addr=0x1403fbf50]"
+      ],
+      "Limitations": "Native indexes are signed and unchecked; the constructor contains one timer, three counters, three gauges, one watch and one combo. Widget flag1 alone does not establish descriptor registration, HUD resource validity, active scene or lifetime. Threshold dispatch can synchronously reach scripts, Actors and transition handlers. This is an offline annotation, not a callable trainer contract."
+    }
+  ]
+}

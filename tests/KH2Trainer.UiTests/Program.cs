@@ -58,15 +58,17 @@ internal static class Program
         if(bright>(pixels.Length/4)*.02)throw new InvalidDataException("Unexpected light background in the asset page.");
         var diagnostics=CheckDiagnostics(output,app);
         var fingerprints=AssetFingerprintUiChecks.Run(Path.Combine(output,"Fingerprints"),app);
+        var bdx=BdxInspectionUiChecks.Run(Path.Combine(output,"Bdx"),app);
         var featurePages=FeatureLayoutUiChecks.Run(Path.Combine(output,"FeaturePages"),app);
         var twitch=TwitchUiChecks.Run(Path.Combine(output,"Twitch"),app);
         var gameplayAdapter=GameplayAdapterChecks.Run();
         var colorState=ColorStateUiChecks.Run();
+        var missionCounters=MissionCounterUiChecks.Run();
         if(app.Windows.Count!=0 || app.MainWindow!=null || app.StartupUri!=null)
             throw new InvalidDataException("Offscreen verification created an application window or startup target.");
         if(bindingLog.ToString().Length>0)throw new InvalidDataException(bindingLog.ToString());
         var report=new { success=true,source,sourceIsSynthetic=fixture,entries=rootEntries,height,width=780,bindingErrors=0,
-            diagnostics,fingerprints,featurePages,twitch,gameplayAdapter,colorState,applicationType=app.GetType().FullName,windowCount=app.Windows.Count,
+            diagnostics,fingerprints,bdx,featurePages,twitch,gameplayAdapter,colorState,missionCounters,applicationType=app.GetType().FullName,windowCount=app.Windows.Count,
             scope="Offscreen feature pages (sections, tabs, control rows and readouts), Twitch page (setup, rewards, live queue), Asset Explorer, content-fingerprint comparison and Game Messages views. Navigation completeness, switch behavior, diagnostic states, fingerprint identity/save/load, all 66 diagnostic texts/captions and bindings checked. No visible window, game process, input or gameplay test." };
         File.WriteAllText(Path.Combine(output,"report.json"),JsonSerializer.Serialize(report,new JsonSerializerOptions {WriteIndented=true}));
         Console.WriteLine(JsonSerializer.Serialize(report));return 0;

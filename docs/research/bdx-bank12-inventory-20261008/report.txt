@@ -1,0 +1,36 @@
+BDX Bank 1 and Bank 2 structural inventory - 2026-10-08
+
+Result
+Bank 1: [RVA 755370, RVA 756A70), 368 records, 363 nonnull handlers.
+Bank 2: [RVA 756B60, RVA 757180), 98 records, 98 nonnull handlers.
+Total: 466 records, 461 nonnull slots, 460 distinct handler addresses.
+Bank 1 NULL indices: 16, 116, 215, 216, 282. Bank 2 has no NULL entries in this region.
+Bank 1 declares 136 return slots and at most 12 operands; Bank 2 declares 56 return slots and at most 6 operands. These counts describe flags, not proven bounds on all accesses inside a handler.
+
+descriptors.json is compatible with the existing catalog schema: bank/index, descriptorRva, handlerRva, flags and empty annotation strings. It additionally exposes the exact U16 operand count, return flag and zero padding. Empty names intentionally distinguish structural knowledge from semantic annotation. No product catalog was changed.
+
+Why these boundaries
+Both original registry slots point directly to the captured table starts. Bank 1 ends before QWORD 756A70 containing 142B047D0. Initializer 02CD40 independently reads this pointer, adds 0x8000 bytes and stores 2AF8C78. The following cluster also contains QWORD 756AA8, masked by 02CD10. Shared buffer 756B48 is independently referenced by the final Bank 1 handler. It is outside the descriptor region and before Bank 2.
+
+Bank 2 ends before QWORD 757180 containing 0x60, followed by structured initial data including QWORD 7571B0; initializer 02CDD0 masks that QWORD. Continuing blindly to the next registered bank would misclassify this data as callbacks. No source-language array declaration or native count field was recovered. The explicit original-data clusters justify capture extents, not a safe index limit.
+
+The newly captured 112-byte native dispatch subpath confirms descriptor stride 16, U16 argument count at +8, indirect call through +0, and return handling through bit 0x40000000. The branch does not check bank/index bounds, table/handler NULL, or a terminating sentinel. The earlier registry study contains the full VM body. NULL holes must therefore be retained rather than used as a scanning terminator.
+
+Nonnull empty handlers and aliasing
+1:103, 1:122, 1:163, 1:240, 1:246 and 2:36 point to complete three-byte RET 0 bodies. They are actual code pointers with no handler memory write and no VM return flag. The VM still consumes their declared arguments (3, 1, 2, 3, 0 and 2 respectively). They are not NULL descriptors.
+1:157 and 1:219 both point to handler 42E070. A shared address does not merge their distinct bank/index identities.
+
+Selected final records
+1:367 (42BB40) decodes an operand wrapper and DWORD+4 object link, supplies the second operand's float in XMM2 and the third operand's boolean in R9D to helper 3B8510. It then returns the encoded address of shared buffer 756B48 with tag @ADR, regardless of the helper's returned status. This report does not close the helper's semantics, input checks or buffer lifetime.
+
+2:97 (431EC0) decodes two wrappers and their DWORD+4 links and calls 411300. That helper always stores the encoded second pointer at firstObject+3384. It stores it at firstObject+3392 only when active Actor-list membership succeeds, flags 0x10080000 are absent, and secondObject DWORD+1244 equals 1. A false condition leaves +3392 unchanged. The immediate path does not mutate Actor+1472/STATUS. Membership is a list scan, not a proven stable lifetime or ownership transaction; broader consumers of these fields remain open.
+
+Verification and limits
+The independent PE verifier confirms the exact retail SHA256, 8,320 captured region bytes, every descriptor, all recorded incoming xrefs, all 460 IDA handler entry identities in executable sections, 31 full bodies (148 instructions / 550 bytes), and the separate 30-instruction dispatch span. Full paginated ASM, pseudocode, raw bytes and handler lookups are retained.
+
+The existing IDB session was reused read-only. It reported is_analyzing=false but auto_analysis_ready=false. No reanalysis, function definition, type edit, database save or other mutation was requested. Thus absence of an IDA xref is not an exhaustive whole-binary claim. Raw bytes and instruction decoding are independently checked against the original executable.
+
+No game, native target instruction, script, process attachment, UI, injection, save or mod action was executed.
+
+Reproduce from repository root:
+py -3 -B docs/research/bdx-bank12-inventory-20261008/verify.py --check
