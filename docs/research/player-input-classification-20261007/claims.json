@@ -1,0 +1,686 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-07",
+  "claims": [
+    {
+      "addr": "0x1403a8e90",
+      "Domain": "native",
+      "Finding": "Combines mission-level permission3A3A70 with actor-specific permission3D6560; this is the predicate reached by both supported player descriptor wrappers.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a8e90]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403d6560",
+      "Domain": "native",
+      "Finding": "Requires3BFA40(actor), no system tutorial flag, and clear global2A11400 bit0x100000.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d6560]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403bfa40",
+      "Domain": "native",
+      "Finding": "Tests actor category against2A171E8, rejects Actor+292 bit0x200000 and a pending room change; category0 additionally requires Actor+2488 bit0x80.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bfa40]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403b2340",
+      "Domain": "native",
+      "Finding": "Updates FIELD_COMMAND, invokes controller virtual+16, and reaches native pad input only if descriptor virtual+120 is true, controller+36 bit1 is clear and2A10500 is zero. Rejected input clears seven command records and the four-float direction. Accepted input copies pad+48 into controller+2896 and invokes controller virtual+24 on the ordinary command path.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b2340]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403abc80",
+      "Domain": "native",
+      "Finding": "Returns true on game flags0x100/2, an event pointer, or a nonzero input-lock word. Recorded direct code consumers are3FF000,416270 and416A10; it is not called by the verified FIELD_COMMAND input gate.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403abc80]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403ac230",
+      "Domain": "native",
+      "Finding": "Returns true with no event or when event flags1 and2 are both clear. The recorded direct consumer2D8FE0 is an event/fiber wait loop, not a player-input predicate.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ac230]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403ac260",
+      "Domain": "native",
+      "Finding": "Returns event presence AND mode byte+2 bit1. Recorded consumers3D5310 and3D65A0 combine it with actor-specific protection predicates; this bit is not proof of input permission.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ac260]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x140404c50",
+      "Domain": "native",
+      "Finding": "Sora/Roxas descriptor virtual+120 moves the Actor from RDX to RCX and tail-jumps to shared player predicate3A8E90.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140404c50]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x140415280",
+      "Domain": "native",
+      "Finding": "Rescue-Mickey descriptor virtual+120 moves the Actor from RDX to RCX and tail-jumps to the same3A8E90 predicate.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140415280]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403ff000",
+      "Domain": "native",
+      "Finding": "Processes trigger regions/timers. One branch tests3ABC80 before decrementing its timer and evaluating region callbacks; another iterates party actors and can dispatch3AABE0 on region changes. It does not implement the shared player-controller gate.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ff000]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x140416270",
+      "Domain": "native",
+      "Finding": "Updates special actor state from position/motion fields.3ABC80 suppresses the motion-type2 idle counter; the body also derives Actor+288 bit0x40 and finishes via3B4980. This is not a blanket input-disable consumer.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140416270]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x140416a10",
+      "Domain": "native",
+      "Finding": "Sibling position/motion update with the same3ABC80-dependent idle-counter suppression and Actor+288 bit0x40 update. Its differences from416270 do not define an event-mode input allowlist.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140416a10]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403d5310",
+      "Domain": "native",
+      "Finding": "Returns a combined boolean from3D3570(actor), Actor+294 bit1, Actor+3440>0, game flag2, or3AC260. It neither reads pad/controller input nor clears their command buffers.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d5310]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403d65a0",
+      "Domain": "native",
+      "Finding": "Single-Actor sibling of3D5310 uses the same five-condition boolean, including event-mode3AC260. It does not expose general player controllability.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d65a0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1402d8fe0",
+      "Domain": "native",
+      "Finding": "Yields through150060 while3AC230 stays true; after the loop sets B64FA6 and continues2CCAB0. This establishes a scheduler/movie-event consumer, not an input gate.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1402d8fe0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403fd830",
+      "Domain": "native",
+      "Finding": "Attaches the field command to an Actor: initializes or updates controller+2784, sets+3128, initializes with Actor+3512 pad when needed and enables controller flags when countdown+3136 is zero.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403fd830]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403b26b0",
+      "Domain": "native",
+      "Finding": "Initializes base controller flags and Actor/pad pointers at+2784/+2792, clears command stack, invokes virtual+16 and derives controller flags8/0x10 from configuration/save state.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b26b0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403fd690",
+      "Domain": "native",
+      "Finding": "Requires attached Actor+3128, optionally updates lock-on, calls3B2340 exactly once, and advances a delayed-enable counter. At the last countdown tick it rechecks descriptor virtual+120 before clearing controller+36 bit1.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403fd690]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x140024560",
+      "Domain": "native",
+      "Finding": "Static initialization constructs global2A10620, assigns FIELD_COMMAND vtable5C4C68, initializes adjacent command/lock-on records and registers its destructor.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140024560]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403fd5a0",
+      "Domain": "native",
+      "Finding": "Clears lock-on/command state, removes enabled flags, sets controller+36 bit1 and zeroes the delayed-enable byte+3136.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403fd5a0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403aa850",
+      "Domain": "native",
+      "Finding": "Selects the actor's camera path from the current camera mode, assigns global FIELD_COMMAND to Actor+3520, then attaches it with3FD830.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403aa850]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403abed0",
+      "Domain": "native",
+      "Finding": "Reports event flags bit1 only when the active-event pointer is nonzero; event existence and this flag are distinct.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403abed0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403abef0",
+      "Domain": "native",
+      "Finding": "Reports event flags bit2 only when the active-event pointer is nonzero; the captured xref is an event/movie path, not FIELD_COMMAND.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403abef0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403ac190",
+      "Domain": "native",
+      "Finding": "Returns zero without an event, calls2CE690 for event state+60==8, otherwise returns a fixed floating duration value. It does not test player input.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ac190]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403f2990",
+      "Domain": "native",
+      "Finding": "FIELD_COMMAND virtual+8 delegates base Actor/pad initialization to3B26B0, then selects menu index+3028 via3B2800.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403f2990]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403f29e0",
+      "Domain": "native",
+      "Finding": "FIELD_COMMAND virtual+16 rebuilds command menus from the attached Actor/status, party/save tables and controller configuration. A custom command table+3032 takes an early path. Its body has no active-event predicate or mission-clock pause-word read.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403f29e0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403f2470",
+      "Domain": "native",
+      "Finding": "FIELD_COMMAND virtual+24 handles menu/shortcut transitions and submenu cancellation using pad button fields and controller menu state. It does not read ABB854 or require event absence.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403f2470]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403f22e0",
+      "Domain": "native",
+      "Finding": "Reads current command/menu and target choice, then forwards selected commands through3B22D0. Its behavior depends on command descriptors rather than a universal event input predicate.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403f22e0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403f3a90",
+      "Domain": "native",
+      "Finding": "FIELD_COMMAND virtual+40 calls3B2A30 and reselects menu index+3028 through3B2800.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403f3a90]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403ac350",
+      "Domain": "native",
+      "Finding": "Creates a192-byte event context and mode row, disposes any prior event, publishes2A11478 and sets mission-clock pause owner4. It disables actor categories0/1 through3BF2C0 only when mode byte+2 bit8 is clear; camera and sound decisions use separate mode bits.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ac350]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403ac0e0",
+      "Domain": "native",
+      "Finding": "Disposes the active event if present, clears mission-clock owner4, updates description/sound state and clears the event pointer before releasing its allocation.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ac0e0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403ad2d0",
+      "Domain": "native",
+      "Finding": "Resumes an existing event context, replaces a previous one and repeats the separate mode-driven sound/category/camera actions, including unconditional mission-clock owner4.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ad2d0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403a8fa0",
+      "Domain": "native",
+      "Finding": "Builds movement direction from Actor+3536 FIELD_COMMAND vector+2896 in the normal branch. Object-definition flag8 instead reads Actor+3512 raw pad directly; object types2,24 and53 use separate branches. Therefore the normal-controller proof is not a complete minigame allowlist.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a8fa0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403a3a70",
+      "Domain": "native",
+      "Finding": "Returns false only when a mission exists and its DWORD+4 has bit0x10; mission absence permits this predicate.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a3a70]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403b20b0",
+      "Domain": "native",
+      "Finding": "Clears seven command-stack records at controller+2480 using4020E0 and3BDA50.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b20b0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403b22d0",
+      "Domain": "native",
+      "Finding": "Validates the selected command through3B6950 and, on success, posts it with3D7F30 and copies command byte+28 into controller byte+13.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b22d0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403bf2c0",
+      "Domain": "native",
+      "Finding": "Sets exactly one bit in global actor-category mask2A171E8 indexed by the unsigned category argument; event callers use categories0 and1.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bf2c0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x140157130",
+      "Domain": "native",
+      "Finding": "ORs the ECX owner mask into mission-clock pause wordABB854 and returns the resulting word. No player/controller/field-state write occurs.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140157130]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x140157110",
+      "Domain": "native",
+      "Finding": "Clears the ECX owner bits from mission-clock pause wordABB854. No player/controller/field-state write occurs.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140157110]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403b6950",
+      "Domain": "native",
+      "Finding": "Routes command validation according to command byte+31: direct Actor, optional target-side checks or both before3BA070. Nonzero source modes require a valid target; decompiler prototypes alone are not a safe public call contract.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b6950]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x140406390",
+      "Domain": "native",
+      "Finding": "Tests an active contextual-command kind and delegates to4060E0; on a failed contextual check with a target pointer it calls3DB100.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140406390]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x14039a830",
+      "Domain": "native",
+      "Finding": "Checks save/config words9AB580 bit0x800000 and9AB588 bit0x200 for command-menu behavior; it is not a gameplay-pause predicate.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039a830]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x140157040",
+      "Domain": "native",
+      "Finding": "Zeros mission-clock accumulated count, pause owners, displayed count and phase globalsABB850/854/860/864.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140157040]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x140157090",
+      "Domain": "native",
+      "Finding": "Resets the same clock globals and registers the1571B0 timer task with the field scheduler.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140157090]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1401570f0",
+      "Domain": "native",
+      "Finding": "Increments accumulated mission-clock counterABB850 only whenABB854 is zero. A paused call returns the nonzero owner word without changing the counter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401570f0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1401571b0",
+      "Domain": "native",
+      "Finding": "Returns immediately while any mission-clock pause owner exists. Otherwise handles armed/running phases and count-up/countdown bounds, dispatching script event74 at a terminal limit.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401571b0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403abf20",
+      "Domain": "native",
+      "Finding": "Sets category-disable bits0 and1 by two3BF2C0 calls; this is separate from merely pausing a mission clock.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403abf20]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403bf5e0",
+      "Domain": "native",
+      "Finding": "Traverses active Actors and orders dependent updates through3BFD30; later refreshes model state and a camera vector. No mission-clock-owner read exists in the body.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bf5e0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403bfd30",
+      "Domain": "native",
+      "Finding": "Runs descriptor update phases under actor skip/freeze predicates. In the normal branch descriptor virtual+24 runs before virtual+120 gates virtual+32; global actor-freeze0x20 suppresses that branch.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bfd30]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403ba070",
+      "Domain": "native",
+      "Finding": "Checks command flags against actor action/motion state, optional object flags and3ABB20. It can allow special commands while ordinary actions are unavailable; it is not equivalent to unrestricted control.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ba070]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1404060e0",
+      "Domain": "native",
+      "Finding": "Builds contextual command menus for kinds1..12, with kind10 bypass and target-specific branches. Its contiguous function range contains a12-RVA switch table after RET; all instruction rows and all48 table bytes are separately verified.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404060e0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x140154700",
+      "Domain": "native",
+      "Finding": "Calls1570F0 but ignores its return, then increments independent field countersABAC00/ABAC04 and continues15EDB0. Clock pause alone does not stop this field-frame body.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140154700]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403a8980",
+      "Domain": "native",
+      "Finding": "Loads Actor+3520 configured controller; if nonnull tail-jumps to3FD690.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a8980]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403a7070",
+      "Domain": "native",
+      "Finding": "Two-argument wrapper reads Actor from RDX and calls3FD690 on Actor+3520 if nonnull.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a7070]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403ead50",
+      "Domain": "native",
+      "Finding": "Looks up an event-mode row in2AE57A0 with bsearch, header+8, signed count+4 and8-byte stride. The function itself does not validate the table allocation or count.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ead50]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403ead90",
+      "Domain": "native",
+      "Finding": "Stores the supplied event-mode table pointer into global2AE57A0 without copying or validating the payload.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ead90]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1404335d0",
+      "Domain": "native",
+      "Finding": "VM timer-pause leaf loads ECX=2 and tail-jumps to157130. Its only engine-side mutation is clock-owner bit2.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404335d0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x14019be10",
+      "Domain": "native",
+      "Finding": "Pauses clock owner1, invokes screen/field suspension helpers and marks an optional task phase2; this owner remains conservatively excluded by GameplayState.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14019be10]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1401515e0",
+      "Domain": "native",
+      "Finding": "Main pause setup sets timer owner1 and separately suspends field/Gummi module state and configures pause tasks. Clock-owner1 is not used as an input exception.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401515e0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x140151870",
+      "Domain": "native",
+      "Finding": "Shop setup locks input through39B640, sets clock owner1, suspends the field and queues the shop module.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140151870]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403bb600",
+      "Domain": "native",
+      "Finding": "Constructs the system tutorial window, sets2A16328 and timer owner8. The actual tutorial flag independently participates in the player predicate.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bb600]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403de3d0",
+      "Domain": "native",
+      "Finding": "Sets a Drive-related input mask, clock owner16 and other summon/party state. Clock-owner16 is not admitted by the new exception.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403de3d0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403de460",
+      "Domain": "native",
+      "Finding": "Starts the summon setup task, updates summon state and Actor flags, and separately sets clock owner16 plus party/Drive-related locks. No blanket controllability conclusion is drawn from owner16.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403de460]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1403f9fe0",
+      "Domain": "native",
+      "Finding": "Pauses the mission timer with owner2, optionally calls17B010 for an existing context pointer and clears context flag4 at+24. This does not itself install a controller input lock.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403f9fe0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x140404a20",
+      "Domain": "native",
+      "Finding": "Sora/Roxas descriptor virtual+16 forwards the Actor in RDX to shared update3A92C0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140404a20]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x140404a30",
+      "Domain": "native",
+      "Finding": "Sora/Roxas descriptor virtual+24 forwards the Actor in RDX to3A8980 and hence the FIELD_COMMAND update.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140404a30]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x1404150d0",
+      "Domain": "native",
+      "Finding": "Mickey descriptor virtual+24 uses the same Actor→3A8980 controller-update chain.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404150d0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    },
+    {
+      "addr": "0x140414eb0",
+      "Domain": "native",
+      "Finding": "Mickey virtual+16 calls shared3A92C0, then updates rescue-specific timers/gauge and command prompts. An event predicate gates one rescue prompt; this does not replace the common controller virtual+24.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140414eb0]",
+        "verification.json"
+      ],
+      "Limitations": "Full body read and original bytes verified. Scope is the stated fields/calls; no live timing, arbitrary mod behavior, or blanket event/minigame permission is asserted."
+    }
+  ]
+}

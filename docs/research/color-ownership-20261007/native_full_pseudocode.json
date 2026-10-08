@@ -1,0 +1,234 @@
+[
+  {
+    "addr": "0x140125D00",
+    "code": "_DWORD *__fastcall sub_140125D00(int a1, int a2)\n{\n  _DWORD *result; // rax\n\n  result = kh2_GX_GetDeviceSingleton(); /*0x140125d0e*/\n  result[5841] = a1; /*0x140125d13*/\n  result[5842] = a2; /*0x140125d1e*/\n  return result; /*0x140125d19*/\n}",
+    "line_count": 9,
+    "total_lines": 9,
+    "truncated": false,
+    "cursor": {
+      "done": true
+    },
+    "refs": [
+      {
+        "addr": "0x14011c150",
+        "name": "kh2_GX_GetDeviceSingleton"
+      }
+    ]
+  },
+  {
+    "addr": "0x1405061F0",
+    "code": "_DWORD *__fastcall sub_1405061F0(__int16 a1, __int16 a2)\n{\n  __int16 v2; // ax\n\n  v2 = a2; /*0x1405061f0*/\n  if ( !a1 ) /*0x1405061f6*/\n    return sub_140125D00(0, 0); /*0x140506200*/\n  if ( a2 < 1 ) /*0x140506209*/\n    return sub_140125D00(a1, 1); /*0x140506216*/\n  if ( a2 > 10 ) /*0x14050621f*/\n    v2 = 10; /*0x140506221*/\n  return sub_140125D00(a1, v2);\n}",
+    "line_count": 13,
+    "total_lines": 13,
+    "truncated": false,
+    "cursor": {
+      "done": true
+    },
+    "refs": [
+      {
+        "addr": "0x140125d00",
+        "name": "sub_140125D00"
+      }
+    ]
+  },
+  {
+    "addr": "0x140506240",
+    "code": "_DWORD *sub_140506240()\n{\n  __int16 v0; // bx\n  __int16 v1; // cx\n\n  v0 = *((_WORD *)kh2_Settings_GetFields() + 8); /*0x14050624b*/\n  v1 = *((_WORD *)kh2_Settings_GetFields() + 9); /*0x140506254*/\n  if ( !v0 ) /*0x14050625b*/\n    return sub_140125D00(0, 0); /*0x14050626a*/\n  if ( v1 < 1 ) /*0x140506273*/\n    return sub_140125D00(v0, 1); /*0x140506285*/\n  if ( v1 > 10 ) /*0x14050628e*/\n    v1 = 10; /*0x140506290*/\n  return sub_140125D00(v0, v1); /*0x140506265*/\n}",
+    "line_count": 15,
+    "total_lines": 15,
+    "truncated": false,
+    "cursor": {
+      "done": true
+    },
+    "refs": [
+      {
+        "addr": "0x14014cde0",
+        "name": "kh2_Settings_GetFields"
+      },
+      {
+        "addr": "0x140125d00",
+        "name": "sub_140125D00"
+      }
+    ]
+  },
+  {
+    "addr": "0x140505D00",
+    "code": "// Static analysis (SHA256 9002b2de...49ed). Analysis label: kh2_Settings_ApplyAll. Applies display dimensions/mode, gamma, VSync, color vision correction, FPS, audio and controller mapping/icon config.\n__int64 kh2_Settings_ApplyAll()\n{\n  __int64 v0; // rcx\n  __int16 v1; // di\n  unsigned __int16 v2; // bx\n  __int16 v3; // cx\n  unsigned __int16 v4; // r14\n  _WORD *v5; // rax\n  __int64 v6; // rsi\n  _WORD *v7; // rdi\n  unsigned __int16 v8; // bp\n  __int16 v9; // cx\n  __int16 v10; // r14\n  unsigned int v11; // edi\n  char *v12; // rax\n  __int64 v13; // rcx\n  char *v14; // rdx\n  _DWORD *v15; // rax\n  _WORD *v16; // rax\n  unsigned int v17; // edi\n  unsigned __int16 *v18; // rax\n  __m128i v19; // xmm1\n  __int16 *v20; // rax\n  unsigned __int16 *v21; // rax\n  unsigned __int16 *v22; // rax\n  unsigned __int16 *v23; // rax\n  unsigned __int16 *v24; // rax\n  float v26[2]; // [rsp+20h] [rbp-28h] BYREF\n\n  LOBYTE(v0) = *((_WORD *)kh2_Settings_GetFields() + 7) != 0; /*0x140505d31*/\n  sub_1401275B0(v0); /*0x140505d34*/\n  kh2_Settings_GetFields(); /*0x140505d39*/\n  kh2_GX_SetBrightnessGamma(); /*0x140505d51*/\n  v1 = *((_WORD *)kh2_Settings_GetFields() + 8); /*0x140505d5b*/\n  v2 = 0; /*0x140505d64*/\n  v3 = *((_WORD *)kh2_Settings_GetFields() + 9); /*0x140505d66*/\n  if ( v1 ) /*0x140505d71*/\n  {\n    if ( v3 >= 1 ) /*0x140505d7b*/\n    {\n      if ( v3 > 10 ) /*0x140505d87*/\n        v3 = 10; /*0x140505d89*/\n    }\n    else\n    {\n      v3 = 1; /*0x140505d7d*/\n    }\n  }\n  else\n  {\n    v3 = 0; /*0x140505d73*/\n  }\n  sub_140125D00((unsigned int)v1, (unsigned int)v3); /*0x140505d94*/\n  v4 = *((_WORD *)kh2_Settings_GetFields() + 15); /*0x140505d9e*/\n  v5 = kh2_Settings_GetFields(); /*0x140505da3*/\n  v6 = qword_14079CF00; /*0x140505da8*/\n  v7 = v5; /*0x140505daf*/\n  v8 = v5[14]; /*0x140505db2*/\n  if ( qword_14079CF00 )\n  {\n    v9 = sub_1401055A0()\n       ? sub_1401055D0(v6, v8)\n       : ((unsigned int)sub_140103C70(v6, *(unsigned int *)(qword_14079CF00 + 4764)) != 0) + 1;\n    if ( *(_BYTE *)v7 && v9 != v7[14] ) /*0x140505dfe*/\n    {\n      if ( (unsigned __int16)v9 >= 4u ) /*0x140505e04*/\n        v9 = 1; /*0x140505e06*/\n      v7[14] = v9; /*0x140505e0a*/\n    }\n  }\n  sub_1404E8000((unsigned __int16)v7[14], v4); /*0x140505e16*/\n  v10 = v4 & 1; /*0x140505e1b*/\n  sub_1404EBE90((unsigned __int16)((v10 ^ 1) + 1) << 13); /*0x140505e38*/\n  sub_1404EBE20((unsigned __int16)(v10 + 1) << 13); /*0x140505e4b*/\n  v11 = 0; /*0x140505e50*/\n  v12 = (char *)kh2_Settings_GetFields(); /*0x140505e52*/\n  v13 = 0; /*0x140505e57*/\n  v14 = v12 + 232; /*0x140505e5a*/\n  v15 = v12 + 232; /*0x140505e61*/\n  do /*0x140505e86*/\n  {\n    if ( !*v15 && v15[1] == 0xFFFF ) /*0x140505e6f*/\n      break; /*0x140505e6f*/\n    if ( v15[1] <= 1u ) /*0x140505e75*/\n      *v15 = 0; /*0x140505e77*/\n    ++v11; /*0x140505e79*/\n    ++v13; /*0x140505e7b*/\n    v15 += 8; /*0x140505e7e*/\n  }\n  while ( v13 < 8 ); /*0x140505e86*/\n  if ( qword_14079CF00 ) /*0x140505e92*/\n    sub_1401054A0(qword_14079CF00, v14, v11, 1); /*0x140505e9b*/\n  v16 = kh2_Settings_GetFields(); /*0x140505ea0*/\n  if ( v16[2] ) /*0x140505eaa*/\n  {\n    if ( v16[2] == 1 ) /*0x140505eb5*/\n      v17 = 2; /*0x140505ebb*/\n    else\n      v17 = 0; /*0x140505eb7*/\n  }\n  else\n  {\n    v17 = 1; /*0x140505ebf*/\n  }\n  v18 = (unsigned __int16 *)kh2_Settings_GetFields(); /*0x140505ec2*/\n  v19 = _mm_cvtsi32_si128(v18[4]); /*0x140505ed1*/\n  v26[0] = (float)v18[3]; /*0x140505ee4*/\n  LODWORD(v26[1]) = _mm_cvtepi32_ps(v19).m128_u32[0]; /*0x140505eea*/\n  sub_140124FB0(v26, v17); /*0x140505ef0*/\n  kh2_Settings_GetFields(); /*0x140505ef5*/\n  kh2_GX_SetTargetFramerate(); /*0x140505f2d*/\n  v20 = (__int16 *)kh2_Settings_GetFields(); /*0x140505f32*/\n  if ( qword_14079CF00 ) /*0x140505f41*/\n    *(_DWORD *)(qword_14079CF00 + 5284) = v20[16]; /*0x140505f47*/\n  switch ( (unsigned int)sub_1404EDC30() ) /*0x140505f6c*/\n  {\n    case 1u: /*0x140505f6c*/\n    case 0xBu: /*0x140505f6c*/\n      break;\n    case 2u: /*0x140505f6c*/\n      v2 = 3; /*0x140505f6e*/\n      break; /*0x140505f73*/\n    case 3u: /*0x140505f6c*/\n      v2 = 8; /*0x140505f75*/\n      break; /*0x140505f7a*/\n    case 4u: /*0x140505f6c*/\n      v2 = 1; /*0x140505f7c*/\n      break; /*0x140505f80*/\n    case 5u: /*0x140505f6c*/\n      v2 = 4; /*0x140505f82*/\n      break; /*0x140505f87*/\n    case 6u: /*0x140505f6c*/\n      v2 = 9; /*0x140505f89*/\n      break; /*0x140505f8e*/\n    case 8u: /*0x140505f6c*/\n      v2 = 2; /*0x140505f90*/\n      break; /*0x140505f93*/\n    case 9u: /*0x140505f6c*/\n      v2 = 7; /*0x140505f95*/\n      break; /*0x140505f9a*/\n    case 0xAu: /*0x140505f6c*/\n      v2 = 6; /*0x140505f9c*/\n      break; /*0x140505f9c*/\n    default:\n      v2 = 5; /*0x140505fa3*/\n      break; /*0xf1c0000000000004*/\n  }\n  sub_1404E5650(v2); /*0x140505fa8*/\n  v21 = (unsigned __int16 *)kh2_Settings_GetFields(); /*0x140505fb0*/\n  sub_140137F50(v21[10]); /*0x140505fb9*/\n  v22 = (unsigned __int16 *)kh2_Settings_GetFields(); /*0x140505fbe*/\n  sub_140137D50(v22[11]); /*0x140505fc7*/\n  v23 = (unsigned __int16 *)kh2_Settings_GetFields(); /*0x140505fcc*/\n  sub_140138290(v23[12]); /*0x140505fd5*/\n  v24 = (unsigned __int16 *)kh2_Settings_GetFields(); /*0x140505fda*/\n  return sub_140138440(v24[13]); /*0x140505fe8*/\n}",
+    "line_count": 158,
+    "total_lines": 158,
+    "truncated": false,
+    "cursor": {
+      "done": true
+    },
+    "refs": [
+      {
+        "addr": "0x14014cde0",
+        "name": "kh2_Settings_GetFields"
+      },
+      {
+        "addr": "0x1401275b0",
+        "name": "sub_1401275B0"
+      },
+      {
+        "addr": "0x1401268c0",
+        "name": "kh2_GX_SetBrightnessGamma"
+      },
+      {
+        "addr": "0x140125d00",
+        "name": "sub_140125D00"
+      },
+      {
+        "addr": "0x14079cf00",
+        "name": "qword_14079CF00"
+      },
+      {
+        "addr": "0x1401055a0",
+        "name": "sub_1401055A0"
+      },
+      {
+        "addr": "0x1401055d0",
+        "name": "sub_1401055D0"
+      },
+      {
+        "addr": "0x140103c70",
+        "name": "sub_140103C70"
+      },
+      {
+        "addr": "0x1404e8000",
+        "name": "sub_1404E8000"
+      },
+      {
+        "addr": "0x1404ebe90",
+        "name": "sub_1404EBE90"
+      },
+      {
+        "addr": "0x1404ebe20",
+        "name": "sub_1404EBE20"
+      },
+      {
+        "addr": "0x1401054a0",
+        "name": "sub_1401054A0"
+      },
+      {
+        "addr": "0x140124fb0",
+        "name": "sub_140124FB0"
+      },
+      {
+        "addr": "0x140126b40",
+        "name": "kh2_GX_SetTargetFramerate"
+      },
+      {
+        "addr": "0x1404edc30",
+        "name": "sub_1404EDC30"
+      },
+      {
+        "addr": "0x1404e5650",
+        "name": "sub_1404E5650"
+      },
+      {
+        "addr": "0x140137f50",
+        "name": "sub_140137F50"
+      },
+      {
+        "addr": "0x140137d50",
+        "name": "sub_140137D50"
+      },
+      {
+        "addr": "0x140138290",
+        "name": "sub_140138290"
+      },
+      {
+        "addr": "0x140138440",
+        "name": "sub_140138440"
+      }
+    ]
+  },
+  {
+    "addr": "0x140111AE0",
+    "code": "char __fastcall sub_140111AE0(__int64 a1)\n{\n  __int64 v1; // rdx\n  __int128 *v2; // r14\n  _QWORD *v4; // r15\n  int v5; // r12d\n  int v6; // eax\n  char v7; // cl\n  __int128 v8; // xmm0\n  __int128 v9; // xmm1\n  __int128 v10; // xmm0\n  __int128 v11; // xmm1\n  __int128 v12; // xmm0\n  __int128 v13; // xmm1\n  __int128 v14; // xmm0\n  __int128 v15; // xmm1\n  __int128 v16; // xmm0\n  void *DeviceSingleton; // rax\n  __int64 v18; // rax\n  __int64 v19; // rdx\n  __int64 v20; // r13\n  __int64 v21; // rcx\n  int v22; // edi\n  __int64 v23; // rax\n  void *v24; // rax\n  __int64 v25; // rax\n  __int64 v26; // rdx\n  size_t v27; // r8\n  unsigned __int64 v28; // r14\n  int v29; // edi\n  __int64 v30; // rax\n  char v31; // al\n  int v32; // ebx\n  int v33; // edi\n  char v34; // al\n  __int128 *v35; // r14\n  int v36; // eax\n  int v37; // ebx\n  __int128 v38; // xmm0\n  __int128 v39; // xmm1\n  __int128 v40; // xmm0\n  __int128 v41; // xmm1\n  void *v42; // rax\n  __int64 v43; // rax\n  __int64 v44; // rdx\n  __int64 v45; // r13\n  __int64 v46; // rcx\n  int v47; // edi\n  __int64 v48; // rax\n  __int128 *v50; // r14\n  int v51; // eax\n  __int128 v52; // xmm0\n  __int128 v53; // xmm1\n  __int128 v54; // xmm0\n  __int128 v55; // xmm1\n  __int128 v56; // xmm0\n  void *v57; // rax\n  __int64 v58; // rax\n  __int64 v59; // rdx\n  __int64 v60; // rsi\n  __int64 v61; // rcx\n  int v62; // edi\n  __int64 v63; // rax\n  __int128 v64; // [rsp+30h] [rbp-29h]\n  void **v65; // [rsp+40h] [rbp-19h] BYREF\n  __int128 v66; // [rsp+48h] [rbp-11h]\n  void ***v67; // [rsp+78h] [rbp+1Fh]\n  unsigned __int8 v68; // [rsp+C3h] [rbp+6Ah]\n  __int64 v69; // [rsp+D0h] [rbp+77h]\n\n  v1 = *(_QWORD *)(a1 + 22968); /*0x140111af5*/\n  v2 = (__int128 *)(a1 + 23008); /*0x140111b06*/\n  v4 = (_QWORD *)(v1 + 360); /*0x140111b10*/\n  if ( !v1 ) /*0x140111b17*/\n    v4 = (_QWORD *)(a1 + 22776); /*0x140111b17*/\n  v5 = 0; /*0x140111b1b*/\n  if ( *(_BYTE *)(a1 + 23296) || memcmp((const void *)(a1 + 23152), v2, 0x90u) ) /*0x140111b37*/\n  {\n    v8 = *v2; /*0x140111b4a*/\n    v6 = 1; /*0x140111b4e*/\n    *((_BYTE *)v2 + 288) = 0; /*0x140111b53*/\n    v9 = v2[1]; /*0x140111b5a*/\n    v7 = 1; /*0x140111b5f*/\n    v2[9] = v8; /*0x140111b62*/\n    v10 = v2[2]; /*0x140111b6a*/\n    v2[10] = v9; /*0x140111b6f*/\n    v11 = v2[3]; /*0x140111b77*/\n    v2[11] = v10; /*0x140111b7c*/\n    v12 = v2[4]; /*0x140111b84*/\n    v2[12] = v11; /*0x140111b89*/\n    v13 = v2[5]; /*0x140111b91*/\n    v2[13] = v12; /*0x140111b96*/\n    v14 = v2[6]; /*0x140111b9e*/\n    v2[14] = v13; /*0x140111ba3*/\n    v15 = v2[7]; /*0x140111bab*/\n    v2[15] = v14; /*0x140111bb0*/\n    v16 = v2[8]; /*0x140111bb8*/\n    v2[16] = v15; /*0x140111bc0*/\n    v2[17] = v16; /*0x140111bc8*/\n  }\n  else\n  {\n    v6 = 0; /*0x140111b40*/\n    v7 = 0; /*0x140111b43*/\n  }\n  *((_BYTE *)v2 + 290) = v7; /*0x140111be8*/\n  if ( v6 ) /*0x140111bf1*/\n  {\n    sub_14011BD90(a1); /*0x140111bfa*/\n    DeviceSingleton = kh2_GX_GetDeviceSingleton(); /*0x140111bff*/\n    v18 = sub_14011BB30(DeviceSingleton); /*0x140111c07*/\n    v19 = v4[5]; /*0x140111c0c*/\n    v20 = v18; /*0x140111c10*/\n    if ( (unsigned __int64)(v19 + 256) > v4[2] ) /*0x140111c1e*/\n      return 0; /*0x140111c1e*/\n    v21 = v4[1]; /*0x140111c28*/\n    v22 = v19 + *((_DWORD *)v4 + 8); /*0x140111c2c*/\n    *(_OWORD *)(v22 + v21) = *v2; /*0x140111c35*/\n    *(_OWORD *)(v22 + v21 + 16) = v2[1]; /*0x140111c3e*/\n    *(_OWORD *)(v22 + v21 + 32) = v2[2]; /*0x140111c48*/\n    *(_OWORD *)(v22 + v21 + 48) = v2[3]; /*0x140111c52*/\n    *(_OWORD *)(v22 + v21 + 64) = v2[4]; /*0x140111c5c*/\n    *(_OWORD *)(v22 + v21 + 80) = v2[5]; /*0x140111c66*/\n    *(_OWORD *)(v22 + v21 + 96) = v2[6]; /*0x140111c70*/\n    *(_OWORD *)(v22 + v21 + 112) = v2[7]; /*0x140111c7a*/\n    *(_OWORD *)(v22 + v21 + 128) = v2[8]; /*0x140111c87*/\n    v23 = (*(__int64 (__fastcall **)(_QWORD))(*(_QWORD *)*v4 + 88LL))(*v4); /*0x140111c95*/\n    (*(void (__fastcall **)(__int64, _QWORD, __int64))(*(_QWORD *)v20 + 304LL))(v20, 0, v22 + v23); /*0x140111ca7*/\n    v4[5] += 256LL; /*0x140111cae*/\n    if ( v22 < 0 ) /*0x140111cb8*/\n      return 0; /*0x140111cb8*/\n  }\n  switch ( *(_DWORD *)(a1 + 96) ) /*0x140111ce8*/\n  {\n    case 2: /*0x140111ce8*/\n    case 3: /*0x140111ce8*/\n    case 4: /*0x140111ce8*/\n    case 5: /*0x140111ce8*/\n    case 6: /*0x140111ce8*/\n    case 7: /*0x140111ce8*/\n    case 8: /*0x140111ce8*/\n    case 9: /*0x140111ce8*/\n    case 0x16: /*0x140111ce8*/\n    case 0x2D: /*0x140111ce8*/\n    case 0x2E: /*0x140111ce8*/\n      v68 = 0; /*0x140111d5f*/\n      break; /*0x140111d63*/\n    case 0xB: /*0x140111ce8*/\n    case 0xC: /*0x140111ce8*/\n    case 0xF: /*0x140111ce8*/\n    case 0x10: /*0x140111ce8*/\n      v68 = -40; /*0x140111d20*/\n      break; /*0x140111d27*/\n    case 0xD: /*0x140111ce8*/\n    case 0xE: /*0x140111ce8*/\n      v68 = 28; /*0x140111d17*/\n      break; /*0x140111d1e*/\n    case 0x11: /*0x140111ce8*/\n    case 0x1C: /*0x140111ce8*/\n    case 0x1F: /*0x140111ce8*/\n    case 0x21: /*0x140111ce8*/\n    case 0x23: /*0x140111ce8*/\n    case 0x25: /*0x140111ce8*/\n      v68 = 28; /*0x140111d29*/\n      break; /*0x140111d30*/\n    case 0x12: /*0x140111ce8*/\n    case 0x13: /*0x140111ce8*/\n      v68 = -40; /*0x140111cfc*/\n      break; /*0x140111d03*/\n    case 0x14: /*0x140111ce8*/\n    case 0x1E: /*0x140111ce8*/\n      v68 = -40; /*0x140111d3b*/\n      break; /*0x140111d42*/\n    case 0x15: /*0x140111ce8*/\n      v68 = 100; /*0x140111cf3*/\n      break; /*0x140111cfa*/\n    case 0x17: /*0x140111ce8*/\n    case 0x18: /*0x140111ce8*/\n    case 0x19: /*0x140111ce8*/\n    case 0x1A: /*0x140111ce8*/\n      v68 = 32; /*0x140111d05*/\n      break; /*0x140111d0c*/\n    case 0x1B: /*0x140111ce8*/\n      v68 = 40; /*0x140111d0e*/\n      break; /*0x140111d15*/\n    case 0x1D: /*0x140111ce8*/\n      v68 = -40; /*0x140111d32*/\n      break; /*0x140111d39*/\n    case 0x20: /*0x140111ce8*/\n    case 0x22: /*0x140111ce8*/\n    case 0x24: /*0x140111ce8*/\n    case 0x26: /*0x140111ce8*/\n      v68 = 60; /*0x140111cea*/\n      break; /*0x140111cf1*/\n    case 0x27: /*0x140111ce8*/\n    case 0x29: /*0x140111ce8*/\n      v68 = 28; /*0x140111d44*/\n      break; /*0x140111d4b*/\n    case 0x28: /*0x140111ce8*/\n    case 0x2A: /*0x140111ce8*/\n      v68 = 72; /*0x140111d4d*/\n      break; /*0x140111d54*/\n    case 0x2B: /*0x140111ce8*/\n    case 0x2C: /*0x140111ce8*/\n      v68 = 5; /*0x140111d56*/\n      break; /*0x140111d5d*/\n    default:\n      v68 = -1; /*0x140111d65*/\n      break; /*0x140111d65*/\n  }\n  if ( (unsigned int)sub_14011AA80((void *)(a1 + 23464)) ) /*0x140111d77*/\n  {\n    sub_14011BD90(a1); /*0x140111d87*/\n    v24 = kh2_GX_GetDeviceSingleton(); /*0x140111d8c*/\n    v25 = sub_14011BB30(v24); /*0x140111d94*/\n    v26 = v4[5]; /*0x140111d9e*/\n    v27 = 16LL * v68; /*0x140111da2*/\n    v69 = v25; /*0x140111da9*/\n    if ( !v27 ) /*0x140111db2*/\n      v27 = 3456; /*0x140111db2*/\n    v28 = (v27 + 255) & 0xFFFFFFFFFFFFFF00uLL; /*0x140111dbd*/\n    if ( v26 + v28 > v4[2] ) /*0x140111dcc*/\n      return 0; /*0x140111dcc*/\n    v29 = v26 + *((_DWORD *)v4 + 8); /*0x140111dda*/\n    memcpy((void *)(v29 + v4[1]), (const void *)(a1 + 23464), v27); /*0x140111de9*/\n    v30 = (*(__int64 (__fastcall **)(_QWORD))(*(_QWORD *)*v4 + 88LL))(*v4); /*0x140111df4*/\n    (*(void (__fastcall **)(__int64, __int64, __int64))(*(_QWORD *)v69 + 304LL))(v69, 1, v29 + v30); /*0x140111e09*/\n    v4[5] += v28; /*0x140111e10*/\n    if ( v29 < 0 ) /*0x140111e16*/\n      return 0; /*0x140111e16*/\n  }\n  if ( *(_BYTE *)(a1 + 58668) || *(_DWORD *)(a1 + 58664) != *(_DWORD *)(a1 + 58660) ) /*0x140111e31*/\n  {\n    v32 = 1; /*0x140111e40*/\n    *(_DWORD *)(a1 + 58664) = *(_DWORD *)(a1 + 58660); /*0x140111e45*/\n    v31 = 1; /*0x140111e4b*/\n    *(_BYTE *)(a1 + 58668) = 0; /*0x140111e4d*/\n  }\n  else\n  {\n    v31 = 0; /*0x140111e33*/\n    v32 = 0; /*0x140111e35*/\n  }\n  *(_BYTE *)(a1 + 58670) = v31; /*0x140111e54*/\n  if ( *(_BYTE *)(a1 + 58680) || *(_DWORD *)(a1 + 58676) != *(_DWORD *)(a1 + 58672) ) /*0x140111e6f*/\n  {\n    v33 = 1; /*0x140111e7e*/\n    *(_DWORD *)(a1 + 58676) = *(_DWORD *)(a1 + 58672); /*0x140111e83*/\n    v34 = 1; /*0x140111e89*/\n    *(_BYTE *)(a1 + 58680) = 0; /*0x140111e8d*/\n  }\n  else\n  {\n    v33 = 0; /*0x140111e71*/\n    v34 = 0; /*0x140111e74*/\n  }\n  v35 = (__int128 *)(a1 + 30380); /*0x140111e94*/\n  *(_BYTE *)(a1 + 58682) = v34; /*0x140111e9b*/\n  if ( *(_BYTE *)(a1 + 30508) || (v36 = memcmp((const void *)(a1 + 30444), (const void *)(a1 + 30380), 0x40u)) != 0 ) /*0x140111ebe*/\n  {\n    v38 = *v35; /*0x140111ec4*/\n    *(_BYTE *)(a1 + 30508) = 0; /*0x140111ec8*/\n    LOBYTE(v36) = 1; /*0x140111ecf*/\n    v39 = *(_OWORD *)(a1 + 30396); /*0x140111ed1*/\n    v37 = 1; /*0x140111ed6*/\n    *(_OWORD *)(a1 + 30444) = v38; /*0x140111edb*/\n    v40 = *(_OWORD *)(a1 + 30412); /*0x140111ee0*/\n    *(_OWORD *)(a1 + 30460) = v39; /*0x140111ee5*/\n    v41 = *(_OWORD *)(a1 + 30428); /*0x140111eea*/\n    *(_OWORD *)(a1 + 30476) = v40; /*0x140111eef*/\n    *(_OWORD *)(a1 + 30492) = v41; /*0x140111ef4*/\n  }\n  else\n  {\n    v37 = v33 | v32; /*0x140111ec0*/\n  }\n  *(_BYTE *)(a1 + 30510) = v36; /*0x140111ef9*/\n  if ( v37 ) /*0x140111f02*/\n  {\n    if ( *(_DWORD *)(a1 + 58660) ) /*0x140111f08*/\n    {\n      if ( *(int *)(204LL * *(int *)(a1 + 58672) + a1 + 58448) > 0 ) /*0x140111fc3*/\n      {\n        LODWORD(v64) = *(_DWORD *)(a1 + 58672); /*0x140111fc5*/\n        v65 = &std::_Func_impl_no_alloc<_lambda_322b4508e5e14e7ce2a80fe9614dca1f_,void,>::`vftable'; /*0x140111fcf*/\n        *((_QWORD *)&v64 + 1) = a1; /*0x140111fdb*/\n        v67 = &v65; /*0x140111fe9*/\n        v66 = v64; /*0x140111ff7*/\n        sub_140119BA0(a1, 0, (unsigned int)&v65, -1, 0); /*0x140111ffb*/\n      }\n    }\n    else\n    {\n      sub_14011BD90(a1); /*0x140111f18*/\n      v42 = kh2_GX_GetDeviceSingleton(); /*0x140111f1d*/\n      v43 = sub_14011BB30(v42); /*0x140111f25*/\n      v44 = v4[5]; /*0x140111f2a*/\n      v45 = v43; /*0x140111f2e*/\n      if ( (unsigned __int64)(v44 + 256) > v4[2] ) /*0x140111f3c*/\n        return 0; /*0x140112113*/\n      v46 = v4[1]; /*0x140111f46*/\n      v47 = v44 + *((_DWORD *)v4 + 8); /*0x140111f4a*/\n      *(_OWORD *)(v47 + v46) = *v35; /*0x140111f53*/\n      *(_OWORD *)(v47 + v46 + 16) = *(_OWORD *)(a1 + 30396); /*0x140111f5c*/\n      *(_OWORD *)(v47 + v46 + 32) = *(_OWORD *)(a1 + 30412); /*0x140111f66*/\n      *(_OWORD *)(v47 + v46 + 48) = *(_OWORD *)(a1 + 30428); /*0x140111f70*/\n      v48 = (*(__int64 (__fastcall **)(_QWORD))(*(_QWORD *)*v4 + 88LL))(*v4); /*0x140111f7b*/\n      (*(void (__fastcall **)(__int64, __int64, __int64))(*(_QWORD *)v45 + 304LL))(v45, 2, v47 + v48); /*0x140111f90*/\n      v4[5] += 256LL; /*0x140111f97*/\n      if ( v47 < 0 ) /*0x140111fa1*/\n        return 0; /*0x140111fa5*/\n    }\n  }\n  v50 = (__int128 *)(a1 + 23300); /*0x140112007*/\n  if ( *(_BYTE *)(a1 + 23460) || (v51 = memcmp((const void *)(a1 + 23380), (const void *)(a1 + 23300), 0x50u)) != 0 ) /*0x140112024*/\n  {\n    v52 = *v50; /*0x140112026*/\n    *(_BYTE *)(a1 + 23460) = 0; /*0x14011202a*/\n    v5 = 1; /*0x140112031*/\n    v53 = *(_OWORD *)(a1 + 23316); /*0x140112037*/\n    LOBYTE(v51) = 1; /*0x14011203c*/\n    *(_OWORD *)(a1 + 23380) = v52; /*0x140112040*/\n    v54 = *(_OWORD *)(a1 + 23332); /*0x140112045*/\n    *(_OWORD *)(a1 + 23396) = v53; /*0x14011204a*/\n    v55 = *(_OWORD *)(a1 + 23348); /*0x14011204f*/\n    *(_OWORD *)(a1 + 23412) = v54; /*0x140112054*/\n    v56 = *(_OWORD *)(a1 + 23364); /*0x140112059*/\n    *(_OWORD *)(a1 + 23428) = v55; /*0x14011205e*/\n    *(_OWORD *)(a1 + 23444) = v56; /*0x140112066*/\n  }\n  *(_BYTE *)(a1 + 23462) = v51; /*0x14011206e*/\n  if ( v5 ) /*0x140112078*/\n  {\n    sub_14011BD90(a1); /*0x140112081*/\n    v57 = kh2_GX_GetDeviceSingleton(); /*0x140112086*/\n    v58 = sub_14011BB30(v57); /*0x14011208e*/\n    v59 = v4[5]; /*0x140112093*/\n    v60 = v58; /*0x140112097*/\n    if ( (unsigned __int64)(v59 + 256) > v4[2] ) /*0x1401120a5*/\n      return 0; /*0x1401120a5*/\n    v61 = v4[1]; /*0x1401120ab*/\n    v62 = v59 + *((_DWORD *)v4 + 8); /*0x1401120af*/\n    *(_OWORD *)(v62 + v61) = *v50; /*0x1401120b8*/\n    *(_OWORD *)(v62 + v61 + 16) = v50[1]; /*0x1401120c1*/\n    *(_OWORD *)(v62 + v61 + 32) = v50[2]; /*0x1401120cb*/\n    *(_OWORD *)(v62 + v61 + 48) = v50[3]; /*0x1401120d5*/\n    *(_OWORD *)(v62 + v61 + 64) = v50[4]; /*0x1401120df*/\n    v63 = (*(__int64 (__fastcall **)(_QWORD))(*(_QWORD *)*v4 + 88LL))(*v4); /*0x1401120ea*/\n    (*(void (__fastcall **)(__int64, __int64, __int64))(*(_QWORD *)v60 + 304LL))(v60, 3, v62 + v63); /*0x1401120fe*/\n    v4[5] += 256LL; /*0x140112105*/\n    if ( v62 < 0 ) /*0x14011210f*/\n      return 0; /*0x14011210f*/\n  }\n  return 1; /*0x140112127*/\n}",
+    "line_count": 355,
+    "total_lines": 355,
+    "truncated": false,
+    "cursor": {
+      "done": true
+    },
+    "refs": [
+      {
+        "addr": "0x140471a5a",
+        "name": "memcmp"
+      },
+      {
+        "addr": "0x14011bd90",
+        "name": "sub_14011BD90"
+      },
+      {
+        "addr": "0x14011c150",
+        "name": "kh2_GX_GetDeviceSingleton"
+      },
+      {
+        "addr": "0x14011bb30",
+        "name": "sub_14011BB30"
+      },
+      {
+        "addr": "0x140471a60",
+        "name": "memcpy"
+      },
+      {
+        "addr": "0x14011aa80",
+        "name": "sub_14011AA80"
+      },
+      {
+        "addr": "0x1405a9ad8",
+        "name": "??_7?$_Func_impl_no_alloc@V_lambda_322b4508e5e14e7ce2a80fe9614dca1f_@@X$$V@std@@6B@"
+      },
+      {
+        "addr": "0x140119ba0",
+        "name": "sub_140119BA0"
+      }
+    ]
+  },
+  {
+    "addr": "0x14011C150",
+    "code": "// Static analysis (SHA256 9002b2de...49ed). Analysis label: kh2_GX_GetDeviceSingleton. Thread-safe initialized singleton at preferred VA 0x1408A0970. Native metadata identifies callers as GXDevice wrappers.\n// Hidden C++ exception states: #wind=1\nvoid *kh2_GX_GetDeviceSingleton()\n{\n  if ( dword_1408AEEF0 <= *(_DWORD *)(*((_QWORD *)NtCurrentTeb()->ThreadLocalStoragePointer + (unsigned int)TlsIndex) /*0x14011c180*/\n                                    + 16LL) )\n    return &unk_1408A0970; /*0x14011c180*/\n  sub_140439F50(&dword_1408AEEF0); /*0x14011c196*/\n  if ( dword_1408AEEF0 != -1 ) /*0x14011c1a2*/\n    return &unk_1408A0970; /*0x14011c182*/\n  sub_14010A270(&unk_1408A0970); /*0x14011c1ae*/\n  sub_1404399B0(sub_140572280); /*0x14011c1ba*/\n  sub_140439EF0(&dword_1408AEEF0); /*0x14011c1c7*/\n  return &unk_1408A0970; /*0x14011c189*/\n}",
+    "line_count": 15,
+    "total_lines": 15,
+    "truncated": false,
+    "cursor": {
+      "done": true
+    },
+    "refs": [
+      {
+        "addr": "0x1408a0970",
+        "name": "unk_1408A0970"
+      },
+      {
+        "addr": "0x1408aeef0",
+        "name": "dword_1408AEEF0"
+      },
+      {
+        "addr": "0x142af9b68",
+        "name": "TlsIndex"
+      },
+      {
+        "addr": "0x140439f50",
+        "name": "sub_140439F50"
+      },
+      {
+        "addr": "0x14010a270",
+        "name": "sub_14010A270"
+      },
+      {
+        "addr": "0x1404399b0",
+        "name": "sub_1404399B0"
+      },
+      {
+        "addr": "0x140572280",
+        "name": "sub_140572280"
+      },
+      {
+        "addr": "0x140439ef0",
+        "name": "sub_140439EF0"
+      }
+    ]
+  }
+]

@@ -1,6 +1,7 @@
 // Forced native Drive transitions. Evidence: research archive (see README): drive_forced.*
 // Included after ProgressionFeatures.inl inside TrainerBridge.cpp's anonymous
 // namespace; reuses its audited read-only status-rebuild guards. No form-ID writes.
+#include "PlayerRoleSupport.inl"
 namespace drive_features {
 constexpr BYTE kBeginBytes[] = {0x48,0x89,0x5c,0x24,0x10,0x57,0x48,0x83,0xec,0x20,0x8b,0xfa,0x48,0x8b,0xd9,0xe8,0xac,0xd8,0xfa,0xff,0x0f,0xb6,0x05,0x59,0xff,0x59,0x00,0x3b,0xf8,0x74,0x7c,0xb9};
 using BeginFn = void (__fastcall *)(uintptr_t,int);
@@ -67,7 +68,21 @@ bool ResourceAvailable(unsigned form) {
         if (costume>=18) return false;
         index=costume+8;
     }
-    return ObjectAvailable(At<uint16_t>(0x2A252F0+2*index));
+    const unsigned id=At<uint16_t>(0x2A252F0+2*index);
+    if(!ObjectAvailable(id)) return false;
+    // Native selection is not a character-type check. A replaced model table
+    // must not construct Roxas/another class as a requested Sora Drive form.
+    for(unsigned t=0;t<3;++t) {
+        const uintptr_t table=At<uintptr_t>(0x2A25030+t*sizeof(uintptr_t));
+        if(!table) continue;
+        Table objects; if(!ReadTable(table,96,65536,objects)) return false;
+        for(unsigned i=0;i<objects.count;++i) {
+            const uintptr_t row=objects.rows+static_cast<SIZE_T>(i)*96;
+            if(Field<unsigned>(row,0)==id)
+                return Field<uint16_t>(row,76)==1 && Field<signed char>(row,87)==static_cast<int>(form);
+        }
+    }
+    return false;
 }
 #include "DriveWeaponSupport.inl"
 bool CurrentCostumesReady() {
@@ -213,6 +228,7 @@ bool ActorListReady(uintptr_t player) {
     return found;
 }
 bool LiveScene(const TrainerContext& c) {
+    if(!AllowedThread() || player_role::Inspect(c).role!=player_role::Sora) return false;
     if (!AllowedThread() || c.base!=g_base || !c.sceneReady || !c.player || !c.status ||
         !At<BYTE>(0x9BA8D0) || At<BYTE>(0x9BA8D1) || At<int>(0x716884)!=1 ||
         At<uintptr_t>(0x9BA928) || At<BYTE>(0x9006B0) || At<uintptr_t>(0xAC0F48) ||
@@ -282,13 +298,14 @@ bool SameScene(const TrainerContext& c) {
         !memcmp(reinterpret_cast<const void*>(g_base+0x717008),queue.room,10);
 }
 bool CanStart(const TrainerContext& c,unsigned form) {
-    return LiveScene(c) && RebuildReady(c,form) && ResourceAvailable(form) && TimerReady(form) && FormMessageReady(form) &&
+    return LiveScene(c) && RebuildReady(c,form) && ResourceAvailable(form) && FormSkeletonReady(c,form) && TimerReady(form) && FormMessageReady(form) &&
         // Direct400B20 may append two suspended partners; the fixed array is two.
         (!form || At<int>(0x2AE9790)==0);
 }
 bool Begin(const TrainerContext& c,unsigned form,Phase phase) {
     // The form's second weapon must exist before the asynchronous loader runs.
     // Re-plan after Revert using the new base actor's current equipment.
+    // CanStart rechecks the bounded attachment row before any weapon write.
     progression::ItemTable items{}; uint16_t replacement=0;
     if(!CanStart(c,form) || !progression::Items(c,items) || !PlanFormWeapon(form,items,replacement)) {
         Finish(SafetyRejected); return false;
@@ -333,12 +350,16 @@ bool DriveHandle(const TrainerContext& c,unsigned slot,const double args[8],Trai
     if(slot==122 && !IsInteger(args[0],1,6)) { result={1,L"Choose a Drive Form from Valor through Antiform (1..6)."}; return true; }
     if(queue.phase!=Idle) { result={1,L"A Drive switch is already queued. Cancel its pending steps before another request."}; return true; }
     const unsigned target=slot==122?static_cast<unsigned>(args[0]):0;
+    const auto role=player_role::Inspect(c).role;
+    if(role==player_role::Roxas || role==player_role::Mickey || role==player_role::Other) {
+        result={1,L"Drive Forms are available only for normal Sora. Roxas, Mickey and special player classes cannot use this transition."}; return true;
+    }
     if(!LiveScene(c)) { result={1,L"Drive needs living, unattached Sora in a stable scene without a cutscene, summon, pause or transition."}; return true; }
     const unsigned current=static_cast<unsigned>(Field<int>(c.player,3552));
     if(!target && !current) { queue.target=0; Finish(Completed); result={0,L"Sora is already in base form."}; return true; }
     // Check requested resources before the first step, then revalidate everything
     // against the actual new Base Actor before the second step.
-    if(!RebuildReady(c,target) || !ResourceAvailable(target) || !TimerReady(target) || !FormMessageReady(target) ||
+    if(!RebuildReady(c,target) || !ResourceAvailable(target) || !FormSkeletonReady(c,target) || !TimerReady(target) || !FormMessageReady(target) ||
         (current && !CanStart(c,0)) || (!current && !CanStart(c,target))) {
         Finish(SafetyRejected); result={1,L"The requested form's native actor, status, model or message data is not ready."}; return true;
     }
@@ -368,6 +389,7 @@ void DriveTick(const TrainerContext& c) {
     // A native Drive allocates the new Actor before deleting the old one.
     // Neither the Save form byte alone nor a cleared task pointer is completion.
     if(!c.player || c.player==queue.sourceActor || !c.status || !Range(c.player,3608) || !Range(c.status,632)) return;
+    if(player_role::Inspect(c).role!=player_role::Sora) { Finish(SafetyRejected); return; }
     const unsigned expected=queue.phase==WaitingForForm?queue.target:0;
     if(Field<int>(c.player,3552)!=static_cast<int>(expected) || At<BYTE>(0x9ACDD4)!=expected) return;
     if(!LiveScene(c) || !RebuildReady(c,expected)) { Finish(SafetyRejected); return; }

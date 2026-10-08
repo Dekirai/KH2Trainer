@@ -1,0 +1,176 @@
+{
+  "schema": 1,
+  "date": "2026-10-07",
+  "status": "design_only_not_runtime_bound",
+  "scope": "Exact-build research design for authoritative effective asset binding before Drive NativeBegin; no implementation or product safety assertion.",
+  "moduleIdentities": [
+    {
+      "id": "retail",
+      "imageBase": "0x140000000",
+      "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed"
+    },
+    {
+      "id": "panacea",
+      "imageBase": "0x180000000",
+      "originalSha256": "055d5032324eab2ed8f03f2a1b3ff3381642f82b3239a17164c25bef8815e68d"
+    }
+  ],
+  "remainingGap": "OfflineManifestBinding attests a bounded read made by the host. It neither freezes current native provider registration/prepared state/Panacea metadata nor causes the later worker and remaster callbacks to consume those exact owned bytes.",
+  "establishedCallSequence": [
+    {
+      "point": "retail40CE60",
+      "effect": "NativeBegin already mutates requested form/source/party before target resource loading.",
+      "evidence": "../drive-preconstructor-20261007/report.json"
+    },
+    {
+      "point": "retail3A09C0 ->15EC70 ->16C9D0 ->16C9B0 ->15ED20 ->3A0C60",
+      "effect": "Separate OS worker owns normal load execution; priority400000 scheduler completion is3A0790.",
+      "evidence": "evidence.json"
+    },
+    {
+      "point": "retail3F9850",
+      "effect": "Overlap retirement precedes file semaphore wait;106700(register=1) runs inside the acquired interval; current ResourceEntry is attached to BAR after release.",
+      "evidence": "evidence.json#functions[addr=0x1403f9850]"
+    },
+    {
+      "point": "panaceaFEB0",
+      "effect": "Registered primary bytes are read/decoded, metadata cache is updated or reused, file closes, then retail12F070 registers.",
+      "evidence": "evidence.json#functions[addr=0x18000feb0]"
+    },
+    {
+      "point": "retail12F070 ->12E5C0 ->12CD80",
+      "effect": "Name/length/payload dispatch creates ResourceEntry; mode3 consumes remaster count, allocated payloads, names and IDs.",
+      "evidence": "evidence.json#functions[addr=0x14012cd80]"
+    },
+    {
+      "point": "panacea110C0 /11260 /114A0",
+      "effect": "Metadata is selected by current package cached name; replacement bytes are independently selected/reopened. Raw replacement mode/offsets come from the cached row while its seed is read anew.",
+      "evidence": "evidence.json#functions[addr=0x1800114a0]"
+    },
+    {
+      "point": "retail3A0C60 ->3A64F0 before phase2;3A0790 ->3A6840 before completion",
+      "effect": "Both worker and game thread parse before the later Drive preconstructor checkpoint.",
+      "evidence": "../drive-preconstructor-20261007/report.json"
+    }
+  ],
+  "locking": {
+    "nativeFileSemaphore": {
+      "object": "[retail+79CFC0]",
+      "handleOffset": 24,
+      "initialCount": 1,
+      "maximumCount": 1,
+      "wait": "retailFDDC0",
+      "release": "retailFDCB0",
+      "properties": [
+        "Nonrecursive semaphore; not thread-owner mutex.",
+        "Target worker loader holds it during primary load and package-mode registration/remaster reads.",
+        "Calling3F9850 while already owning it would wait again.",
+        "It does not freeze external filesystem names/bytes, and the reviewed cleanup/teardown occurs outside its interval.",
+        "Native callers do not comprehensively handle wait/release failure."
+      ]
+    },
+    "workerWake": {
+      "slotBase": "retail+ABC5B0",
+      "slotBytes": 48,
+      "slots": 2,
+      "threadHandleOffset": 0,
+      "callbackOffset": 32,
+      "argumentOffset": 40,
+      "semaphorePointerOffset": 24,
+      "properties": [
+        "Wake semaphore and waiter count are scheduling state, not a cache/resource generation.",
+        "Timing15EE10 can signal a waiting worker.",
+        "No safe loader-quiescence API or worker join is established by this research."
+      ]
+    }
+  },
+  "ownedHandoffDesign": [
+    {
+      "id": "P1",
+      "requirement": "Before NativeBegin, resolve the entire actual target dependency graph from bounded validated data, including base/target player, both eligible weapon hands, form/revert motion, recursive object resources and all remaster dependencies. Reject missing/corrupt/unsupported selected providers before any Drive side effect.",
+      "state": "Graph requirements and early parsers known; complete typed model/motion/remaster validators still unfinished."
+    },
+    {
+      "id": "P2",
+      "requirement": "Create an immutable private ticket graph containing exact request spelling/prefix, provider ordinal and registration identity, selected HED row/PKG span or loose/raw provenance, logical primary bytes and digest, ordered remaster names/IDs/decoded bytes and digests. No pointer may borrow a mutable package/cache vector.",
+      "state": "Feasible data model; the shipped reader handles primary offline bytes only and remains unchanged."
+    },
+    {
+      "id": "P3",
+      "requirement": "Bind the native snapshot/commit to a generated provider-registration/cache epoch and a generated request/resource identity. Capture under an actually proven safe scheduling/serialization point; check supported modules, hooks, package order, current prepared source and active roots. Never equate a pointer/name/hash of disk file with a live lease.",
+      "state": "No native generation exists in examined paths; observers/controlled publication and bootstrap rules need implementation proof."
+    },
+    {
+      "id": "P4",
+      "requirement": "At the existing normal loader handoff before PanaceaFA50/retail12F070, select the ticket for the expected worker request. Supply validated primary bytes and expose a scoped immutable remaster count/name/ID/data service throughout ResourceEntry construction. Disk/Panacea cache lookups must not be repeated for ticket-owned dependencies.",
+      "state": "Concrete interception boundary identified. Safe hook installation, exact hook-chain composition, reentrancy and lifetime are not implemented."
+    },
+    {
+      "id": "P5",
+      "requirement": "Perform native registration exactly once in its normal context. Remaster buffers transferred to ReplaceEntry must use the allocator compatible with retail _aligned_free, have exact lengths, and have a single owner. Track discarded-by-region, successfully transferred, failed/unconsumed and retired allocations separately.",
+      "state": "Constructor/destructor ownership is proven; all exceptional cleanup/OOM cases need a separate verified design."
+    },
+    {
+      "id": "P6",
+      "requirement": "Bind published resource entries/registry records to the ticket identity and generated allocation lifetime. Track relocation and retirement; compare verified ingestion digests before native BAR header/fixup mutation, not arbitrary later mutated bytes.",
+      "state": "Registry and BAR mutation paths already documented; no new authoritative resource observer exists."
+    },
+    {
+      "id": "P7",
+      "requirement": "Preflight and preallocate before NativeBegin so valid scoped requests cannot miss their ticket during the stateful transition. Keep module/ticket memory resident until all borrowers retire. Resolve every after-Begin failure with a separately proven continuation or rollback; do not return null/zero as a substitute.",
+      "state": "After-Begin cancellation/constructor-null path remains unsafe; implementation is not release-ready."
+    }
+  ],
+  "notSufficient": [
+    "Hashing only the main raw/loose/PKG content.",
+    "Holding the CFileMan semaphore while taking a host filesystem snapshot.",
+    "Checking filename or map-node/vector pointer equality.",
+    "Calling lookup/read/register/destruct APIs as validation probes.",
+    "Validating only at40D119 or immediately before40D250.",
+    "Checking only a returned load length or primary ResourceEntry MD5.",
+    "Relying on native idle waiter count as a generation or quiescence token.",
+    "Returning an error after a selected ticket misses without a verified transition rollback."
+  ],
+  "proposedEvidenceOnlyInterface": {
+    "name": "BoundResourceTicketGraph (future design, not a source API)",
+    "fields": [
+      "operationId",
+      "bridge/module epoch",
+      "provider registration epoch",
+      "request allocation generation",
+      "canonical native request spelling",
+      "provider/record identity",
+      "primary logical length/digest/owned bytes",
+      "ordered remaster name/ID/length/digest/owned bytes",
+      "allocator ownership per transferred payload",
+      "native registration/relocation/retirement associations"
+    ],
+    "admission": "All data and supported-state checks complete before NativeBegin; selected higher-priority invalid input rejects rather than retail fallback.",
+    "completion": "Actual native publication and final pre-teardown identity checks must agree with the ticket; a host staging response alone never means RuntimeBound.",
+    "externalMutation": "Owned bytes consumed from the ticket avoid later file reopening; any provider policy changes require a separate epoch/commit rule. A second filesystem check is only an offline consistency check."
+  },
+  "regressionDesign": [
+    "Same primary bytes but changed remaster list/count/name/ID.",
+    "Raw replaced between primary close and remaster reopen; offsets remain cached but header/content changes.",
+    "CacheEnabled hit after source changes; same node with vector reallocation or in-place row overwrite.",
+    "Raw cache overwrite despite an existing loose cache key.",
+    "Higher-priority raw or loose/remastered file appears after host snapshot.",
+    "Provider list/index/package pointer changes or is torn down while app pointer remains nonnull.",
+    "Invalid signed count/index, overflowing row spans, unterminated names, invalid region/name-table indices, decode-length mismatch.",
+    "Both hands, Revert0 and all target forms; graph miss found before Begin.",
+    "Nested/parallel load and timing wake during staging; no recursive semaphore acquisition.",
+    "Native registration called once; every remaster buffer freed/transferred once; region-discard path and destructor path.",
+    "Observer starts after resource already loaded; no fabricated generation or primary digest of mutated BAR.",
+    "Cancellation/host disconnect/fault after nativeBegin; no claimed rollback without complete state restoration.",
+    "Exception during hook-chain temporary unpatch/repatch; uncertain publication remains resident/faulted.",
+    "Native allocation failure remains a distinct unsupported failure unless redesigned."
+  ],
+  "implementationReadiness": {
+    "offlinePrimaryReader": "shipped and unchanged; OfflineManifestBinding only",
+    "nativeHandoff": "not implemented",
+    "safeHookInstallation": "not established",
+    "wholeGraphTypedValidation": "incomplete",
+    "safeAfterBeginRollback": "not established",
+    "liveValidation": "not performed"
+  }
+}

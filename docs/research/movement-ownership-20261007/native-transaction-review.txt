@@ -1,0 +1,61 @@
+Independent native movement transaction review — 2026-10-07
+
+Result: no remaining blocking issue found in the reviewed transaction and bridge
+integration delta. Source fingerprints are recorded in native-transaction-review.json.
+This is static source review. The reviewer ran no native build or live game test.
+
+Verified corrections
+
+1. Exact mutation replay now precedes Expired/HostExpired rejection. A retained
+   applied receipt remains authoritative until explicit acknowledgement; a retry
+   neither performs another write nor invents a different original result.
+2. Acquire/Reapply/Release scalar writes now use a narrow Commit exception handler.
+   A partial write marks the actual lease Uncertain, preserves its identity and
+   originals in the fault receipt, and prevents subsequent Tick/Release/terminal-GC
+   paths from writing or discarding the unresolved ownership.
+3. Reapply preserves the original of an unchanged still-owned field and captures
+   only the newly observed baseline of an externally changed valid field. The new
+   one-field regression covers this distinction.
+4. Execute takes the request by value. TrainerFrame first copies its IPC request
+   into a local packet, so later host changes cannot alter the checked vector.
+
+Other checks
+
+- Schema, reserved fields, enum range, selected/unselected bits, owner, revision,
+  instance and actor generation checks precede writes. All destinations and the
+  selected expected vector are checked before the scalar commit.
+- Observer failure produces Uncertain rather than Destroyed. A different current
+  actor keeps cleanup pending. Only a retired observed generation permits the
+  no-write Destroyed result.
+- Exact Float32 bits are used for ownership, including signed zero.
+- Receipt and lease capacities fail closed. Active, pending or uncertain leases
+  are not evicted. Terminal lease GC requires owner/revision and no retained
+  receipt references. Missing acknowledgements can exhaust capacity; the module
+  does not silently erase ownership to recover space.
+- TrainerFrame drains pending releases before command dispatch and later ticks.
+  Typed response bytes precede responseSequence publication. Movement, control,
+  generation and bridge-instance values share the snapshot seqlock.
+- The reserved IPC extents are checked at compile time, and protocol version is4.
+
+Test evidence
+
+The existing author-run log artifacts/movement-ownership-tests/
+native-MovementTransactionTests.txt was read: 439 checks, 0 failures. The reviewer
+inspected the tests for all masks, replay, single-field reapply, same-address new
+generation, off-current cleanup, fault injection and journal capacity. This does
+not replace integration tests of the actual lifetime observer or host transport.
+
+Remaining documentation/integration boundaries
+
+- Header MOV1 for request and response is the Root-coordinated wire contract.
+  The older design prose still showed MOR1 when read; synchronize it before freeze.
+- The implementation admits all nonempty masks1..15. Current rewards use paired
+  cohorts. The design prose must distinguish the wire allowance from reward use.
+- Commit catches only the trainer's scalar-write failures. Unexpected read or
+  observer faults outside it still follow the existing LogFault/ContinueSearch
+  path and may leave no completed typed acknowledgement. The host must keep such
+  a request InDoubt or treat process failure as unavailable; it is not a confirmed
+  no-write rejection.
+- The transaction relies on the separately reviewed native observer and current
+  role/control helpers. This review does not independently prove every hook path,
+  host reconnection path or final packaged source, and no live safety claim is made.

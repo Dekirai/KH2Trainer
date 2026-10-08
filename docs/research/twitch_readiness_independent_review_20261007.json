@@ -1,0 +1,54 @@
+{
+  "date": "2026-10-07",
+  "reviewer": "pe_inventory",
+  "status": "No remaining blocking finding in the scoped static review",
+  "method": "Read-only inspection of production source, regression source and existing native evidence. No build, game process, GUI, network or save action by this reviewer.",
+  "files": [
+    {"path":"src/KH2Trainer.Twitch/Effects/EffectEngine.cs","sha256":"f48ca5f83d2ee9751cddc93d7e6e78031ee7bee6d06fa126fada2951d6a2b857"},
+    {"path":"src/KH2Trainer.Twitch/Effects/EffectModel.cs","sha256":"334936967803eccd4ba31313369a7a8ad644d77cdba09cc29ad043f776904c39"},
+    {"path":"src/KH2Trainer.Twitch/Effects/EffectCatalog.cs","sha256":"d26d904a9f2f3798366cb52bf792b9879e931d1c51180bd9e19371caaf066054"},
+    {"path":"src/KH2Trainer.Twitch/Effects/GameplayReadiness.md","sha256":"b4f5baba344da0e51e5e97887fb917c57ea9c99df26edbcf26a51c51122f6d3e"},
+    {"path":"src/KH2Trainer.Core/GameplayState.cs","sha256":"627ba0a79246dc487944e1bd7eb357ff02fde039b030acb2e8c4246a146ad048"},
+    {"path":"src/KH2Trainer/ViewModels/TwitchViewModel.cs","sha256":"1cb3bfb238ccd3ec96d32bda551e97c2a19e44307f7a4d10c1c32505e038be78"},
+    {"path":"tests/KH2Trainer.Twitch.Tests/GameplayReadinessTests.cs","sha256":"0abf76d70abf7659fb103c45c194b282b8988c927a4c633e45f6b083f90e3269"},
+    {"path":"src/KH2Trainer.Bridge/GameplayStateSupport.inl","sha256":"6a0aa352826d17c21a555b2f003a45fb81c9c01d59d55b70e7dfc9bf9b391083"},
+    {"path":"tests/KH2Trainer.Bridge.Tests/GameplayStateGuardTests.cpp","sha256":"714438e009b799a619ca3c754242a8866b354cb1ca89f49da5b79f08c719f6c8"}
+  ],
+  "resolvedFindings": [
+    {
+      "finding": "A pending replacement freeze was blocked by the old effect's own pause before the old cleanup could run.",
+      "resolution": "ControlAfterRelease is only an admission preview and removes only the releasing effect's verified owned pause bit. It preserves the new effect's role check and all external blockers. EndAsync completes or retains cleanup before the replacement starts; commands still use ordinary ControlReadiness.",
+      "regressions": "Both freeze-frame to time-stop and the reverse cover external menu, rejected release, and successful release-before-start. Reviewed in GameplayReadinessTests.cs."
+    },
+    {
+      "finding": "The native read-only input mirror initially omitted code pins for three small leaves used by its interpretation.",
+      "resolution": "Full 3BBEA0, 3DE250 and 3BAA80 leaves are included in the final GameplayStateSupport pin list. Reviewed against the supplied evidence and final source."
+    }
+  ],
+  "checked": [
+    "Timer accounting requires established effects and usable observations at both interval endpoints; intervals longer than one second and backward-clock catch-up are not charged with timer pausing enabled.",
+    "Only the effect's own successfully applied and currently observed pause bit is exempted. Menus, cutscenes, unknown state and incompatible roles still block it.",
+    "Loss of role/control pauses established monitors, sustain and cleanup. Deferred cleanup keeps its group reserved and counts only observed available time against its retry budget.",
+    "EffectDeferredException does not falsely settle a deferred-payment custom end. The partial-end regression records its completed first step before retrying the remaining step.",
+    "Restoration requires current finite readback, preserves reverse ordering and does not adopt a failed sustain write as a new original.",
+    "An unestablished Drive request can only use the narrow queued-step cancellation while unavailable, with one refund and no extra native Revert.",
+    "Core publication decoding requires supported valid integer metadata, a publication no older than 1000 ms, wrap-safe tick subtraction and consistent controllable semantics. The adapter invalidates its cache after commands and fails closed on missing/stale reads.",
+    "Native role/controller/pad bindings, actual vtable input dispatch and the 3A8E90/3D6560/3BFA40 read-only input mirrors were compared with existing full native evidence. This does not broaden the role allowlist for unreviewed reward paths."
+  ],
+  "reportedValidation": [
+    {"owner":"managed_tools","suite":"Twitch","passed":969,"failed":0,"independentlyExecuted":false},
+    {"owner":"native_debug","suite":"GameplayStateGuardTests","passed":215,"failed":0,"independentlyExecuted":false}
+  ],
+  "limitations": [
+    "GameplayState is an advisory host snapshot. Control or role may change after the host check and before native IPC execution. Existing command-specific native guards remain decisive; this review does not claim atomic full-control gating for every Twitch command.",
+    "Timer accounting is conservative sampled time, not frame-exact observation. A pause entirely between observations is not detectable.",
+    "Custom end delegates may be re-entered after a deferred step. General exactly-once execution is not supplied by the engine; delegates must retain progress or use operations that can safely be retried.",
+    "Color Chaos still resets loaded display settings and cannot prove color-filter ownership without corresponding readouts. The current documentation states this existing limit.",
+    "Pending cleanup requires future engine ticks and does not survive closing the trainer. No live gameplay or Twitch service validation was performed by this reviewer."
+  ],
+  "evidence": [
+    "docs/research/gameplay_state_evidence.json",
+    "docs/research/player_roles_drive_20261007/report.json",
+    "docs/research/player_roles_drive_20261007/verification.json"
+  ]
+}

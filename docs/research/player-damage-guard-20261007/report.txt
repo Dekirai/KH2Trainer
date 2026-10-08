@@ -1,0 +1,42 @@
+Player HP damage guard — corrected derived-class callbacks
+2026-10-07; static IDA evidence, original-byte verification, no live actions
+
+The old base-class slot 5C4B68 does not receive normal Sora/Roxas or rescue Mickey
+virtual HP adjustments. Actual slots are 5CBB10 (wrapper 404EE0) and 5D1688
+(wrapper 415410), each at descriptor vtable+0xE8. Both 26-byte thunks move the
+five-argument Win64 ABI into 3A85F0. The fifth argument is one BYTE at entry
+RSP+0x28. Delta is a signed 32-bit value despite the inferred unsigned prototypes.
+
+The return is resulting HP in EAX, not a boolean. 3D3790 preserves it and the BDX
+wrapper 42DC60 stores it as an integer. A blocked negative bar 0 request can return
+the unchanged valid current HP before calling original. All other calls must
+forward once, including positive healing, Drive initialization and Mickey rescue.
+Original exceptions must propagate outside any guard-validation exception handler.
+
+Blocking before original also suppresses proportional Drive/MP gain, HP clamp/write,
+HUD update, and zero-HP dispatch. Passing delta 0 would still run downstream HUD and
+potential zero-HP logic and is not an equivalent no-op. Hit record flags and other
+hit/BDX behavior may already have run; direct writes and direct lower-level callers
+bypass these slots. This feature is a scoped HP damage guard, not total invulnerability.
+
+The zero-HP handlers differ: Sora/Roxas 404D60 selects event/mission, form/revert,
+summon and game-over/rescue branches; Mickey 415380 directly enters 3A81C0.
+3D3BA0 sets processed-hit state before dispatch, applies native nonlethal/one-hit
+conditions, and negates ordinary damage before 3D3790. This guard does not undo that.
+
+Pin/source contract
+- 9 complete runtime bodies, 1,255 verified original bytes, API kCombatGuardPins.
+- 31 full dedicated ASM bodies, 1,301 instructions, 5,087 code bytes and 64 data bytes.
+- Complete paginated instruction counts and each original mapped PE span verified.
+- Original EXE SHA 9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed.
+- Claims and exact ABI/ownership/forwarding contract are in report.json.
+
+Implementation must bind the current player role, descriptor, constructor-observed
+Actor generation, stable scene, owner activation, game thread and fresh host.
+Slot writes must preserve foreign hooks and uncertain protection outcomes.
+No assumption that all input is currently enabled: a hit reaction may already lock
+input. General input control and damage protection are separate native contracts.
+
+No runtime claim or assertion that all resource/animation/death callees are covered
+is made. CombatFeatures and tests are Root-owned; this agent changed only the new
+CombatGuardPins.inl product file and its research evidence.

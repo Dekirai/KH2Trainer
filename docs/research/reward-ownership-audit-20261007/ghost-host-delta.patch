@@ -1,0 +1,163 @@
+--- v0.12.4/src/KH2Trainer.Twitch/Effects/EffectCatalog.cs
++++ current/src/KH2Trainer.Twitch/Effects/EffectCatalog.cs
+@@ -467,32 +467,22 @@
+         {
+             Key = "ghost-walk", Category = RewardCategory.Funny, Cost = 2000, DurationSeconds = 12, Group = "position",
+             Title = "Ghost Walk", TitleDe = "Geistermodus",
+-            Prompt = "Sora walks through walls for a few seconds, then snaps back to the starting point.",
+-            PromptDe = "Sora läuft ein paar Sekunden durch Wände und springt danach zum Startpunkt zurück.",
+-            Features = ["player.position.bookmark", "player.position.return", "combat.movementcollision", "drive.phase", "world.reload_room", "world.current_room", "world.current_world",
+-                "player.position.x", "player.position.y", "player.position.z"],
++            Prompt = "Sora walks through walls briefly, then returns to the starting point if the saved character and scene are still valid.",
++            PromptDe = "Sora läuft kurz durch Wände und kehrt zum Startpunkt zurück, solange die gespeicherte Figur und Szene noch gültig sind.",
++            Features = ["player.position.bookmark", "player.position.return", "combat.movementcollision", "drive.phase"],
+             Check = NoDriveTransition,
+             Start = async ctx =>
+             {
+-                ctx.State["world"] = ctx.Read("world.current_world") ?? -1;
+-                ctx.State["room"] = ctx.Read("world.current_room") ?? -1;
+-                foreach (string axis in new[] { "x", "y", "z" })
+-                    if (ctx.Read("player.position." + axis) is double value) ctx.State[axis] = value;
+                 await ctx.RunAsync("player.position.bookmark");
+                 await ctx.SetAsync("combat.movementcollision", 1, sustain: false);
+             },
+             End = async ctx =>
+             {
+-                // Back to the start while walls are still off, then walls on again.
+-                bool sameRoom = ctx.Read("world.current_world") == ctx.State["world"] && ctx.Read("world.current_room") == ctx.State["room"];
++                // The native bookmark validates the captured Actor lifetime and scene.
++                // A rejected return must never be bypassed with raw coordinates or a reload.
+                 bool back = await TryRunAsync(ctx, "player.position.return");
+-                // A pause, freeze or Drive Form drops the bookmark; the stored coordinates still work.
+-                if (!back && sameRoom && ctx.State.ContainsKey("x") && ctx.State.ContainsKey("y") && ctx.State.ContainsKey("z"))
+-                    back = await TryRunAsync(ctx, "player.position.x", ctx.State["x"]) && await TryRunAsync(ctx, "player.position.y", ctx.State["y"])
+-                        && await TryRunAsync(ctx, "player.position.z", ctx.State["z"]);
++                if (!back) ctx.Detail = "Return skipped: the saved position is no longer available.";
+                 await ctx.RestoreAsync();
+-                // Last resort, so Sora is never left inside a wall.
+-                if (!back && sameRoom && ctx.SceneReady && await TryRunAsync(ctx, "world.reload_room")) ctx.Detail = "room reloaded";
+             },
+         },
+         new()
+--- v0.12.4/src/KH2Trainer.Twitch/Effects/EffectEngine.cs
++++ current/src/KH2Trainer.Twitch/Effects/EffectEngine.cs
+@@ -591,7 +591,8 @@
+                 return ok;
+             }
+         }
+-        Record(now, EffectEventKind.Ended, effect.Definition.Key, Viewers(effect), why, $"{Title(effect.Definition.Key)} ended{(why is null ? "" : ": " + why)}.");
++        string? detail = why ?? effect.Context.Detail;
++        Record(now, EffectEventKind.Ended, effect.Definition.Key, Viewers(effect), detail, $"{Title(effect.Definition.Key)} ended{(detail is null ? "" : ": " + detail)}.");
+         return ok;
+     }
+ 
+--- v0.12.4/tests/KH2Trainer.Twitch.Tests/Program.cs
++++ current/tests/KH2Trainer.Twitch.Tests/Program.cs
+@@ -30,6 +30,7 @@
+ await Run("health roles", () => HealthRoleTests.RunAsync(features, Check));
+ await Run("MP availability", () => MpAvailabilityTests.RunAsync(features, Check));
+ await Run("movement rewards", () => MovementRewardTests.RunAsync(features, Check));
++await Run("ghost return ownership", () => GhostOwnershipTests.RunAsync(features, Check));
+ await Run("api", () => ApiTests.RunAsync(Check));
+ await Run("service", () => ServiceTests.RunAsync(Check));
+ await Run("overlay", () => OverlayTests.RunAsync(features, Check));
+--- v0.12.4/tests/KH2Trainer.Twitch.Tests/GhostOwnershipTests.cs
++++ current/tests/KH2Trainer.Twitch.Tests/GhostOwnershipTests.cs
+@@ -0,0 +1,97 @@
++using KH2Trainer.Core;
++using KH2Trainer.Twitch;
++
++/// <summary>Host cleanup must respect a rejected native bookmark, including when the room looks unchanged.</summary>
++internal static class GhostOwnershipTests
++{
++    public static async Task RunAsync(IReadOnlyList<FeatureDefinition> features, Action<bool, string> check)
++    {
++        var definition = EffectCatalog.Find("ghost-walk")!;
++        var map = new FeatureMap(features);
++        var now = new DateTimeOffset(2026, 10, 7, 20, 0, 0, TimeSpan.Zero);
++        EffectContext Context(FakeGame game) => new(definition, new("ghost", definition.Key, "Viewer", "", now),
++            12, 0, game, map, new Random(3), _ => Task.CompletedTask);
++        bool NoFallback(FakeGame game) => game.Count("world.reload_room") == 0 &&
++            new[] { "x", "y", "z" }.All(axis => game.Count("player.position." + axis) == 0);
++        void PopulateCoordinates(FakeGame game)
++        {
++            game.Set("world.current_world", 2); game.Set("world.current_room", 3);
++            game.Set("player.position.x", 100); game.Set("player.position.y", 200); game.Set("player.position.z", 300);
++        }
++        check(definition.Features.SequenceEqual(["player.position.bookmark", "player.position.return", "combat.movementcollision", "drive.phase"]),
++            "ghost: only bookmark, native return, collision and transition capabilities are required");
++        {
++            var game = new FakeGame(features); PopulateCoordinates(game); var context = Context(game);
++            await definition.Start(context); await definition.End!(context);
++            check(game.Commands.Select(c => c.Feature).SequenceEqual(["player.position.bookmark", "combat.movementcollision", "player.position.return", "combat.movementcollision"]),
++                "ghost: native return precedes collision release and follows native bookmark capture");
++            check(game.Get("combat.movementcollision") == 0 && !context.HasPendingRestores && NoFallback(game),
++                "ghost: successful native return finishes cleanup without coordinate writes or a reload");
++        }
++        foreach (bool sameRoom in new[] { false, true })
++        foreach (bool haveCoordinates in new[] { false, true })
++        {
++            var game = new FakeGame(features); if (haveCoordinates) PopulateCoordinates(game);
++            var context = Context(game); await definition.Start(context);
++            if (!sameRoom) game.Set("world.current_room", 9);
++            game.Reject = (id, _) => id == "player.position.return";
++            await definition.End!(context);
++            check(game.Count("player.position.return") == 1 && NoFallback(game),
++                $"ghost: native rejection is final for position (same room={sameRoom}, coordinates={haveCoordinates})");
++            check(game.Get("combat.movementcollision") == 0 && !context.HasPendingRestores,
++                "ghost: rejected native return still releases the owned collision setting");
++            check(context.Detail == "Return skipped: the saved position is no longer available.",
++                "ghost: rejected return leaves a clear result message");
++        }
++        {
++            var game = new FakeGame(features); PopulateCoordinates(game); var context = Context(game);
++            await definition.Start(context);
++            // Model a generation/scene rejection from the native handler; the host must not second-guess it.
++            game.Reject = (id, args) => id == "player.position.return" || id == "combat.movementcollision" && args[0] == 0;
++            await definition.End!(context);
++            check(context.HasPendingRestores && game.Get("combat.movementcollision") == 1 && NoFallback(game),
++                "ghost: rejected collision release remains owned for deferred cleanup");
++            game.Reject = null; await context.RestoreAsync();
++            check(!context.HasPendingRestores && game.Get("combat.movementcollision") == 0 && game.Count("player.position.return") == 1 && NoFallback(game),
++                "ghost: deferred collision-only retry never repeats or bypasses the refused return");
++        }
++        {
++            var game = new FakeGame(features); var context = Context(game); await definition.Start(context);
++            game.Gameplay = new(true, PlayerRole.Sora, GameplayBlockers.Menu);
++            bool deferred = false; try { await definition.End!(context); } catch (EffectDeferredException) { deferred = true; }
++            check(deferred && game.Count("player.position.return") == 0 && context.HasPendingRestores && NoFallback(game),
++                "ghost: loss of control defers all cleanup rather than treating it as an accepted return");
++            game.Gameplay = new(true, PlayerRole.Sora, GameplayBlockers.None); await definition.End!(context);
++            check(!context.HasPendingRestores && game.Count("player.position.return") == 1 && NoFallback(game),
++                "ghost: cleanup resumes through the native return after control returns");
++        }
++        {
++            var game = new FakeGame(features); var context = Context(game); await definition.Start(context);
++            game.Reject = (id, _) =>
++            {
++                if (id != "player.position.return") return false;
++                game.Gameplay = new(true, PlayerRole.Sora, GameplayBlockers.Transition); return true;
++            };
++            bool deferred = false; try { await definition.End!(context); } catch (EffectDeferredException) { deferred = true; }
++            check(deferred && context.HasPendingRestores && game.Calls("combat.movementcollision").All(a => a[0] == 1) && NoFallback(game),
++                "ghost: transition during return acknowledgement leaves cleanup pending without bypass");
++        }
++        foreach (bool explicitReason in new[] { false, true })
++        {
++            var game = new FakeGame(features); PopulateCoordinates(game); var sink = new FakeSink();
++            var engine = new EffectEngine(game, map, EffectCatalog.All,
++                key => new(key, 1, 0, SameEffectBehavior.Extend, ConflictBehavior.Queue),
++                () => new(TimeSpan.FromMinutes(10), 600, true), sink, _ => { }, _ => Task.CompletedTask);
++            engine.Submit(new("g", "ghost-walk", "Viewer", "", now)); await engine.TickAsync(now);
++            game.Reject = (id, _) => id == "player.position.return";
++            if (explicitReason) await engine.StopAllAsync("Stopped for a scene change", now.AddSeconds(.25));
++            else for (int i = 1; i <= 6; i++) await engine.TickAsync(now.AddSeconds(i * .25));
++            var ended = engine.RecentEvents.Last(e => e.Kind == EffectEventKind.Ended && e.Key == "ghost-walk");
++            string expected = explicitReason ? "Stopped for a scene change" : "Return skipped: the saved position is no longer available.";
++            check(ended.Detail == expected && ended.Text.Contains(expected),
++                explicitReason ? "ghost: explicit stop reason takes precedence over cleanup detail" : "ghost: natural end publishes return refusal in the activity detail and text");
++            check(NoFallback(game) && game.Get("combat.movementcollision") == 0,
++                "ghost: engine cleanup preserves native refusal and restores only collision ownership");
++        }
++    }
++}

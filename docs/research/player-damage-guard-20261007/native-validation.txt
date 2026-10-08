@@ -1,0 +1,27 @@
+Player HP damage guard: replacement tests and independent native support review
+2026-10-07 — frozen
+
+PASS: 1,870 checks, zero failures, MSVC x64 /W4 without warnings.
+Only CombatGuardTests was built and run. It includes the full TrainerBridge and
+real role, gameplay-state and lifetime helpers. Native game calls are replaced by
+fixture callbacks; no live game, UI or injection was used.
+
+Coverage includes all ten audited Sora/Roxas/Mickey form combinations, derived
+vtable slots, exact five-argument forwarding and HP return, native/metadata SEH,
+Actor address reuse, phase/scene/lifetime changes, owner and bridge nonce binding,
+manual takeover, actual command1472 dispatch and heartbeat expiry. All 1,255 pin
+bytes were individually altered and rejected. Eight uncertain protection/rollback
+outcomes include a permanently read-only wrapper and preservation of foreign slots.
+Meaningful existing target HP, floor, revenge and complete-list tests were retained.
+
+Read-only review of Root's CombatGuardSupport and CombatFeatures found no remaining
+blocker. The early thread gate, immutable originals, resident transparent wrappers,
+lease pin balance and owned CAS recovery match the static native contract.
+The companion JSON records exact source/test/log fingerprints and limitations.
+
+A guarded hit also loses the original damage-dependent Drive/MP gains, HP HUD and
+zero-HP effects. Other hit logic and direct scripted changes remain possible.
+These are synthetic tests, not a claim of live total invulnerability.
+
+Log: artifacts/agent-validation/combat-guard-20261007/native-CombatGuardTests.txt
+

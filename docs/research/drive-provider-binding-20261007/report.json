@@ -1,0 +1,544 @@
+{
+  "schema": 1,
+  "date": "2026-10-07",
+  "status": "research_complete_no_product_change",
+  "summary": "Runtime binding requires the complete primary-plus-remaster resource graph and native publication/lifetime ownership. Current offline manifests and disk hashes do not bind subsequent loader reads. A bounded owned-handoff design is identified, but no runtime handoff or safe rollback is implemented or claimed.",
+  "modules": [
+    {
+      "id": "retail",
+      "imageBase": "0x140000000",
+      "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed"
+    },
+    {
+      "id": "panacea",
+      "imageBase": "0x180000000",
+      "originalSha256": "055d5032324eab2ed8f03f2a1b3ff3381642f82b3239a17164c25bef8815e68d"
+    }
+  ],
+  "counts": {
+    "functions": 56,
+    "instructions": 4386,
+    "originalCodeBytes": 17692,
+    "originalDataBytes": 24,
+    "specificClaims": 49,
+    "retailClaims": 36,
+    "panaceaClaims": 13
+  },
+  "claims": [
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x1400fda30",
+      "Finding": "Creates the CFileMan named semaphore with requested initial count and maximum count 1; stores the handle at object+24.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400fda30]"
+      ],
+      "Limitations": "This is a semaphore, not an owner-tracking recursive mutex; CreateSemaphore failure is not handled here."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x1400fddc0",
+      "Finding": "Waits indefinitely on object+24 and returns WaitForSingleObject status.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400fddc0]"
+      ],
+      "Limitations": "The calling 3F9850 body does not check this status. Acquiring it and then calling that loader would attempt another wait."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x1400fdcb0",
+      "Finding": "Releases one semaphore count; a failed ReleaseSemaphore returns GetLastError.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400fdcb0]"
+      ],
+      "Limitations": "It provides no ownership token and does not demonstrate that arbitrary other callers are serialized."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x140107180",
+      "Finding": "Allocates a 344-byte CFileMan, initializes its thread handle to zero, creates the count-1 semaphore and selects package mode 3.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140107180]"
+      ],
+      "Limitations": "The historical IDB comment says it starts a thread; the complete body does not. Worker creation is separately established at16C9D0. It also lacks allocation/handle failure recovery."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x140106250",
+      "Finding": "CFileMan deletion closes its semaphore via FDAA0, then runs CThread cleanup FD950 before optionally freeing the object.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140106250]"
+      ],
+      "Limitations": "Neither callee joins the resource worker. This claim concerns these exact destructors, not every shutdown path."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x1400fd950",
+      "Finding": "CThread cleanup closes nonnull handles at +24 and +8 and clears the fields; it does not call WaitForSingleObject.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400fd950]"
+      ],
+      "Limitations": "Closing a handle is not a join or proof that another thread has stopped."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x1401064d0",
+      "Finding": "Package teardown frees each current metadata table and HED buffer, closes its PKG descriptor, frees the PackageFile, nulls the array entry, then resets selected index and count.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401064d0]"
+      ],
+      "Limitations": "The inspected body does not acquire CFileMan's semaphore. An app pointer alone is not a package lifetime guarantee."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x14014f1e0",
+      "Finding": "After the application-loop call105420 returns, startup's enclosing function tears down package providers via1064D0 before AppInterface destruction.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14014f1e0]"
+      ],
+      "Limitations": "Existing live app/global pointer values cannot by themselves attest that providers are still alive during shutdown. Startup package order was documented previously."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x140106940",
+      "Finding": "File lookup mutates the global selected package index79CFD4 while iterating registered packages79CFE0, and invokes their FindAndPrepare callback.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140106940]"
+      ],
+      "Limitations": "It can wait for package registration and mutate prepared state; it is not a read-only existence probe."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x140107240",
+      "Finding": "FindAndPrepare reuses an equal cached name without re-reading PKG metadata; otherwise it mutates name+344, record offset+24, header+300, seed+328 and remaster table+320.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140107240]"
+      ],
+      "Limitations": "The cached string has no source-content identity or generation. Existing HED/record bounds and transform semantics remain separately documented."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x140107010",
+      "Finding": "Package metadata cleanup frees +320 and clears the cached name when that table was nonnull.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140107010]"
+      ],
+      "Limitations": "Prepared metadata pointers cannot be retained across preparation/cleanup; there is no generation field in this body."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x140106700",
+      "Finding": "The normal package reader selects a provider, reads primary bytes, checks returned length against package+300, then optionally invokes12F070(name,length,destination).",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140106700]"
+      ],
+      "Limitations": "Successful registration is not a content-validity or all-allocation-success proof. The decompiler omits forwarded arguments at the12F070 call; ASM retains them."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x1403f9850",
+      "Finding": "The worker-facing loader retires overlapping ResourceEntry state before acquiring the file semaphore, calls106700(register=1) under it, releases it, then attaches the current ResourceEntry pointer to a BAR header.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403f9850]"
+      ],
+      "Limitations": "Only this inner load/registration interval is established under the semaphore. Cleanup before it and BAR header writes afterward are outside that interval; mode!=3 has another registration path."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x14012f070",
+      "Finding": "ASM preserves incoming name RCX, logical length EDX and primary pointer R8; it strips the configured prefix and forwards all three to12E5C0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012f070]"
+      ],
+      "Limitations": "The legacy inferred one-argument prototype is incomplete. No new C-callable hook ABI is implemented here."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x14012e5c0",
+      "Finding": "Creates a1672-byte ResourceEntry, updates replacement-context current entry, inserts it into the resource list and may dispatch a registered handler; a negative constructor status removes the entry.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012e5c0]"
+      ],
+      "Limitations": "This mutates global state and calls arbitrary registered handlers. It is not safe staging or a pure parser; allocation failures are not fully handled."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x14012cd80",
+      "Finding": "Computes a primary-buffer MD5 before later BAR mutations, then in package mode3 repeatedly fetches current remaster count, allocated payload, name and ID; retained payloads become120-byte ReplaceEntry objects with data+96 and size+80.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012cd80]"
+      ],
+      "Limitations": "Primary digest does not bind remaster bytes. Region/name filtering may discard a payload immediately. The constructor can return failure after earlier replacement allocations and exposes native string/index assumptions."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x140106440",
+      "Finding": "Returns count+304 from the globally selected PackageFile, rather than from a resource-local immutable descriptor.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140106440]"
+      ],
+      "Limitations": "Call requires a valid current selected index/provider; it carries no resource identity argument."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x140106460",
+      "Finding": "Replaces RCX with globally selected PackageFile and tailcalls107760, preserving output-size RDX and index R8D.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140106460]"
+      ],
+      "Limitations": "This explains the actual three-argument remaster ABI; a future binding must check the passed and selected provider agree."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x140106480",
+      "Finding": "Returns a borrowed48-byte metadata row from selected PackageFile+320 and writes row+36 ID through RDX.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140106480]"
+      ],
+      "Limitations": "The signed upper-bound check does not reject negative indices. Borrowed row lifetime ends on table replacement/free."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x140107760",
+      "Finding": "Allocates an aligned remaster buffer, seeks the prepared offset in the selected PKG descriptor and applies row size/mode plus package seed to read/decode.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140107760]"
+      ],
+      "Limitations": "It does not prove exact read or inflate success. Its returned allocation is later owned by ReplaceEntry; allocation compatibility is part of any replacement implementation."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x14012f140",
+      "Finding": "Package mode3 bypasses replacement name_table file loading; other modes can acquire the same file semaphore while loading name tables and selecting region aliases.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012f140]"
+      ],
+      "Limitations": "A proposed in-lock handoff must restrict and revalidate mode3; it cannot assume all modes are nonrecursive."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x140129d30",
+      "Finding": "ReplaceEntry destruction calls the retail _aligned_free on its nonnull data pointer at+96, clears that pointer, and optionally frees the entry.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140129d30]"
+      ],
+      "Limitations": "A borrowed ticket buffer or memory allocated by an incompatible allocator must not be passed as a native-owned replacement."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x14012d8e0",
+      "Finding": "ResourceEntry destruction removes and destroys its ReplaceEntry list, then calls12D5A0 on its primary metadata and optionally frees itself.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012d8e0]"
+      ],
+      "Limitations": "It does not free the primary pointer itself in this body. Primary storage ownership belongs to the resource graph and cannot be inferred from replacement ownership."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x14012d5a0",
+      "Finding": "Conditional resource destruction can create directories and write1024 bytes of name_table data when the metadata count/state gate is positive.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012d5a0]"
+      ],
+      "Limitations": "This is another reason not to construct and destroy native registrations as supposedly read-only validation probes."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x14012e460",
+      "Finding": "Entry removal invokes the registered release callback when present, detaches replacement associations when requested, unlinks the entry, and calls its deleting destructor.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012e460]"
+      ],
+      "Limitations": "A release is not a side-effect-free rollback; registered callbacks and native resource owners may already observe it."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x1403a09c0",
+      "Finding": "Initialization registers3A0C60 in the worker-slot system and3A0790 as outer-scheduler priority400000 completion task.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a09c0]"
+      ],
+      "Limitations": "This separates resource loading from game-thread completion; CFileMan itself is not this worker."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x14015ec70",
+      "Finding": "Selects one of two48-byte worker slots, stores callback/argument, allocates a count0,max1 wake semaphore, and starts its native thread wrapper.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14015ec70]"
+      ],
+      "Limitations": "No epoch is created for resource requests or provider/cache contents."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x14016c9d0",
+      "Finding": "Stores callback/context and calls CreateThread with16C9B0, then sets the requested priority.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14016c9d0]"
+      ],
+      "Limitations": "The supplied old stack-address parameter is not used as thread ownership; a native OS worker is explicitly created."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x14016c9b0",
+      "Finding": "The Windows thread entry calls its stored function pointer with the adjacent argument and returns0 if that callback returns.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14016c9b0]"
+      ],
+      "Limitations": "The selected worker wrapper and3A0C60 normally loop; this leaf does not provide cancellation."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x14015ed20",
+      "Finding": "Loops over its selected slot callback and waits on that slot's semaphore when the callback returns.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14015ed20]"
+      ],
+      "Limitations": "This body has no stop condition or generation publication; it is not a safe quiescence API."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x1403a0c60",
+      "Finding": "The worker picks a pending request, sets phase1, runs the loader, prepares BAR replacements before setting phase2, and waits when no pending request exists.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a0c60]"
+      ],
+      "Limitations": "A validation observer after phase2 is too late for worker-side parsing. This confirms the prior preconstructor finding with fresh ASM."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x1403a0790",
+      "Finding": "The outer-scheduler completion task sees phase2, runs3A6840 fixup for a nonempty payload, invokes the completion callback and retires the request node.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a0790]"
+      ],
+      "Limitations": "A request-node address can be recycled. Node phase or resource pointer alone is not a durable binding token."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x14015edd0",
+      "Finding": "When idle, the resource worker waits through FDD90 on each nonnull worker wake semaphore.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14015edd0]"
+      ],
+      "Limitations": "A momentary waiting count is not a durable lease and does not prevent another wake."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x14015ee10",
+      "Finding": "The timing path waits on its separate semaphore and then signals worker wake semaphores through FDC70.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14015ee10]"
+      ],
+      "Limitations": "Game timing can wake resource work; a post-update host snapshot does not serialize later loader execution."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x1400fdd90",
+      "Finding": "Increments a waiter counter, waits indefinitely on semaphore+8, then decrements the counter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400fdd90]"
+      ],
+      "Limitations": "The counter tracks waiters, not ownership, successful publication, resource generation or termination."
+    },
+    {
+      "module": "retail",
+      "Domain": "native",
+      "addr": "0x1400fdc70",
+      "Finding": "Signals a wake semaphore only when its waiter counter is nonzero.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400fdc70]"
+      ],
+      "Limitations": "This is wake coordination, not a resource-manager lock or join."
+    },
+    {
+      "module": "panacea",
+      "Domain": "panacea",
+      "addr": "0x1800011c0",
+      "Finding": "Initializes a global unordered-map sentinel/list, initial bucket mask7/count8 and load factor1, then registers destruction45330.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1800011c0]"
+      ],
+      "Limitations": "The map tracks metadata, not file handles or content digests; runtime initialization success is not observed."
+    },
+    {
+      "module": "panacea",
+      "Domain": "panacea",
+      "addr": "0x18000fa50",
+      "Finding": "With cache enabled, an existing key made from PackageFile+344 causes immediate return. Otherwise it copies prepared rows, may discover remaster files, and inserts or replaces the cache value.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x18000fa50]"
+      ],
+      "Limitations": "Cache hit does not refresh filesystem state; no source timestamp, hash or generation is checked in this body."
+    },
+    {
+      "module": "panacea",
+      "Domain": "panacea",
+      "addr": "0x18000feb0",
+      "Finding": "Registered raw loads insert raw-file remaster rows into the filename cache, close the primary raw file and only then call retail12F070. Registered loose loads close the loose file, runFA50, then register.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x18000feb0]"
+      ],
+      "Limitations": "The primary read and subsequent remaster reads use separate opens. This new binding gap is independent of the previously proven five-priority primary reader."
+    },
+    {
+      "module": "panacea",
+      "Domain": "panacea",
+      "addr": "0x18000fe20",
+      "Finding": "The FindAndPrepare hook temporarily restores original target bytes, calls the original, reinstalls its patch and on success restores the full request name into PackageFile+344.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x18000fe20]"
+      ],
+      "Limitations": "Hook installation must account for this self-modifying chain. A one-time prologue hash or naive stacked detour does not attest a stable call target."
+    },
+    {
+      "module": "panacea",
+      "Domain": "panacea",
+      "addr": "0x1800110c0",
+      "Finding": "Replacement-count hook looks up the globally selected package's filename; cache hit returns vector byte length/48, otherwise native package+304.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1800110c0]"
+      ],
+      "Limitations": "It builds a temporary string and is not a harmless raw-field getter suitable for an unsafe probe."
+    },
+    {
+      "module": "panacea",
+      "Domain": "panacea",
+      "addr": "0x180011260",
+      "Finding": "Replacement-name hook returns cached row pointer/ID when a key and index match, otherwise temporarily disables its detour and calls the original.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x180011260]"
+      ],
+      "Limitations": "The pointer is borrowed from a mutable vector; same filename or same map node does not preserve its lifetime."
+    },
+    {
+      "module": "panacea",
+      "Domain": "panacea",
+      "addr": "0x1800114a0",
+      "Finding": "Replacement-data hook selects cached or package rows, then independently reopens raw source or searches loose remastered sources. Raw uses cached offset/size/mode with a newly read16-byte raw header; absent loose replacement falls back to original remaster reading.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1800114a0]"
+      ],
+      "Limitations": "This can combine primary bytes/metadata from one read with later replacement bytes from another. File semaphore serialization does not freeze disk contents or higher-priority file appearance."
+    },
+    {
+      "module": "panacea",
+      "Domain": "panacea",
+      "addr": "0x180013410",
+      "Finding": "Map insertion allocates72-byte nodes containing string at+16 and vector begin/end/capacity at+48/+56/+64. Existing key assignment delegates to13780.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x180013410]"
+      ],
+      "Limitations": "An existing node identity does not establish stable row contents or storage; map updates do not publish a content generation."
+    },
+    {
+      "module": "panacea",
+      "Domain": "panacea",
+      "addr": "0x180013780",
+      "Finding": "Metadata-vector assignment overwrites existing elements or frees/reallocates its buffer when capacity is insufficient; it updates end/capacity pointers.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x180013780]"
+      ],
+      "Limitations": "Any borrowed cache row can become stale after an update, including updates of the same filename."
+    },
+    {
+      "module": "panacea",
+      "Domain": "panacea",
+      "addr": "0x1800141d0",
+      "Finding": "Lookup masks the supplied FNV hash into a bucket and compares key length and exact bytes to select a node.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1800141d0]"
+      ],
+      "Limitations": "Equality is filename identity, not primary/remaster byte identity."
+    },
+    {
+      "module": "panacea",
+      "Domain": "panacea",
+      "addr": "0x180013b30",
+      "Finding": "Vector destruction frees its backing allocation using its allocator alignment convention and zeroes begin/end/capacity.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x180013b30]"
+      ],
+      "Limitations": "External code cannot retain cached-row pointers through destruction or assignment."
+    },
+    {
+      "module": "panacea",
+      "Domain": "panacea",
+      "addr": "0x180012860",
+      "Finding": "Map-list destruction walks nodes, destroys each metadata vector and string, frees nodes and finally the sentinel.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x180012860]"
+      ],
+      "Limitations": "The examined map teardown provides no reader join, cache generation or shared reader lease."
+    },
+    {
+      "module": "panacea",
+      "Domain": "panacea",
+      "addr": "0x180045330",
+      "Finding": "The registered exit callback destroys buckets and then the cache list.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x180045330]"
+      ],
+      "Limitations": "This is a destruction boundary, not a reload notification or safe host query point."
+    }
+  ],
+  "knownRemainingGaps": [
+    "No published provider/cache generation binds host staging to the actual consuming worker.",
+    "Cache filename equality does not bind metadata vectors to content; raw and loose remaster sources are reopened after primary read.",
+    "Resource registration mutates state and can parse/dispatch before a late Drive constructor checkpoint.",
+    "The whole target graph, both hands, recursive dependencies, region-selected animation/motion and existing resource reuse need binding before NativeBegin.",
+    "The supported hook chain rewrites its own targets when calling originals; coherent observer/handoff installation and exception behavior remain unimplemented.",
+    "Native allocation/constructor failure and post-Begin rejection still lack a complete rollback contract."
+  ],
+  "correctionsToInheritedAnnotations": [
+    "107180 initializes a CFileMan semaphore, not the actual resource thread. Fresh16C9D0 proves the separate worker CreateThread.",
+    "12F070's inferred one-argument pseudocode is incomplete: the full ASM preserves RCX/EDX/R8 name/length/payload."
+  ],
+  "priorEvidence": [
+    "../drive-effective-bytes-20261007/report.json",
+    "../drive-effective-bytes-20261007/contract.json",
+    "../drive-preconstructor-20261007/report.json",
+    "../drive-raw-staging-20261007/report.json",
+    "../effective-asset-reader-20261007/report.json"
+  ],
+  "deduplication": "56 complete captures include supporting and previously documented functions. They are not56 newly understood functions. Claims are module-labelled and must be deduplicated against earlier research; no full-semantic-review status is asserted.",
+  "limitations": [
+    "Static exact-build proof only; no live provider/cache/hook state sampled.",
+    "No native loader probes, interception, process access, file/mod/save writes, product/test edits, package rebuild or coverage update performed.",
+    "A proposed binding design is a future implementation contract with explicit unresolved conditions, not a shipped safety guarantee."
+  ]
+}

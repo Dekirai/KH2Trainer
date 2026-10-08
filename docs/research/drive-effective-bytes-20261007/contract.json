@@ -1,0 +1,99 @@
+{
+  "schema": 1,
+  "date": "2026-10-07",
+  "status": "proposal_not_implemented",
+  "proposedFile": "src/KH2Trainer.Core/AssetEffectiveByteReader.cs",
+  "goal": "Return a bounded owned copy of the primary MDLX/MSET/weapon asset bytes with selected-source provenance, before any native ResourceEntry or Panacea remaster parser runs.",
+  "api": {
+    "input": "EffectiveAssetManifest + ASCII relative AssetName + CancellationToken",
+    "manifest": "Exact retail/Panacea fingerprints; resolved UTF-16 roots after /kh2; ordered retail HED/PKG descriptors with per-provider decodeEnabled; prefix/encoding policy; platformTransformEnabled; optional validated startup inventory identity. Caller labels manifest as offline or runtime-bound.",
+    "result": "OwnedAssetBytes { ReadOnlyMemory<byte> Bytes, ProviderKind, SourceStamp, RelativeName, MatchedNameBytes, HED ordinal/record offset or standalone record, MetadataHash, DecodedHash, ManifestHash, BindingStrength }",
+    "ownership": "Reader alone owns its buffers and file handles. Never pass game pointers or delegate to native loaders. Enforce AssetReadLimits before allocation, arithmetic, decompression and recursive BAR parsing."
+  },
+  "primaryProviderOrder": [
+    {
+      "priority": 0,
+      "kind": "PanaceaRawRecord",
+      "path": "modRoot/raw/<relative asset>",
+      "condition": "Only exact supported Panacea manifest. Existing nondirectory wins before any loose source.",
+      "format": "Standalone16-byte PKG header +48*remasterCount metadata +original encoded payload; no HED required."
+    },
+    {
+      "priority": 1,
+      "kind": "PanaceaLooseDev",
+      "path": "devRoot/<relative asset>",
+      "condition": "Optional nonempty devRoot.",
+      "format": "Plain original asset bytes."
+    },
+    {
+      "priority": 2,
+      "kind": "PanaceaLooseMod",
+      "path": "modRoot/<relative asset>",
+      "condition": "Configured modRoot.",
+      "format": "Plain original asset bytes."
+    },
+    {
+      "priority": 3,
+      "kind": "PanaceaLooseExtract",
+      "path": "extractRoot/<relative asset>",
+      "condition": "Optional nonempty extractRoot.",
+      "format": "Plain original asset bytes."
+    },
+    {
+      "priority": 4,
+      "kind": "RetailPackage",
+      "path": "Ordered manifest HED/PKG pairs",
+      "condition": "Only after all higher priority candidates are absent.",
+      "format": "First matching digest row within first successful provider; exact name then lowercase final slash component inside each provider."
+    }
+  ],
+  "pathContract": [
+    "Accept the native relative asset name before resource-prefix concatenation. Do not hash absolute root paths. Validate it as a relative path without traversal/device/alternate-stream syntax.",
+    "Hash exact narrow name bytes. For ASCII game asset names, lowercase only A..Z in the final slash component on fallback; do not lowercase all directories or search all exact hashes before every lowercase hash.",
+    "Panacea roots are resolved UTF-16 strings from mod_path/dev_path/extract_path after appending /kh2; optional roots remain disabled when empty. Relative configured roots require an explicit process working-directory basis.",
+    "Settings text is not sufficient to prove running roots. Runtime binding would need a read-only copied, bounded root/provider snapshot and supported hook fingerprint; this proposal does not add that bridge mechanism.",
+    "Unknown provider, locale-dependent/non-ASCII asset-name ambiguity or unverified remap returns Unsupported/Ambiguous; never silently substitutes vanilla."
+  ],
+  "recordContract": {
+    "header": "Little-endian int32 rawSize@0, remasterCount@4, mode@8, creation@12; metadataLength=16+48*count with checked64-bit arithmetic.",
+    "payloadStart": "Retail HED record offset + metadataLength; standalone raw record offset0 + metadataLength.",
+    "storage": "For decoded game packages / Panacea raw records, rawSize<=16 reads rawSize unchanged. If rawSize>16: positive mode gives stored length and requires prefix transform then zlib; mode -1 gives rawSize plus transform; mode -2 gives plain rawSize. Reject unsupported modes, impossible spans and excessive allocations.",
+    "providerDecodeGate": "Retail object+292 can disable both transform and inflation regardless mode. Built-in six KH2 packages have true; SettingMenu false. The Core reader must carry this property or limit its supported package class; do not globally assume all providers decode.",
+    "transformGate": "Nonzero retail platform global79CFCC disables1062B0. Default supported manifest may require expected Steam state0; otherwise explicitly model it. Panacea calls this same transform.",
+    "integrity": "Use ReadExactly, stream-end and exact decoded length; validate zlib checksum. Existing AssetPackageCodec already supplies bounded prefix transform/inflate for supported retail modes. Refactor its record parser to accept a bounded standalone record; never fake a HED and bypass identity checks.",
+    "recordBounds": "Retail HED contains16-byte name digest, signed64 record offset@16, storedLength@24, originalLength@28. Host must reject negative/overflowing/out-of-record spans and duplicate ambiguity rather than skipping a selected malformed provider.",
+    "remasterScope": "Primary bytes only. Validate metadata span and physical placement; do not treat successful primary decode as proof that remastered textures, model bones, meshes or motion tracks are valid."
+  },
+  "failureContract": [
+    "Only NotFound/Directory advances provider priority. AccessDenied, short read, changed source, invalid record, decode error and resource limits reject the selected source.",
+    "A zero-size or invalid higher-priority override never falls through to a valid lower-priority asset.",
+    "Use file identity+length+metadata fingerprint, hold read handles where practical and recheck before publishing the owned result. Return a content digest, not just a path/size.",
+    "Expected-byte checks for native functions do not freeze provider contents, startup inventory, cached headers or foreign hooks."
+  ],
+  "nativeUseGate": [
+    "The host reader is directly useful for offline validation and diagnosis.",
+    "Using its success as a preconstructor authorization additionally requires a runtime-bound provider manifest, proof that the native package lookup resolves a valid metadata owner for selected overrides, and prevention/detection of changed higher-priority candidates.",
+    "The bytes consumed by the subsequent asynchronous native load must be the validated bytes or be revalidated under an equivalent atomic source contract. A disk hash checked before NativeBegin alone leaves TOCTOU.",
+    "Native constructor allocation failures and deeper mesh/bone/MSET/remaster validation remain later conditions; no universal crash-free claim follows."
+  ],
+  "testsToImplement": [
+    "All five priority levels; dev versus mod versus extract; raw always wins; absent versus unreadable/truncated/corrupt selected override.",
+    "Exact digest and basename-only lowercase in each package before moving to the next; case-sensitive directory bytes; duplicates; cached-manifest invalidation.",
+    "Standalone raw record with0/N remasters; mode-2/-1/positive; sizes0/16/17; decodeEnabled false; transformEnabled false; malformed/negative/overflowing lengths.",
+    "Short header/table/payload; truncated zlib; trailing output; checksum failure; unsupported padding; configured allocation/depth limits.",
+    "Source/config changes, replacement file identity, new higher-priority appearance and no silent retail fallback.",
+    "New loose file absent from startup metadata inventory must not be marked safe for native registered loading.",
+    "Read-only owned output remains valid after source handles close; no game/native functions invoked."
+  ],
+  "evidence": [
+    "report.json",
+    "evidence.json",
+    "verification.json"
+  ],
+  "existingCore": [
+    "src/KH2Trainer.Core/AssetArchiveReader.cs",
+    "src/KH2Trainer.Core/AssetPackageCodec.cs",
+    "src/KH2Trainer.Core/AssetFileAccess.cs"
+  ],
+  "decisionRequired": "Parent decides Core implementation and any later bridge snapshot/handoff. No product file changed in this research round."
+}

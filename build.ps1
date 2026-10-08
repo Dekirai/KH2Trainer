@@ -20,6 +20,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
+. (Join-Path $root 'scripts\package-research.ps1')
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $artifacts = Join-Path $root 'artifacts'
 if (-not $OutputDirectory) { $OutputDirectory = Join-Path $artifacts "packages\$stamp" }
@@ -51,6 +52,7 @@ if (-not $python) { $python = Get-Command python -ErrorAction Stop; $pythonArgs 
 
 Push-Location $root
 try {
+    & (Join-Path $root 'tests\Test-ResearchPackage.ps1') | Tee-Object -FilePath (Join-Path $logs 'research-package-test.txt') | Write-Host
     $nativeFingerprint = Get-NativeSourceFingerprint
     Invoke-Checked (Join-Path $bridge 'build.cmd') @() 'native-build.txt'
     $nativeResults = & (Join-Path $root 'tests\KH2Trainer.Bridge.Tests\run-tests.ps1') -LogDirectory $logs
@@ -74,17 +76,19 @@ try {
     Invoke-Checked $python.Source ($pythonArgs + @((Join-Path $root 'scripts\generate-manual.py'), '--output', (Join-Path $package 'UserGuide.html'))) 'manual.txt'
     Copy-Item -LiteralPath (Join-Path $root 'README.md') -Destination $package
     Copy-Item -LiteralPath $features -Destination (Join-Path $package 'FeatureEvidence.json')
+    Copy-ResearchPackage -Source (Join-Path $root 'docs') -Destination (Join-Path $package 'Research')
     Copy-Item -LiteralPath $logs -Destination (Join-Path $package 'Validation') -Recurse
 
     # Source archive: the solution, scripts, sources and tests, without build outputs.
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $sourceZip = [IO.Compression.ZipFile]::Open((Join-Path $package 'Source.zip'), [IO.Compression.ZipArchiveMode]::Create)
     try {
-        $extensions = @('.sln', '.md', '.ps1', '.props', '.cs', '.csproj', '.xaml', '.manifest', '.cpp', '.h', '.inl', '.json', '.py', '.cmd', '.html')
+        $extensions = @('.sln', '.md', '.ps1', '.props', '.cs', '.csproj', '.xaml', '.manifest', '.cpp', '.h', '.inl', '.json', '.jsonl', '.py', '.cmd', '.html', '.zip', '.txt')
         $sources = @(Get-ChildItem -LiteralPath $root -File | Where-Object { $_.Extension -in $extensions -or $_.Name -eq '.gitignore' })
-        foreach ($folder in 'src', 'tests', 'scripts') {
+        foreach ($folder in 'src', 'tests', 'scripts', 'docs') {
             $sources += @(Get-ChildItem -LiteralPath (Join-Path $root $folder) -File -Recurse | Where-Object {
-                $_.FullName -notmatch '[\\/](bin|obj)[\\/]' -and $_.Extension -in $extensions })
+                $_.FullName -notmatch '[\\/](bin|obj|artifacts|__pycache__|\.git|\.vs)[\\/]' -and
+                ($_.Extension -in $extensions -or $_.Name -in @('LICENSE', 'NOTICE')) })
         }
         foreach ($file in $sources) {
             $relative = $file.FullName.Substring($root.Length + 1).Replace('\', '/')

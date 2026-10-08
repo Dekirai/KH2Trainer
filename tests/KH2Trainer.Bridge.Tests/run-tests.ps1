@@ -19,14 +19,16 @@ $ErrorActionPreference = 'Stop'
 
 # ProductionSource/ProductionDefine: extra compile-only check of the shipping code path.
 $suites = @(
+    @{ Name = 'ActorLifetimeTests'; ProductionDefine = 'ACTOR_LIFETIME_PRODUCTION_COMPILE' }
     @{ Name = 'ActorMovementGuardTests' }
     @{ Name = 'AudioGuardTests' }
     @{ Name = 'CameraExtraGuardTests' }
     @{ Name = 'CollisionGuardTests' }
-    @{ Name = 'CombatGuardTests' }
+    @{ Name = 'CombatGuardTests'; Libraries = @('user32.lib') }
     @{ Name = 'DamageTuningTests' }
     @{ Name = 'DisplayGuardTests'; ProductionSource = 'DisplayProductionCompile.cpp' }
     @{ Name = 'DriveGuardTests' }
+    @{ Name = 'GameplayStateGuardTests' }
     @{ Name = 'GummiEditorGuardTests' }
     @{ Name = 'GummiExtraGuardTests' }
     @{ Name = 'GummiGuardTests' }
@@ -36,13 +38,19 @@ $suites = @(
     @{ Name = 'MissionEventGuardTests' }
     @{ Name = 'MissionGuardTests' }
     @{ Name = 'MotionGuardTests' }
+    @{ Name = 'MovementTransactionTests' }
     @{ Name = 'PlayerBridgeTests'; Libraries = @('user32.lib') }
+    @{ Name = 'PlayerHealthGuardTests'; Libraries = @('user32.lib') }
     @{ Name = 'ProgressionTests' }
     @{ Name = 'RenderGuardTests' }
     @{ Name = 'RendererAaTests'; ProductionDefine = 'AA_PRODUCTION_COMPILE' }
     @{ Name = 'RendererDiagnosticsTests'; ProductionDefine = 'RENDERER_PRODUCTION_COMPILE' }
     @{ Name = 'ShortcutTests'; Libraries = @('user32.lib') }
     @{ Name = 'SpatialAudioGuardTests' }
+    @{ Name = 'StatusBreakpointTests'; ProductionSource = 'StatusBreakpointProductionCompile.cpp' }
+    @{ Name = 'StatusEntryPlanTests' }
+    @{ Name = 'StatusObserverTests' }
+    @{ Name = 'StatusRevisionLedgerTests' }
     @{ Name = 'TargetingGuardTests' }
     @{ Name = 'WindowDisplayTests'; ProductionDefine = 'WINDOW_DISPLAY_PRODUCTION_COMPILE' }
     @{ Name = 'WorldGuardTests'; Libraries = @('user32.lib') }

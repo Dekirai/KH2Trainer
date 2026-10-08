@@ -165,6 +165,12 @@ if (args.Length > 0)
     Check(display.Single(f=>f.CapabilitySlot==306).Arguments.Select(a=>(a.Minimum,a.Maximum)).SequenceEqual(new[]{(0.0,3.0),(1.0,10.0)}),
         "color mode and severity use the paired native argument contract");
     var movement = real.Where(f=>f.CapabilitySlot is >=344 and <=347).OrderBy(f=>f.CapabilitySlot).ToArray();
+    var conditionalColor = real.Single(f=>f.Id=="display.color_compare_apply");
+    Check(conditionalColor is {Kind:FeatureKind.Action,CommandId:1464,CapabilitySlot:464,ValueSlot:-1,CanSaveInProfile:false,RequiresScene:false} &&
+        conditionalColor.Arguments.Select(a=>(a.Minimum,a.Maximum)).SequenceEqual(new[]{(0.0,1.0),(0.0,3.0),(0.0,10.0),(0.0,3.0),(0.0,10.0)}),
+        "conditional color transport preserves operation and both complete color pairs");
+    Check(real.Single(f=>f.Id=="display.color_state") is {Kind:FeatureKind.ReadOnly,CommandId:0,ValueSlot:465,CapabilitySlot:465,Minimum:0,Maximum:58,CanSaveInProfile:false},
+        "coherent color observation is read-only and cannot become a saved profile action");
     Check(movement.Length==4 && movement.All(f=>f.Kind==FeatureKind.Number && f.RequiresScene &&
         !f.ChangesProgression && f.CanSaveInProfile) &&
         movement.Select(f=>(f.Minimum,f.Maximum)).SequenceEqual(new[]{(0.0,32.0),(0.0,64.0),(0.1,100.0),(0.0,1000.0)}),
@@ -200,7 +206,11 @@ if (args.Length > 0)
     Round7CatalogTests.Run(real, Check);
     Console.WriteLine($"Validated {real.Count} real feature definitions.");
 }
+GameplayStateTests.Run(Check);
+MotionPayloadTests.Run(Check);
+await MovementProtocolTests.RunAsync(Check);
 await AssetExplorerTests.RunAsync(workspace, Check);
+await EffectiveAssetReaderTests.RunAsync(workspace, Check);
 await AssetFingerprintTests.RunAsync(workspace, Check);
 if(args.Length>1) {
     await AssetExplorerTests.RunRetailAsync(args[1],Check);

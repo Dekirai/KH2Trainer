@@ -1,0 +1,26 @@
+Actor lifetime for conditional movement restoration — 2026-10-07
+
+Result
+No native generation identifier was found in the inspected Actor header, status pool, Ptr32 encoding, active/dead lists or allocation headers. Equal addresses and equal movement values can recur. The existing pointer/value checks therefore cannot by themselves prove the original Actor lifetime.
+
+A concrete observation point exists: the common Actor constructor3B3200 calls Default ACTION virtual+8 at3B3969; the exact return address is3B396D. Table750D30[0] selects object750950 with vtable5CCEB8. Slot5CCEC0 contains409AB0, whose complete original body is C2 00 00 (RET0). ABI is void(RCX=Action,RDX=Actor). Constructor-return filtering is essential because3B4DA0 and3B62C0 call the same virtual slot during ordinary action changes.
+
+Coverage
+Sora/Roxas405030 and rescueMickey415670/4158C0 chain3A7A40→3D5840→3D2DA0→3DA940→3B3200. The normal allocation path3A7CB0 and Drive replacement40D000 both call405030. The callback runs before derived status/model/role initialization completes: only the address may be recorded there.
+
+Lifetime end
+Sora/Roxas descriptor750300/vtable5CBA28 slot0 contains4049E0. Rescue Mickey descriptor7523B8/vtable5D15A0 slot0 contains414DD0. Both clean up non-null Actor RDX through2E2D60→3B3D60 and then152570Free. Native dead-list processing calls this slot at3BF34B, returning3BF34E. A future wrapper should mark the watched lifetime dead before forwarding, forward exactly once even for null, and never read the freed Actor afterward. Default ACTION leave(+16) is a no-op and is not a destructor observer.
+
+Implementation contract
+Keep a bounded watch table for current and receipt-referenced Actors. Assign a new nonzero64-bit bridge serial at first adoption after hook installation and each observed construction of a watched address. Keep offcurrent lifetimes: Sora may remain alive while Mickey is current. Do not evict unresolved receipts or reuse serials. Re-adoption always creates a new serial. Bind receipts to bridge/process session, serial, Actor and property/cohort; check this together with fresh role/scene/control and expected field bits in one native game-thread command. A uint64 serial must be split into two exact32-bit values if it crosses double-valued snapshot storage.
+
+All three slots are aligned QWORDs in original read-only .rdata (characteristics40000040). A future implementation needs narrow page protection, exact compare-exchange installation and owner-only restoration. Validate original code, table0, object vptr and slot continuously; sampled observation loss invalidates all relevant receipts. Do not assume null Original is a no-op: the expected original pointer is non-null409AB0.
+
+Limits
+This is a static, original-build contract; no hook or product implementation was performed. Concurrent foreign construction can write Actor fields before the mid-constructor notification and is outside the supported game-thread contract. Sampled pins cannot prove absence of hostile hook removal/reinstallation between checks. Per-class destructor slots do not prove every bulk heap release calls them; later native constructions still create new serials, and live membership/control checks remain mandatory. No assertion is made that every possible native field or mod contains no other identifier.
+
+Evidence
+47 complete fresh dedicated ASM bodies,2514 instructions,11522 original code bytes and232 original data bytes in7 regions. All compared byte-for-byte with SHA2569002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed; verify.ps1 and verification.json are included. Each function has an address-linked claim in report.json. Read-only worker de3f97b1 used the new lifetime IDB copy with separately confirmed auto-analysis readiness.
+
+Additional limited review
+The ten stored drive-raw-staging claims were checked against their complete ASM. No contradiction found: read wrappers mutate resource bookkeeping/BAR headers, can dispatch resource handlers, and return declared size while ignoring lower-level read/inflate results. This review did not run those functions or establish safe staging.

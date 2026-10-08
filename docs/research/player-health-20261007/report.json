@@ -1,0 +1,215 @@
+{
+  "schema": 1,
+  "date": "2026-10-07",
+  "title": "Controlled-player HP and MP native dispatch",
+  "inputSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "claims": [
+    {
+      "addr": "0x1403D2EB0",
+      "Finding": "HP delta with bar0/effects0 reaches a common status clamp and conditional HUD notification for coherent living Sora/Roxas/rescue Mickey. Living bit rejects defeated actors, effects0 excludes recovery animation, positive bounded result excludes the death virtual call.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json",
+        "../../../src/KH2Trainer.Bridge/PlayerHealthSupport.inl"
+      ],
+      "Limitations": "Actor identity, live control, body pins and all selected HUD paths must pass; static branch proof is not live playtesting."
+    },
+    {
+      "addr": "0x1403C0860",
+      "Finding": "HP clamps signed delta between status+8 minimum and status+4 maximum and writes status+0. Validate 0<=minimum<=current<=maximum<=255 and requested1..maximum to keep return positive.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json",
+        "../../../src/KH2Trainer.Bridge/PlayerHealthSupport.inl"
+      ],
+      "Limitations": "A scripted minimum can keep HP above requested1; the trainer preserves it."
+    },
+    {
+      "addr": "0x140168870",
+      "Finding": "Positive healing scans exactly three player pointers atABCFE8 and marks only the matching entry's flagDWORD atbase+24+4*index.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json",
+        "../../../src/KH2Trainer.Bridge/PlayerHealthSupport.inl"
+      ],
+      "Limitations": "Only the actual matching flag requires writable memory; no actor pointer in this table is dereferenced."
+    },
+    {
+      "addr": "0x1403DCBB0",
+      "Finding": "Healing unconditionally reads HUDglobal2A24E90+40; current actor and bar0 matching leads to183220.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json",
+        "../../../src/KH2Trainer.Bridge/PlayerHealthSupport.inl"
+      ],
+      "Limitations": "Missing HUD must reject before HP mutation. Unrelated or absent widget is skipped by native code."
+    },
+    {
+      "addr": "0x1403DCC10",
+      "Finding": "Damage notification uses the same global/currentactor/bar guard and then1832A0.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json",
+        "../../../src/KH2Trainer.Bridge/PlayerHealthSupport.inl"
+      ],
+      "Limitations": "Same unconditional HUD dependency as healing; no-op HP bypasses native damage notification."
+    },
+    {
+      "addr": "0x140183220",
+      "Finding": "Positive HUD update writes DWORD4802/4804/4805 and starts animation44 for additional 200HP segments.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json",
+        "../../../src/KH2Trainer.Bridge/PlayerHealthSupport.inl"
+      ],
+      "Limitations": "Widget maximum must match bounded current player maximum; target<=255 bounds this loop to at most one segment."
+    },
+    {
+      "addr": "0x1401832A0",
+      "Finding": "Negative HUD update starts animation41 atwidget+2072 and selects44/46 on widget+3584 according to previous/new 200HP segment count.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json",
+        "../../../src/KH2Trainer.Bridge/PlayerHealthSupport.inl"
+      ],
+      "Limitations": "Bound previous widget HP to0..verified maximum; target remains positive. Rendering state must be writable."
+    },
+    {
+      "addr": "0x14016B270",
+      "Finding": "Writes animation ID atmember+468 and forwards inherited EDX to193280(member+32), then clears member+496.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json",
+        "../../../src/KH2Trainer.Bridge/PlayerHealthSupport.inl"
+      ],
+      "Limitations": "The clip argument remains41/44/46; decompiler prototype alone hid this dependency."
+    },
+    {
+      "addr": "0x140193280",
+      "Finding": "Forwards existing EDX to192050 and writes sequence+320=1,+328=0.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json",
+        "../../../src/KH2Trainer.Bridge/PlayerHealthSupport.inl"
+      ],
+      "Limitations": "No assumed implicit clip0. Member memory guards include all written bytes."
+    },
+    {
+      "addr": "0x140192050",
+      "Finding": "If sequence+316 or animation table pointer+224 is nonzero, selects36-byte clip row and scans count 144-byte track records from table+216 using ushortfirst/count.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json",
+        "../../../src/KH2Trainer.Bridge/PlayerHealthSupport.inl"
+      ],
+      "Limitations": "Validate exact accessed clip and track spans with overflow checks. Native zero-count and inactive-table branches are preserved. Checks establish mapped access safety, not resource semantic correctness."
+    },
+    {
+      "addr": "0x1403C2040",
+      "Finding": "Full MP clears recharge floats444/448 when448>0 before adding maxMP with effects0.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json",
+        "../../../src/KH2Trainer.Bridge/PlayerHealthSupport.inl"
+      ],
+      "Limitations": "Current/maxMP stay0..255; already full with no recharge is a no-op."
+    },
+    {
+      "addr": "0x1403C0CD0",
+      "Finding": "MP-add dispatch follows status actor backlink to3D3CF0 or updates a status without actor.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json",
+        "../../../src/KH2Trainer.Bridge/PlayerHealthSupport.inl"
+      ],
+      "Limitations": "Our coherent field-player guard guarantees a current actor backlink; unbound-status branch is not used."
+    },
+    {
+      "addr": "0x1403D3CF0",
+      "Finding": "With effects0, living actor and nonnegative bounded add, recovery animation and negative-MP depletion branch are unreachable;3C0890 updates status.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json",
+        "../../../src/KH2Trainer.Bridge/PlayerHealthSupport.inl"
+      ],
+      "Limitations": "This is the specifically proven full-restore call shape, not every arbitrary MP delta."
+    },
+    {
+      "addr": "0x1403C0890",
+      "Finding": "With recharge cleared/nonpositive and positive bounded add, clamps currentMP to maximum without the recharge-factor resource path.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json",
+        "../../../src/KH2Trainer.Bridge/PlayerHealthSupport.inl"
+      ],
+      "Limitations": "Recharge-clearing caller proof is required."
+    },
+    {
+      "addr": "0x1404AD270",
+      "Finding": "Nullable packed-pointer decode returns0 for encoded0 and otherwise delegates to4AD3F0.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json",
+        "../../../src/KH2Trainer.Bridge/PlayerHealthSupport.inl"
+      ],
+      "Limitations": "Actual currentactor/status agreement is checked by shared player_role."
+    },
+    {
+      "addr": "0x1404AD3F0",
+      "Finding": "Packed-pointer core uses64 region entries and low25-bit offset after runtime initialization.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json",
+        "../../../src/KH2Trainer.Bridge/PlayerHealthSupport.inl"
+      ],
+      "Limitations": "Checks retain normal game-thread CRT/TLS behavior and do not emulate game runtime initialization."
+    },
+    {
+      "addr": "0x1404AD2C0",
+      "Finding": "CRT-guarded pointer initialization would reset the region table while globalguard is0/-1; health path requires a completed nonzero/nonminusone guard.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json",
+        "../../../src/KH2Trainer.Bridge/PlayerHealthSupport.inl"
+      ],
+      "Limitations": "Trusted native CRT/TLS runtime remains an assumption; no proof for arbitrary external runtime corruption."
+    },
+    {
+      "addr": "0x1403DCB30",
+      "Finding": "HUD controller construction installs the first controller in global2A24E90 and starts with nullwidget.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json",
+        "../../../src/KH2Trainer.Bridge/PlayerHealthSupport.inl"
+      ],
+      "Limitations": "Supports the global's lifecycle meaning; not called by the trainer."
+    },
+    {
+      "addr": "0x1403DCB80",
+      "Finding": "HUD controller destruction clears global2A24E90 when the destroyed controller owns it.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json",
+        "../../../src/KH2Trainer.Bridge/PlayerHealthSupport.inl"
+      ],
+      "Limitations": "Missing global during teardown is a real state requiring rejection; not called by the trainer."
+    }
+  ],
+  "validation": {
+    "nativeChecks": 265,
+    "failures": 0,
+    "actualRoleAndControlImplementation": true,
+    "nativeHpMpCalls": "simulated callbacks",
+    "originalBodies": 19,
+    "originalBytes": 2302,
+    "instructions": 608,
+    "runtimePins": 17,
+    "runtimePinBytes": 2183,
+    "liveGame": false
+  },
+  "limitations": [
+    "Mapped-span guards and body pins do not establish semantic correctness of every loaded resource.",
+    "Player role and controllability classification remains conservative for events/minigames.",
+    "Full-restore preflights both paths; there is no general transaction rollback for arbitrary foreign reentrant mutation or a later native failure."
+  ]
+}

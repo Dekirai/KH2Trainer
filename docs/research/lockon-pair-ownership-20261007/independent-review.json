@@ -1,0 +1,150 @@
+{
+  "schema": 1,
+  "date": "2026-10-07",
+  "reviewer": "pe_inventory",
+  "status": "passed_no_blocking_findings_in_scoped_static_review",
+  "scope": "F04 exact Float32 targeting pair command, snapshots, host cleanup/ACK ownership and useful-time integration. Independent read-only source/test/evidence review; no test execution, build, product edit or live action.",
+  "reviewedFiles": [
+    {
+      "path": "src/KH2Trainer.Bridge/TargetingFeatures.inl",
+      "sha256": "63cb44511c841e193349dce593970012f8e88de58d7cccc38f732f2dae799c71",
+      "size": 8439
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/TargetingGuardTests.cpp",
+      "sha256": "f088bdf199b11a5f5f71052f75bbbd5a050818c3b175172c0caf8f83a9bda7c6",
+      "size": 16109
+    },
+    {
+      "path": "src/KH2Trainer.Core/BridgeCommandRejectedException.cs",
+      "sha256": "4a89d5fd40d7ea001217094aa2074ae1baedcc5881cec9e9d053676819f56742",
+      "size": 361
+    },
+    {
+      "path": "src/KH2Trainer/ViewModels/MainViewModel.cs",
+      "sha256": "2c690624a69480dda78e3c50f1e26fcf4fe2e16eb4eaae02118297178e069d2c",
+      "size": 23729
+    },
+    {
+      "path": "src/KH2Trainer.Twitch/Effects/EffectCatalog.cs",
+      "sha256": "9847b6fb77621d11df5aa939119c32584a7c5511f9feac0e5079253b0512b401",
+      "size": 52689
+    },
+    {
+      "path": "src/KH2Trainer.Twitch/Effects/EffectModel.cs",
+      "sha256": "82e6bda72e3ec2d3ada8e579fbe0202e1c7a3b92d3cc073faf6bb45934d793dd",
+      "size": 24779
+    },
+    {
+      "path": "src/KH2Trainer.Twitch/Effects/EffectEngine.cs",
+      "sha256": "1ef6087ee3847a6605c2371427d0f29c65a967b4c5ec66e2a8700a350241da8b",
+      "size": 37828
+    },
+    {
+      "path": "src/KH2Trainer.Twitch/Effects/LockOnPairSnapshot.cs",
+      "sha256": "c62f8b1dd9375c41345d5e405a0bcf27be979def1d869274b59f04c4fc2ed026",
+      "size": 2246
+    },
+    {
+      "path": "src/KH2Trainer.Twitch/Effects/LockOnPairEffectLease.cs",
+      "sha256": "9243bc670042b2efa194a3471f186114a2264222c1e31766911b531714b4be9f",
+      "size": 2706
+    },
+    {
+      "path": "tests/KH2Trainer.Twitch.Tests/Fakes.cs",
+      "sha256": "0b408f1f2a4e7e838608ddd15dd3bb06f7f58520c851fdd0733f8c066a5114ae",
+      "size": 17007
+    },
+    {
+      "path": "tests/KH2Trainer.Twitch.Tests/FakeLockOnPair.cs",
+      "sha256": "97574b515a7a79c20f26a1dc79ae12e9e7122181b742f62ce07ed2a177083962",
+      "size": 3262
+    },
+    {
+      "path": "tests/KH2Trainer.Twitch.Tests/LockOnPairOwnershipTests.cs",
+      "sha256": "80e3c378363d0406890ae496833420308bf1c30c3086ca5a0ba22852e0038aa3",
+      "size": 13584
+    },
+    {
+      "path": "tests/KH2Trainer.Twitch.Tests/Program.cs",
+      "sha256": "c1ae0ab8f3dd61453506425547a25b080097d7a6dfe1a9a62c897de1283f79ac",
+      "size": 2156
+    },
+    {
+      "path": "src/KH2Trainer/ViewModels/TwitchViewModel.cs",
+      "sha256": "42041953132d760bfc1337cad1b145a54b31f3759a1169ffedc3ccdb0729acff",
+      "size": 50479,
+      "scope": "Only the relevant adapter/serialization/readiness path was reviewed."
+    },
+    {
+      "path": "tests/KH2Trainer.UiTests/GameplayAdapterChecks.cs",
+      "sha256": "2a8d66f550ec35d98ebba9cf4a4b16c0c61b4c6c067feda9098b9c033d0f25c8",
+      "size": 16743,
+      "scope": "Only the relevant adapter/serialization/readiness path was reviewed."
+    },
+    {
+      "path": "src/KH2Trainer.Core/BridgeProtocol.cs",
+      "sha256": "e34d63beab901d27917183d888788ad6f32f850ee779965d37b2b91cdf1ed638",
+      "size": 7071,
+      "scope": "Only the relevant adapter/serialization/readiness path was reviewed."
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/ActorMovementFeatures.inl",
+      "sha256": "566dca39577184740c9a7a96c7929b4e4b96d05d0afe7bdb71edaae3b2957735",
+      "size": 5122,
+      "scope": "Only the relevant adapter/serialization/readiness path was reviewed."
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/DamageTuningFeatures.inl",
+      "sha256": "6de4c05f2377875566cbfe7261f81b407fc2448b9589023bb7c26dcda5c8821c",
+      "size": 3627,
+      "scope": "Only the relevant adapter/serialization/readiness path was reviewed."
+    }
+  ],
+  "checks": [
+    "Fresh saved ASM3ABD60/3ABD80 and38CF20 confirm independent break state and single-precision product; original break must not be recalculated on restore.",
+    "PairHandle preserves existing Sora/live-status/parameter-owner/game-thread/heartbeat/pin gates; validates six integral arguments, both finite bounded pairs and current default/product for apply.",
+    "Full-pair comparison precedes either write; apply mismatch rejects, restore mismatch is acknowledged no-op. No native call or yield between compare and stores. Four-byte alignment and no hardware64-bit CAS are explicit.",
+    "One snapshot publication supplies exact scale/break bits and native default; decoder requires fresh protocol4/capabilities/validity and rejects malformed or unrepresentable values.",
+    "Host cleanup intent is recorded before awaiting apply. Only received PairHandle pre-write codes2/3/4 or local prepublication control deferral clear it; timeout/unknown errors retain intent.",
+    "Actual received rejection conversion is preserved through MainViewModel and adapter; the foreign pair already equal to desired case no longer authorizes an accidental restore.",
+    "Restore sends original bit patterns even after default changes; successful mismatch settles cleanup. Lost ACK retains intent until acknowledged retry; no scalar sustain or approximate comparison remains for these rewards.",
+    "HasDurableCleanup exempts pending pair intent from the180-second abandonment cutoff without becoming an Actor lease or bypassing ordinary control gates.",
+    "A fresh foreign pair reaches Monitor before duration charge; unavailable pair/control pauses useful time even with ordinary timer-pause opt-out.",
+    "Ordinary bridge request/response sequencing blocks a new restore publication while the previous command remains outstanding."
+  ],
+  "testReview": {
+    "authorReportedNative": {
+      "checks": 876,
+      "failures": 0,
+      "log": "native-TargetingGuardTests.txt"
+    },
+    "authorReportedTwitch": {
+      "checks": 2074,
+      "failures": 0,
+      "log": "twitch-tests.txt"
+    },
+    "executionByReviewer": false,
+    "sourceCasesRead": [
+      "All Sora forms0..6 for both scales",
+      "Custom original break and changed default",
+      "Single-ULP takeover of either half",
+      "Wrong default/product and invalid bit arguments",
+      "Read-only memory and existing Ready negative cases",
+      "Missing/stale pair publications",
+      "Roxas/Mickey/Other roles wait",
+      "Apply-rejection foreign==desired",
+      "Received status1/2/3/4/99 classification",
+      "Lost apply/restore ACK",
+      "Disconnect/rejection and cleanup beyond180seconds",
+      "Timer opt-out during menu/missing pair"
+    ]
+  },
+  "blockingFindings": [],
+  "acceptedLimits": [
+    "Value equality cannot identify identical foreign writes or ABA across scene/process lifetimes; no native generation/journal is claimed.",
+    "Uncooperative external memory writers/page-protection races are outside game-thread serialization.",
+    "Pending cleanup is host-memory state and is lost on trainer process termination.",
+    "The tests are synthetic; this review did not reproduce live gameplay or rerun suites."
+  ]
+}

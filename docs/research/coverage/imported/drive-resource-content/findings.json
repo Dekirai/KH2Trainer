@@ -1,0 +1,195 @@
+{
+  "schema": 1,
+  "date": "2026-10-07",
+  "title": "Drive offhand construction after validated item/mapping — next-analysis backlog",
+  "release_scope": "No frozen source, tests, docs, package or build modified. These are additional static failure boundaries, not a reproduced diagnosis of the user's current Final Form crash.",
+  "original_sha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "evidence": {
+    "functions": 45,
+    "instructions": 4052,
+    "original_code_bytes": 16058,
+    "explicit_callback_range_instructions": 6,
+    "explicit_callback_range_bytes": 19
+  },
+  "findings": [
+    {
+      "id": "construction.slot",
+      "addr": "0x1403D7C70",
+      "Finding": "The generic player constructor initializes weapon slots+3424/+3432 to0. For form1..6 or10,3A7A40 resolves the offhand again and calls3D7C70. Slot1 is published only after3EF750 returns; an earlier resource/content fault leaves construction incomplete.",
+      "Evidence": [
+        "evidence.json#functions[rva=3D5840]",
+        "evidence.json#functions[rva=3A7A40]",
+        "evidence.json#functions[rva=3E0CC0]",
+        "evidence.json#functions[rva=3D7C70]"
+      ],
+      "Limitations": "A nonzero item does not itself prove the asynchronous constructor will finish. Existing repair removes the known empty-item path."
+    },
+    {
+      "id": "allocation.null",
+      "addr": "0x1403D7CD3",
+      "Finding": "The weapon allocation is3088 bytes via152430. On null it sets RBX0, stores0 in the slot, then unconditionally calls3C8440 with RCX=0x158.3C8440 writes atRCX+48; the allocation failure branch is an immediate native fault path.",
+      "Evidence": [
+        "evidence.json#functions[rva=3D7C70]",
+        "evidence.json#functions[rva=152430]",
+        "evidence.json#functions[rva=3C8440]"
+      ],
+      "Limitations": "Static branch proof only, not an observed out-of-memory failure. Pre-Begin readable/heap-size checks cannot guarantee a later successful allocation."
+    },
+    {
+      "id": "cache.lookup",
+      "addr": "0x14039CC40",
+      "Finding": "Resource acquisition searches the filename/group registry via39E1E0. A missing result merely runs a diagnostic traversal; the code then callsstrstr(record+4), incrementsWORD(record+2), and returnsQWORD(record+88) without rejecting null.",
+      "Evidence": [
+        "evidence.json#functions[rva=39CC40]",
+        "evidence.json#functions[rva=39E1E0]",
+        "evidence.json#functions[rva=3E6120]",
+        "evidence.json#functions[rva=3EF750]"
+      ],
+      "Limitations": "The native loader normally creates these records. Name-table validation is not equivalent to a valid active loaded record; null payload and null record are distinct cases."
+    },
+    {
+      "id": "load.error",
+      "addr": "0x14039DEE0",
+      "Finding": "The unrecognized six-instruction callback range39DEE0..39DEF3 writes record+1=255 for a null resource result; otherwise it calls39E900.39E340 keeps yielding for active records whose phase is neither0 nor3. Thus this explicit load failure can wait indefinitely.",
+      "Evidence": [
+        "evidence.json#code_ranges[addr=0x14039DEE0]",
+        "evidence.json#functions[rva=39E340]",
+        "evidence.json#functions[rva=39E690]",
+        "evidence.json#functions[rva=39E900]"
+      ],
+      "Limitations": "This path supports a loading hang, not a claim that every missing file immediately crashes. No game test was performed."
+    },
+    {
+      "id": "sklt.required",
+      "addr": "0x1403D7620",
+      "Finding": "3EF750 calls3D7620(parent,hand). The helper obtains selected form object BYTE+7 via3B5C10, uses3EAAE0 bsearch, then reads signedWORD(row+4+2*hand) with no null check. Offhand usesrow+6.",
+      "Evidence": [
+        "evidence.json#functions[rva=3EF750]",
+        "evidence.json#functions[rva=3D7620]",
+        "evidence.json#functions[rva=3B5C10]",
+        "evidence.json#functions[rva=3EAAE0]",
+        "evidence.json#functions[rva=3EAAD0]"
+      ],
+      "Limitations": "Missing row is a direct invalid-access path. The admitted joint encoding/range still needs validation against actual parent model content; do not assume every negative value is invalid."
+    },
+    {
+      "id": "sklt.owner",
+      "addr": "0x1403F50A4",
+      "Finding": "3F4C30 loads first system BAR type2/tag sklt and installs it via3EAB20 at2AE5798. Table has8-byte header;DWORD+4 count,8-byte rows, DWORD key at0 and two signedWORD hand joints at4/6.",
+      "Evidence": [
+        "evidence.json#functions[rva=3F4C30]",
+        "evidence.json#functions[rva=3EAB20]",
+        "evidence.json#functions[rva=3EAAE0]",
+        "evidence.json#functions[rva=3EAAD0]",
+        "evidence.json#functions[rva=3A6480]"
+      ],
+      "Limitations": "Bound table count and rows by the owning BAR entry/allocation, not merely readable process pages. Duplicate/unsorted keys do not support a deterministic mirrored lookup."
+    },
+    {
+      "id": "mset.branch",
+      "addr": "0x1403EF800",
+      "Finding": "An empty wmst name skips only motion binding and attachment, not allocation of the weapon actor. Nonempty names perform lookup ofobj/name.mset, store the payload atweapon+344, link motion, look up the parent joint and attach.",
+      "Evidence": [
+        "evidence.json#functions[rva=3EF750]",
+        "evidence.json#functions[rva=3EF910]",
+        "evidence.json#functions[rva=3C8460]",
+        "evidence.json#functions[rva=3C8E90]",
+        "evidence.json#functions[rva=3D9FE0]"
+      ],
+      "Limitations": "Current PlanFormWeapon already rejects empty offhand wmst names. Missing nonempty file, corrupt contents and missing skeleton-row remain separate assumptions."
+    },
+    {
+      "id": "model.contents",
+      "addr": "0x1403B3200",
+      "Finding": "Base weapon actor construction resolves MDLX and other resources through3E63D0→3E6120, then parses the MDLX with3A6420.3A6420 readscontainer+4 immediately. Missing BAR payload therefore cannot be treated as safe merely because an object-table name exists.",
+      "Evidence": [
+        "evidence.json#functions[rva=3B3200]",
+        "evidence.json#functions[rva=3DA940]",
+        "evidence.json#functions[rva=3E63D0]",
+        "evidence.json#functions[rva=3E6120]",
+        "evidence.json#functions[rva=3A6420]",
+        "evidence.json#functions[rva=3E62E0]",
+        "evidence.json#functions[rva=3E6470]"
+      ],
+      "Limitations": "Some individual model BAR entries are optional in native code. A blanket requirement for every entry type would reject valid resources; mandatory dependencies must follow actual consumers."
+    },
+    {
+      "id": "motion.contents",
+      "addr": "0x1403C8A40",
+      "Finding": "For a nonnull selected motion child,3C8A40 consumes nested BAR type9 and16 entries and dereferences their entry offsets without a robust missing-entry branch. A malformed selected motion can fault after a valid outer MSET name/payload.",
+      "Evidence": [
+        "evidence.json#functions[rva=3C86A0]",
+        "evidence.json#functions[rva=3C88C0]",
+        "evidence.json#functions[rva=3C8CD0]",
+        "evidence.json#functions[rva=3C7C50]",
+        "evidence.json#functions[rva=40D7A0]",
+        "evidence.json#functions[rva=40D7D0]",
+        "evidence.json#functions[rva=3C8A40]"
+      ],
+      "Limitations": "A completely null motion source is handled in several motion selectors, so absence alone is not universally fatal. Prove the actual selected motion and validate its inner spans/content; arbitrary motion IDs must not be forced."
+    },
+    {
+      "id": "recursive.resources",
+      "addr": "0x1403E096F",
+      "Finding": "3E0660 recursively schedules each resolved weapon object and all four nonzero ushort object dependencies at+88..94. It has no visited-set/cycle guard.",
+      "Evidence": [
+        "evidence.json#functions[rva=3E0660]"
+      ],
+      "Limitations": "Retail assets are assumed well formed. Cyclic modded dependency rows can cause recursion failure even if the initial weapon model row/name is valid; no such corrupt asset was observed."
+    },
+    {
+      "id": "asynchronous.reread",
+      "addr": "0x14040D000",
+      "Finding": "Drive coroutine preloads through3E0630/3E0660, yields through39D460/39E340, then creates the player through405030→3A7A40.3E0CC0 reads the live form weapon record in both preload and construction paths rather than a captured item snapshot.",
+      "Evidence": [
+        "evidence.json#functions[rva=40D000]",
+        "evidence.json#functions[rva=3E0630]",
+        "evidence.json#functions[rva=3E0660]",
+        "evidence.json#functions[rva=39D460]",
+        "evidence.json#functions[rva=39E340]",
+        "evidence.json#functions[rva=3A7A40]",
+        "evidence.json#functions[rva=3E0CC0]"
+      ],
+      "Limitations": "A foreign equipment/table write between those stages can change the constructor inputs. Native menus and this trainer's transition guards normally prevent ordinary in-game edits; arbitrary other mods are not serialized."
+    }
+  ],
+  "guard_candidates": [
+    {
+      "phase": "Before NativeBegin",
+      "candidate": "Validate sklt row",
+      "contract": "Use system BAR RVA2AE5E50. Select first type2/tag0x746C6B73; decoded entry pointer must equalRVA2AE5798. Verify entry inside complete owner allocation using the same validated allocation/BAR pattern as went/wmst. Require header8 and 8+count*8 within entry size, strictly ordered DWORD keys, exact key=selected form object BYTE+7, read signed offhand joint fromrow+6.",
+      "status": "Directly implementable structural check, subject to fixtures and review. Joint value vs model skeleton still open."
+    },
+    {
+      "phase": "Before NativeBegin",
+      "candidate": "Resolve full effective resource graph",
+      "contract": "Derive the weapon ID from went; derive obj/name.mdlx and wmst offhand obj/name.mset; include object-based supplementary resource names and recursive4×ushort dependencies+88..94 exactly as3E0660. Verify actual effective content after mod/archive resolution, bounded containers and no recursion cycles.",
+      "status": "Useful but requires an effective file-resolution contract; checking only retail files while mods override them is insufficient."
+    },
+    {
+      "phase": "Before NativeBegin / native loading stage",
+      "candidate": "Separate package presence from loaded readiness",
+      "contract": "Loaded registry headRVA29F33C8,120-byte nodes: filename+4, phaseBYTE+1, refcountWORD+2, flagsDWORD+68, groupDWORD+72, spanQWORD+80, payloadQWORD+88, priorQWORD+96, packed nextDWORD+112. Mirror exact first-match filename/group semantics. A future synchronous preflight can inspect existing active records; not-yet-loaded targets need controlled loading and a validated native-stage boundary.",
+      "status": "Cannot require every target already loaded before normal Drive or all newly used forms would be rejected. Current command does native asynchronous loading."
+    },
+    {
+      "phase": "After load, before constructor",
+      "candidate": "Validate actual resolved BAR/MSET and parent attachment metadata",
+      "contract": "Require active relevant records, successful readiness, nonzero bounded payloads, valid BAR spans, sklt row/parent joint compatibility, and actual selected motion inner type9/16 structure. Abort at a validated pre-constructor boundary before native consumers touch invalid data.",
+      "status": "Boundary/hook/lifetime contract not implemented or authorized here; a post-constructor observer is too late for immediate faults."
+    },
+    {
+      "phase": "During native allocation",
+      "candidate": "Handle allocation failure",
+      "contract": "A3088-byte weapon allocation and3608-byte player allocation occur later in the native coroutine. A current heap reading cannot guarantee later allocation success or rollback. Any recovery must handle the native constructor failure point safely rather than relying on pre-Begin free-byte estimates.",
+      "status": "Inherently later; no safe fallback/rollback hook has been implemented or claimed."
+    }
+  ],
+  "open_questions": [
+    "Validate signed joint encoding against the actual form model skeleton and attachment consumer; do not invent a>=0 constraint.",
+    "Derive and validate all model/animation-specific content dependencies without treating optional native BAR entries as mandatory.",
+    "Implement effective modded archive/file resolution and distinguish missing, replaced and malformed assets.",
+    "Identify a reversible native pre-constructor loading checkpoint if runtime content validation is pursued; do not simply hard-abort an active fiber.",
+    "No reproduced current-build Final Form failure or runtime stack is available. These findings do not establish which remaining failure path caused the user's latest crash."
+  ]
+}

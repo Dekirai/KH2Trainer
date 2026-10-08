@@ -1,0 +1,65 @@
+{
+  "date": "2026-10-07",
+  "scope": "Implementation of isolated STATUS observer wrappers; reused native ABI/startup evidence. No installer or live game call.",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "claims": [
+    {
+      "addr": "0x1403C0010",
+      "Finding": "Initialize receives STATUS in RCX and returns the original RAX. Startup also invokes it for slots that are not allocated.",
+      "Evidence": [
+        "docs/research/status-entry-observation-20261007/evidence.json#functions[addr=0x1403c0010]",
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x140025310]"
+      ],
+      "Limitations": "Reused full-body static evidence for this exact retail build. Wrapper tests use synthetic callbacks; no installation safety, runtime availability or whole-program writer closure is claimed."
+    },
+    {
+      "addr": "0x1403C1D90",
+      "Finding": "Rebuild receives STATUS in RCX and an optional character-save pointer in RDX; the wrapper preserves the returned RAX.",
+      "Evidence": [
+        "docs/research/status-entry-observation-20261007/evidence.json#functions[addr=0x1403c1d90]"
+      ],
+      "Limitations": "Reused full-body static evidence for this exact retail build. Wrapper tests use synthetic callbacks; no installation safety, runtime availability or whole-program writer closure is claimed."
+    },
+    {
+      "addr": "0x1403C2650",
+      "Finding": "Coefficient receives STATUS in RCX, signed index in EDX and signed percentage in R8D; the wrapper preserves the returned RAX and does not sanitize native arguments.",
+      "Evidence": [
+        "docs/research/status-entry-observation-20261007/evidence.json#functions[addr=0x1403c2650]"
+      ],
+      "Limitations": "Reused full-body static evidence for this exact retail build. Wrapper tests use synthetic callbacks; no installation safety, runtime availability or whole-program writer closure is claimed."
+    },
+    {
+      "addr": "0x1403C1880",
+      "Finding": "Reset receives the pool in RCX and replaces the 80-entry free list/count independently of old STATUS field bytes.",
+      "Evidence": [
+        "docs/research/status-entry-observation-20261007/evidence.json#functions[addr=0x1403c1880]"
+      ],
+      "Limitations": "Reused full-body static evidence for this exact retail build. Wrapper tests use synthetic callbacks; no installation safety, runtime availability or whole-program writer closure is claimed."
+    },
+    {
+      "addr": "0x1403C07E0",
+      "Finding": "Release decrements STATUS+612 after saveback and frees the slot when the result is nonpositive; the observer validates and uses the pre-call positive refcount.",
+      "Evidence": [
+        "docs/research/status-entry-observation-20261007/evidence.json#functions[addr=0x1403c07e0]"
+      ],
+      "Limitations": "Reused full-body static evidence for this exact retail build. Wrapper tests use synthetic callbacks; no installation safety, runtime availability or whole-program writer closure is claimed."
+    },
+    {
+      "addr": "0x140025310",
+      "Finding": "Startup initializes all 80 STATUS slots before constructing their free list. Init observation therefore cannot require a preexisting allocated slot.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x140025310]"
+      ],
+      "Limitations": "Reused full-body static evidence for this exact retail build. Wrapper tests use synthetic callbacks; no installation safety, runtime availability or whole-program writer closure is claimed."
+    }
+  ],
+  "implementation": "src/KH2Trainer.Bridge/StatusObserverSupport.h",
+  "tests": "tests/KH2Trainer.Bridge.Tests/StatusObserverTests.cpp",
+  "checkCount": 2740,
+  "failures": 0,
+  "notes": [
+    "Before/After assume a valid retained Observer and valid bound originals. Own pool-read and transaction SEH is bounded and separate from propagating native SEH.",
+    "ArmAfterProvenBarrier is an installer precondition. It does not establish that external barrier itself.",
+    "WithMetadata allows a complete typed compare/receipt/write operation under one lock. Caller must validate Actor lifetime, context and exact field bits."
+  ]
+}

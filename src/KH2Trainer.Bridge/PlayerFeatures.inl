@@ -5,13 +5,32 @@ uintptr_t g_bookmarkActor = 0;
 uintptr_t g_bookmarkStatus = 0;
 float g_bookmarkPosition[4]{};
 bool g_bookmarkValid = false;
+uint64_t g_bookmarkGeneration = 0;
 uintptr_t g_bookmarkScheduler = 0;
 BYTE g_bookmarkRoom[10]{};
 struct PlayerCollisionLease {
-    bool active;
+    bool active, releasePending;
     uintptr_t actor, status, scheduler;
+    uint64_t generation;
     BYTE room[10];
 } g_collision{};
+
+void PlayerClearBookmark() {
+    actor_lifetime::Unpin(g_bookmarkGeneration);
+    g_bookmarkGeneration = 0;
+    g_bookmarkValid = false;
+}
+#ifdef KH2_PLAYER_POSITION_TESTS
+void (__fastcall* g_testPlayerPosition)(void*,const float*) = nullptr;
+#endif
+void PlayerApplyPosition(const TrainerContext& c,const float* position) {
+#ifdef KH2_PLAYER_POSITION_TESTS
+    g_testPlayerPosition(reinterpret_cast<void*>(c.player),position);
+#else
+    reinterpret_cast<void (__fastcall*)(void*, const float*)>(c.base + 0x3B6100)(
+        reinterpret_cast<void*>(c.player), position);
+#endif
+}
 
 template<class T> T& PlayerField(uintptr_t object, SIZE_T offset) {
     return *reinterpret_cast<T*>(object + offset);
@@ -57,12 +76,13 @@ bool PlayerPosition(const TrainerContext& c, float out[4], bool requireUnattache
 }
 bool PlayerCollisionIdentity() {
     if (!g_collision.active || At<uintptr_t>(0x2A105D0) != g_collision.actor ||
+        actor_lifetime::Resolve(g_collision.generation) != g_collision.actor ||
         At<uintptr_t>(0x716868) != g_collision.scheduler ||
         memcmp(reinterpret_cast<void*>(g_base + 0x717008), g_collision.room, sizeof(g_collision.room)) ||
         !Writable(reinterpret_cast<void*>(g_collision.actor), 0xDE4) ||
         !Readable(reinterpret_cast<void*>(g_collision.status), 632)) return false;
-    return PlayerField<uintptr_t>(g_collision.actor, 1472) == g_collision.status &&
-        DecodePacked(PlayerField<uint32_t>(g_collision.status, 616)) == g_collision.actor;
+    const TrainerContext current{g_base,g_collision.actor,g_collision.status,false};
+    return actor_lifetime::ObserveCurrent(current) == g_collision.generation;
 }
 bool PlayerCollisionProfile() {
     return PlayerCollisionIdentity() &&
@@ -70,25 +90,36 @@ bool PlayerCollisionProfile() {
         (PlayerField<uint32_t>(g_collision.actor, 2248) & 0x1000) &&
         PlayerField<uintptr_t>(g_collision.actor, 2312) == 0;
 }
-void PlayerReleaseCollision() {
+void PlayerForgetCollision() {
+    actor_lifetime::Unpin(g_collision.generation);
+    g_collision = {};
+}
+void PlayerMaintainCollision() {
+    if (!g_collision.active) return;
+    if (actor_lifetime::IsRetired(g_collision.generation)) {
+        PlayerForgetCollision(); return;
+    }
+    // Off-current, absent or unresolved Actors may still be alive. Retain the
+    // pinned lease without dereferencing them or changing a replacement Actor.
+    if (!g_collision.releasePending || !PlayerCollisionIdentity()) return;
     // 3CC3B0 consists only of these masked clears and a zero pointer store.
     // The pointer is already zero. Never clear a native/cutscene override.
     if (PlayerCollisionProfile()) {
         PlayerField<uint32_t>(g_collision.actor, 292) &= ~0x40u;
         PlayerField<uint32_t>(g_collision.actor, 2248) &= ~0x1000u;
     }
-    g_collision = {};
+    PlayerForgetCollision();
 }
-void PlayerHeal(const TrainerContext& c) {
-    const int current = PlayerField<int>(c.status, 0);
-    const int maximum = PlayerField<int>(c.status, 4);
-    if (current < maximum)
-        reinterpret_cast<int (__fastcall*)(void*, int, unsigned, BYTE)>(c.base + 0x3D2EB0)(
-            reinterpret_cast<void*>(c.player), maximum - current, 0, 0);
+void PlayerReleaseCollision() {
+    if (g_collision.active) g_collision.releasePending = true;
+    PlayerMaintainCollision();
 }
-void PlayerFullMp(const TrainerContext& c) {
-    reinterpret_cast<void (__fastcall*)(void*, BYTE)>(c.base + 0x3C2040)(
-        reinterpret_cast<void*>(c.status), 0);
+#include "PlayerHealthSupport.inl"
+bool PlayerHeal(const TrainerContext& c) {
+    return player_health::SetHp(c,PlayerField<int>(c.status,4));
+}
+bool PlayerFullMp(const TrainerContext& c) {
+    return player_health::FullMp(c);
 }
 bool PlayerGaugeValid(const TrainerContext& c) {
     const float current = PlayerField<float>(c.status, 436);
@@ -176,17 +207,21 @@ bool PlayerExpAllowed() {
 }
 void PlayerReset(const TrainerContext&) {
     ZeroMemory(g_playerEffects, sizeof(g_playerEffects));
+    PlayerClearBookmark();
     PlayerReleaseCollision();
 }
 void PlayerTick(const TrainerContext& c) {
+    PlayerMaintainCollision();
     if (g_collision.active && (!PlayerLiving(c) || c.player != g_collision.actor ||
         c.status != g_collision.status || !PlayerCollisionProfile() ||
         PlayerField<uint32_t>(c.player, 1696))) PlayerReleaseCollision();
     if (g_bookmarkValid && (!c.sceneReady || c.player != g_bookmarkActor || c.status != g_bookmarkStatus ||
+        actor_lifetime::Resolve(g_bookmarkGeneration) != c.player ||
+        actor_lifetime::ObserveCurrent(c) != g_bookmarkGeneration ||
         At<int>(0x716884) != 1 || At<BYTE>(0x9BA8D1) || At<uintptr_t>(0x9BA928) ||
         At<uintptr_t>(0x716868) != g_bookmarkScheduler ||
         memcmp(reinterpret_cast<void*>(c.base + 0x717008), g_bookmarkRoom, sizeof(g_bookmarkRoom))))
-        g_bookmarkValid = false;
+        PlayerClearBookmark();
     if (!PlayerLiving(c)) return;
     if (g_playerEffects[0]) PlayerHeal(c);
     if (g_playerEffects[1] &&
@@ -211,7 +246,9 @@ bool PlayerHandle(const TrainerContext& c, unsigned slot, const double args[8], 
     if (slot == 46) {
         if (!IsInteger(args[0], 0, 1)) { result = {11, L"Use 0 or 1 for this toggle."}; return true; }
         if (args[0] == 0) {
-            PlayerReleaseCollision(); result = {0, L"Movement collision override released where still owned."}; return true;
+            PlayerReleaseCollision();
+            result = {0, g_collision.active ? L"Collision release is pending until its original player instance can be verified." :
+                L"Movement collision override released where still owned."}; return true;
         }
     }
     // Disable is always accepted, including teardown and character changes.
@@ -222,10 +259,13 @@ bool PlayerHandle(const TrainerContext& c, unsigned slot, const double args[8], 
     if (!PlayerLiving(c)) return true;
     if (slot == 46) {
         if (g_collision.active) {
-            if (c.player == g_collision.actor && c.status == g_collision.status && PlayerCollisionProfile()) {
+            if (!g_collision.releasePending && c.player == g_collision.actor && c.status == g_collision.status && PlayerCollisionProfile()) {
                 result = {0, L"Movement collision bypass is already active."}; return true;
             }
             PlayerReleaseCollision();
+            if (g_collision.active) {
+                result = {18, L"The previous collision override is still waiting for its original player instance."}; return true;
+            }
         }
         if (!Writable(reinterpret_cast<void*>(c.player), 0xDE4) ||
             PlayerField<uint32_t>(c.player, 1696) ||
@@ -234,7 +274,11 @@ bool PlayerHandle(const TrainerContext& c, unsigned slot, const double args[8], 
             PlayerField<uintptr_t>(c.player, 2312)) {
             result = {18, L"The player is attached or already has a native movement/collision override."}; return true;
         }
-        g_collision.active = true;
+        const uint64_t generation = actor_lifetime::ObserveCurrent(c);
+        if (!generation || !actor_lifetime::Pin(generation)) {
+            result = {18, L"Collision bypass requires a verified player lifetime."}; return true;
+        }
+        g_collision.active = true; g_collision.generation = generation;
         g_collision.actor = c.player; g_collision.status = c.status;
         g_collision.scheduler = At<uintptr_t>(0x716868);
         memcpy(g_collision.room, reinterpret_cast<void*>(c.base + 0x717008), sizeof(g_collision.room));
@@ -253,11 +297,20 @@ bool PlayerHandle(const TrainerContext& c, unsigned slot, const double args[8], 
         if (!IsInteger(args[0], 1, PlayerField<int>(c.status, 4))) {
             result = {11, L"HP must be an integer between 1 and the current maximum."}; return true;
         }
-        reinterpret_cast<int (__fastcall*)(void*, int, unsigned, BYTE)>(c.base + 0x3D2EB0)(
-            reinterpret_cast<void*>(c.player), static_cast<int>(args[0]) - PlayerField<int>(c.status, 0), 0, 0);
-    } else if (slot == 4) PlayerHeal(c);
-    else if (slot == 5) PlayerFullMp(c);
-    else if (slot == 6) { PlayerHeal(c); PlayerFullMp(c); }
+        if(!player_health::SetHp(c,static_cast<int>(args[0]))) {
+            result={19,L"HP changes are waiting for a verified player and available HP display resources."}; return true;
+        }
+    } else if (slot == 4) {
+        if(!PlayerHeal(c)) { result={19,L"Healing is waiting for a verified player and available HP display resources."}; return true; }
+    } else if (slot == 5) {
+        if(!PlayerFullMp(c)) { result={19,L"MP restore is waiting for a verified player and MP state."}; return true; }
+    } else if (slot == 6) {
+        // Validate both paths before either resource is changed.
+        if(!player_health::HpReady(c,PlayerField<int>(c.status,4)) || !player_health::MpReady(c)) {
+            result={19,L"Full restore is waiting for verified HP, MP and display resources."}; return true;
+        }
+        if(!PlayerHeal(c) || !PlayerFullMp(c)) { result={19,L"Player resources changed during restore."}; return true; }
+    }
     else if (slot == 7) {
         const int maximum = PlayerField<BYTE>(c.status, 434);
         if (PlayerField<BYTE>(c.status, 431) != 1 || maximum < 1 || maximum > 9 ||
@@ -273,6 +326,12 @@ bool PlayerHandle(const TrainerContext& c, unsigned slot, const double args[8], 
             result = {12, L"World-position changes require an unattached player with valid coordinates."}; return true;
         }
         if (slot == 16) {
+            const uint64_t generation = actor_lifetime::ObserveCurrent(c);
+            if (!generation || !actor_lifetime::Pin(generation)) {
+                result = {13, L"A position bookmark requires a verified player lifetime."}; return true;
+            }
+            PlayerClearBookmark();
+            g_bookmarkGeneration = generation;
             memcpy(g_bookmarkPosition, position, sizeof(position));
             g_bookmarkActor = c.player; g_bookmarkStatus = c.status; g_bookmarkValid = true;
             g_bookmarkScheduler = At<uintptr_t>(0x716868);
@@ -281,6 +340,8 @@ bool PlayerHandle(const TrainerContext& c, unsigned slot, const double args[8], 
         }
         if (slot == 17) {
             if (!g_bookmarkValid || g_bookmarkActor != c.player || g_bookmarkStatus != c.status ||
+                actor_lifetime::Resolve(g_bookmarkGeneration) != c.player ||
+                actor_lifetime::ObserveCurrent(c) != g_bookmarkGeneration ||
                 At<uintptr_t>(0x716868) != g_bookmarkScheduler ||
                 memcmp(reinterpret_cast<void*>(c.base + 0x717008), g_bookmarkRoom, sizeof(g_bookmarkRoom))) {
                 result = {13, L"No bookmark is valid for the current scene/player instance."}; return true;
@@ -292,8 +353,7 @@ bool PlayerHandle(const TrainerContext& c, unsigned slot, const double args[8], 
             }
             position[slot - 13] = static_cast<float>(args[0]);
         }
-        reinterpret_cast<void (__fastcall*)(void*, const float*)>(c.base + 0x3B6100)(
-            reinterpret_cast<void*>(c.player), position);
+        PlayerApplyPosition(c,position);
     } else if (slot >= 32 && slot <= 35) {
         const uintptr_t save = PlayerSave(c);
         static constexpr unsigned offsets[]{9, 10, 11, 8};

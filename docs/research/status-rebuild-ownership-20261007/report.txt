@@ -1,0 +1,200 @@
+STATUS rebuild ownership â€” F03
+=============================
+
+Research checkpoint for the immutable v0.12.6 baseline. No product, hook, native test, game process, input, save, mod or Twitch action was performed.
+
+Result
+------
+ActorGeneration plus STATUS address and exact field bits is insufficient. A level/equipment/form refresh can rebuild the same live Actor's same STATUS and produce the same values. Its backlink and refcount need not change. No existing monotonic STATUS revision was found in the observed 632-byte layout.
+
+56 fresh complete IDA bodies contain 3440 instructions and 15150 original code bytes. The verifier also checks 839 data/fragment bytes, exact retail SHA, complete page cursors/counts, and an independent Capstone decode at every ASM address. The 47-byte allocator tail 3C0250 is a separate code fragment, not an invented IDA function. Evidence was read from existing ready session de3f97b1; the IDB was not changed.
+
+Five scalar fields
+------------------
+STATUS+430: General received-hit coefficient, BYTE, native initializer default 100.
+STATUS+520: Draw, Float32, native initializer default 0.
+STATUS+568: Jackpot, Float32, native initializer default 0.
+STATUS+572: Lucky, Float32, native initializer default 0.
+STATUS+580: Munny retained factor, Float32, native initializer default 1.
+
+Incoming writer graph
+---------------------
+3C0010 initializes an allocation, sets coefficient 430=100 and calls 4016B0.
+3C1D90 rebuilds a character STATUS:4016B0 resets the ability block; coefficient 430 becomes 100;3C1190 applies equipment;4014A0/401730 apply equipped abilities. Ability 405 changes Draw,406 Jackpot,407 Lucky and 540 retention.
+3C2100 is saveback then rebuild on exactly the same STATUS. Both direct character acquisition 3C0620/3C02E0 and UI preview 3C03F0 also reach 3C1D90.
+Ordinary EXP 3ECF30/3ED190, form-level 3E8380/3E8AA0, summon-level 40D530/40D6E0 and UI/cache 2FC760 call 3C2100 directly. The Sora/Roxas 404F70 and Mickey 4154A0 virtual adapters at descriptor+280 are only one subset.
+3C2240 writes enemy coefficients from parameters; its two known callers first call 3C0010. Script 431200 independently calls 3C2650, whose signed index 6 overwrites General 430. It has no native index bound.
+
+Allocation identity is separate
+-------------------------------
+3C04E0 returns an existing allocated character STATUS and increments 612, or creates one. 612 is a refcount,616 a packed Actor backlink,504 the ability owner selfpointer; none is a rebuild generation.
+3C07E0 saves volatile data, decrements 612 and returns a slot to the free list when<=0. It leaves scalar bytes/backlinks in place.
+3C1880 resets the whole free list/count 80 without resetting scalar fields.3C0840 calls it. Observing only individual init/rebuild calls cannot accurately describe that intermediate pool lifetime.
+Actor and STATUS may have different sharing/reference lifetimes. Metadata should track 80 pool slots without writing native refcounts. Existing ActorGeneration remains an additional independent binding.
+
+Minimum conditional observation contract
+----------------------------------------
+0x1403C0010: before any original writes; RCX=STATUS; return same pointer RAX. new slot-allocation serial; invalidate prior status leases even at same address.
+0x1403C1D90: entry, before original; RCX=STATUS,RDX=nullable CharSave; native RAX preserved. increment whole-cohort rebuild revision even when final bits equal; a conservative revision on no-op early return is acceptable.
+0x1403C2650: before original store; RCX=STATUS,EDX=signed index,R8D=signed percent; native RAX preserved. General revision for index 6; reject observation confidence on unsupported/corrupt index instead of assuming a bound. Native original still forwards unchanged.
+0x1403C1880: before reset; RCX=pool base; native return preserved. increment pool epoch and invalidate old slot allocations.
+0x1403C07E0: before reference release; RCX=STATUS; preserve original return. retire a slot if valid pre-refcount==1; malformed counts lose confidence. Do not label Actor dead.
+
+Known 4016B0/401730/3C1190 code callers are contained within 3C0010/3C1D90. Known 3C2240 callers first initialize a newly allocated slot. A broader boundary contract may also observe 3C2240,4016B0 and 401730 to tolerate externally initiated calls to these public helpers. The bounded candidate scan is supporting evidence, not a whole-program no-other-writes proof.
+
+Every observation must invalidate before the relevant original writes, including same-value writes. A conservative invalidation on an early no-op return is safe; pretending a failed/partial rebuild did not happen is not. Pool epoch, slot allocation serial, rebuild revision and selected field revisions must not reuse tokens. Overflow or observer loss blocks restore and reports uncertainty rather than Actor death.
+
+Manual Loot/DamageTuning commands are direct stores and must participate in the same writer revision. Acquiring a typed lease must capture original/applied bits, exact current actor/status binding, owner and revisions in one game-thread transaction. Separate field masks permit overlapping-duration rewards on disjoint fields; whole-cohort rebuild invalidates all five. Do not recapture a new baseline automatically after native takeover.
+
+Observation continues during off-current/menu/host-expired phases. Command admission and restore require a freshly coherent current role, actor generation, allocated slot/backlinks, intact observation and matching revisions/values. An off-current live Sora is not retired merely because Mickey is controlled. Native originals always forward exactly once; metadata errors cannot swallow native calls or native exceptions.
+
+Implementation boundary
+-----------------------
+The minimum entry set is direct code, not one replaceable vtable. Derived+280 hooks miss level/reward direct calls; VM record 7566E0 covers only the coefficient script adapter. An approved, complete interception mechanism with relocation/unwind/concurrency proof is still required. No hook is implemented or authorized by this report.
+This report establishes a bounded native call-graph contract, not an approved inline-hook implementation. There is no product patch in this checkpoint. A claim covering arbitrary mod writes or corrupted pointer/index behavior would exceed the evidence.
+
+Roles and visible effects
+-------------------------
+Sora: Shared STATUS layout and all five consumer paths; normal native form/mission rules remain.
+Roxas: Shared constructor/rebuild/Draw/party-quantity/damage paths. Match character 14 and forms 0/10 through existing role classifier; do not infer role from the shared Sora save.
+Mickey: Shared structural layout and rebuild; Draw, quantity and damage-coefficient consumers remain applicable. Normal prize 3DC170 remaps toDrive orbs and suppresses ordinary Lucky item rolls; retention is bypassed for the remapped 7/8 kinds. Do not market Lucky/Tax effects as effective in ordinary rescue-Mickey mode.
+admission: Structural role compatibility is not a release-ready timed reward. Ownership observer/receipt implementation and role-specific tests are still required.
+
+Verification and remaining limits
+---------------------------------
+No live game or hooks executed; no product/test/build changes.
+No universal proof excludes arbitrary external memory writes, corrupted resource-derived indices or unexamined computed-address/bulk writes. Exact retail path pinning is a conditional contract.
+The candidate scan covers 0x1403A0000.0x140435000;185796 decoded instructions,188 skipped data bytes. It intentionally records offset collisions and does not turn all matches into STATUS writers.
+The 47-byte allocator tail at 3C0250 is not defined as an IDA function; its original bytes are captured as a code fragment, excluded from full-function and claim totals.
+No artificial native revision field should be invented from STATUS 612(refcount),616(backlink),504(selfpointer) or unused padding.
+The offline candidate scan is limited to 0x1403A0000.0x140435000 and the specified displacement forms. It includes collisions with HUD/motion/attack objects and must not be treated as a global alias analysis. Computed-address/bulk writes and other modules remain explicitly outside a universal guarantee.
+
+Required next implementation tests
+----------------------------------
+1. same Actor/status and identical output across 3C2100 rebuild -> old release performs no write.
+2. EXP, form-level, summon-level, menu/cache and virtual-refresh routes -> same invalidation.
+3. slot released/reused between snapshots, same pointer/refcount/backlink -> different allocation identity.
+4. pool free-list reset with unchanged scalar bytes -> old status receipt invalid.
+5. 401730 zero-add and retention-times 1, general coefficient identical setter -> takeover observed.
+6. Sora 0.6,Roxas 0/10,rescueMickey 11 structural matrix; Mickey Lucky/retention semantics explicit.
+7. off-current living Sora while Mickey current -> keep receipt without stale dereference; native rebuild supersedes it.
+8. manual same-value write vs old timed cleanup; overlapping masks and non-overlapping rewards.
+9. host expiry, callback offthread, code/slot change, metadata exception, original exception, overflow -> fail closed and exact native forwarding.
+10. partial native rebuild failure before completion -> old baseline never restored.
+11. actual typed IPC duplicate receipt, unknown acknowledgement and owner takeover, without a generic scalar fallback.
+
+Per-function findings
+---------------------
+0x1403C1D90: Rebuilds the same STATUS from character/form save pointers. It calls 4016B0, resets coefficients 424.430 to 100, applies equipment through 3C1190, then enabled abilities through 4014A0. Actor backlink 616 and allocation/refcount 612 are not rebuilt here; identical output bits are possible.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c1d90]
+0x1404016B0: Initializes the ability subobject at STATUS+464. Owner pointer+40 becomes STATUS; Draw+56, Jackpot+104, Lucky+108 become 0 and retention+116 becomes 1. Known code callers are 3C0010 and 3C1D90.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1404016b0]
+0x1403C0010: Initializes a 632-byte STATUS allocation: character 608=-1, refcount 612=1, backlink 616=null and coefficient 430=100; calls 4016B0. It is also used by startup and every observed pool-allocation family, independently of 3C1D90.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c0010]
+0x1403C02E0: Gets or allocates a character STATUS via 3C04E0 and calls 3C1D90 on both paths. Reusing an existing STATUS is explicit; acquiring a status can cause a same-address rebuild.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c02e0]
+0x1403C03F0: Allocates a fresh STATUS from the 80-entry free list, initializes it, binds character save and optional Sora/Roxas form save, then rebuilds it. Its UI-preview callers show allocation is not restricted to current field actors.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c03f0]
+0x1403C0620: Obtains a character STATUS via 3C04E0, updates form/save bindings for character 1 or 14, and always invokes 3C1D90 when status exists. Mickey character 4 still reaches the common rebuild without Sora-specific form binding.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c0620]
+0x1403C2100: Saves selected volatile values through 3C2120, then tail-jumps to 3C1D90 on the identical STATUS address. This is the central refresh helper but not the only incoming route to rebuild/init.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c2100]
+0x1403C1190: Applies equipment parameters to the STATUS, including rounded multiplicative coefficient 430, then 401730 for the equipment ability. All known code callers are inside 3C1D90.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c1190]
+0x1404014A0: Walks 80 character ability words and 24 form ability words; enabled entries invoke 401730. The sole known code caller is 3C1D90. Later growth-level byte updates do not write the five selected fields.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1404014a0]
+0x1403C2240: Enemy-parameter STATUS initialization directly writes coefficient 430 from parameter+84. Both known code callers (3C0280/3C06B0) first invoke 3C0010; it is an alternative STATUS writer family and must not be described as absent.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c2240]
+0x1403C2650: Writes BYTE(status+424+signed index) from saved enemy parameter and percentage. Index 6 targets 430. It neither increments a status revision nor excludes identical writes; the native function has no index bound. The sole known code caller is 431200.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c2650]
+0x140401730: Ability 405 adds Params+300 to Draw,406 adds Params+348 to Jackpot,407 adds Params+352 to Lucky,540 multiplies retention by Params+368. Other IDs affect other ability fields; the final item-defined bitset OR is unchecked for a corrupted item index. Known code callers are 3C1190 and 4014A0.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x140401730]
+0x1403C04E0: Searches the allocated 80-slot STATUS pool by character ID, excluding free indices. Existing matches increment refcount 612 and save back volatile values; absent matches allocate and call 3C0010. Refcount is not a monotonic generation identifier.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c04e0]
+0x1403C06B0: Finds an existing enemy STATUS by decoded parameter pointer or allocates through 3C0010 then 3C2240. Reused entries increment reference count. This is distinct from character rebuild.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c06b0]
+0x1403C0280: Allocates an enemy STATUS through 3C0010 and populates it through 3C2240. It cannot be excluded when describing all pool-entry reuse.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c0280]
+0x1403A7A40: Common playable constructor obtains character ID from the object, calls 3C0620, assigns Actor+1472 and writes STATUS+616 back to the Actor. Sora/Roxas and rescue Mickey construction call this shared path.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403a7a40]
+0x1403D7470: Returns Actor+1472 plus 464, establishing the absolute Draw 520/Jackpot 568/Lucky 572/retention 580 offsets.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403d7470]
+0x140431200: Synchronous VM adapter decodes operand 0 as STATUS, reads signed index atoperand+8 and percentage at+16, then tail-jumps 3C2650. Static VM record 7566E0 points here with argument metadata 3. It offers only the scripted coefficient route, not rebuild interception.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x140431200]
+0x140401680: Reads a growth-level byte from ability+32+index, optionally returning 5 under a game-mode predicate; it performs no selected-cohort write.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x140401680]
+0x1403C07E0: Saves volatile values, decrements STATUS refcount and appends the slot to the free list when the result is<=0. Fields and backlink are not zeroed on release, so surviving bytes do not prove live allocation.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c07e0]
+0x1403C2120: Writes HP/MP/charge and Drive/summon volatile values to save records. It does not export 430/520/568/572/580, so rebuilding from save may replace these runtime edits without persisting their old scalar values.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c2120]
+0x1403C0390: Resolves a current-world party character then selects 3C0620 for index 0 or 3C02E0 otherwise; both paths reach the rebuild family.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c0390]
+0x1403C04C0: Dispatches character 1/14 to 3C0620 and other nonzero character IDs to 3C02E0. Both rebuild; this dispatcher is not an exclusive Sora gate.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c04c0]
+0x1403A5790: Resets a save gauge word, refreshes character 1 through 3C0620, fills Drive through 3C 2020, then releases the STATUS reference. A rebuild can occur from system repair/recovery code rather than an Actor virtual refresh.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403a5790]
+0x1403C2DB0: Party Actor construction calls 3C02E0, stores its STATUS and backlink, then loads both weapon positions. Shared STATUS semantics also serve allies.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c2db0]
+0x1403D57F0: Descriptor callback takes Actor in RDX and refreshes its nonnull STATUS through 3C2100. Hooking only this base callback would miss derived-player callbacks and direct refresh callers.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403d57f0]
+0x1403D6850: Actor helper refreshes nonnull Actor+1472 through 3C2100. Direct level/reward code does not have to call this Actor helper.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403d6850]
+0x140025310: Startup initializes all 80 STATUS slots with 3C0010 and creates the 0.79 free list with count 80.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x140025310]
+0x1402FC760: UI/cache path iterates four records and refreshes selected present STATUS pointers via 3C2100, showing rebuild is not exclusive to a field update virtual call.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1402fc760]
+0x1403A7890: Base playable descriptor refresh first updates the form save pointer through 3C26C0, then calls 3D6850 on Actor RDX.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403a7890]
+0x1403A9220: Playable Actor refresh updates form save pointer through 3C26C0 then calls 3D6850. Derived Sora/Roxas and Mickey+280 adapters delegate here.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403a9220]
+0x1403C2CD0: Party descriptor adapter moves Actor RDX toRCX and tail-jumps 3D6850.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c2cd0]
+0x1403DDC30: Additional descriptor adapter tail-jumps 3D6850 on Actor RDX; it adds another caller without introducing a new writer.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403ddc30]
+0x1403ECF30: Ordinary EXP level-up refreshes each present leveled Actor STATUS directly through 3C2100. It bypasses the player's+280 vtable callback.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403ecf30]
+0x1403ED190: Alternate level-up helper refreshes the supplied Actor STATUS directly through 3C2100 after each level reward.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403ed190]
+0x1403E8380: Form EXP/level reward processing changes form abilities then directly rebuilds Actor.status through 3C2100. Same Actor and status may remain live.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403e8380]
+0x1403E8AA0: Alternate form-level reward helper adjusts ability records and directly calls 3C2100 on the existing Actor.status.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403e8aa0]
+0x14040D530: Positive summon-EXP level-up path refreshes the current player's STATUS directly through 3C2100 after level rewards.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x14040d530]
+0x14040D6E0: Alternate summon-level reward helper directly refreshes current-player STATUS through 3C2100.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x14040d6e0]
+0x140405030: Sora/Roxas constructor delegates to 3A7A40 before installing descriptor 750300; it does not define a separate Loot-STATUS layout.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x140405030]
+0x140415670: Rescue-Mickey constructor delegates to 3A7A40 with form 11, then installs descriptor 7523B 8 and changes gauge/HP state. It retains the same STATUS layout.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x140415670]
+0x1404158C0: Alternate rescue-Mickey spawn calls 3A7A40 with form 11, likewise using common STATUS initialization/rebuild. Allocation failures and gameplay use are outside this observation study.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1404158c0]
+0x1403C26C0: Updates only packed STATUS+596 form-save binding. The observed playable refresh callers then rebuild; it is not itself a write to any of the five reward fields.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c26c0]
+0x1403C0840: Calls 3C1880 on the global STATUS pool then zeros the adjacent HP-floor global. The pool reset is a separate invalidation event from per-slot field initialization.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c0840]
+0x1403ABA40: Orb quantity adds Jackpot from each valid party entry, starting with the current player through 3D5C50; no Sora character-ID test excludes coherent Roxas/Mickey STATUS.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403aba40]
+0x1403DC170: Prize generation computes retention product and Lucky sum over party STATUS. Rescue-Mickey mode remaps orb kinds to 7/8 and skips the normal item-roll path: its current Lucky and retention fields can be structurally valid but those ordinary effects are bypassed.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403dc170]
+0x1403DC500: Pickup radius adds Draw when Actor 1736bit 4 is present; the common playable base constructor sets that bit. Native defeat, explicit-radius, vertical-distance and model rules still apply.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403dc500]
+0x140415840: Identifies special rescue-Mickey prize mode from current listed Actor 1736bit 0x 02000000, rather than character save identity.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x140415840]
+0x1403D5C50: Party index 0 returns current player; other indices delegate to ally array getter with index-1.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403d5c50]
+0x1403C3270: Returns an ally-array pointer for the supplied index without bounds checking; trainer consumer inspection must keep the native 0.2 party scope bounded.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c3270]
+0x1403C12F0: Received damage calculation consumes target STATUS 430 and selected 424+element coefficient; category/attack-type branches can bypass normal scaling. This is not an unconditional final-HP multiplier and is not restricted to Sora.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c12f0]
+0x140404F70: Sora/Roxas descriptor+280 adapter moves Actor RDX toRCX and tail-jumps 3A9220. Vtable 5CBA28+280 points here.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x140404f70]
+0x1404154A0: Rescue-Mickey descriptor+280 adapter has the same ABI and tail-jumps 3A9220; vtable 5D15A0+280 points here.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1404154a0]
+0x1403C1880: Resets only the 80-entry free list and count 80 at pool+50560/+50880. It does not rewrite the selected status fields; old bytes can remain after allocation invalidation.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c1880]
+0x1403D5840: Common controllable-character base constructor sets Actor 1736bit 4. Via 3A7A40 this supplies the Draw-consumer category bit for Sora/Roxas/rescue Mickey.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403d5840]
+0x1403C3150: Periodic off-field party recovery may acquire/rebuild a saved party STATUS through 3C04C0 and release it afterward. Observing only the currently controlled Actor would miss shared-pool activity.
+Evidence: docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c3150]
+

@@ -96,6 +96,10 @@ TrainerResult Execute(unsigned slot=304,double a=25,double b=5) {
     Check(DisplayHandle(c,slot,args,r),"owned command dispatched");return r;
 }
 bool Has(unsigned slot) { return (shared.valid[slot/64]&(uint64_t(1)<<(slot%64)))!=0; }
+TrainerResult CompareColor(double operation,double expectedType,double expectedSeverity,double type,double severity) {
+    TrainerResult result{}; const double args[8]{operation,expectedType,expectedSeverity,type,severity};
+    Check(DisplayHandle(Context(),464,args,result),"conditional color command dispatched"); return result;
+}
 void Reject(const char* label,unsigned slot=304,double a=25,double b=5) {
     const auto r=Execute(slot,a,b);Check(r.code!=0&&brightCalls==0&&colorCalls==0&&locks==0&&unlocks==0,label);
 }
@@ -214,11 +218,83 @@ void TestSnapshotAndDispatch() {
     }
     for(unsigned slot:{303u,307u,511u}){TrainerResult r{123,L"unchanged"};double args[8]{};Check(!DisplayHandle(Context(),slot,args,r)&&r.code==123,"unowned command passed through");}
 }
+void TestConditionalColor() {
+    // Every canonical original/destination pair, both apply and restore, including disabled zero.
+    for(int originalType=0;originalType<=3;++originalType)for(int originalSeverity=0;originalSeverity<=10;++originalSeverity) {
+        if(!ColorPair(originalType,originalSeverity))continue;
+        for(int type=0;type<=3;++type)for(int severity=0;severity<=10;++severity) {
+            if(!ColorPair(type,severity))continue;
+            for(int operation=0;operation<=1;++operation) {
+                Reset();GX<int>(23364)=originalType;GX<int>(23368)=originalSeverity;
+                BYTE settings[508]{};memcpy(settings,reinterpret_cast<void*>(g_base+0x715350),508);
+                const auto result=CompareColor(operation,originalType,originalSeverity,type,severity);
+                Check(!result.code&&colorCalls==1&&brightCalls==0&&lastType==type&&lastSeverity==severity&&allCallsLocked,
+                    "matching pair calls only color exactly once inside mutex");
+                Check(GX<float>(716)==0&&GX<float>(23360)==1&&!memcmp(settings,reinterpret_cast<void*>(g_base+0x715350),508),
+                    "conditional color preserves brightness gamma and loaded configuration");
+                DisplaySnapshot(Context());
+                Check(Has(465)&&shared.values[465]==type*16+severity,"coherent packed pair is sampled including valid zero");
+            }
+        }
+    }
+    for(int operation=0;operation<=1;++operation) {
+        Reset();auto result=CompareColor(operation,2,5,0,0);
+        Check((result.code==0)==(operation==1)&&!colorCalls&&!brightCalls&&unlocks==1,
+            "mode mismatch rejects apply but completes restore without native writes");
+        Reset();result=CompareColor(operation,1,6,0,0);
+        Check((result.code==0)==(operation==1)&&!colorCalls&&!brightCalls&&unlocks==1,
+            "severity mismatch compares entire pair and never writes");
+        Reset();onLock=[]{GX<int>(23364)=3;GX<int>(23368)=9;};result=CompareColor(operation,1,5,0,0);
+        Check((result.code==0)==(operation==1)&&!colorCalls&&!brightCalls&&GX<int>(23364)==3&&GX<int>(23368)==9,
+            "change after host snapshot but during lock acquisition wins over stale conditional request");
+    }
+    for(double bad:{-1.,2.,0.5,std::numeric_limits<double>::quiet_NaN(),std::numeric_limits<double>::infinity()}) {
+        Reset();Check(CompareColor(bad,1,5,2,10).code!=0&&!locks&&!colorCalls,"invalid operation refused before mutex");
+    }
+    for(double bad:{-1.,4.,0.5,std::numeric_limits<double>::quiet_NaN()}) {
+        Reset();Check(CompareColor(0,bad,5,2,10).code!=0&&!locks,"invalid expected mode refused");
+        Reset();Check(CompareColor(1,1,5,bad,10).code!=0&&!locks,"invalid replacement mode refused");
+    }
+    for(double bad:{-1.,11.,0.5,std::numeric_limits<double>::infinity()}) {
+        Reset();Check(CompareColor(0,1,bad,2,10).code!=0&&!locks,"invalid expected severity refused");
+        Reset();Check(CompareColor(1,1,5,2,bad).code!=0&&!locks,"invalid replacement severity refused");
+    }
+    for(int type=0;type<=3;++type)for(int severity=0;severity<=10;++severity) {
+        if(ColorPair(type,severity))continue;
+        Reset();Check(CompareColor(0,type,severity,1,5).code!=0&&!locks,"noncanonical expected pair refused");
+        Reset();Check(CompareColor(1,1,5,type,severity).code!=0&&!locks,"noncanonical destination pair refused");
+        Reset();GX<int>(23364)=type;GX<int>(23368)=severity;
+        Check(CompareColor(1,1,5,0,0).code!=0&&locks==1&&unlocks==1&&!colorCalls,"invalid native pair is unavailable not writable");
+        DisplaySnapshot(Context());Check(!Has(465)&&Has(304),"invalid color pair does not masquerade as disabled or invalidate independent brightness");
+    }
+    Reset();TrainerResult result{};Check(DisplayHandle(Context(),464,nullptr,result)&&result.code&&!locks,"null conditional arguments rejected");
+    Reset();g_disabled=1;Check(CompareColor(0,1,5,2,10).code&&!locks,"disabled conditional operation refuses before lock");
+    Reset();lockResult=1;Check(CompareColor(0,1,5,2,10).code&&!unlocks&&!colorCalls,"conditional lock failure never calls native setter");
+    Reset();onLock=[]{GX<uintptr_t>(736)+=8;};Check(CompareColor(1,1,5,0,0).code&&unlocks==1&&!colorCalls,
+        "conditional restore discards a replaced renderer after acquisition");
+    Reset();onLock=[]{GX<int>(808)=1;};Check(CompareColor(0,1,5,2,10).code&&unlocks==1&&!colorCalls,"conditional apply respects shutdown during lock");
+    Reset();onLock=[]{fakeNow+=5001;};Check(CompareColor(1,1,5,0,0).code&&unlocks==1&&!colorCalls,"conditional restore respects expired heartbeat");
+    Reset();unlockResult=1;Check(CompareColor(0,1,5,2,10).code==2&&colorCalls==1&&faulted,"conditional unlock error latches shared display failure");
+    Check(CompareColor(1,2,10,1,5).code!=0&&colorCalls==1&&locks==1,"failed unlock prevents further conditional writes");
+    Reset();lockResult=1;DisplaySnapshot(Context());Check(!Has(465)&&!unlocks,"failed coherent sample acquisition publishes no pair");
+    Reset();unlockResult=1;DisplaySnapshot(Context());Check(!Has(465)&&faulted,"failed coherent sample release publishes no pair and latches");
+    Reset();onLock=[]{GX<int>(808)=1;};DisplaySnapshot(Context());Check(!Has(465)&&unlocks==1,"coherent sample suppresses shutdown data");
+    Reset();DisplayCapabilities();for(unsigned slot=464;slot<=466;++slot)
+        Check(((shared.supported[slot/64]>>(slot%64))&1)==(slot<=465),"exactly new command and readback capabilities published");
+    double args[8]{};result={123,L"untouched"};Check(!DisplayHandle(Context(),465,args,result)&&result.code==123,"packed readback is not a writable command");
+}
+bool CatchConditionalSetter() {
+    raiseCall=2;
+    __try { CompareColor(0,1,5,2,10); }
+    __except(EXCEPTION_EXECUTE_HANDLER) { return true; }
+    return false;
+}
 }
 int main() {
     g_base=reinterpret_cast<uintptr_t>(VirtualAlloc(nullptr,ImageSize,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE));
     if(!g_base)return 2;
-    TestInputs();TestLifetime();TestMutexAndRestore();TestSnapshotAndDispatch();
+    TestInputs();TestLifetime();TestMutexAndRestore();TestSnapshotAndDispatch();TestConditionalColor();
+    Reset();Check(CatchConditionalSetter()&&unlocks==1&&!held,"conditional setter SEH still releases captured mutex exactly once");
     printf("DisplayGuardTests: %u checks, %u failures\n",checks,failures);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);return failures?1:0;
 }

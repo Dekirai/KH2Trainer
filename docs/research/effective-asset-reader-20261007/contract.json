@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "status": "implemented",
+  "bindingStrength": "OfflineManifestBinding",
+  "api": {
+    "factory": "EffectiveAssetManifest.VerifyAsync(EffectiveAssetManifestOptions, AssetReadLimits?, CancellationToken)",
+    "reader": "new AssetEffectiveByteReader(manifest).ReadAsync(asciiRelativeName, CancellationToken)",
+    "result": "OwnedAssetBytes",
+    "manifestMutability": "Private constructor; all caller collections copied with bounded enumeration before first await; sealed immutable records; read-only collections; stable SHA256 over identities, verified hashes, roots, order, flags and limits."
+  },
+  "providerOrder": [
+    "PanaceaRawRecord: modRoot/raw/name",
+    "PanaceaLooseDev: devRoot/name",
+    "PanaceaLooseMod: modRoot/name",
+    "PanaceaLooseExtract: extractRoot/name",
+    "RetailPackage: declared order, exact digest then final-component ASCII lowercase within each provider"
+  ],
+  "decodeRules": {
+    "loose": "Plain bytes, no transform or inflate. Empty selected files reject.",
+    "raw": "Standalone bounded record, decode enabled; platform transform flag independently applied. No fabricated HED.",
+    "retail": "Per-provider DecodeEnabled; false reads rawSize unchanged and disables transform/inflate.",
+    "tiny": "rawSize <=16 bypasses transform/inflate. Effective reader rejects zero; legacy archive zero-size behavior is preserved.",
+    "positive": "Decoded providers with rawSize>16 stream positive mode bytes through optional prefix transform then exact zlib + Adler32/trailer/padding checks.",
+    "minusOne": "Decoded providers with rawSize>16 apply prefix transform unless disabled.",
+    "minusTwo": "Plain original bytes.",
+    "otherMode": "Rejected, including zero and unknown negative modes.",
+    "remasters": "All declared metadata and physical spans checked. Only primary payload decoded; no semantic remaster safety claim."
+  },
+  "bounds": {
+    "packageProviders": 32,
+    "configurationEvidenceFiles": 32,
+    "fingerprintFileMaximumBytes": 1073741824,
+    "assetNameMaximumAsciiCharacters": 1024,
+    "hedMetadata": "Aggregate bounded by MaximumMetadataBytes; each provider row count bounded by MaximumIndexEntries.",
+    "recordMetadata": "16+48*count with wide arithmetic, MaximumMetadataBytes/MaximumBarEntries, physical spans within record.",
+    "decodedBytes": "MaximumDecodedBytes before allocation; encoded input streamed.",
+    "barDepth": "No BAR recursion in this reader; limits are validated. Existing bounded AssetArchiveReader retains recursive BAR API."
+  },
+  "limitations": [
+    "OfflineManifestBinding is unconditional. Exact supported binaries and disk roots do not prove loaded hooks, cached package metadata, startup fake-package ownership, current native prefix or provider configuration.",
+    "The manifest describes caller-declared roots and order; it does not discover a running process or parse/attest its settings. Optional configuration evidence fingerprints bind documents, not runtime adoption.",
+    "A final absence recheck is not an atomic namespace snapshot. A higher-priority file can appear after that check. Ordinary read-sharing/directory handles do not establish a guarantee against all filesystem or memory-mapped writers.",
+    "PKG files are bound by file identity/size/timestamps, not whole multi-gigabyte content hashes. Selected record metadata and returned decoded content are hashed; the result certifies its owned copy, not future file contents.",
+    "ASCII-only names, fully qualified local UTF16 roots already ending in kh2; reparse/device/UNC/ADS/traversal/ambiguous Windows names rejected. No relative-root auto-resolution or locale-dependent fallback.",
+    "Successful primary decoding does not validate BAR/model/bone/MSET/remaster semantics or native allocations. No bytes are passed to native loaders or used to authorize Drive.",
+    "Internal friend-assembly hooks substitute temporary fixture fingerprints and inject a pre-publication test callback; the public production API exposes neither bypass."
+  ],
+  "referenceContract": "docs/research/drive-effective-bytes-20261007/contract.json"
+}

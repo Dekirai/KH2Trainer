@@ -204,6 +204,13 @@ public static class FeatureFormatting
             436 => value == 1 ? "Pending" : "Idle",
             449 => value switch { 0 => "Native", 1 => "Fixed", 2 => "Maximum", _ => "Unknown" },
             455 => value switch { 0 => "Not installed", 1 => "Resident", 2 => "Restart required", _ => "Unknown" },
+            456 => value == 1 ? "Verified" : "Unavailable",
+            457 => value switch { 1 => "Sora", 2 => "Roxas", 3 => "Rescue Mickey", 4 => "Other actor", _ => "Unknown" },
+            458 => FormatControlBlockers(value),
+            459 => value == 1 ? "Controllable" : "Waiting",
+            465 => FormatColorState(value),
+            460 => value switch { 0 => "Inactive", 1 => "Running", 2 => "Paused", 3 => "Closing", _ => "Unknown" },
+            462 => value switch { 0 => "Base", 1 => "Valor", 2 => "Wisdom", 3 => "Limit", 4 => "Master", 5 => "Final", 6 => "Antiform", 10 => "Dual-wield Roxas", 11 => "Rescue Mickey", _ => "Unknown" },
             169 => value switch { 0 => "Prototype", 1 => "RAW", _ => "Unknown" },
             170 => value switch { 0 => "Off", 1 => "Active", 2 => "Disabled", 3 => "Changed by game script", 4 => "Changed externally", 5 => "Player or scene changed", 6 => "Disconnected", 7 => "Game or mod took control", 8 => "Animation data unavailable", 9 => "Animation override unavailable", _ => "Unknown" },
             179 or 183 or 229 or 246 => value == 1 ? "Yes" : "No",
@@ -218,5 +225,21 @@ public static class FeatureFormatting
         if (definition.Id == "player.form.id")
             return value switch { 0 => "Base Sora", 1 => "Valor", 2 => "Wisdom", 3 => "Limit", 4 => "Master", 5 => "Final", 6 => "Antiform", _ => value.ToString("0.###", CultureInfo.InvariantCulture) };
         return value.ToString("0.###", CultureInfo.InvariantCulture) + (definition.Unit.Length > 0 ? " " + definition.Unit : "");
+    }
+
+    private static string FormatColorState(double value)
+    {
+        if (value == 0) return "Off";
+        if (!double.IsFinite(value) || value != Math.Truncate(value) || value < 17 || value > 58) return "Unknown";
+        int mode = (int)value / 16, strength = (int)value % 16;
+        return mode is >= 1 and <= 3 && strength is >= 1 and <= 10 ? $"Mode {mode} · {strength}/10" : "Unknown";
+    }
+
+    private static string FormatControlBlockers(double value)
+    {
+        if (!double.IsFinite(value) || value < 0 || value > 1023 || value != Math.Truncate(value)) return "Unknown";
+        if (value == 0) return "None";
+        string[] names = ["Unknown", "Loading", "Menu", "Event", "Transition", "No player", "Dead", "Input locked", "Trainer pause", "Trainer freeze"];
+        return string.Join(", ", names.Where((_, bit) => ((uint)value & (1u << bit)) != 0));
     }
 }

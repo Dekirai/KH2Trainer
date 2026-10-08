@@ -1,0 +1,36 @@
+{
+  "reviewer": "native_debug",
+  "date": "2026-10-07",
+  "scope": "Independent read-only review of the pure bounded STATUS revision ledger and its tests. No reviewer build or runtime integration.",
+  "source": "src/KH2Trainer.Bridge/StatusRevisionLedger.h",
+  "sourceSha256": "fc9c2f0aecb6a094fb0a0f5ce1553654cbb222331ff9b4c4c3c47c50794a7396",
+  "tests": "tests/KH2Trainer.Bridge.Tests/StatusRevisionLedgerTests.cpp",
+  "testSha256": "72023bccd8b79d58765c4b0935812ff13ce45e0adf98fe673ae09c4a0bd9bfa1",
+  "findingClosed": {
+    "issue": "Pre-entry Release1 or PoolReset retirement survived an abnormal native original return as AllocationEnded, even if the original failed before freeing/resetting.",
+    "resolution": "Exit(Frame,bool completedNormally=true) faults before frame draining when false. Wrapper must pass !AbnormalTermination(). Added OriginalExceptions tests cover all6 event kinds and assert Unavailable.",
+    "status": "Closed in reviewed final source"
+  },
+  "checked": [
+    "Before-entry invalidation for equal-value native and manual writes",
+    "Independent allocation serial, pool epoch and five field revisions",
+    "All80 pool slots reset, Unknown bootstrap distinct from Retired",
+    "Serial exhaustion faults without wrap or restart",
+    "Per-thread LIFO and32 bounded active frames; cross-thread out-of-order returns allowed",
+    "All active native writers block Capture/Compare",
+    "Exception/fault outcomes remain unavailable instead of restored or declared destroyed"
+  ],
+  "remaining": [
+    "Caller must serialize every method and hold the same lock across actual native pool validation/compare/field mutation.",
+    "Enter/Exit thread ID is trusted wrapper data, not an OS authentication check.",
+    "No metadata-only test proves installer quiescence, direct-entry coverage, actual body forwarding or native memory validity.",
+    "Thread creation/bootstrap barriers and runtime code integrity remain outside this pure ledger."
+  ],
+  "testAttribution": {
+    "checks": 930,
+    "failures": 0,
+    "executedBy": "root",
+    "reviewerExecuted": false
+  },
+  "result": "No remaining blocking issue in the reviewed pure metadata contract. Not approval of a live observer installer."
+}

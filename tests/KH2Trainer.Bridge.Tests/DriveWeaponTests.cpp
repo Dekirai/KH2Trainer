@@ -87,7 +87,7 @@ void SetupWeaponFixture() {
     At<uintptr_t>(0x2AE5A40)=g_base+WeaponMsetRva;
     At<uintptr_t>(0x2AE5E50)=g_base+WeaponBarRva;
     At<unsigned>(WeaponBarRva-16)=0x4000;At<unsigned>(WeaponBarRva-12)=0x23234141;At<unsigned>(WeaponBarRva-8)=1;
-    At<unsigned>(WeaponBarRva)=0x01524142;At<unsigned>(WeaponBarRva+4)=2;
+    At<unsigned>(WeaponBarRva)=0x01524142;At<unsigned>(WeaponBarRva+4)=3;
     At<uint32_t>(WeaponBarRva+8)=static_cast<uint32_t>(WeaponBarRva);
     At<uint16_t>(WeaponBarRva+16)=2;At<unsigned>(WeaponBarRva+20)=0x746e6577;
     At<uint32_t>(WeaponBarRva+24)=static_cast<uint32_t>(WeaponMapRva);At<unsigned>(WeaponBarRva+28)=256;
@@ -105,6 +105,10 @@ void SetupWeaponFixture() {
 void CaptureWeaponSave(uint16_t expected);
 void RejectWeaponRequest(const char* label,unsigned form=5);
 void RunWeaponTests() {
+    SetupWeaponFixture(); At<unsigned>(0x9A98B0+14016)=0xffffffff;
+    CaptureWeaponSave(MainKeyblade);
+    Check(Execute(122,5).code==0 && weaponObservedRecord==MainKeyblade && weaponExactWrite && weaponConsumerSafe,
+          "unlocked Final with empty second weapon receives the same validated fallback");
     using namespace drive_features;
     SetupWeaponFixture();
     Check(NativeShapedModel(5,1)==0,"empty Final record yields no offhand model in the native-shaped loader");
@@ -200,5 +204,136 @@ void RejectWeaponRequest(const char* label,unsigned form) {
     const auto r=Execute(122,form);
     Check(r.code!=0&&begins==0&&weaponObservedCalls==0,label);
     Check(!memcmp(before,reinterpret_cast<void*>(g_base+progression::SaveRva),sizeof(before)),"rejected weapon preflight changes zero save bytes");
+}
+
+constexpr uintptr_t SkeletonRva=0x171100;
+void RejectSkeletonRequest(const char* label,unsigned target=5) {
+    RejectWeaponRequest(label,target);
+    Check(drive_features::queue.outcome==drive_features::SafetyRejected,
+        "skeleton rejection terminates the trainer queue");
+}
+void RunSkeletonTests() {
+    using namespace drive_features;
+    // BYTE7=7 and WORD78=1 intentionally differ. A guard reading the mapping
+    // class instead of the attachment key would reject this valid native row.
+    for(unsigned form=1;form<=6;++form) {
+        SetupWeaponFixture();CaptureWeaponSave(DualWeaponForm(form)?MainKeyblade:0);
+        Check(Execute(122,form).code==0 && begins==1 && weaponExactWrite,
+            "all six forms accept the exact BYTE7 skeleton key without unlocks");
+        Check(At<unsigned>(0x9A98B0+14016)==0,"skeleton validation does not unlock forms");
+    }
+    SetupWeaponFixture(); Put<BYTE>(Row(objectsRva,5,96),7,1);
+    RejectSkeletonRequest("existing WORD78 mapping does not replace a missing BYTE7 skeleton key");
+    SetupWeaponFixture(); Put<BYTE>(Row(objectsRva,5,96),7,255);
+    Check(Execute(122,5).code==0,"maximum BYTE key is accepted");
+    SetupWeaponFixture(); At<int16_t>(SkeletonRva+8+8+4)=INT16_MIN;
+    At<int16_t>(SkeletonRva+8+8+6)=-1; CaptureWeaponSave(MainKeyblade);
+    Check(Execute(122,5).code==0 && weaponExactWrite &&
+        At<int16_t>(SkeletonRva+20)==INT16_MIN && At<int16_t>(SkeletonRva+22)==-1,
+        "signed joint values remain unchanged without an invented sign rule");
+
+    SetupWeaponFixture(); At<uintptr_t>(0x2AE5798)=0; RejectSkeletonRequest("missing installed skeleton rejected");
+    SetupWeaponFixture(); At<uintptr_t>(0x2AE5798)=1; RejectSkeletonRequest("unreadable installed skeleton rejected");
+    SetupWeaponFixture(); At<uintptr_t>(0x2AE5798)+=8; RejectSkeletonRequest("installed skeleton must match first BAR payload");
+    SetupWeaponFixture(); At<unsigned>(WeaponBarRva+52)=0; RejectSkeletonRequest("missing sklt tag rejected");
+    SetupWeaponFixture(); At<uint16_t>(WeaponBarRva+48)=3; RejectSkeletonRequest("wrong entry type cannot supply sklt");
+    SetupWeaponFixture(); At<unsigned>(WeaponBarRva+60)=0; RejectSkeletonRequest("empty skeleton entry rejected");
+    SetupWeaponFixture(); At<unsigned>(WeaponBarRva+60)=7; RejectSkeletonRequest("skeleton header must fit entry");
+    SetupWeaponFixture(); At<unsigned>(WeaponBarRva+60)=39; RejectSkeletonRequest("last row cannot cross declared span");
+    for(int count:{0,-1,INT_MAX}) {
+        SetupWeaponFixture(); At<int>(SkeletonRva+4)=count;
+        RejectSkeletonRequest("invalid or oversized signed skeleton count rejected before traversal");
+    }
+    SetupWeaponFixture(); At<unsigned>(SkeletonRva+16)=8; RejectSkeletonRequest("missing exact row rejected");
+    SetupWeaponFixture(); At<unsigned>(SkeletonRva+24)=7; RejectSkeletonRequest("duplicate skeleton keys rejected");
+    SetupWeaponFixture(); At<unsigned>(SkeletonRva+24)=6; RejectSkeletonRequest("unsorted skeleton keys rejected");
+    SetupWeaponFixture(); At<unsigned>(SkeletonRva+32)=UINT_MAX;
+    RejectSkeletonRequest("native comparator wrap inversion is rejected");
+    SetupWeaponFixture(); At<unsigned>(SkeletonRva+32)=0x80000000u+7u;
+    Check(Execute(122,5).code==0,"largest key distance with ordered signed subtraction accepted");
+    SetupWeaponFixture(); At<unsigned>(SkeletonRva+32)=0x80000000u+8u;
+    RejectSkeletonRequest("first overflowing comparator distance rejected");
+    SetupWeaponFixture(); At<uint32_t>(WeaponBarRva+56)=static_cast<uint32_t>(WeaponBarRva+16);
+    At<uintptr_t>(0x2AE5798)=g_base+WeaponBarRva+16;
+    RejectSkeletonRequest("skeleton cannot alias BAR entry metadata");
+    SetupWeaponFixture(); At<uint32_t>(WeaponBarRva+56)=0x180000;
+    At<uintptr_t>(0x2AE5798)=g_base+0x180000;
+    memcpy(reinterpret_cast<void*>(g_base+0x180000),reinterpret_cast<void*>(g_base+SkeletonRva),40);
+    RejectSkeletonRequest("readable matching global outside owning BAR is rejected");
+    SetupWeaponFixture(); At<unsigned>(WeaponBarRva+60)=UINT_MAX;
+    RejectSkeletonRequest("payload extent cannot exceed owning allocation");
+
+    // First-match semantics include link flags. Later duplicates neither repair
+    // a bad first payload nor invalidate an already accepted first match.
+    SetupWeaponFixture(); At<unsigned>(WeaponBarRva+4)=4;
+    memcpy(reinterpret_cast<void*>(g_base+WeaponBarRva+64),reinterpret_cast<void*>(g_base+WeaponBarRva+48),16);
+    At<unsigned>(WeaponBarRva+60)=7;
+    RejectSkeletonRequest("later valid duplicate cannot hide invalid first sklt");
+    SetupWeaponFixture(); At<unsigned>(WeaponBarRva+4)=4;
+    memcpy(reinterpret_cast<void*>(g_base+WeaponBarRva+64),reinterpret_cast<void*>(g_base+WeaponBarRva+48),16);
+    At<uint32_t>(WeaponBarRva+72)=0;
+    Check(Execute(122,5).code==0,"valid first sklt wins over invalid later duplicate");
+    SetupWeaponFixture(); At<unsigned>(WeaponBarRva+4)=4;
+    memcpy(reinterpret_cast<void*>(g_base+WeaponBarRva+64),reinterpret_cast<void*>(g_base+WeaponBarRva+48),16);
+    At<uint16_t>(WeaponBarRva+48)=3;At<uint32_t>(WeaponBarRva+56)=0;
+    Check(Execute(122,5).code==0,"wrong type is skipped before first matching type2 sklt");
+    SetupWeaponFixture(); At<uint16_t>(WeaponBarRva+50)=0xffff;
+    Check(Execute(122,5).code==0,"link flags do not change native first-match semantics");
+
+    // Native hand0 reaches the same lookup on Revert and all non-dual forms.
+    for(unsigned form:{2u,3u,6u}) {
+        SetupWeaponFixture(); At<uintptr_t>(0x2AE5798)=0;
+        RejectSkeletonRequest("non-dual main hand still requires skeleton row",form);
+        SetupWeaponFixture(); At<uintptr_t>(0x2AE5798)=0; At<BYTE>(WeaponMsetRva+64)=0;
+        Check(Execute(122,form).code==0,"empty main motion with absent offhand skips only skeleton requirement");
+        SetupWeaponFixture(); At<uintptr_t>(0x2AE5798)=0; At<BYTE>(WeaponMsetRva+64)=0;
+        *reinterpret_cast<uint16_t*>(FormWeaponRecord(form))=MainKeyblade;
+        RejectSkeletonRequest("non-dual existing offhand can independently require skeleton",form);
+    }
+    SetupWeaponFixture(); At<uintptr_t>(0x2AE5798)=0; At<uint16_t>(0x9ABDA0)=0;
+    Check(Execute(122,6).code==0,"no resolved weapon means no skeleton lookup");
+    SetupWeaponFixture(); At<uintptr_t>(0x2AE5798)=0;Put<uint16_t>(Row(objectsRva,6,96),78,0);
+    Check(Execute(122,6).code==0,"native zero weapon group skip does not require skeleton");
+    SetupWeaponFixture(); At<uintptr_t>(0x2AE5798)=0;At<unsigned>(WeaponMapRva+4)=0;
+    Check(Execute(122,6).code==0,"native zero mapping base skip does not require skeleton");
+    SetupWeaponFixture(); At<uintptr_t>(0x2AE5798)=0;At<unsigned>(WeaponMapRva+68)=0;
+    Check(Execute(122,6).code==0,"native zero model skip does not require skeleton");
+    SetupWeaponFixture(); SetForm(1); At<uintptr_t>(0x2AE5798)=0;
+    BYTE before[progression::SaveSize];memcpy(before,reinterpret_cast<void*>(g_base+progression::SaveRva),sizeof(before));
+    Check(Execute(123).code!=0 && !begins && !memcmp(before,reinterpret_cast<void*>(g_base+progression::SaveRva),sizeof(before)),
+        "Revert main weapon skeleton rejection causes no native call or save write");
+    SetupWeaponFixture(); SetForm(1);Put<BYTE>(Row(objectsRva,0,96),7,8);
+    RejectSkeletonRequest("valid target cannot hide invalid Revert skeleton");
+    SetupWeaponFixture(); SetForm(1);Put<BYTE>(Row(objectsRva,5,96),7,8);
+    RejectSkeletonRequest("invalid future target is rejected before first Revert");
+    SetupWeaponFixture();SetForm(1);
+    Check(Execute(122,5).code==0 && begins==1,"valid skeleton permits initial Revert");
+    CompleteNative(0);At<unsigned>(SkeletonRva+16)=8;
+    memcpy(before,reinterpret_cast<void*>(g_base+progression::SaveRva),sizeof(before));Tick();
+    Check(begins==1 && queue.phase==Idle && queue.outcome==SafetyRejected &&
+        !memcmp(before,reinterpret_cast<void*>(g_base+progression::SaveRva),sizeof(before)),
+        "fresh second-step row loss causes no fallback write or second Begin");
+    At<unsigned>(SkeletonRva+16)=7;Tick();Check(begins==1,"restored row does not restart rejected queue");
+    SetupWeaponFixture();SetForm(1);Check(Execute(122,5).code==0,"queue starts before owner change");
+    CompleteNative(0);At<uintptr_t>(0x2AE5798)=0;Tick();
+    Check(begins==1 && queue.outcome==SafetyRejected && *reinterpret_cast<uint16_t*>(FormWeaponRecord(5))==0,
+        "fresh second-step installed pointer is revalidated");
+    SetupWeaponFixture();Check(CanStart(Context(),5),"preliminary target check succeeds before table changes");
+    At<unsigned>(SkeletonRva+16)=8;
+    memcpy(before,reinterpret_cast<void*>(g_base+progression::SaveRva),sizeof(before));
+    Check(!drive_features::Begin(Context(),5,WaitingForForm) && !begins &&
+        !memcmp(before,reinterpret_cast<void*>(g_base+progression::SaveRva),sizeof(before)),
+        "Begin itself rechecks attachment row before preparatory weapon writes");
+
+    for(const auto& pin:kSkeletonPins) for(SIZE_T i=0;i<pin.size;++i) {
+        SetupWeaponFixture();At<BYTE>(pin.rva+i)^=1;
+        RejectSkeletonRequest("every changed skeleton-contract instruction byte rejects before writes");
+    }
+    SetupWeaponFixture();DWORD oldProtect=0,unused=0;
+    Check(VirtualProtect(reinterpret_cast<void*>(g_base+SkeletonRva-0x100),4096,PAGE_NOACCESS,&oldProtect)!=FALSE,
+        "skeleton fixture page made inaccessible");
+    RejectSkeletonRequest("unreadable owning payload is rejected");
+    VirtualProtect(reinterpret_cast<void*>(g_base+SkeletonRva-0x100),4096,oldProtect,&unused);
+    drive_features::testBegin=Begin;
 }
 }

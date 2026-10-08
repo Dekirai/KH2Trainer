@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-07",
+  "decision": "Keep the conservative active-event Crowd Control pause. Separate event flag predicates are not sufficient evidence for safely counting player-controlled time.",
+  "claims": [
+    {
+      "addr": "0x1403abc80",
+      "Finding": "Returns true on either global2A11400 flag0x100 or flag2, then on an active event, otherwise returns whether the global input-lock bitmap2A10500 is nonzero.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403abc80]",
+        "verification.json"
+      ],
+      "Limitations": "Narrow static contract. Mode names, per-minigame controllability and all downstream event/input consumers are not established by this body."
+    },
+    {
+      "addr": "0x1403ad610",
+      "Finding": "Copies the current64-byte event description to the global description bank2A114A0 indexed by its unsigned byte36.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ad610]",
+        "verification.json"
+      ],
+      "Limitations": "Narrow static contract. Mode names, per-minigame controllability and all downstream event/input consumers are not established by this body."
+    },
+    {
+      "addr": "0x1403ad5e0",
+      "Finding": "Clears the first WORD of the description-bank row indexed by current event-description byte36.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ad5e0]",
+        "verification.json"
+      ],
+      "Limitations": "Narrow static contract. Mode names, per-minigame controllability and all downstream event/input consumers are not established by this body."
+    },
+    {
+      "addr": "0x1403ac230",
+      "Finding": "Returns true when no event exists or both event flags1 and2 are clear; this is not equivalent to event absence.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ac230]",
+        "verification.json"
+      ],
+      "Limitations": "Narrow static contract. Mode names, per-minigame controllability and all downstream event/input consumers are not established by this body."
+    },
+    {
+      "addr": "0x1403ac260",
+      "Finding": "Returns whether an event exists and bit1 in the mode descriptor byte2 is set; the mode descriptor comes from the event pointer at+72.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ac260]",
+        "verification.json"
+      ],
+      "Limitations": "Narrow static contract. Mode names, per-minigame controllability and all downstream event/input consumers are not established by this body."
+    },
+    {
+      "addr": "0x1403ad2d0",
+      "Finding": "Resumes an existing event context through2CC4B0 and callback3AC630, disposes the previous context if present, publishes2A11478, and performs separate native actions according to mode-byte2 masks0x20,1,8,4. A clear mode bit1 causes event flag2 to be set.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ad2d0]",
+        "verification.json"
+      ],
+      "Limitations": "Narrow static contract. Mode names, per-minigame controllability and all downstream event/input consumers are not established by this body."
+    },
+    {
+      "addr": "0x1403ead50",
+      "Finding": "Uses bsearch on table2AE57A0, base+8, signed count+4 and stride8 with comparator3EAD40 to find a mode-key row.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ead50]",
+        "verification.json"
+      ],
+      "Limitations": "Narrow static contract. Mode names, per-minigame controllability and all downstream event/input consumers are not established by this body."
+    },
+    {
+      "addr": "0x1403a57f0",
+      "Finding": "Reads a DWORD input-lock bitmap; argument2==0 tests the whole word, otherwise tests the selected bit.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a57f0]",
+        "verification.json"
+      ],
+      "Limitations": "Narrow static contract. Mode names, per-minigame controllability and all downstream event/input consumers are not established by this body."
+    },
+    {
+      "addr": "0x140433570",
+      "Finding": "Script wrapper exposes the nonzero state of global input-lock bitmap2A10500 using3A57F0 with selector0 and writes the native tagged return pair.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140433570]",
+        "verification.json"
+      ],
+      "Limitations": "Narrow static contract. Mode names, per-minigame controllability and all downstream event/input consumers are not established by this body."
+    }
+  ],
+  "open": [
+    "Follow actual input consumers and script callers of mode/event predicates before allowing specific event or minigame modes.",
+    "3AC320 was inspected but excluded from contiguous-full-body evidence: IDA includes an out-of-extent shared chunk at406BA4/406BA6. No complete-body or semantic coverage claim is counted for that discovery.",
+    "The table finder relies on engine-owned data and signed counts; this research does not authorize calling it on unvalidated tables."
+  ]
+}

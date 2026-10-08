@@ -1,0 +1,62 @@
+{
+  "Reviewer": "native_debug",
+  "Date": "2026-10-07",
+  "Status": "No blocking finding within reviewed synchronous paths",
+  "OriginalSHA256": "9002B2DE6A1F91A790BD0673DE125D1CF833F7942BFEC827CDCF6BA64D5849ED",
+  "EvidenceVerification": {
+    "OriginalBytes": 2302,
+    "Functions": 19,
+    "RuntimePinBytes": 2183,
+    "RuntimePins": 17,
+    "Instructions": 608,
+    "Result": "PASS"
+  },
+  "Fingerprints": [
+    {
+      "Path": "src/KH2Trainer.Bridge/PlayerHealthSupport.inl",
+      "SHA256": "8ADE95E9ACDF9DA2EAEB228D480DC3715480C3DF78FDDDB82FF679DF8A767A53"
+    },
+    {
+      "Path": "src/KH2Trainer.Bridge/PlayerHealthPins.inl",
+      "SHA256": "2F61738F67FAA294FC67D5FB690A5D1DDDECA4184FAE37E94B343644FC278C9E"
+    },
+    {
+      "Path": "src/KH2Trainer.Bridge/PlayerFeatures.inl",
+      "SHA256": "DFCD32BDB5AD7A1AA941121DF7A30167EBE85D9B520110AC00721407D7AFE543"
+    },
+    {
+      "Path": "src/KH2Trainer.Bridge/TrainerBridge.cpp",
+      "SHA256": "C4C12C3116596D6586F8F1EF6A983D17E7C0F5E869BC4FEFCE9D84C6ECF6515F"
+    },
+    {
+      "Path": "tests/KH2Trainer.Bridge.Tests/PlayerHealthGuardTests.cpp",
+      "SHA256": "AFD218CBCEC3391CE5D473CCE48F0A7171559079E678A0EC069D45C100B7A897"
+    },
+    {
+      "Path": "docs/research/player-health-20261007/evidence.json",
+      "SHA256": "6C6A38677AD14B9F1CED45993C09FAF2B92E37E283195D0F8F89BB4BB857C36F"
+    }
+  ],
+  "AuthorReportedTests": {
+    "OwnBuildPerformed": false,
+    "Warnings": 0,
+    "Failures": 0,
+    "Checks": 265
+  },
+  "Scope": [
+    "HP a3=0,a4=0 and nonlethal clamp",
+    "HP HUDglobal and conditional selected-widget sequence memory",
+    "Inherited animation EDX41/44/46 and bounded single segment",
+    "MP recharge cleared before nonnegative bounded add, no recovery/depletion branch",
+    "Common game-thread/host/actual role/control readiness",
+    "PlayerHandle full-restore preflight and PlayerTick fresh helper checks"
+  ],
+  "Findings": [],
+  "Limitations": [
+    "No live game tests or injected native execution.",
+    "Readability proves immediate synchronous memory extents; it is not a full arbitrary-mod asset-content or future animation-update proof.",
+    "No atomic transaction or synchronization with foreign asynchronous memory writers claimed.",
+    "Full-restore reports failure if a later fresh check loses eligibility; an already completed HP change is not rolled back.",
+    "Test result265/0 is author-reported; reviewer inspected tests without rebuilding."
+  ]
+}

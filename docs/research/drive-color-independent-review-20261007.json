@@ -1,0 +1,119 @@
+{
+  "date": "2026-10-07",
+  "reviewer": "pe_inventory",
+  "status": "No blocking finding in the scoped static review",
+  "method": "Production/source-test inspection and stored complete native evidence. No product edits, builds, game/UI/save/network actions by reviewer.",
+  "files": [
+    {
+      "path": "src/KH2Trainer.Bridge/DriveWeaponSupport.inl",
+      "sha256": "8494645e68db9c3b2f9b20fa9cb4c7471aed5a3849328a8f85e8fc327fd20d0c"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/DriveFeatures.inl",
+      "sha256": "447bd308991d9b490b2e95419135b8c137e416548acb5d2728a04dca33291c05"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/DriveWeaponTests.cpp",
+      "sha256": "ba03eb872ebcf0c53bb03fd36f0d8482c8ca21830e4a02cf44141e7d1db5570b"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/DriveGuardTests.cpp",
+      "sha256": "983fb53fd1ab3976b6ba1e88e954059d5a4d1f84ddaecb7d225eb7d96a774e81"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/DisplayFeatures.inl",
+      "sha256": "a2ba863efe2555a35c959c3af196674cb261936f29ee332114ed56c4742f8008"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/DisplayGuardTests.cpp",
+      "sha256": "da62df115870f49724d20f2a2b24ab5dc7236f595c1104c78b15376c0a21ec7d"
+    },
+    {
+      "path": "src/KH2Trainer.Twitch/Effects/EffectCatalog.cs",
+      "sha256": "0def8dd88983903a68fb306fbb4fa8c001b0a84b6eaba2ae2f887da3837d3b7a"
+    }
+  ],
+  "drive": {
+    "scope": "New sklt guard and callsite integration only; prior role/fallback review remains separate.",
+    "findings": [
+      "Hand0 reaches the attachment lookup for any selected Sora object, including Revert0, when native item/group/mapping/model and wmst branches enable it. Hand1 can do so for any target1..6 with a resolved offhand; restricting the guard to dual1/4/5 would be incorrect. Current source models both paths.",
+      "SystemTableSpan preserves native first type2/tag match, validates installed-pointer identity and bounds the payload by its BAR entry and loaded allocation. Readable memory alone is insufficient.",
+      "Selected object BYTE7, not weapon WORD78, is the sklt key. Full unique ordered DWORD rows, exact key and signed-comparator ordering are checked; a distance of exactly0x80000000 still has the correct negative sign. No unproved negative joint-value rule is introduced.",
+      "Projected fallback is read-only. Begin and the queued post-Revert step recheck resources and sklt before the existing exact ushort fallback assignment and NativeBegin. New tests check zero native calls/save writes on rejection and no retry after second-step failure."
+    ],
+    "sourcePinsComparedWithStoredOriginalBodies": [
+      {
+        "rva": "0x3b5c10",
+        "bytes": 21,
+        "match": true
+      },
+      {
+        "rva": "0x3d7620",
+        "bytes": 32,
+        "match": true
+      },
+      {
+        "rva": "0x3eaad0",
+        "bytes": 5,
+        "match": true
+      },
+      {
+        "rva": "0x3eaae0",
+        "bytes": 51,
+        "match": true
+      },
+      {
+        "rva": "0x3eab20",
+        "bytes": 8,
+        "match": true
+      }
+    ],
+    "authorValidation": {
+      "suite": "DriveGuardTests",
+      "checks": 1599,
+      "failures": 0,
+      "independentlyExecuted": false
+    },
+    "limitations": [
+      "The guard establishes the presence and bounds of the attachment row, not the validity of every later MDLX/MSET resource or joint against the actual parent skeleton.",
+      "Asynchronous foreign mod writes and malformed later resource contents remain outside this structural preflight. No live crash reproduction is claimed."
+    ],
+    "evidence": [
+      "docs/research/drive-skeleton-guard-20261007/evidence.json",
+      "docs/research/drive-skeleton-guard-20261007/report.json",
+      "docs/research/drive-skeleton-guard-20261007/verification.json"
+    ]
+  },
+  "color": {
+    "scope": "Display conditional color pair operation, coherent snapshot and Twitch StartColorChaos/EndColorChaos integration.",
+    "findings": [
+      "Slot464 compares the canonical complete pair after the captured display mutex is acquired and the same renderer lease is revalidated. Matching pairs call only the existing native color setter at most once. Apply mismatch refuses; restore mismatch succeeds without a setter call.",
+      "Slot465 captures mode/severity under the same mutex, encodes mode*16+severity, and publishes only after successful unlock. Disabled(0,0) is valid; malformed/current unavailable pairs do not masquerade as disabled.",
+      "ColorChaos records original/applied ownership only after accepted application. Deferred restore retains ownership; acknowledged restore or observed native mismatch releases it. It no longer resets brightness or loaded configuration.",
+      "The existing thread/heartbeat/pins/runtime identity/captured unlock and shared fault gate remain in use. The new compare branch adds no resource operation or asynchronous native transition."
+    ],
+    "authorValidation": [
+      {
+        "suite": "DisplayGuardTests",
+        "checks": 21140,
+        "failures": 0,
+        "independentlyExecuted": false
+      },
+      {
+        "suite": "Twitch",
+        "checks": 1096,
+        "failures": 0,
+        "independentlyExecuted": false
+      }
+    ],
+    "limitations": [
+      "Conditional value ownership cannot detect external same-value ABA writes or arbitrary uncooperative mod writes outside the native synchronization contract.",
+      "The existing initialized-epoch check is not a renderer generation token. No live visual/Twitch verification was performed."
+    ],
+    "evidence": [
+      "docs/research/color-ownership-20261007/native_evidence.json",
+      "docs/research/color-ownership-20261007/report.md",
+      "docs/research/color-ownership-20261007/original_verification.json"
+    ]
+  }
+}

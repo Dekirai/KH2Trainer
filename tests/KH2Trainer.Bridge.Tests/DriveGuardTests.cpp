@@ -86,11 +86,15 @@ void Setup() {
     g_disabled=0; g_gameThread=GetCurrentThreadId();
     shared.hostHeartbeat=GetTickCount();
     memcpy(reinterpret_cast<void*>(g_base+0x40CE60),drive_features::kBeginBytes,sizeof(drive_features::kBeginBytes));
+    for(const auto& pin:drive_features::kSkeletonPins)
+        memcpy(reinterpret_cast<void*>(g_base+pin.rva),pin.bytes,pin.size);
     At<BYTE>(0x9BA8D0)=1; At<int>(0x716884)=1;
     At<uintptr_t>(0x2A105D0)=g_base+actorRva;
     At<uintptr_t>(0x2A171C8)=g_base+actorRva;
     Put<uint32_t>(g_base+actorRva,0,0x750300);
-    Put<uint32_t>(g_base+actorRva,8,0x108000); Put<uint32_t>(g_base+actorRva,12,0x109000);
+    At<uintptr_t>(0x750300)=g_base+0x5CBA28;
+    At<uintptr_t>(0x7523B8)=g_base+0x5D15A0;
+    Put<uint32_t>(g_base+actorRva,8,static_cast<uint32_t>(objectsRva+8)); Put<uint32_t>(g_base+actorRva,12,0x109000);
     Put<uintptr_t>(g_base+actorRva,344,g_base+0x10A000);
     Put<uintptr_t>(g_base+actorRva,1472,g_base+statusRva);
     Put<unsigned>(g_base+actorRva,1736,0x1000080);
@@ -141,7 +145,7 @@ void Setup() {
     At<int>(objectsRva+4)=9;
     for(unsigned i=0;i<7;++i) {
         const uintptr_t row=Row(objectsRva,i,96);
-        Put<uint16_t>(row,76,1); Put<uint16_t>(row,78,1); Put<BYTE>(row,87,static_cast<BYTE>(i));
+        Put<BYTE>(row,7,7); Put<uint16_t>(row,76,1); Put<uint16_t>(row,78,1); Put<BYTE>(row,87,static_cast<BYTE>(i));
     }
     for(unsigned i=0;i<2;++i) {
         const uintptr_t row=Row(objectsRva,7+i,96); Put<unsigned>(row,0,200+i);
@@ -152,11 +156,20 @@ void Setup() {
     At<uintptr_t>(0x2AE5A40)=g_base+0x171000;
     At<uintptr_t>(0x2AE5E50)=g_base+0x16F000;
     At<unsigned>(0x16EFF0)=0x3000; At<unsigned>(0x16EFF4)=0x23234141; At<unsigned>(0x16EFF8)=1;
-    At<unsigned>(0x16F000)=0x01524142; At<int>(0x16F004)=2; At<uint32_t>(0x16F008)=0x16F000;
+    At<unsigned>(0x16F000)=0x01524142; At<int>(0x16F004)=3; At<uint32_t>(0x16F008)=0x16F000;
     At<uint16_t>(0x16F010)=2; At<unsigned>(0x16F014)=0x746e6577;
     At<uint32_t>(0x16F018)=0x170000; At<unsigned>(0x16F01C)=256;
     At<uint16_t>(0x16F020)=2; At<unsigned>(0x16F024)=0x74736d77;
     At<uint32_t>(0x16F028)=0x171000; At<unsigned>(0x16F02C)=128;
+    At<uint16_t>(0x16F030)=2; At<unsigned>(0x16F034)=0x746c6b73;
+    At<uint32_t>(0x16F038)=0x171100; At<unsigned>(0x16F03C)=40;
+    At<uintptr_t>(0x2AE5798)=g_base+0x171100; At<int>(0x171104)=4;
+    const unsigned skeletonKeys[]={0,7,255,1000};
+    for(unsigned i=0;i<4;++i) {
+        At<unsigned>(0x171108+8*i)=skeletonKeys[i];
+        At<int16_t>(0x17110C+8*i)=static_cast<int16_t>(i);
+        At<int16_t>(0x17110E+8*i)=static_cast<int16_t>(i+1);
+    }
     memcpy(reinterpret_cast<void*>(g_base+0x171000+32*2),"W_EX010",8);
     memcpy(reinterpret_cast<void*>(g_base+0x171000+32*3),"W_EX010",8);
     drive_features::testBegin=Begin;
@@ -170,6 +183,7 @@ void Rejected(const char* label,unsigned slot=122,double form=1) {
 }
 void SetForm(unsigned form) {
     const auto c=Context(); Put<int>(c.player,3552,static_cast<int>(form)); At<BYTE>(0x9ACDD4)=static_cast<BYTE>(form);
+    Put<uint32_t>(c.player,8,static_cast<uint32_t>(Row(objectsRva,form,96)-g_base));
     Put<BYTE>(c.status,431,form?2:1);
     Put<uint32_t>(c.status,596,form?0x9ABDA0+3588+56*(form-1):0);
     Put<float>(c.status,436,form?400.0f:0.0f); Put<float>(c.status,440,form?400.0f:0.0f);
@@ -190,6 +204,7 @@ void AssertStopped(drive_features::Outcome outcome,unsigned expectedCalls,const 
 }
 }
 #include "DriveWeaponTests.cpp"
+#include "PlayerRoleTests.cpp"
 int main() {
     using namespace drive_features;
     g_base=reinterpret_cast<uintptr_t>(VirtualAlloc(nullptr,0x2C00000,MEM_COMMIT|MEM_RESERVE,PAGE_READWRITE));
@@ -330,6 +345,8 @@ int main() {
     Setup(); DriveCapabilities(); for(unsigned slot=122;slot<=127;++slot) Check((shared.supported[slot/64]&(uint64_t(1)<<(slot%64)))!=0,"implemented Drive capability published");
     QueueFrom(2,6); DriveSnapshot(Context()); Check(shared.values[124]==6&&shared.values[125]==WaitingForBase&&shared.values[127]==Queued,"queue snapshot publishes target phase and last switch result");
     RunWeaponTests();
+    RunSkeletonTests();
+    RunPlayerRoleTests();
     printf("Drive guard tests: %u checks, %u failures\n",checks,failures);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE); return failures?1:0;
 }

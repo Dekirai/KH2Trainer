@@ -10,53 +10,73 @@ internal static class AssetPackageCodec
         int MetadataLength, byte[] MetadataHash, byte[] Seed, long StoredOffset, int StoredLength, int Mode,
         int EntryOrdinal, int RemasteredOrdinal);
 
-    internal static PackageAssetInfo Inspect(PackageIndex index, PackageEntryInfo entry, FileStream file,
-        AssetReadLimits limits, CancellationToken token)
+    internal sealed record RecordPart(string Name, string NameBytesHex, uint LogicalOffset,
+        uint OriginalAssetOffset, int RawLength, int Mode, long Offset, int StoredLength);
+    internal sealed record RecordInfo(byte[] Metadata, byte[] Seed, int Creation,
+        RecordPart Original, IReadOnlyList<RecordPart> Remasters);
+
+    // Both an HED-bounded record and a Panacea raw file use this parser. No fabricated index.
+    internal static RecordInfo InspectRecord(Stream file, long recordOffset, long recordLength,
+        AssetReadLimits limits, CancellationToken token, bool decodeEnabled = true)
     {
-        if (!entry.IsAvailable) throw new InvalidDataException("This HED entry is an unavailable placeholder.");
-        AssetArchiveReader.RequireSpan(entry.Offset, entry.StoredLength, file.Length);
-        if (entry.StoredLength < 16) throw new InvalidDataException("Package record header is truncated.");
-        byte[] seed = new byte[16]; file.Position = entry.Offset; file.ReadExactly(seed);
+        token.ThrowIfCancellationRequested();
+        AssetArchiveReader.RequireSpan(recordOffset, recordLength, file.Length);
+        if (recordLength < 16) throw new InvalidDataException("Package record header is truncated.");
+        byte[] seed = new byte[16]; file.Position = recordOffset; file.ReadExactly(seed);
         int raw = I32(seed, 0), count = I32(seed, 4), mode = I32(seed, 8), creation = I32(seed, 12);
         long metadataLength = 16L + 48L * count;
-        if (count < 0 || count > limits.MaximumBarEntries || metadataLength > limits.MaximumMetadataBytes || metadataLength > entry.StoredLength)
+        if (count < 0 || count > limits.MaximumBarEntries || metadataLength > limits.MaximumMetadataBytes || metadataLength > recordLength)
             throw new InvalidDataException("Invalid or oversized remaster table.");
         ValidatePayload(raw, mode, limits);
         byte[] metadata = new byte[(int)metadataLength]; seed.CopyTo(metadata, 0);
         file.ReadExactly(metadata.AsSpan(16));
-        byte[] metadataHash = SHA256.HashData(metadata);
-        AssetPayload Make(string name, int length, int storedMode, long offset, AssetSourceKind kind, int remasteredOrdinal = -1)
+        RecordPart Make(string name, string nameHex, uint logical, uint originalOffset,
+            int length, int storedMode, long offset, bool decode)
         {
             ValidatePayload(length, storedMode, limits);
-            int stored = EffectiveStoredLength(length, storedMode);
-            AssetArchiveReader.RequireSpan(offset, stored, entry.StoredLength);
-            var info = new PayloadInfo(index.Header, index.HeaderSha256, entry.Offset, metadata.Length,
-                metadataHash, seed, offset, stored, storedMode, entry.Ordinal, remasteredOrdinal);
-            return new(name, length, kind, index.Package, packageData: info,
-                description: $"{Path.GetFileName(index.PackagePath)} / {entry.NameHash} / {name}");
+            int stored = decode ? EffectiveStoredLength(length, storedMode) : length;
+            AssetArchiveReader.RequireSpan(offset, stored, recordLength);
+            return new(name, nameHex, logical, originalOffset, length, storedMode, offset, stored);
         }
-        var original = Make(entry.Name, raw, mode, metadataLength, AssetSourceKind.PackageOriginal);
+        var original = Make("", "", 0, 0, raw, mode, metadataLength, decodeEnabled);
         long current = checked(metadataLength + PhysicalLength(raw, mode));
-        if (count > 0 && current < metadataLength + EffectiveStoredLength(raw, mode))
+        if (count > 0 && current < metadataLength + original.StoredLength)
             throw new InvalidDataException("Original payload overlaps the remaster data.");
-        var remasters = new List<RemasteredAssetInfo>(count);
+        var remasters = new List<RecordPart>(count);
         for (int i = 0; i < count; i++)
         {
             token.ThrowIfCancellationRequested();
             int p = 16 + i * 48;
-            string name = AssetArchiveReader.DisplayBytes(metadata.AsSpan(p, 32), true);
-            int length = I32(metadata, p + 40), storedMode = I32(metadata, p + 44);
-            var payload = Make(name.Length == 0 ? $"remaster_{i:D4}.bin" : name, length, storedMode,
-                current, AssetSourceKind.PackageRemastered, i);
-            long physicalLength = PhysicalLength(length, storedMode);
-            if (physicalLength < EffectiveStoredLength(length, storedMode))
+            var part = Make(AssetArchiveReader.DisplayBytes(metadata.AsSpan(p, 32), true),
+                Convert.ToHexString(metadata.AsSpan(p, 32)), U32(metadata, p + 32), U32(metadata, p + 36),
+                I32(metadata, p + 40), I32(metadata, p + 44), current, true);
+            long physicalLength = PhysicalLength(part.RawLength, part.Mode);
+            if (physicalLength < part.StoredLength)
                 throw new InvalidDataException("Remaster payload overlaps the following data.");
-            AssetArchiveReader.RequireSpan(current, physicalLength, entry.StoredLength);
-            remasters.Add(new(i, name, Convert.ToHexString(metadata.AsSpan(p, 32)),
-                U32(metadata, p + 32), U32(metadata, p + 36), current, storedMode, payload));
-            current = checked(current + physicalLength);
+            AssetArchiveReader.RequireSpan(current, physicalLength, recordLength);
+            remasters.Add(part); current = checked(current + physicalLength);
         }
-        return new(entry, mode, creation, original, remasters.AsReadOnly());
+        return new(metadata, seed, creation, original, remasters.AsReadOnly());
+    }
+
+    internal static PackageAssetInfo Inspect(PackageIndex index, PackageEntryInfo entry, FileStream file,
+        AssetReadLimits limits, CancellationToken token)
+    {
+        if (!entry.IsAvailable) throw new InvalidDataException("This HED entry is an unavailable placeholder.");
+        var record = InspectRecord(file, entry.Offset, entry.StoredLength, limits, token);
+        byte[] metadataHash = SHA256.HashData(record.Metadata);
+        AssetPayload Make(string name, RecordPart part, AssetSourceKind kind, int ordinal = -1)
+        {
+            var info = new PayloadInfo(index.Header, index.HeaderSha256, entry.Offset, record.Metadata.Length,
+                metadataHash, record.Seed, part.Offset, part.StoredLength, part.Mode, entry.Ordinal, ordinal);
+            return new(name, part.RawLength, kind, index.Package, packageData: info,
+                description: $"{Path.GetFileName(index.PackagePath)} / {entry.NameHash} / {name}");
+        }
+        var remasters = record.Remasters.Select((part, i) => new RemasteredAssetInfo(i, part.Name,
+            part.NameBytesHex, part.LogicalOffset, part.OriginalAssetOffset, part.Offset, part.Mode,
+            Make(part.Name.Length == 0 ? $"remaster_{i:D4}.bin" : part.Name, part, AssetSourceKind.PackageRemastered, i))).ToList();
+        return new(entry, record.Original.Mode, record.Creation,
+            Make(entry.Name, record.Original, AssetSourceKind.PackageOriginal), remasters.AsReadOnly());
     }
 
     internal static async Task<Stream> DecodeAsync(AssetPayload payload, AssetReadLimits limits, CancellationToken token)
@@ -79,13 +99,27 @@ internal static class AssetPackageCodec
         if (!CryptographicOperations.FixedTimeEquals(SHA256.HashData(metadata), info.MetadataHash))
             throw new IOException("The package metadata changed. Reopen it.");
         AssetArchiveReader.RequireSpan(checked(info.RecordOffset + info.StoredOffset), info.StoredLength, file.Length);
+        byte[] decoded = await DecodeBoundedAsync(file, checked(info.RecordOffset + info.StoredOffset),
+            info.StoredLength, rawLength, info.Mode, info.Seed, limits, token).ConfigureAwait(false);
+        return new MemoryStream(decoded, writable: false);
+    }
+
+    internal static async Task<byte[]> DecodeBoundedAsync(Stream file, long offset, int storedLength,
+        int rawLength, int mode, byte[] seed, AssetReadLimits limits, CancellationToken token,
+        bool decodeEnabled = true, bool platformTransformEnabled = true)
+    {
+        token.ThrowIfCancellationRequested(); ValidatePayload(rawLength, mode, limits);
+        int expectedStored = decodeEnabled ? EffectiveStoredLength(rawLength, mode) : rawLength;
+        if (storedLength != expectedStored || seed.Length != 16)
+            throw new InvalidDataException("Invalid bounded payload descriptor.");
+        AssetArchiveReader.RequireSpan(offset, storedLength, file.Length);
         // One decoded buffer only; encoded input is streamed through a bounded range.
         byte[] decoded = new byte[rawLength];
-        await using var slice = new AssetSliceStream(file, checked(info.RecordOffset + info.StoredOffset), info.StoredLength);
-        bool transform = rawLength > 16 && info.Mode >= -1;
-        await using var encoded = new PrefixStream(slice, transform ? DeriveMask(info.Seed) : null,
-            throttleTail: rawLength > 16 && info.Mode > 0);
-        if (rawLength > 16 && info.Mode > 0)
+        await using var slice = new AssetSliceStream(file, offset, storedLength, leaveOpen: true);
+        bool transform = decodeEnabled && platformTransformEnabled && rawLength > 16 && mode >= -1;
+        await using var encoded = new PrefixStream(slice, transform ? DeriveMask(seed) : null,
+            throttleTail: decodeEnabled && rawLength > 16 && mode > 0);
+        if (decodeEnabled && rawLength > 16 && mode > 0)
         {
             // Small tail reads retain the exact RFC1950 endpoint instead of allowing
             // decompressor read-ahead to hide a truncated checksum behind padding.
@@ -106,7 +140,7 @@ internal static class AssetPackageCodec
         }
         else await encoded.ReadExactlyAsync(decoded, token).ConfigureAwait(false);
         token.ThrowIfCancellationRequested();
-        return new MemoryStream(decoded, writable: false);
+        return decoded;
     }
 
     private static int I32(byte[] data, int offset) => BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(offset, 4));

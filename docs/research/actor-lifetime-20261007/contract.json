@@ -1,0 +1,56 @@
+{
+  "status": "Research contract; no hook, product source, process memory or IDB modification performed.",
+  "nativeGeneration": "No generation identifier found in the inspected Actor/status/Ptr32/list/allocator paths. This is a bounded negative finding, not a proof about every field/function in the binary.",
+  "birth": {
+    "tableRva": "0x750D30",
+    "index": 0,
+    "objectRva": "0x750950",
+    "vtableRva": "0x5CCEB8",
+    "slotRva": "0x5CCEC0",
+    "expectedTargetRva": "0x409AB0",
+    "originalBytes": "C2 00 00",
+    "callRva": "0x3B3969",
+    "returnRva": "0x3B396D",
+    "abi": "void __fastcall(void* action /*RCX*/, void* actor /*RDX*/)",
+    "filter": "Capture the direct wrapper's _ReturnAddress at entry. Notify only exact base+3B396D, expected RCX and intact table/vptr/slot/code chain. Forward original exactly once on every invocation, including ignored action calls and failed observation.",
+    "partialObject": "Do not inspect role/status/model from the callback: construction is incomplete. Record/invalidate only the address in bridge-owned bookkeeping before forwarding."
+  },
+  "death": [
+    {
+      "role": "Sora/Roxas",
+      "descriptorRva": "0x750300",
+      "vtableRva": "0x5CBA28",
+      "slotRva": "0x5CBA28",
+      "expectedTargetRva": "0x4049E0"
+    },
+    {
+      "role": "Rescue Mickey",
+      "descriptorRva": "0x7523B8",
+      "vtableRva": "0x5D15A0",
+      "slotRva": "0x5D15A0",
+      "expectedTargetRva": "0x414DD0"
+    }
+  ],
+  "deathAbi": "RCX descriptor,RDX Actor; native callsites ignore return. A void forwarding ABI matches observed use. Original is non-null and invoked exactly once, including null Actor. Mark a non-null watched Actor dead before original cleanup; never dereference it after original. Unlike birth, every invocation of these exact destructor slots is a lifetime-end path; do not filter solely to3BF34E.",
+  "rights": "All three vtable slots lie in original .rdata [57B000,71273E), characteristics40000040 (read-only). Any future implementation needs scoped page-protection change and aligned pointer compare-exchange, with exact expected original and owner-only restoration. Tables/descriptor objects lie in .data; compare relocated pointers as base+RVA, not fixed original VA bytes.",
+  "watchTable": "Track only current and receipt-referenced Actor addresses. Mint a new nonzero global64-bit serial on first adoption after observer installation and every observed birth at a watched address. Never evict unresolved receipts. A removed/readded address always receives a fresh serial. Fail closed on capacity/overflow; do not wrap or recycle serials. Losing current-player status is not destruction: old Sora can coexist with rescue Mickey.",
+  "dispatch": "At native Apply/CompareRestore, revalidate observer ownership/pins, full current role/Actor/status/scene/control predicates and the receipt's exact session+serial+Actor+cohort/property before any field write. Read baseline, compare expected bits, write and commit receipt under one game-thread operation. Host value equality alone is insufficient.",
+  "temporaryUnready": "Keep watch identity through menu/pause/unready phases when observation remains intact; defer writes. Invalidate affected receipts when observation continuity is lost, when a watched birth/death is observed, or when a proven heap/scene teardown is acted on. Do not use transient unknown role to restore.",
+  "coverage": "All native descriptor750300 Sora/Roxas constructors and7523B8 rescue constructors recorded here chain through3B3200. Runtime guards must preserve that original path; no coverage claim for foreign code constructing Actors without it.",
+  "threadBoundary": "Native constructors and receipt operations must be serialized on the engine game thread. The callback is part-way through construction, so a callback-only mutex cannot protect against an unsupported concurrent foreign constructor that already overwrote fields before reaching the callback. Fail observation on a foreign thread; retain this concurrency limit explicitly.",
+  "bulkTeardown": "Per-class destructor slots provide concrete end signals but do not alone prove every bulk heap-release path calls them. Constructor observer still changes serial on later supported same-address birth. A stale dead watch may remain until explicit receipt resolution/teardown; no write is allowed without current live membership and all native gates.",
+  "hookLoss": "If table/vptr/slot/code integrity changes, invalidate observations and outstanding receipts rather than adopt equal values under the old serial. Unobserved hostile remove/reinstall between checks cannot be proven absent by sampled pins.",
+  "processIdentity": "Serial is bridge-owned, not native. Bind it to a process/bridge session identifier; if transported via double snapshot slots, split into exact uint32 low/high instead of converting uint64 to double.",
+  "tests": [
+    "Same pointer, same role/form, same four movement floats, observed new constructor => old receipt rejected.",
+    "All native Sora/Roxas/rescue Mickey constructor paths notify once at return3B396D; action-change returnsites do not mint a birth.",
+    "Constructor for unrelated address does not invalidate another watched lifetime.",
+    "Sora remains offcurrent while Mickey is current; its watch persists until real death or receipt resolution.",
+    "Destructor notification precedes forwarding; zero Actor still forwards exactly once; no post-free dereference.",
+    "Existing live Actor adoption after hook install gets a fresh serial; unregister/re-register never reuses it.",
+    "Unready phases pause writes without fabricating a new lifetime.",
+    "Observer loss, foreign thread, full watch table and serial overflow fail closed; original callbacks still forward.",
+    "Session change and same-value external writer cannot bypass receipt/cohort checks.",
+    "CompareRestore baseline and expected current bits are checked atomically within native dispatch; ack uncertainty remains journaled."
+  ]
+}

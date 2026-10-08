@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-07",
+  "status": "reviewed-no-remaining-blocker-in-current-delta",
+  "reviewKind": "Independent static read-only source review; no reviewer build or game execution",
+  "sources": [
+    {
+      "path": "src/KH2Trainer.Bridge/MovementTransactionSupport.inl",
+      "length": 15158,
+      "sha256": "146896144f5eccef9a8f55f8196bb0ccb6486c83cea1883d380b56e977f50a18"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/MovementProtocol.h",
+      "length": 2476,
+      "sha256": "4693b066089b5cc7d356733641ff584cd2b9d5891dc8ce60a8093aa73dda8977"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/TrainerBridge.cpp",
+      "length": 45762,
+      "sha256": "f5501886866013290b57a6f3d3a5d4fe46c11ce6abff82ef1c3b2be08491c430"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/DevToolsProtocol.h",
+      "length": 5386,
+      "sha256": "7d5b2232c4aca74a1f8a76f1b376610534b34d1f38ff390e8e7545b02ac632fa"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/MovementTransactionTests.cpp",
+      "length": 17672,
+      "sha256": "c07f68aeca2d904b792629c41ec0de854c541a87fc7e4ed1c80006940c922574"
+    },
+    {
+      "path": "artifacts/movement-ownership-tests/native-MovementTransactionTests.txt",
+      "length": 124,
+      "sha256": "0fcc49de3c2d40fb204be11552ae77ead554e17f220294c49b6b656249269b69"
+    }
+  ],
+  "authorTestLog": "artifacts/movement-ownership-tests/native-MovementTransactionTests.txt",
+  "authorChecks": 439,
+  "authorFailures": 0,
+  "reviewerReadExistingLog": true,
+  "reviewerRanTests": false,
+  "findings": [
+    {
+      "id": "mutation-replay-expiry",
+      "status": "fixed",
+      "file": "src/KH2Trainer.Bridge/MovementTransactionSupport.inl",
+      "finding": "Replay of a retained exact mutation must return the original receipt before applying new-command expiry/host-expiry rejection.",
+      "resolution": "Exact receipt lookup precedes preRejected; expired replay tests preserve original outcome without second writes."
+    },
+    {
+      "id": "partial-write-journal-binding",
+      "status": "fixed",
+      "file": "src/KH2Trainer.Bridge/MovementTransactionSupport.inl",
+      "finding": "A partial scalar write previously left an Active lease with an unbound uncertain receipt.",
+      "resolution": "Narrow Commit catches trainer writes, makes the actual lease sticky Uncertain and returns Describe-bound fault receipts. Acquire/Reapply/Release injected partial writes and subsequent no-write behavior are tested."
+    },
+    {
+      "id": "mutable-request-alias",
+      "status": "addressed-in-integration",
+      "file": "src/KH2Trainer.Bridge/TrainerBridge.cpp",
+      "finding": "The checked request must not alias host-writable IPC during preflight and stores.",
+      "resolution": "TrainerFrame copies128 bytes locally; Execute takes its packet by value."
+    },
+    {
+      "id": "one-field-reapply-original",
+      "status": "confirmed-and-regression-added",
+      "file": "src/KH2Trainer.Bridge/MovementTransactionSupport.inl",
+      "finding": "An unchanged still-owned field must retain its original while its changed partner captures a new valid original.",
+      "resolution": "Implementation and new mixed-pair regression preserve both independent originals."
+    }
+  ],
+  "confirmed": [
+    "Owner/client/revision/instance/generation and value preflight precedes selected scalar stores",
+    "ObserverFault becomes Uncertain, not Destroyed",
+    "Different current Actor leaves release pending",
+    "Terminal lease GC retains records with remaining receipt references",
+    "Same-thread release drain precedes new command dispatch",
+    "Typed response publication occurs before responseSequence",
+    "Movement/control/identity metadata share a snapshot seqlock",
+    "Protocol4 and request/response IPC extents are present"
+  ],
+  "documentationPendingAtRead": [
+    "Root coordinated MOV1/MOV1, but design.md still showed MOR1 for response",
+    "Native wire accepts all nonempty masks1..15; design.md still described3/12/15 only",
+    "Unexpected read/observer exceptions outside Commit may produce no completed typed acknowledgement; retain InDoubt rather than claim no write"
+  ],
+  "limits": [
+    "Actual observer hook completeness is owned by its separate independent review",
+    "No host transport, final package or live gameplay validation was performed in this review",
+    "Partial-write Uncertain leases intentionally stay retained until restart rather than claiming restoration"
+  ],
+  "textReport": "native-transaction-review.txt"
+}

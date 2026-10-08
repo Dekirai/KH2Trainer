@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-07",
+  "reviewer": "native_debug",
+  "result": "No blocking finding in the reviewed delta",
+  "scope": "Independent read-only source/test review of timer-owner2 admission and controller/descriptor dispatch identity; selected saved full ASM and data reviewed. No exhaustive re-audit of every pre-existing classification branch.",
+  "sourceHashes": {
+    "src/KH2Trainer.Bridge/GameplayStateSupport.inl": "c722ea76aba94480afef31cda5cf960145d713fd54bce401c107d7fa4628f3c6",
+    "tests/KH2Trainer.Bridge.Tests/GameplayStateGuardTests.cpp": "0f34a2eaa4cfcde543a0c76e68dd340bde315e4002acef6f3b1fc1e1c6fd6bf0",
+    "tests/KH2Trainer.Bridge.Tests/CombatGuardTests.cpp": "5b8d503586af8cdf3c47211c7b9691983dedc2b11336c25d12ed20ea8cab48ad",
+    "tests/KH2Trainer.Bridge.Tests/PlayerHealthGuardTests.cpp": "8684721ec18c10284fbed0a10f780a1409f6b3ce11c206fda5c522770f369f16"
+  },
+  "inputHashes": {
+    "report.json": "fedb15a21ff920fb30e4f2c4e8ca078810717cfbde70596d9ce216271f43d845",
+    "evidence.json": "d5e794aedd3fcc65ca38e94a63e5d1a250d8ea3f0f5428b6888fcc5a64cc1bc5",
+    "implementation-delta.patch": "e028536e815bb27ea0e5e8951c2c9007734466908924fbe2b05c85c4ac4e2bdc"
+  },
+  "independentChecks": [
+    "All four frozen source/test hashes match the author report.",
+    "All 41 runtime pin arrays, totaling 6301 bytes, independently match the original PE with SHA256 9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed.",
+    "4335D0 sets ECX=2 and tail-calls157130, which ORs that mask into ABB854.1570F0 and1571B0 return without clock advancement while the mask is nonzero.154700 continues its two other frame counters after the clock call.",
+    "404A30/4150D0 forward actor RDX to3A8980, which reads actor+3520 and forwards to3FD690.3FD690 calls3B2340. The latter invokes controller+16 and conditionally+24, and invokes the actor descriptor input predicate+120.",
+    "Saved vtable data agrees with descriptor update offsets+24 and FIELD_COMMAND callbacks+16/+24. Product code checks the live pointers and code pins before allowing a known classification.",
+    "The admission delta ignores only scriptClockOwner2 in addition to the existing trainer-owned clock bit. Active event, pause menu, suspended field, input lock, other clock-owner bits and trainer pause/freeze remain independently classified.",
+    "Tests exercise all three supported roles, every other clock-owner bit, combined trainer ownership, active-event/menu/input/field blockers, changed or unreadable vtables and pin drift. Synthetic leaf execution stays within its fixture allocation."
+  ],
+  "evidenceAnchors": [
+    "evidence.json#functions[addr=0x1404335d0]",
+    "evidence.json#functions[addr=0x140157130]",
+    "evidence.json#functions[addr=0x1401570f0]",
+    "evidence.json#functions[addr=0x1401571b0]",
+    "evidence.json#functions[addr=0x140154700]",
+    "evidence.json#functions[addr=0x140404a30]",
+    "evidence.json#functions[addr=0x1404150d0]",
+    "evidence.json#functions[addr=0x1403a8980]",
+    "evidence.json#functions[addr=0x1403fd690]",
+    "evidence.json#functions[addr=0x1403b2340]",
+    "evidence.json#functions[addr=0x1403f2470]"
+  ],
+  "findings": [],
+  "authorTests": {
+    "GameplayStateGuardTests": 399,
+    "CombatGuardTests": 1870,
+    "PlayerHealthGuardTests": 265,
+    "failures": 0,
+    "attribution": "Author reported; reviewer did not build or execute these suites."
+  },
+  "limitations": [
+    "This is a post-update classifier, not an assertion that every possible player action succeeds.",
+    "No live-game observation was performed. Modded callbacks outside the pinned identity are conservatively unknown.",
+    "This review does not relax active-event or other timer-owner restrictions and does not classify arbitrary event assets.",
+    "No product file, existing report, evidence file or package was changed by this review."
+  ]
+}

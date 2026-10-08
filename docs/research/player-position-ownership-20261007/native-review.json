@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "date": "2026-10-07",
+  "reviewer": "native_debug",
+  "status": "read_only_review_no_blocking_finding",
+  "scope": "Root's bookmark/collision lifetime integration, include and TrainerFrame ordering, and actual lifetime fixture. No production edits, no build, no game process or UI access.",
+  "sources": [
+    {
+      "path": "src/KH2Trainer.Bridge/PlayerFeatures.inl",
+      "sha256": "60251E2CC9C9DBE52E07F36D01FF172D0C608D41C2BB7A35F1BE0CDBAD95C820"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/TrainerBridge.cpp",
+      "sha256": "F052B69A69254B82F2442FFD0F6E4C36767C02CA4DDCD46DAA62789D7D1FFF35"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/ActorLifetimeSupport.inl",
+      "sha256": "AF75F86B8179CC12047DAB5B8AFF1E9A6C3F4FB57A3B7BFA74B8E6A263132671"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/PlayerBridgeTests.cpp",
+      "sha256": "B3BCFF83ADF3782D9D599709A57EAA7F8550761C21E9F4BF4984EEF628255A2D"
+    }
+  ],
+  "checks": [
+    {
+      "source": "PlayerFeatures.inl:18,326-348",
+      "result": "Bookmark acquisition pins the freshly observed generation before releasing the previous bookmark. Replacing the same bookmark balances the additional pin. Return requires actor/status/scene identity and both Resolve and ObserveCurrent equality before the native position call."
+    },
+    {
+      "source": "PlayerFeatures.inl:77-115,260-289",
+      "result": "Collision acquisition pins once; retirement or completed/relinquished release unpins once. Unknown, off-current and observer-fault states retain the lease and block a replacement acquisition. Retirement is checked before any leased Actor dereference."
+    },
+    {
+      "source": "PlayerFeatures.inl:97-111",
+      "result": "Pending restoration revalidates the current actor, exact generation, status/backlinks, scheduler and room. It clears only both owned bits with a null native override pointer; a partial foreign bit change or nonnull override relinquishes ownership without writing."
+    },
+    {
+      "source": "TrainerBridge.cpp:286-317,373-389",
+      "result": "The role and lifetime helpers precede PlayerFeatures. ObserveCurrent and PlayerMaintainCollision run outside the fresh-host-only feature tick, so pending cleanup can complete while the host remains expired."
+    },
+    {
+      "source": "PlayerBridgeTests.cpp:224-250,503-656",
+      "result": "The fixture uses the production role helper, active actor list, status allocation pool and lifetime observer, replacing only native callbacks. Checks cover bookmark pin balance, same-address construction, pending off-current cleanup, foreign collision profile changes, host-expired frame cleanup, and observer-fault preservation. Final fatal-offcurrent regression also retains the lease/pin, calls real disabled OnFrame after the Actor returns, and verifies no future frame/cleanup work; fixture-only unwind is explicitly separated from product behavior."
+    }
+  ],
+  "testExecution": {
+    "performedByThisReviewer": false,
+    "rootReportedChecks": 641,
+    "rootReportedFailures": 0,
+    "note": "Final frozen source/test delta reviewed; 641/0 is Root-reported. No independent parallel build was performed."
+  },
+  "limits": [
+    "FatalFailure performs only a best-effort reset. If the original Actor is off-current or unverified, its collision lease remains unresolved; OnFrame returns immediately once g_disabled is set, so later recovery is not automatically serviced. A foreign-thread fatal failure skips the reset entirely. This is not evidence that the Actor was destroyed or that the effect was restored.",
+    "The final regression covers fatal failure while the Actor is off-current. Its pin and flags remain, returning to the Actor does not resume disabled OnFrame, and explicit fixture-only cleanup is not presented as a product recovery path.",
+    "The collision profile comparison cannot distinguish a later native writer that independently reasserts exactly the same two bits and null override pointer on the same Actor lifetime. This pre-existing value-ownership limit is separate from the now-guarded Actor-address ABA case.",
+    "Release during an unready or dead-but-still-allocated player phase intentionally does not require PlayerLiving: it requires a coherent current instance and performs only the two bounded masked clears. Unverifiable state is retained rather than guessed.",
+    "The observer's documented constructor coverage, foreign-thread/hook-loss fault handling, and bulk-teardown limits remain applicable. This narrow integration review does not re-prove all native observer bodies."
+  ]
+}

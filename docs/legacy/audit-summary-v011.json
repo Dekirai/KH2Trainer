@@ -1,0 +1,4445 @@
+{
+  "schema": 1,
+  "generated_utc": "2026-10-04T11:32:00.491730+00:00",
+  "methodology": {
+    "no_game_or_idb_writes": true,
+    "live_metadata_captured": "2026-10-04T04:02:56.091Z",
+    "tiers": {
+      "0": "Inventar/Export: kein zugeordneter konkreter Semantikbeleg",
+      "1": "Gezielt gelesen: Rohbeleg oder Berichtserwähnung, keine explizite strukturierte Verhaltensaussage",
+      "2": "Konkrete statische Verhaltensaussage mit vorhandenem Codebeleg",
+      "3": "Wie Stufe 2, zusätzlich funktionsbezogener vollständiger ASM-Beleg"
+    },
+    "semantic_warning": "Export coverage is not semantic coverage. One specific field/call fact does not mean every branch or runtime condition is understood.",
+    "claim_rules": "Only explicit annotations, structured Finding/evidence contracts or curated existing-report statements count as concrete semantic claims. Names, RTTI, strings, xrefs and raw decompile presence alone never do.",
+    "not_a_proof": "This reconciles recorded evidence. Static claims can still contain mistakes; only selected spotchecks were repeated live. No dynamic reachability or runtime feature proof is inferred.",
+    "address_domains": "native VA/RVA, synthetic IDA CIL addresses, and DXBC container addresses remain separate.",
+    "database_correction_note": "The audit script itself is read-only toward game/IDB. Separately authorized IDB corrections defined26 verified functions after a compressed backup; exact before/after evidence is included. No executable bytes were patched."
+  },
+  "counts": {
+    "native": {
+      "total": 36451,
+      "valid_exports": 36451,
+      "export_kinds": {
+        "pseudocode": 36450,
+        "assembly": 1
+      },
+      "tiers": {
+        "3": 1373,
+        "0": 34221,
+        "1": 518,
+        "2": 339
+      },
+      "specific_static_claim": 1712,
+      "semantic_open": 34739,
+      "bodyless_metadata_entries": 0
+    },
+    "cil": {
+      "total": 445,
+      "valid_exports": 445,
+      "export_kinds": {
+        "cil_disassembly": 439,
+        "cil_metadata_placeholder": 6
+      },
+      "tiers": {
+        "3": 439,
+        "0": 6
+      },
+      "specific_static_claim": 439,
+      "semantic_open": 0,
+      "bodyless_metadata_entries": 6
+    },
+    "shader": {
+      "total": 47,
+      "valid_exports": 47,
+      "export_kinds": {
+        "shader_disassembly": 47
+      },
+      "tiers": {
+        "3": 47
+      },
+      "specific_static_claim": 47,
+      "semantic_open": 0,
+      "bodyless_metadata_entries": 0
+    },
+    "native_candidate": {
+      "total": 0,
+      "valid_exports": 0,
+      "export_kinds": {},
+      "tiers": {},
+      "specific_static_claim": 0,
+      "semantic_open": 0,
+      "bodyless_metadata_entries": 0
+    }
+  },
+  "original_pe": {
+    "path": "E:\\SteamLibrary\\steamapps\\common\\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-\\KINGDOM HEARTS II FINAL MIX.exe",
+    "read_only": true,
+    "available": true,
+    "size": 8659216,
+    "sha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+    "matches_expected": true,
+    "sections": [
+      {
+        "name": ".text",
+        "rva": "0x1000",
+        "vsize": 5731315,
+        "size": 5731328,
+        "flags": "0x60000020"
+      },
+      {
+        "name": ".nep",
+        "rva": "0x579000",
+        "vsize": 4726,
+        "size": 5120,
+        "flags": "0x60000020"
+      },
+      {
+        "name": ".rdata",
+        "rva": "0x57b000",
+        "vsize": 1668926,
+        "size": 1669120,
+        "flags": "0x40000040"
+      },
+      {
+        "name": ".data",
+        "rva": "0x713000",
+        "vsize": 38207160,
+        "size": 564224,
+        "flags": "0xc0000040"
+      },
+      {
+        "name": ".pdata",
+        "rva": "0x2b83000",
+        "vsize": 330312,
+        "size": 330752,
+        "flags": "0x40000040"
+      },
+      {
+        "name": ".shared",
+        "rva": "0x2bd4000",
+        "vsize": 1092,
+        "size": 1536,
+        "flags": "0xd0000040"
+      },
+      {
+        "name": "_RDATA",
+        "rva": "0x2bd5000",
+        "vsize": 6224,
+        "size": 6656,
+        "flags": "0x40000040"
+      },
+      {
+        "name": ".rsrc",
+        "rva": "0x2bd7000",
+        "vsize": 258768,
+        "size": 259072,
+        "flags": "0x40000040"
+      },
+      {
+        "name": ".reloc",
+        "rva": "0x2c17000",
+        "vsize": 80324,
+        "size": 80384,
+        "flags": "0x42000040"
+      }
+    ],
+    "import_count": 368,
+    "export_count": 222,
+    "delay_import_count": 0,
+    "pdata_entries": 27526,
+    "exports_outside_recognized_functions": [],
+    "pdata_starts_outside_primary_function_spans": [
+      {
+        "start": "0x14056c150",
+        "end": "0x14056c165"
+      },
+      {
+        "start": "0x14056e880",
+        "end": "0x14056e896"
+      },
+      {
+        "start": "0x1405705aa",
+        "end": "0x1405705c8"
+      },
+      {
+        "start": "0x1405705c8",
+        "end": "0x1405705f4"
+      },
+      {
+        "start": "0x1405705f4",
+        "end": "0x140570635"
+      },
+      {
+        "start": "0x140570635",
+        "end": "0x14057064d"
+      },
+      {
+        "start": "0x14057064d",
+        "end": "0x140570679"
+      }
+    ],
+    "pdata_outlying_chunks_live_resolution": [
+      {
+        "query": "0x14056c150",
+        "fn": {
+          "addr": "0x1400fa960",
+          "name": "sub_1400FA960",
+          "size": "0x44"
+        },
+        "error": null
+      },
+      {
+        "query": "0x14056e880",
+        "fn": {
+          "addr": "0x140143720",
+          "name": "sub_140143720",
+          "size": "0x3b"
+        },
+        "error": null
+      },
+      {
+        "query": "0x1405705aa",
+        "fn": {
+          "addr": "0x1404391d8",
+          "name": "sub_1404391D8",
+          "size": "0x168"
+        },
+        "error": null
+      },
+      {
+        "query": "0x1405705c8",
+        "fn": {
+          "addr": "0x1404393e4",
+          "name": "sub_1404393E4",
+          "size": "0x6b"
+        },
+        "error": null
+      },
+      {
+        "query": "0x1405705f4",
+        "fn": {
+          "addr": "0x140439474",
+          "name": "sub_140439474",
+          "size": "0x61"
+        },
+        "error": null
+      },
+      {
+        "query": "0x140570635",
+        "fn": {
+          "addr": "0x14043983c",
+          "name": "sub_14043983C",
+          "size": "0x99"
+        },
+        "error": null
+      },
+      {
+        "query": "0x14057064d",
+        "fn": {
+          "addr": "0x140439b14",
+          "name": "sub_140439B14",
+          "size": "0x70"
+        },
+        "error": null
+      }
+    ],
+    "pdata_chunk_note": "All seven outlying PDATA starts resolve in live IDA to existing functions with detached chunks. They are not seven new missing functions; start/end spans alone undercount chunk ownership.",
+    "section_inventory_matches": true,
+    "executable_interval_note": "IDA start/end spans are not instruction-byte coverage. Gaps may be padding, inline data, CIL bodies or unidentified code; no interpretation is inferred from gaps."
+  },
+  "sections": [
+    {
+      "name": ".text",
+      "rva": "0x1000",
+      "vsize": 5731315,
+      "raw": "0x400",
+      "size": 5731328,
+      "flags": "0x60000020",
+      "entropy": 6.475544573268269,
+      "native_functions": 36145,
+      "functions_with_claim": 1706
+    },
+    {
+      "name": ".nep",
+      "rva": "0x579000",
+      "vsize": 4726,
+      "raw": "0x577800",
+      "size": 5120,
+      "flags": "0x60000020",
+      "entropy": 4.099115195432904,
+      "native_functions": 306,
+      "functions_with_claim": 6
+    },
+    {
+      "name": ".rdata",
+      "rva": "0x57b000",
+      "vsize": 1668926,
+      "raw": "0x578c00",
+      "size": 1669120,
+      "flags": "0x40000040",
+      "entropy": 5.483300826526328,
+      "native_functions": 0,
+      "functions_with_claim": 0
+    },
+    {
+      "name": ".data",
+      "rva": "0x713000",
+      "vsize": 38207160,
+      "raw": "0x710400",
+      "size": 564224,
+      "flags": "0xc0000040",
+      "entropy": 3.3311556290323527,
+      "native_functions": 0,
+      "functions_with_claim": 0
+    },
+    {
+      "name": ".pdata",
+      "rva": "0x2b83000",
+      "vsize": 330312,
+      "raw": "0x79a000",
+      "size": 330752,
+      "flags": "0x40000040",
+      "entropy": 6.5118223575260314,
+      "native_functions": 0,
+      "functions_with_claim": 0
+    },
+    {
+      "name": ".shared",
+      "rva": "0x2bd4000",
+      "vsize": 1092,
+      "raw": "0x7eac00",
+      "size": 1536,
+      "flags": "0xd0000040",
+      "entropy": 0.3152444395480138,
+      "native_functions": 0,
+      "functions_with_claim": 0
+    },
+    {
+      "name": "_RDATA",
+      "rva": "0x2bd5000",
+      "vsize": 6224,
+      "raw": "0x7eb200",
+      "size": 6656,
+      "flags": "0x40000040",
+      "entropy": 5.350132904807895,
+      "native_functions": 0,
+      "functions_with_claim": 0
+    },
+    {
+      "name": ".rsrc",
+      "rva": "0x2bd7000",
+      "vsize": 258768,
+      "raw": "0x7ecc00",
+      "size": 259072,
+      "flags": "0x40000040",
+      "entropy": 7.035790526886202,
+      "native_functions": 0,
+      "functions_with_claim": 0
+    },
+    {
+      "name": ".reloc",
+      "rva": "0x2c17000",
+      "vsize": 80324,
+      "raw": "0x82c000",
+      "size": 80384,
+      "flags": "0x42000040",
+      "entropy": 5.452786064676373,
+      "native_functions": 0,
+      "functions_with_claim": 0
+    }
+  ],
+  "imports": {
+    "pe_total": 368,
+    "ida_total": 368,
+    "pe_only": [
+      [
+        "d3d12",
+        5374458800,
+        "#101"
+      ],
+      [
+        "oleaut32",
+        5374456992,
+        "SysAllocStringByteLen"
+      ],
+      [
+        "oleaut32",
+        5374457000,
+        "SysFreeString"
+      ],
+      [
+        "oleaut32",
+        5374457008,
+        "SysAllocString"
+      ],
+      [
+        "oleaut32",
+        5374457016,
+        "VariantCopy"
+      ],
+      [
+        "oleaut32",
+        5374457024,
+        "SysStringByteLen"
+      ],
+      [
+        "xaudio2_9",
+        5374457576,
+        "#2"
+      ],
+      [
+        "xaudio2_9",
+        5374457584,
+        "#3"
+      ],
+      [
+        "xaudio2_9",
+        5374457592,
+        "#1"
+      ],
+      [
+        "xinput1_4",
+        5374457608,
+        "#2"
+      ],
+      [
+        "xinput1_4",
+        5374457616,
+        "#3"
+      ]
+    ],
+    "ida_only": [
+      [
+        "d3d12",
+        5374458800,
+        "__imp_D3D12CreateDevice"
+      ],
+      [
+        "oleaut32",
+        5374456992,
+        "__imp_SysAllocStringByteLen"
+      ],
+      [
+        "oleaut32",
+        5374457000,
+        "__imp_SysFreeString"
+      ],
+      [
+        "oleaut32",
+        5374457008,
+        "__imp_SysAllocString"
+      ],
+      [
+        "oleaut32",
+        5374457016,
+        "__imp_VariantCopy"
+      ],
+      [
+        "oleaut32",
+        5374457024,
+        "__imp_SysStringByteLen"
+      ],
+      [
+        "xaudio2_9",
+        5374457576,
+        "__imp_CreateAudioReverb"
+      ],
+      [
+        "xaudio2_9",
+        5374457584,
+        "__imp_CreateAudioVolumeMeter"
+      ],
+      [
+        "xaudio2_9",
+        5374457592,
+        "__imp_XAudio2Create"
+      ],
+      [
+        "xinput1_4",
+        5374457608,
+        "__imp_XInputGetState"
+      ],
+      [
+        "xinput1_4",
+        5374457616,
+        "__imp_XInputSetState"
+      ]
+    ],
+    "groups": [
+      {
+        "module": "MSVCP140.dll",
+        "symbols": [
+          {
+            "name": "?__ExceptionPtrDestroy@@YAXPEAX@Z",
+            "iat": "0x14057b440"
+          },
+          {
+            "name": "?_Throw_C_error@std@@YAXH@Z",
+            "iat": "0x14057b448"
+          },
+          {
+            "name": "_Mtx_unlock",
+            "iat": "0x14057b450"
+          },
+          {
+            "name": "_Mtx_lock",
+            "iat": "0x14057b458"
+          },
+          {
+            "name": "_Mtx_destroy_in_situ",
+            "iat": "0x14057b460"
+          },
+          {
+            "name": "_Mtx_init_in_situ",
+            "iat": "0x14057b468"
+          },
+          {
+            "name": "?_Xbad_function_call@std@@YAXXZ",
+            "iat": "0x14057b470"
+          },
+          {
+            "name": "_Thrd_sleep",
+            "iat": "0x14057b478"
+          },
+          {
+            "name": "_Xtime_get_ticks",
+            "iat": "0x14057b480"
+          },
+          {
+            "name": "?__ExceptionPtrCopy@@YAXPEAXPEBX@Z",
+            "iat": "0x14057b488"
+          },
+          {
+            "name": "?_Xlength_error@std@@YAXPEBD@Z",
+            "iat": "0x14057b490"
+          }
+        ],
+        "count": 11,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "steam_api64.dll",
+        "symbols": [
+          {
+            "name": "SteamAPI_RestartAppIfNecessary",
+            "iat": "0x14057bc48"
+          },
+          {
+            "name": "SteamAPI_Init",
+            "iat": "0x14057bc50"
+          },
+          {
+            "name": "SteamAPI_RunCallbacks",
+            "iat": "0x14057bc58"
+          },
+          {
+            "name": "SteamAPI_UnregisterCallback",
+            "iat": "0x14057bc60"
+          },
+          {
+            "name": "SteamAPI_RegisterCallback",
+            "iat": "0x14057bc68"
+          },
+          {
+            "name": "SteamInternal_FindOrCreateUserInterface",
+            "iat": "0x14057bc70"
+          },
+          {
+            "name": "SteamInternal_ContextInit",
+            "iat": "0x14057bc78"
+          },
+          {
+            "name": "SteamAPI_GetHSteamUser",
+            "iat": "0x14057bc80"
+          },
+          {
+            "name": "SteamAPI_Shutdown",
+            "iat": "0x14057bc88"
+          }
+        ],
+        "count": 9,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "imagehlp.dll",
+        "symbols": [
+          {
+            "name": "MakeSureDirectoryPathExists",
+            "iat": "0x14057bbe0"
+          }
+        ],
+        "count": 1,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "d3d12.dll",
+        "symbols": [
+          {
+            "name": "D3D12SerializeRootSignature",
+            "iat": "0x14057bba8"
+          },
+          {
+            "name": "#101",
+            "iat": "0x14057bbb0"
+          }
+        ],
+        "count": 2,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "dxgi.dll",
+        "symbols": [
+          {
+            "name": "CreateDXGIFactory1",
+            "iat": "0x14057bbd0"
+          }
+        ],
+        "count": 1,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "D3DCOMPILER_47.dll",
+        "symbols": [
+          {
+            "name": "D3DStripShader",
+            "iat": "0x14057b028"
+          }
+        ],
+        "count": 1,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "WINMM.dll",
+        "symbols": [
+          {
+            "name": "timeGetDevCaps",
+            "iat": "0x14057b6b0"
+          },
+          {
+            "name": "timeBeginPeriod",
+            "iat": "0x14057b6b8"
+          },
+          {
+            "name": "timeGetTime",
+            "iat": "0x14057b6c0"
+          },
+          {
+            "name": "timeKillEvent",
+            "iat": "0x14057b6c8"
+          },
+          {
+            "name": "timeSetEvent",
+            "iat": "0x14057b6d0"
+          },
+          {
+            "name": "timeEndPeriod",
+            "iat": "0x14057b6d8"
+          }
+        ],
+        "count": 6,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "DINPUT8.dll",
+        "symbols": [
+          {
+            "name": "DirectInput8Create",
+            "iat": "0x14057b038"
+          }
+        ],
+        "count": 1,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "XINPUT1_4.dll",
+        "symbols": [
+          {
+            "name": "#2",
+            "iat": "0x14057b708"
+          },
+          {
+            "name": "#3",
+            "iat": "0x14057b710"
+          }
+        ],
+        "count": 2,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "HID.DLL",
+        "symbols": [
+          {
+            "name": "HidD_GetSerialNumberString",
+            "iat": "0x14057b0a0"
+          },
+          {
+            "name": "HidD_GetProductString",
+            "iat": "0x14057b0a8"
+          },
+          {
+            "name": "HidD_GetManufacturerString",
+            "iat": "0x14057b0b0"
+          },
+          {
+            "name": "HidD_SetFeature",
+            "iat": "0x14057b0b8"
+          },
+          {
+            "name": "HidD_GetFeature",
+            "iat": "0x14057b0c0"
+          },
+          {
+            "name": "HidD_FreePreparsedData",
+            "iat": "0x14057b0c8"
+          },
+          {
+            "name": "HidD_GetPreparsedData",
+            "iat": "0x14057b0d0"
+          },
+          {
+            "name": "HidD_GetHidGuid",
+            "iat": "0x14057b0d8"
+          },
+          {
+            "name": "HidD_GetAttributes",
+            "iat": "0x14057b0e0"
+          },
+          {
+            "name": "HidP_GetValueCaps",
+            "iat": "0x14057b0e8"
+          },
+          {
+            "name": "HidP_GetCaps",
+            "iat": "0x14057b0f0"
+          }
+        ],
+        "count": 11,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "d3d11.dll",
+        "symbols": [
+          {
+            "name": "D3D11CreateDevice",
+            "iat": "0x14057bb98"
+          }
+        ],
+        "count": 1,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "MFReadWrite.dll",
+        "symbols": [
+          {
+            "name": "MFCreateSourceReaderFromURL",
+            "iat": "0x14057b430"
+          }
+        ],
+        "count": 1,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "MFPlat.DLL",
+        "symbols": [
+          {
+            "name": "MFCreateMediaType",
+            "iat": "0x14057b3f8"
+          },
+          {
+            "name": "MFCreateAttributes",
+            "iat": "0x14057b400"
+          },
+          {
+            "name": "MFCreateDXGIDeviceManager",
+            "iat": "0x14057b408"
+          },
+          {
+            "name": "MFShutdown",
+            "iat": "0x14057b410"
+          },
+          {
+            "name": "MFStartup",
+            "iat": "0x14057b418"
+          },
+          {
+            "name": "MFllMulDiv",
+            "iat": "0x14057b420"
+          }
+        ],
+        "count": 6,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "XAudio2_9.dll",
+        "symbols": [
+          {
+            "name": "#2",
+            "iat": "0x14057b6e8"
+          },
+          {
+            "name": "#3",
+            "iat": "0x14057b6f0"
+          },
+          {
+            "name": "#1",
+            "iat": "0x14057b6f8"
+          }
+        ],
+        "count": 3,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "dbghelp.dll",
+        "symbols": [
+          {
+            "name": "MiniDumpWriteDump",
+            "iat": "0x14057bbc0"
+          }
+        ],
+        "count": 1,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "VCRUNTIME140.dll",
+        "symbols": [
+          {
+            "name": "wcschr",
+            "iat": "0x14057b600"
+          },
+          {
+            "name": "__std_type_info_destroy_list",
+            "iat": "0x14057b608"
+          },
+          {
+            "name": "__intrinsic_setjmp",
+            "iat": "0x14057b610"
+          },
+          {
+            "name": "__std_terminate",
+            "iat": "0x14057b618"
+          },
+          {
+            "name": "memchr",
+            "iat": "0x14057b620"
+          },
+          {
+            "name": "__CxxFrameHandler3",
+            "iat": "0x14057b628"
+          },
+          {
+            "name": "_purecall",
+            "iat": "0x14057b630"
+          },
+          {
+            "name": "strchr",
+            "iat": "0x14057b638"
+          },
+          {
+            "name": "strrchr",
+            "iat": "0x14057b640"
+          },
+          {
+            "name": "__std_exception_destroy",
+            "iat": "0x14057b648"
+          },
+          {
+            "name": "strstr",
+            "iat": "0x14057b650"
+          },
+          {
+            "name": "longjmp",
+            "iat": "0x14057b658"
+          },
+          {
+            "name": "memcmp",
+            "iat": "0x14057b660"
+          },
+          {
+            "name": "memcpy",
+            "iat": "0x14057b668"
+          },
+          {
+            "name": "memmove",
+            "iat": "0x14057b670"
+          },
+          {
+            "name": "memset",
+            "iat": "0x14057b678"
+          },
+          {
+            "name": "_CxxThrowException",
+            "iat": "0x14057b680"
+          },
+          {
+            "name": "wcsstr",
+            "iat": "0x14057b688"
+          },
+          {
+            "name": "__C_specific_handler",
+            "iat": "0x14057b690"
+          },
+          {
+            "name": "__FrameUnwindFilter",
+            "iat": "0x14057b698"
+          },
+          {
+            "name": "__std_exception_copy",
+            "iat": "0x14057b6a0"
+          }
+        ],
+        "count": 21,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "api-ms-win-crt-runtime-l1-1-0.dll",
+        "symbols": [
+          {
+            "name": "_errno",
+            "iat": "0x14057b8e0"
+          },
+          {
+            "name": "_beginthreadex",
+            "iat": "0x14057b8e8"
+          },
+          {
+            "name": "_get_errno",
+            "iat": "0x14057b8f0"
+          },
+          {
+            "name": "perror",
+            "iat": "0x14057b8f8"
+          },
+          {
+            "name": "abort",
+            "iat": "0x14057b900"
+          },
+          {
+            "name": "_invalid_parameter_noinfo_noreturn",
+            "iat": "0x14057b908"
+          },
+          {
+            "name": "_endthreadex",
+            "iat": "0x14057b910"
+          },
+          {
+            "name": "_endthread",
+            "iat": "0x14057b918"
+          },
+          {
+            "name": "_invalid_parameter_noinfo",
+            "iat": "0x14057b920"
+          },
+          {
+            "name": "_crt_at_quick_exit",
+            "iat": "0x14057b928"
+          },
+          {
+            "name": "_crt_atexit",
+            "iat": "0x14057b930"
+          },
+          {
+            "name": "_execute_onexit_table",
+            "iat": "0x14057b938"
+          },
+          {
+            "name": "_register_onexit_function",
+            "iat": "0x14057b940"
+          },
+          {
+            "name": "_initialize_onexit_table",
+            "iat": "0x14057b948"
+          },
+          {
+            "name": "_seh_filter_dll",
+            "iat": "0x14057b950"
+          },
+          {
+            "name": "terminate",
+            "iat": "0x14057b958"
+          },
+          {
+            "name": "_register_thread_local_exe_atexit_callback",
+            "iat": "0x14057b960"
+          },
+          {
+            "name": "_c_exit",
+            "iat": "0x14057b968"
+          },
+          {
+            "name": "_cexit",
+            "iat": "0x14057b970"
+          },
+          {
+            "name": "_exit",
+            "iat": "0x14057b978"
+          },
+          {
+            "name": "_initterm_e",
+            "iat": "0x14057b980"
+          },
+          {
+            "name": "_initterm",
+            "iat": "0x14057b988"
+          },
+          {
+            "name": "_get_narrow_winmain_command_line",
+            "iat": "0x14057b990"
+          },
+          {
+            "name": "_initialize_narrow_environment",
+            "iat": "0x14057b998"
+          },
+          {
+            "name": "_configure_narrow_argv",
+            "iat": "0x14057b9a0"
+          },
+          {
+            "name": "_set_app_type",
+            "iat": "0x14057b9a8"
+          },
+          {
+            "name": "_seh_filter_exe",
+            "iat": "0x14057b9b0"
+          },
+          {
+            "name": "exit",
+            "iat": "0x14057b9b8"
+          },
+          {
+            "name": "_beginthread",
+            "iat": "0x14057b9c0"
+          }
+        ],
+        "count": 29,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "api-ms-win-crt-stdio-l1-1-0.dll",
+        "symbols": [
+          {
+            "name": "__stdio_common_vsprintf",
+            "iat": "0x14057b9d0"
+          },
+          {
+            "name": "ftell",
+            "iat": "0x14057b9d8"
+          },
+          {
+            "name": "_close",
+            "iat": "0x14057b9e0"
+          },
+          {
+            "name": "_sopen_dispatch",
+            "iat": "0x14057b9e8"
+          },
+          {
+            "name": "fread",
+            "iat": "0x14057b9f0"
+          },
+          {
+            "name": "__stdio_common_vswprintf",
+            "iat": "0x14057b9f8"
+          },
+          {
+            "name": "_write",
+            "iat": "0x14057ba00"
+          },
+          {
+            "name": "_lseeki64",
+            "iat": "0x14057ba08"
+          },
+          {
+            "name": "fflush",
+            "iat": "0x14057ba10"
+          },
+          {
+            "name": "fseek",
+            "iat": "0x14057ba18"
+          },
+          {
+            "name": "fputc",
+            "iat": "0x14057ba20"
+          },
+          {
+            "name": "fopen_s",
+            "iat": "0x14057ba28"
+          },
+          {
+            "name": "__stdio_common_vsprintf_s",
+            "iat": "0x14057ba30"
+          },
+          {
+            "name": "fgets",
+            "iat": "0x14057ba38"
+          },
+          {
+            "name": "__stdio_common_vsnprintf_s",
+            "iat": "0x14057ba40"
+          },
+          {
+            "name": "__p__commode",
+            "iat": "0x14057ba48"
+          },
+          {
+            "name": "_set_fmode",
+            "iat": "0x14057ba50"
+          },
+          {
+            "name": "fclose",
+            "iat": "0x14057ba58"
+          },
+          {
+            "name": "__stdio_common_vswprintf_s",
+            "iat": "0x14057ba60"
+          },
+          {
+            "name": "fwrite",
+            "iat": "0x14057ba68"
+          },
+          {
+            "name": "__stdio_common_vswscanf",
+            "iat": "0x14057ba70"
+          },
+          {
+            "name": "__acrt_iob_func",
+            "iat": "0x14057ba78"
+          },
+          {
+            "name": "__stdio_common_vfprintf",
+            "iat": "0x14057ba80"
+          },
+          {
+            "name": "fopen",
+            "iat": "0x14057ba88"
+          },
+          {
+            "name": "_wfopen_s",
+            "iat": "0x14057ba90"
+          },
+          {
+            "name": "_read",
+            "iat": "0x14057ba98"
+          }
+        ],
+        "count": 26,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "api-ms-win-crt-string-l1-1-0.dll",
+        "symbols": [
+          {
+            "name": "wcsncmp",
+            "iat": "0x14057baa8"
+          },
+          {
+            "name": "strncpy",
+            "iat": "0x14057bab0"
+          },
+          {
+            "name": "wcstok",
+            "iat": "0x14057bab8"
+          },
+          {
+            "name": "isdigit",
+            "iat": "0x14057bac0"
+          },
+          {
+            "name": "strncmp",
+            "iat": "0x14057bac8"
+          },
+          {
+            "name": "towlower",
+            "iat": "0x14057bad0"
+          },
+          {
+            "name": "wcsncpy",
+            "iat": "0x14057bad8"
+          },
+          {
+            "name": "tolower",
+            "iat": "0x14057bae0"
+          },
+          {
+            "name": "strcmp",
+            "iat": "0x14057bae8"
+          },
+          {
+            "name": "strncat",
+            "iat": "0x14057baf0"
+          },
+          {
+            "name": "strncpy_s",
+            "iat": "0x14057baf8"
+          },
+          {
+            "name": "strcat_s",
+            "iat": "0x14057bb00"
+          },
+          {
+            "name": "strcpy_s",
+            "iat": "0x14057bb08"
+          },
+          {
+            "name": "isprint",
+            "iat": "0x14057bb10"
+          },
+          {
+            "name": "_strnicmp",
+            "iat": "0x14057bb18"
+          },
+          {
+            "name": "wcsncpy_s",
+            "iat": "0x14057bb20"
+          },
+          {
+            "name": "toupper",
+            "iat": "0x14057bb28"
+          }
+        ],
+        "count": 17,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "api-ms-win-crt-heap-l1-1-0.dll",
+        "symbols": [
+          {
+            "name": "calloc",
+            "iat": "0x14057b768"
+          },
+          {
+            "name": "_set_new_mode",
+            "iat": "0x14057b770"
+          },
+          {
+            "name": "_recalloc",
+            "iat": "0x14057b778"
+          },
+          {
+            "name": "realloc",
+            "iat": "0x14057b780"
+          },
+          {
+            "name": "_aligned_free",
+            "iat": "0x14057b788"
+          },
+          {
+            "name": "free",
+            "iat": "0x14057b790"
+          },
+          {
+            "name": "_aligned_realloc",
+            "iat": "0x14057b798"
+          },
+          {
+            "name": "_aligned_malloc",
+            "iat": "0x14057b7a0"
+          },
+          {
+            "name": "malloc",
+            "iat": "0x14057b7a8"
+          },
+          {
+            "name": "_callnewh",
+            "iat": "0x14057b7b0"
+          }
+        ],
+        "count": 10,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "api-ms-win-crt-filesystem-l1-1-0.dll",
+        "symbols": [
+          {
+            "name": "_chdir",
+            "iat": "0x14057b750"
+          },
+          {
+            "name": "_mkdir",
+            "iat": "0x14057b758"
+          }
+        ],
+        "count": 2,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "api-ms-win-crt-time-l1-1-0.dll",
+        "symbols": [
+          {
+            "name": "_time64",
+            "iat": "0x14057bb38"
+          },
+          {
+            "name": "_gmtime64",
+            "iat": "0x14057bb40"
+          },
+          {
+            "name": "_localtime64",
+            "iat": "0x14057bb48"
+          },
+          {
+            "name": "_mktime64",
+            "iat": "0x14057bb50"
+          },
+          {
+            "name": "clock",
+            "iat": "0x14057bb58"
+          },
+          {
+            "name": "_difftime64",
+            "iat": "0x14057bb60"
+          }
+        ],
+        "count": 6,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "api-ms-win-crt-math-l1-1-0.dll",
+        "symbols": [
+          {
+            "name": "powf",
+            "iat": "0x14057b7d0"
+          },
+          {
+            "name": "atanf",
+            "iat": "0x14057b7d8"
+          },
+          {
+            "name": "asinf",
+            "iat": "0x14057b7e0"
+          },
+          {
+            "name": "cosf",
+            "iat": "0x14057b7e8"
+          },
+          {
+            "name": "expf",
+            "iat": "0x14057b7f0"
+          },
+          {
+            "name": "sinf",
+            "iat": "0x14057b7f8"
+          },
+          {
+            "name": "acosf",
+            "iat": "0x14057b800"
+          },
+          {
+            "name": "ceilf",
+            "iat": "0x14057b808"
+          },
+          {
+            "name": "acos",
+            "iat": "0x14057b810"
+          },
+          {
+            "name": "exp",
+            "iat": "0x14057b818"
+          },
+          {
+            "name": "__setusermatherr",
+            "iat": "0x14057b820"
+          },
+          {
+            "name": "logf",
+            "iat": "0x14057b828"
+          },
+          {
+            "name": "_isnan",
+            "iat": "0x14057b830"
+          },
+          {
+            "name": "fmodf",
+            "iat": "0x14057b838"
+          },
+          {
+            "name": "roundf",
+            "iat": "0x14057b840"
+          },
+          {
+            "name": "atan2f",
+            "iat": "0x14057b848"
+          },
+          {
+            "name": "pow",
+            "iat": "0x14057b850"
+          },
+          {
+            "name": "floor",
+            "iat": "0x14057b858"
+          },
+          {
+            "name": "modf",
+            "iat": "0x14057b860"
+          },
+          {
+            "name": "frexp",
+            "iat": "0x14057b868"
+          },
+          {
+            "name": "log10f",
+            "iat": "0x14057b870"
+          },
+          {
+            "name": "sqrt",
+            "iat": "0x14057b878"
+          },
+          {
+            "name": "ldexp",
+            "iat": "0x14057b880"
+          },
+          {
+            "name": "sin",
+            "iat": "0x14057b888"
+          },
+          {
+            "name": "cos",
+            "iat": "0x14057b890"
+          },
+          {
+            "name": "floorf",
+            "iat": "0x14057b898"
+          },
+          {
+            "name": "log",
+            "iat": "0x14057b8a0"
+          },
+          {
+            "name": "atan",
+            "iat": "0x14057b8a8"
+          },
+          {
+            "name": "ceil",
+            "iat": "0x14057b8b0"
+          },
+          {
+            "name": "modff",
+            "iat": "0x14057b8b8"
+          },
+          {
+            "name": "sqrtf",
+            "iat": "0x14057b8c0"
+          },
+          {
+            "name": "_finite",
+            "iat": "0x14057b8c8"
+          },
+          {
+            "name": "tanf",
+            "iat": "0x14057b8d0"
+          }
+        ],
+        "count": 33,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "api-ms-win-crt-convert-l1-1-0.dll",
+        "symbols": [
+          {
+            "name": "wcstombs_s",
+            "iat": "0x14057b720"
+          },
+          {
+            "name": "atoi",
+            "iat": "0x14057b728"
+          },
+          {
+            "name": "wcstoul",
+            "iat": "0x14057b730"
+          },
+          {
+            "name": "atof",
+            "iat": "0x14057b738"
+          },
+          {
+            "name": "mbstowcs",
+            "iat": "0x14057b740"
+          }
+        ],
+        "count": 5,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "api-ms-win-crt-utility-l1-1-0.dll",
+        "symbols": [
+          {
+            "name": "qsort",
+            "iat": "0x14057bb70"
+          },
+          {
+            "name": "rand",
+            "iat": "0x14057bb78"
+          },
+          {
+            "name": "bsearch",
+            "iat": "0x14057bb80"
+          },
+          {
+            "name": "srand",
+            "iat": "0x14057bb88"
+          }
+        ],
+        "count": 4,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "api-ms-win-crt-locale-l1-1-0.dll",
+        "symbols": [
+          {
+            "name": "_configthreadlocale",
+            "iat": "0x14057b7c0"
+          }
+        ],
+        "count": 1,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "SETUPAPI.dll",
+        "symbols": [
+          {
+            "name": "SetupDiDestroyDeviceInfoList",
+            "iat": "0x14057b4d0"
+          },
+          {
+            "name": "SetupDiEnumDeviceInterfaces",
+            "iat": "0x14057b4d8"
+          },
+          {
+            "name": "SetupDiGetDeviceInterfaceDetailW",
+            "iat": "0x14057b4e0"
+          },
+          {
+            "name": "SetupDiGetClassDevsW",
+            "iat": "0x14057b4e8"
+          }
+        ],
+        "count": 4,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "KERNEL32.dll",
+        "symbols": [
+          {
+            "name": "SetUnhandledExceptionFilter",
+            "iat": "0x14057b100"
+          },
+          {
+            "name": "UnhandledExceptionFilter",
+            "iat": "0x14057b108"
+          },
+          {
+            "name": "RtlVirtualUnwind",
+            "iat": "0x14057b110"
+          },
+          {
+            "name": "RtlLookupFunctionEntry",
+            "iat": "0x14057b118"
+          },
+          {
+            "name": "RtlCaptureContext",
+            "iat": "0x14057b120"
+          },
+          {
+            "name": "IsProcessorFeaturePresent",
+            "iat": "0x14057b128"
+          },
+          {
+            "name": "GetThreadPriority",
+            "iat": "0x14057b130"
+          },
+          {
+            "name": "GetProcessAffinityMask",
+            "iat": "0x14057b138"
+          },
+          {
+            "name": "GetModuleHandleW",
+            "iat": "0x14057b140"
+          },
+          {
+            "name": "CreateEventW",
+            "iat": "0x14057b148"
+          },
+          {
+            "name": "WaitForSingleObjectEx",
+            "iat": "0x14057b150"
+          },
+          {
+            "name": "OpenThread",
+            "iat": "0x14057b158"
+          },
+          {
+            "name": "SleepEx",
+            "iat": "0x14057b160"
+          },
+          {
+            "name": "GetSystemTimeAsFileTime",
+            "iat": "0x14057b168"
+          },
+          {
+            "name": "InitializeSListHead",
+            "iat": "0x14057b170"
+          },
+          {
+            "name": "IsDebuggerPresent",
+            "iat": "0x14057b178"
+          },
+          {
+            "name": "GetStartupInfoW",
+            "iat": "0x14057b180"
+          },
+          {
+            "name": "LoadLibraryExW",
+            "iat": "0x14057b188"
+          },
+          {
+            "name": "GetProcessHeap",
+            "iat": "0x14057b190"
+          },
+          {
+            "name": "HeapAlloc",
+            "iat": "0x14057b198"
+          },
+          {
+            "name": "HeapFree",
+            "iat": "0x14057b1a0"
+          },
+          {
+            "name": "GetProcAddress",
+            "iat": "0x14057b1a8"
+          },
+          {
+            "name": "GlobalMemoryStatus",
+            "iat": "0x14057b1b0"
+          },
+          {
+            "name": "InitializeCriticalSectionAndSpinCount",
+            "iat": "0x14057b1b8"
+          },
+          {
+            "name": "CopyFileA",
+            "iat": "0x14057b1c0"
+          },
+          {
+            "name": "CreateMutexA",
+            "iat": "0x14057b1c8"
+          },
+          {
+            "name": "Sleep",
+            "iat": "0x14057b1d0"
+          },
+          {
+            "name": "SetThreadPriority",
+            "iat": "0x14057b1d8"
+          },
+          {
+            "name": "CreateSemaphoreW",
+            "iat": "0x14057b1e0"
+          },
+          {
+            "name": "CreateFileW",
+            "iat": "0x14057b1e8"
+          },
+          {
+            "name": "GetExitCodeThread",
+            "iat": "0x14057b1f0"
+          },
+          {
+            "name": "SuspendThread",
+            "iat": "0x14057b1f8"
+          },
+          {
+            "name": "RaiseException",
+            "iat": "0x14057b200"
+          },
+          {
+            "name": "ResumeThread",
+            "iat": "0x14057b208"
+          },
+          {
+            "name": "WideCharToMultiByte",
+            "iat": "0x14057b210"
+          },
+          {
+            "name": "OutputDebugStringA",
+            "iat": "0x14057b218"
+          },
+          {
+            "name": "DecodePointer",
+            "iat": "0x14057b220"
+          },
+          {
+            "name": "InitializeCriticalSectionEx",
+            "iat": "0x14057b228"
+          },
+          {
+            "name": "CreateFileMappingA",
+            "iat": "0x14057b230"
+          },
+          {
+            "name": "UnmapViewOfFile",
+            "iat": "0x14057b238"
+          },
+          {
+            "name": "MapViewOfFile",
+            "iat": "0x14057b240"
+          },
+          {
+            "name": "GetCurrentThreadId",
+            "iat": "0x14057b248"
+          },
+          {
+            "name": "GetCurrentProcessId",
+            "iat": "0x14057b250"
+          },
+          {
+            "name": "GetCurrentProcess",
+            "iat": "0x14057b258"
+          },
+          {
+            "name": "CreateFileA",
+            "iat": "0x14057b260"
+          },
+          {
+            "name": "FormatMessageA",
+            "iat": "0x14057b268"
+          },
+          {
+            "name": "CreateThread",
+            "iat": "0x14057b270"
+          },
+          {
+            "name": "SwitchToThread",
+            "iat": "0x14057b278"
+          },
+          {
+            "name": "SetEvent",
+            "iat": "0x14057b280"
+          },
+          {
+            "name": "ConvertThreadToFiber",
+            "iat": "0x14057b288"
+          },
+          {
+            "name": "CreateFiber",
+            "iat": "0x14057b290"
+          },
+          {
+            "name": "ConvertFiberToThread",
+            "iat": "0x14057b298"
+          },
+          {
+            "name": "DeleteFiber",
+            "iat": "0x14057b2a0"
+          },
+          {
+            "name": "SwitchToFiber",
+            "iat": "0x14057b2a8"
+          },
+          {
+            "name": "CreateEventExA",
+            "iat": "0x14057b2b0"
+          },
+          {
+            "name": "CreateEventA",
+            "iat": "0x14057b2b8"
+          },
+          {
+            "name": "ResetEvent",
+            "iat": "0x14057b2c0"
+          },
+          {
+            "name": "DeleteCriticalSection",
+            "iat": "0x14057b2c8"
+          },
+          {
+            "name": "LeaveCriticalSection",
+            "iat": "0x14057b2d0"
+          },
+          {
+            "name": "EnterCriticalSection",
+            "iat": "0x14057b2d8"
+          },
+          {
+            "name": "InitializeCriticalSection",
+            "iat": "0x14057b2e0"
+          },
+          {
+            "name": "QueryPerformanceFrequency",
+            "iat": "0x14057b2e8"
+          },
+          {
+            "name": "QueryPerformanceCounter",
+            "iat": "0x14057b2f0"
+          },
+          {
+            "name": "Process32Next",
+            "iat": "0x14057b2f8"
+          },
+          {
+            "name": "Process32First",
+            "iat": "0x14057b300"
+          },
+          {
+            "name": "CreateToolhelp32Snapshot",
+            "iat": "0x14057b308"
+          },
+          {
+            "name": "OpenProcess",
+            "iat": "0x14057b310"
+          },
+          {
+            "name": "GetExitCodeProcess",
+            "iat": "0x14057b318"
+          },
+          {
+            "name": "TerminateProcess",
+            "iat": "0x14057b320"
+          },
+          {
+            "name": "GetModuleFileNameA",
+            "iat": "0x14057b328"
+          },
+          {
+            "name": "MultiByteToWideChar",
+            "iat": "0x14057b330"
+          },
+          {
+            "name": "FileTimeToSystemTime",
+            "iat": "0x14057b338"
+          },
+          {
+            "name": "WaitForSingleObject",
+            "iat": "0x14057b340"
+          },
+          {
+            "name": "ReleaseMutex",
+            "iat": "0x14057b348"
+          },
+          {
+            "name": "RemoveDirectoryA",
+            "iat": "0x14057b350"
+          },
+          {
+            "name": "ReleaseSemaphore",
+            "iat": "0x14057b358"
+          },
+          {
+            "name": "GetLastError",
+            "iat": "0x14057b360"
+          },
+          {
+            "name": "CloseHandle",
+            "iat": "0x14057b368"
+          },
+          {
+            "name": "ReadFile",
+            "iat": "0x14057b370"
+          },
+          {
+            "name": "GetCurrentThread",
+            "iat": "0x14057b378"
+          },
+          {
+            "name": "TerminateThread",
+            "iat": "0x14057b380"
+          },
+          {
+            "name": "ExitProcess",
+            "iat": "0x14057b388"
+          },
+          {
+            "name": "GetDiskFreeSpaceExA",
+            "iat": "0x14057b390"
+          },
+          {
+            "name": "lstrlenA",
+            "iat": "0x14057b398"
+          },
+          {
+            "name": "FindNextFileA",
+            "iat": "0x14057b3a0"
+          },
+          {
+            "name": "FindFirstFileA",
+            "iat": "0x14057b3a8"
+          },
+          {
+            "name": "FindClose",
+            "iat": "0x14057b3b0"
+          },
+          {
+            "name": "FileTimeToLocalFileTime",
+            "iat": "0x14057b3b8"
+          },
+          {
+            "name": "OutputDebugStringW",
+            "iat": "0x14057b3c0"
+          },
+          {
+            "name": "DeleteFileA",
+            "iat": "0x14057b3c8"
+          },
+          {
+            "name": "SetThreadIdealProcessor",
+            "iat": "0x14057b3d0"
+          },
+          {
+            "name": "WriteFile",
+            "iat": "0x14057b3d8"
+          },
+          {
+            "name": "CreateDirectoryA",
+            "iat": "0x14057b3e0"
+          },
+          {
+            "name": "CreateSemaphoreA",
+            "iat": "0x14057b3e8"
+          }
+        ],
+        "count": 94,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "USER32.dll",
+        "symbols": [
+          {
+            "name": "GetWindowLongPtrA",
+            "iat": "0x14057b510"
+          },
+          {
+            "name": "GetForegroundWindow",
+            "iat": "0x14057b518"
+          },
+          {
+            "name": "GetMonitorInfoA",
+            "iat": "0x14057b520"
+          },
+          {
+            "name": "MonitorFromWindow",
+            "iat": "0x14057b528"
+          },
+          {
+            "name": "EnumDisplaySettingsA",
+            "iat": "0x14057b530"
+          },
+          {
+            "name": "SetWindowLongPtrW",
+            "iat": "0x14057b538"
+          },
+          {
+            "name": "SetWindowLongPtrA",
+            "iat": "0x14057b540"
+          },
+          {
+            "name": "GetClientRect",
+            "iat": "0x14057b548"
+          },
+          {
+            "name": "GetSystemMetrics",
+            "iat": "0x14057b550"
+          },
+          {
+            "name": "AdjustWindowRect",
+            "iat": "0x14057b558"
+          },
+          {
+            "name": "LoadIconA",
+            "iat": "0x14057b560"
+          },
+          {
+            "name": "RegisterDeviceNotificationA",
+            "iat": "0x14057b568"
+          },
+          {
+            "name": "LoadCursorA",
+            "iat": "0x14057b570"
+          },
+          {
+            "name": "SendMessageA",
+            "iat": "0x14057b578"
+          },
+          {
+            "name": "IsZoomed",
+            "iat": "0x14057b580"
+          },
+          {
+            "name": "UnhookWindowsHookEx",
+            "iat": "0x14057b588"
+          },
+          {
+            "name": "SetWindowsHookExA",
+            "iat": "0x14057b590"
+          },
+          {
+            "name": "CallNextHookEx",
+            "iat": "0x14057b598"
+          },
+          {
+            "name": "SetDlgItemTextW",
+            "iat": "0x14057b5a0"
+          },
+          {
+            "name": "UnregisterClassA",
+            "iat": "0x14057b5a8"
+          },
+          {
+            "name": "GetCursorPos",
+            "iat": "0x14057b5b0"
+          },
+          {
+            "name": "ScreenToClient",
+            "iat": "0x14057b5b8"
+          },
+          {
+            "name": "SetWindowPos",
+            "iat": "0x14057b5c0"
+          },
+          {
+            "name": "ShowWindow",
+            "iat": "0x14057b5c8"
+          },
+          {
+            "name": "DefWindowProcA",
+            "iat": "0x14057b5d0"
+          },
+          {
+            "name": "DestroyWindow",
+            "iat": "0x14057b5d8"
+          },
+          {
+            "name": "CreateWindowExA",
+            "iat": "0x14057b5e0"
+          },
+          {
+            "name": "PostQuitMessage",
+            "iat": "0x14057b5e8"
+          },
+          {
+            "name": "RegisterClassExA",
+            "iat": "0x14057b5f0"
+          }
+        ],
+        "count": 29,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "GDI32.dll",
+        "symbols": [
+          {
+            "name": "MoveToEx",
+            "iat": "0x14057b048"
+          },
+          {
+            "name": "GetTextExtentPoint32A",
+            "iat": "0x14057b050"
+          },
+          {
+            "name": "SelectObject",
+            "iat": "0x14057b058"
+          },
+          {
+            "name": "GetStockObject",
+            "iat": "0x14057b060"
+          },
+          {
+            "name": "LineTo",
+            "iat": "0x14057b068"
+          },
+          {
+            "name": "CreatePen",
+            "iat": "0x14057b070"
+          },
+          {
+            "name": "CreateFontIndirectA",
+            "iat": "0x14057b078"
+          },
+          {
+            "name": "TextOutA",
+            "iat": "0x14057b080"
+          },
+          {
+            "name": "Ellipse",
+            "iat": "0x14057b088"
+          },
+          {
+            "name": "DeleteObject",
+            "iat": "0x14057b090"
+          }
+        ],
+        "count": 10,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "ADVAPI32.dll",
+        "symbols": [
+          {
+            "name": "RegQueryValueExA",
+            "iat": "0x14057b000"
+          },
+          {
+            "name": "RegCreateKeyExA",
+            "iat": "0x14057b008"
+          },
+          {
+            "name": "RegCloseKey",
+            "iat": "0x14057b010"
+          },
+          {
+            "name": "RegSetValueExA",
+            "iat": "0x14057b018"
+          }
+        ],
+        "count": 4,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "SHELL32.dll",
+        "symbols": [
+          {
+            "name": "ShellExecuteA",
+            "iat": "0x14057b4f8"
+          },
+          {
+            "name": "SHGetFolderPathA",
+            "iat": "0x14057b500"
+          }
+        ],
+        "count": 2,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "ole32.dll",
+        "symbols": [
+          {
+            "name": "CoInitialize",
+            "iat": "0x14057bc00"
+          },
+          {
+            "name": "CoSetProxyBlanket",
+            "iat": "0x14057bc08"
+          },
+          {
+            "name": "CoCreateInstance",
+            "iat": "0x14057bc10"
+          },
+          {
+            "name": "PropVariantClear",
+            "iat": "0x14057bc18"
+          },
+          {
+            "name": "CoInitializeEx",
+            "iat": "0x14057bc20"
+          },
+          {
+            "name": "CoTaskMemFree",
+            "iat": "0x14057bc28"
+          },
+          {
+            "name": "CoTaskMemAlloc",
+            "iat": "0x14057bc30"
+          },
+          {
+            "name": "CoUninitialize",
+            "iat": "0x14057bc38"
+          }
+        ],
+        "count": 8,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "OLEAUT32.dll",
+        "symbols": [
+          {
+            "name": "SysAllocStringByteLen",
+            "iat": "0x14057b4a0"
+          },
+          {
+            "name": "SysFreeString",
+            "iat": "0x14057b4a8"
+          },
+          {
+            "name": "SysAllocString",
+            "iat": "0x14057b4b0"
+          },
+          {
+            "name": "VariantCopy",
+            "iat": "0x14057b4b8"
+          },
+          {
+            "name": "SysStringByteLen",
+            "iat": "0x14057b4c0"
+          }
+        ],
+        "count": 5,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      },
+      {
+        "module": "mscoree.dll",
+        "symbols": [
+          {
+            "name": "_CorExeMain",
+            "iat": "0x14057bbf0"
+          }
+        ],
+        "count": 1,
+        "semantic_status": "inventory_only; selected callers documented elsewhere"
+      }
+    ],
+    "iat_addresses_match": true,
+    "name_difference_note": "IAT identity is compared by module and address. IDA may add __imp_ prefixes or resolve ordinal imports to names; raw differences are retained."
+  },
+  "strings": {
+    "initial_count": 14761,
+    "current_live_count": 14779,
+    "initial_only": [
+      {
+        "ea": "0x1405b6183",
+        "text": "@ff&@333@",
+        "length": 10,
+        "type": 0,
+        "refs": []
+      },
+      {
+        "ea": "0x1405b6196",
+        "text": "Y@fff@33s@",
+        "length": 11,
+        "type": 0,
+        "refs": []
+      },
+      {
+        "ea": "0x1405bbae7",
+        "text": "\b\u0007\t\u000b\n",
+        "length": 5,
+        "type": 0,
+        "refs": []
+      },
+      {
+        "ea": "0x140713580",
+        "text": "i\r.QB",
+        "length": 5,
+        "type": 0,
+        "refs": []
+      },
+      {
+        "ea": "0x14071361e",
+        "text": "\t<=;V",
+        "length": 5,
+        "type": 0,
+        "refs": []
+      }
+    ],
+    "live_only": [
+      "0x1401471f7",
+      "0x14014721a",
+      "0x140147246",
+      "0x140147270",
+      "0x1401472f6",
+      "0x1401474f5",
+      "0x140147500",
+      "0x1401475cc",
+      "0x14014765f",
+      "0x140147668",
+      "0x140147713",
+      "0x14014771c",
+      "0x1401477cf",
+      "0x140147a3a",
+      "0x140147a53",
+      "0x140147a8c",
+      "0x140147b2e",
+      "0x140147b51",
+      "0x140147b7a",
+      "0x140450a4c",
+      "0x140450ad6",
+      "0x140450b7a",
+      "0x140450e08"
+    ],
+    "semantic_limit": "Extracted strings and xrefs do not establish reachable behavior. Ordinary identifier strings are not individually semantically analyzed."
+  },
+  "clr": {
+    "methoddefs": 597,
+    "methoddef_kinds": {
+      "cil": 439,
+      "no_body_rva": 6,
+      "native": 152
+    },
+    "ida_cil_functions": 445,
+    "address_warning": "CIL IDA addresses are synthetic database addresses. They are never converted to RVA.",
+    "entry_body_reconciliation": "445 IDA CIL entries =439 genuine CIL bodies +6 bodyless metadata placeholders (2 PInvoke declarations and4 runtime-delegate methods). The six placeholder exports contain only .maxstack8.",
+    "native_methoddefs_without_function_start": [],
+    "bodyless_placeholders": [
+      {
+        "address": "0x40f0",
+        "token": "0x600011d",
+        "name": "::DecodePointer",
+        "rva": 0
+      },
+      {
+        "address": "0x4100",
+        "token": "0x600011e",
+        "name": "::EncodePointer",
+        "rva": 0
+      },
+      {
+        "address": "0xcff0",
+        "token": "0x6000229",
+        "name": "AppCloseDelegate::.ctor",
+        "rva": 0
+      },
+      {
+        "address": "0xd000",
+        "token": "0x600022a",
+        "name": "AppCloseDelegate::Invoke",
+        "rva": 0
+      },
+      {
+        "address": "0xd010",
+        "token": "0x600022b",
+        "name": "AppCloseDelegate::BeginInvoke",
+        "rva": 0
+      },
+      {
+        "address": "0xd020",
+        "token": "0x600022c",
+        "name": "AppCloseDelegate::EndInvoke",
+        "rva": 0
+      }
+    ],
+    "real_cil_bodies": 439
+  },
+  "rtti": {
+    "named_vtables": 722,
+    "live_named_vtables": 722,
+    "rtti_named_records": 5386,
+    "vtable_slots": 5806,
+    "extraction_limits": "Named ??_7 tables only; scan stops at first nonfunction pointer, named slot, or600slots. This is not a complete class-layout or inheritance reconstruction."
+  },
+  "callgraph": {
+    "edges": 75487,
+    "unique_edges": 75487,
+    "orphan_edges": [],
+    "snapshot_scope": "Historical native_index graph (36,424-function export), not regenerated after the26 recovered CLR-native definitions. Newly recognized leaf/thunk nodes do not acquire inferred edges here.",
+    "method": "Exporter records code xrefs to function starts, including possible tail-jump references. Indirect dispatch and data-held function pointers are not a complete call graph.",
+    "isolated_direct_nodes": 9462
+  },
+  "anomalies": [
+    {
+      "kind": "initial_index_missing_live_functions",
+      "detail": [
+        "0x140147ba0",
+        "0x140148740",
+        "0x140148780",
+        "0x14038c950",
+        "0x14038c970",
+        "0x14038cac0",
+        "0x14038cad0",
+        "0x14038caf0",
+        "0x14038cb10",
+        "0x14038cb40",
+        "0x14038cb50",
+        "0x14038cb60",
+        "0x14038cb70",
+        "0x14038cb80",
+        "0x14038cb90",
+        "0x14038cba0",
+        "0x14038cbb0",
+        "0x14038cc10",
+        "0x14038cc60",
+        "0x14038cc70",
+        "0x14038cc80",
+        "0x14039f310",
+        "0x14043ad1c",
+        "0x140450d60",
+        "0x140471dc6",
+        "0x140471ed4",
+        "0x140564e50"
+      ],
+      "severity": "information"
+    },
+    {
+      "kind": "decompiler_failure_has_assembly_fallback",
+      "detail": "0x14020d760",
+      "severity": "information"
+    },
+    {
+      "kind": "string_inventory_drift",
+      "detail": {
+        "initial_count": 14761,
+        "current_live_count": 14779,
+        "initial_only": [
+          {
+            "ea": "0x1405b6183",
+            "text": "@ff&@333@",
+            "length": 10,
+            "type": 0,
+            "refs": []
+          },
+          {
+            "ea": "0x1405b6196",
+            "text": "Y@fff@33s@",
+            "length": 11,
+            "type": 0,
+            "refs": []
+          },
+          {
+            "ea": "0x1405bbae7",
+            "text": "\b\u0007\t\u000b\n",
+            "length": 5,
+            "type": 0,
+            "refs": []
+          },
+          {
+            "ea": "0x140713580",
+            "text": "i\r.QB",
+            "length": 5,
+            "type": 0,
+            "refs": []
+          },
+          {
+            "ea": "0x14071361e",
+            "text": "\t<=;V",
+            "length": 5,
+            "type": 0,
+            "refs": []
+          }
+        ],
+        "live_only": [
+          "0x1401471f7",
+          "0x14014721a",
+          "0x140147246",
+          "0x140147270",
+          "0x1401472f6",
+          "0x1401474f5",
+          "0x140147500",
+          "0x1401475cc",
+          "0x14014765f",
+          "0x140147668",
+          "0x140147713",
+          "0x14014771c",
+          "0x1401477cf",
+          "0x140147a3a",
+          "0x140147a53",
+          "0x140147a8c",
+          "0x140147b2e",
+          "0x140147b51",
+          "0x140147b7a",
+          "0x140450a4c",
+          "0x140450ad6",
+          "0x140450b7a",
+          "0x140450e08"
+        ],
+        "semantic_limit": "Extracted strings and xrefs do not establish reachable behavior. Ordinary identifier strings are not individually semantically analyzed."
+      },
+      "severity": "information"
+    }
+  ],
+  "priority_functions": [
+    {
+      "score": 251.56,
+      "address": "0x1404f94b0",
+      "name": "sub_1404F94B0",
+      "size": 5448,
+      "tier": 1,
+      "callees": 101,
+      "callers": 0,
+      "vtables": [
+        {
+          "address": "0x1405fc960",
+          "name": "??_7CSettingMenu@SettingMenu@@6B@",
+          "slot": 1
+        }
+      ],
+      "strings": [
+        {
+          "address": "0x140585ec0",
+          "text": "WaitTitleProject.exe"
+        },
+        {
+          "address": "0x140585ec0",
+          "text": "WaitTitleProject.exe"
+        }
+      ]
+    },
+    {
+      "score": 214.43,
+      "address": "0x1402e78e0",
+      "name": "sub_1402E78E0",
+      "size": 2820,
+      "tier": 0,
+      "callees": 94,
+      "callers": 1,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x1405ba538",
+          "text": "7=:@9?<B8>;A"
+        },
+        {
+          "address": "0x1405ba538",
+          "text": "7=:@9?<B8>;A"
+        }
+      ]
+    },
+    {
+      "score": 158.14,
+      "address": "0x140033b20",
+      "name": "sub_140033B20",
+      "size": 6520,
+      "tier": 0,
+      "callees": 38,
+      "callers": 8,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x140618200",
+          "text": "CDev.Engine.Sd.SoundLayout"
+        },
+        {
+          "address": "0x140618200",
+          "text": "CDev.Engine.Sd.SoundLayout"
+        },
+        {
+          "address": "0x140618200",
+          "text": "CDev.Engine.Sd.SoundLayout"
+        },
+        {
+          "address": "0x140618200",
+          "text": "CDev.Engine.Sd.SoundLayout"
+        },
+        {
+          "address": "0x140618200",
+          "text": "CDev.Engine.Sd.SoundLayout"
+        },
+        {
+          "address": "0x140618200",
+          "text": "CDev.Engine.Sd.SoundLayout"
+        }
+      ]
+    },
+    {
+      "score": 153.61,
+      "address": "0x1400b1dd0",
+      "name": "sub_1400B1DD0",
+      "size": 7016,
+      "tier": 1,
+      "callees": 29,
+      "callers": 2,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x14061e4c0",
+          "text": "SQEX::CDev::Engine::Sd::Driver::Track::CommandAnalyzer::setReadOffset"
+        },
+        {
+          "address": "0x14061e508",
+          "text": "d:\\music2soundgit\\cdev\\sd\\cdev\\engine\\sd\\driver\\track.h"
+        },
+        {
+          "address": "0x14061e540",
+          "text": "offset != -1"
+        },
+        {
+          "address": "0x14061e588",
+          "text": "d:\\music2soundgit\\cdev\\sd\\cdev\\engine\\sd\\driver\\track.cpp"
+        },
+        {
+          "address": "0x14061e588",
+          "text": "d:\\music2soundgit\\cdev\\sd\\cdev\\engine\\sd\\driver\\track.cpp"
+        },
+        {
+          "address": "0x14061e588",
+          "text": "d:\\music2soundgit\\cdev\\sd\\cdev\\engine\\sd\\driver\\track.cpp"
+        }
+      ]
+    },
+    {
+      "score": 152.71,
+      "address": "0x140355ae0",
+      "name": "sub_140355AE0",
+      "size": 1576,
+      "tier": 0,
+      "callees": 70,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 144.94,
+      "address": "0x140522410",
+      "name": "sub_140522410",
+      "size": 4344,
+      "tier": 0,
+      "callees": 54,
+      "callers": 0,
+      "vtables": [
+        {
+          "address": "0x140600018",
+          "name": "??_7CKeyConfig@SettingMenu@@6B@",
+          "slot": 1
+        }
+      ],
+      "strings": []
+    },
+    {
+      "score": 143.55,
+      "address": "0x140303cd0",
+      "name": "sub_140303CD0",
+      "size": 2195,
+      "tier": 0,
+      "callees": 58,
+      "callers": 1,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x1405baed0",
+          "text": "camp_2ld1.png"
+        },
+        {
+          "address": "0x1405baee0",
+          "text": "camp_2ld0.png"
+        },
+        {
+          "address": "0x1405baef0",
+          "text": "camp_2ld"
+        },
+        {
+          "address": "0x1405baf00",
+          "text": "camp_2ld2.png"
+        },
+        {
+          "address": "0x1405baf10",
+          "text": "camp_2ld3.png"
+        }
+      ]
+    },
+    {
+      "score": 140.88,
+      "address": "0x14029c860",
+      "name": "sub_14029C860",
+      "size": 1853,
+      "tier": 0,
+      "callees": 63,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 137.65,
+      "address": "0x1400354a0",
+      "name": "sub_1400354A0",
+      "size": 5792,
+      "tier": 0,
+      "callees": 32,
+      "callers": 1,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x140618200",
+          "text": "CDev.Engine.Sd.SoundLayout"
+        },
+        {
+          "address": "0x140618200",
+          "text": "CDev.Engine.Sd.SoundLayout"
+        },
+        {
+          "address": "0x140618200",
+          "text": "CDev.Engine.Sd.SoundLayout"
+        },
+        {
+          "address": "0x140618200",
+          "text": "CDev.Engine.Sd.SoundLayout"
+        },
+        {
+          "address": "0x140618200",
+          "text": "CDev.Engine.Sd.SoundLayout"
+        },
+        {
+          "address": "0x140618200",
+          "text": "CDev.Engine.Sd.SoundLayout"
+        }
+      ]
+    },
+    {
+      "score": 137.55,
+      "address": "0x1402b4590",
+      "name": "sub_1402B4590",
+      "size": 1734,
+      "tier": 0,
+      "callees": 60,
+      "callers": 0,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x1405b8628",
+          "text": "vagstream/End_Piano.win32.scd"
+        },
+        {
+          "address": "0x1405b8648",
+          "text": "vagstream/Title.win32.scd"
+        }
+      ]
+    },
+    {
+      "score": 133.91,
+      "address": "0x140356b00",
+      "name": "sub_140356B00",
+      "size": 2497,
+      "tier": 0,
+      "callees": 57,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 133.56,
+      "address": "0x140304ea0",
+      "name": "sub_140304EA0",
+      "size": 1428,
+      "tier": 0,
+      "callees": 51,
+      "callers": 1,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x1405b1490",
+          "text": "d:\\hd28\\kingdom2\\common\\task.h"
+        },
+        {
+          "address": "0x1405baed0",
+          "text": "camp_2ld1.png"
+        },
+        {
+          "address": "0x1405baee0",
+          "text": "camp_2ld0.png"
+        },
+        {
+          "address": "0x1405baee0",
+          "text": "camp_2ld0.png"
+        },
+        {
+          "address": "0x1405baee0",
+          "text": "camp_2ld0.png"
+        },
+        {
+          "address": "0x1405baef0",
+          "text": "camp_2ld"
+        }
+      ]
+    },
+    {
+      "score": 130.35,
+      "address": "0x14032c930",
+      "name": "sub_14032C930",
+      "size": 1786,
+      "tier": 0,
+      "callees": 58,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 129.83,
+      "address": "0x1401aded0",
+      "name": "sub_1401ADED0",
+      "size": 1412,
+      "tier": 0,
+      "callees": 59,
+      "callers": 2,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 129.56,
+      "address": "0x14035a4e0",
+      "name": "sub_14035A4E0",
+      "size": 1428,
+      "tier": 0,
+      "callees": 59,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 128.56,
+      "address": "0x14035f810",
+      "name": "sub_14035F810",
+      "size": 1300,
+      "tier": 0,
+      "callees": 59,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 127.15,
+      "address": "0x14032f2a0",
+      "name": "sub_14032F2A0",
+      "size": 1632,
+      "tier": 0,
+      "callees": 57,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 127.09,
+      "address": "0x1402e5460",
+      "name": "sub_1402E5460",
+      "size": 1112,
+      "tier": 0,
+      "callees": 59,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 125.21,
+      "address": "0x1401d3b80",
+      "name": "sub_1401D3B80",
+      "size": 9576,
+      "tier": 1,
+      "callees": 25,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 123.45,
+      "address": "0x1401d0320",
+      "name": "sub_1401D0320",
+      "size": 4231,
+      "tier": 0,
+      "callees": 44,
+      "callers": 1,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x1405b4940",
+          "text": "G_MN800_mdlx7."
+        }
+      ]
+    },
+    {
+      "score": 122.85,
+      "address": "0x1402a8af0",
+      "name": "sub_1402A8AF0",
+      "size": 1593,
+      "tier": 0,
+      "callees": 55,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 120.4,
+      "address": "0x14029dd40",
+      "name": "sub_14029DD40",
+      "size": 1792,
+      "tier": 0,
+      "callees": 53,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 115.19,
+      "address": "0x140355770",
+      "name": "sub_140355770",
+      "size": 869,
+      "tier": 0,
+      "callees": 54,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 113.46,
+      "address": "0x1403623b0",
+      "name": "sub_1403623B0",
+      "size": 2286,
+      "tier": 0,
+      "callees": 46,
+      "callers": 4,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x1405b7ab0",
+          "text": "%d/%d"
+        }
+      ]
+    },
+    {
+      "score": 109.75,
+      "address": "0x14050ee50",
+      "name": "sub_14050EE50",
+      "size": 3424,
+      "tier": 0,
+      "callees": 40,
+      "callers": 0,
+      "vtables": [
+        {
+          "address": "0x1405fe650",
+          "name": "??_7CKeyboardMenu@SettingMenu@@6B@",
+          "slot": 1
+        }
+      ],
+      "strings": []
+    },
+    {
+      "score": 109.24,
+      "address": "0x14029bfe0",
+      "name": "sub_14029BFE0",
+      "size": 876,
+      "tier": 0,
+      "callees": 51,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 108.93,
+      "address": "0x140303260",
+      "name": "sub_140303260",
+      "size": 836,
+      "tier": 0,
+      "callees": 51,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 106.74,
+      "address": "0x14034d640",
+      "name": "sub_14034D640",
+      "size": 1068,
+      "tier": 0,
+      "callees": 49,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 106.68,
+      "address": "0x14032bf60",
+      "name": "sub_14032BF60",
+      "size": 1572,
+      "tier": 0,
+      "callees": 47,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 106.06,
+      "address": "0x140248b70",
+      "name": "sub_140248B70",
+      "size": 5845,
+      "tier": 0,
+      "callees": 30,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 105.54,
+      "address": "0x140357710",
+      "name": "sub_140357710",
+      "size": 1528,
+      "tier": 0,
+      "callees": 46,
+      "callers": 4,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 105.32,
+      "address": "0x140094100",
+      "name": "sub_140094100",
+      "size": 3369,
+      "tier": 0,
+      "callees": 6,
+      "callers": 0,
+      "vtables": [
+        {
+          "address": "0x14061b760",
+          "name": "??_7SoundDriver@Driver@Sd@Engine@CDev@SQEX@@6B@",
+          "slot": 76
+        }
+      ],
+      "strings": [
+        {
+          "address": "0x14061b528",
+          "text": "--Checker Ver.2--\n"
+        },
+        {
+          "address": "0x14061b540",
+          "text": "[Driver]\n"
+        },
+        {
+          "address": "0x14061b550",
+          "text": "updateEnabled= %d\n"
+        },
+        {
+          "address": "0x14061b568",
+          "text": "busReverbEnable= %d\n"
+        },
+        {
+          "address": "0x14061b580",
+          "text": "soundReverbEnable= %d\n"
+        },
+        {
+          "address": "0x14061b598",
+          "text": "PLIIzEnable= %d\n"
+        }
+      ]
+    },
+    {
+      "score": 105.07,
+      "address": "0x1401c3a30",
+      "name": "sub_1401C3A30",
+      "size": 5974,
+      "tier": 0,
+      "callees": 29,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 104.03,
+      "address": "0x14034dba0",
+      "name": "sub_14034DBA0",
+      "size": 977,
+      "tier": 0,
+      "callees": 48,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 102.46,
+      "address": "0x14033e650",
+      "name": "sub_14033E650",
+      "size": 2056,
+      "tier": 0,
+      "callees": 43,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 102.41,
+      "address": "0x1405122e0",
+      "name": "sub_1405122E0",
+      "size": 2228,
+      "tier": 0,
+      "callees": 41,
+      "callers": 0,
+      "vtables": [
+        {
+          "address": "0x1405feb68",
+          "name": "??_7CInitialSettingMenu@SettingMenu@@6B@",
+          "slot": 1
+        }
+      ],
+      "strings": []
+    },
+    {
+      "score": 101.24,
+      "address": "0x14034d2d0",
+      "name": "sub_14034D2D0",
+      "size": 875,
+      "tier": 0,
+      "callees": 47,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 100.96,
+      "address": "0x14035ccb0",
+      "name": "sub_14035CCB0",
+      "size": 1505,
+      "tier": 0,
+      "callees": 44,
+      "callers": 3,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 100.8,
+      "address": "0x1402e8930",
+      "name": "sub_1402E8930",
+      "size": 819,
+      "tier": 1,
+      "callees": 45,
+      "callers": 1,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x1405ba4c0",
+          "text": "/BISLPM-66675FM-%02d/BISLPM-66675FM-%02d"
+        },
+        {
+          "address": "0x1405ba4c0",
+          "text": "/BISLPM-66675FM-%02d/BISLPM-66675FM-%02d"
+        }
+      ]
+    },
+    {
+      "score": 100.51,
+      "address": "0x14046bfb0",
+      "name": "sub_14046BFB0",
+      "size": 5748,
+      "tier": 0,
+      "callees": 7,
+      "callers": 4,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x14075e400",
+          "text": "incorrect header check"
+        },
+        {
+          "address": "0x14075e418",
+          "text": "unknown compression method"
+        },
+        {
+          "address": "0x14075e438",
+          "text": "invalid window size"
+        },
+        {
+          "address": "0x14075e450",
+          "text": "unknown compression method"
+        },
+        {
+          "address": "0x14075e470",
+          "text": "unknown header flags set"
+        },
+        {
+          "address": "0x14075e490",
+          "text": "header crc mismatch"
+        }
+      ]
+    },
+    {
+      "score": 100.36,
+      "address": "0x14034fa20",
+      "name": "sub_14034FA20",
+      "size": 1326,
+      "tier": 0,
+      "callees": 44,
+      "callers": 5,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 100.06,
+      "address": "0x140513630",
+      "name": "sub_140513630",
+      "size": 6536,
+      "tier": 0,
+      "callees": 23,
+      "callers": 0,
+      "vtables": [
+        {
+          "address": "0x1405feec8",
+          "name": "??_7CD2Obj@SettingMenu@@6B@",
+          "slot": 1
+        }
+      ],
+      "strings": []
+    },
+    {
+      "score": 100.02,
+      "address": "0x14031be80",
+      "name": "sub_14031BE80",
+      "size": 1027,
+      "tier": 0,
+      "callees": 45,
+      "callers": 0,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x1405b8628",
+          "text": "vagstream/End_Piano.win32.scd"
+        }
+      ]
+    },
+    {
+      "score": 99.78,
+      "address": "0x14030bca0",
+      "name": "sub_14030BCA0",
+      "size": 1713,
+      "tier": 0,
+      "callees": 43,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 99.53,
+      "address": "0x140395970",
+      "name": "sub_140395970",
+      "size": 2449,
+      "tier": 0,
+      "callees": 40,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 99.28,
+      "address": "0x1401cf5e0",
+      "name": "sub_1401CF5E0",
+      "size": 3389,
+      "tier": 0,
+      "callees": 36,
+      "callers": 2,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 99.18,
+      "address": "0x14032b210",
+      "name": "sub_14032B210",
+      "size": 1124,
+      "tier": 0,
+      "callees": 45,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 98.47,
+      "address": "0x14035fd30",
+      "name": "sub_14035FD30",
+      "size": 1033,
+      "tier": 0,
+      "callees": 45,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 98.36,
+      "address": "0x14031fbb0",
+      "name": "sub_14031FBB0",
+      "size": 968,
+      "tier": 0,
+      "callees": 45,
+      "callers": 2,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 98.24,
+      "address": "0x140203960",
+      "name": "sub_140203960",
+      "size": 7147,
+      "tier": 1,
+      "callees": 21,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 98.24,
+      "address": "0x140390ff0",
+      "name": "sub_140390FF0",
+      "size": 2539,
+      "tier": 0,
+      "callees": 39,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 98.18,
+      "address": "0x1403037d0",
+      "name": "sub_1403037D0",
+      "size": 996,
+      "tier": 0,
+      "callees": 45,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 98.17,
+      "address": "0x1402e91d0",
+      "name": "sub_1402E91D0",
+      "size": 994,
+      "tier": 0,
+      "callees": 45,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 98.1,
+      "address": "0x1403386a0",
+      "name": "sub_1403386A0",
+      "size": 1446,
+      "tier": 0,
+      "callees": 43,
+      "callers": 2,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 98.0,
+      "address": "0x140508ec0",
+      "name": "sub_140508EC0",
+      "size": 2432,
+      "tier": 0,
+      "callees": 38,
+      "callers": 0,
+      "vtables": [
+        {
+          "address": "0x1405fdfa8",
+          "name": "??_7CDisplayMenu@SettingMenu@@6B@",
+          "slot": 1
+        }
+      ],
+      "strings": []
+    },
+    {
+      "score": 97.74,
+      "address": "0x140327330",
+      "name": "sub_140327330",
+      "size": 940,
+      "tier": 0,
+      "callees": 45,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 96.34,
+      "address": "0x1402f3d70",
+      "name": "sub_1402F3D70",
+      "size": 1324,
+      "tier": 0,
+      "callees": 42,
+      "callers": 0,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x1405b1490",
+          "text": "d:\\hd28\\kingdom2\\common\\task.h"
+        }
+      ]
+    },
+    {
+      "score": 96.15,
+      "address": "0x14038f270",
+      "name": "sub_14038F270",
+      "size": 1760,
+      "tier": 0,
+      "callees": 40,
+      "callers": 1,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x1405c0798",
+          "text": "libretto/%s/wm%d.bar"
+        }
+      ]
+    },
+    {
+      "score": 95.68,
+      "address": "0x14034df80",
+      "name": "sub_14034DF80",
+      "size": 932,
+      "tier": 0,
+      "callees": 44,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 95.46,
+      "address": "0x1403ac750",
+      "name": "sub_1403AC750",
+      "size": 1416,
+      "tier": 0,
+      "callees": 41,
+      "callers": 1,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x140585570",
+          "text": "es_event_995"
+        }
+      ]
+    },
+    {
+      "score": 95.34,
+      "address": "0x1402e9b00",
+      "name": "sub_1402E9B00",
+      "size": 888,
+      "tier": 1,
+      "callees": 42,
+      "callers": 1,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x1405ba678",
+          "text": "/BISLPM-66675FM-SYS/BISLPM-66675FM-SYS"
+        },
+        {
+          "address": "0x1405ba678",
+          "text": "/BISLPM-66675FM-SYS/BISLPM-66675FM-SYS"
+        }
+      ]
+    },
+    {
+      "score": 95.32,
+      "address": "0x1400bb750",
+      "name": "sub_1400BB750",
+      "size": 5391,
+      "tier": 0,
+      "callees": 21,
+      "callers": 3,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x14061e550",
+          "text": "SQEX::CDev::Engine::Sd::Driver::Track::SetTrackData"
+        },
+        {
+          "address": "0x14061e588",
+          "text": "d:\\music2soundgit\\cdev\\sd\\cdev\\engine\\sd\\driver\\track.cpp"
+        },
+        {
+          "address": "0x14061e588",
+          "text": "d:\\music2soundgit\\cdev\\sd\\cdev\\engine\\sd\\driver\\track.cpp"
+        },
+        {
+          "address": "0x14061e5c8",
+          "text": "!commandAnalyzer_.IsActive()"
+        },
+        {
+          "address": "0x14061e5e8",
+          "text": "commandAnalyzer_.getInterval() == 0"
+        }
+      ]
+    },
+    {
+      "score": 95.24,
+      "address": "0x14030a620",
+      "name": "sub_14030A620",
+      "size": 1336,
+      "tier": 0,
+      "callees": 42,
+      "callers": 2,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 94.42,
+      "address": "0x140474cc0",
+      "name": "sub_140474CC0",
+      "size": 1539,
+      "tier": 0,
+      "callees": 41,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 94.41,
+      "address": "0x140518290",
+      "name": "sub_140518290",
+      "size": 1972,
+      "tier": 1,
+      "callees": 38,
+      "callers": 0,
+      "vtables": [
+        {
+          "address": "0x1405ff198",
+          "name": "??_7CResolution@SettingMenu@@6B@",
+          "slot": 1
+        }
+      ],
+      "strings": []
+    },
+    {
+      "score": 94.08,
+      "address": "0x140308c10",
+      "name": "sub_140308C10",
+      "size": 1751,
+      "tier": 0,
+      "callees": 40,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 93.82,
+      "address": "0x140362ca0",
+      "name": "sub_140362CA0",
+      "size": 1615,
+      "tier": 0,
+      "callees": 40,
+      "callers": 3,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 92.65,
+      "address": "0x140529ac0",
+      "name": "sub_140529AC0",
+      "size": 6688,
+      "tier": 0,
+      "callees": 20,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 91.55,
+      "address": "0x1402b4c60",
+      "name": "sub_1402B4C60",
+      "size": 659,
+      "tier": 0,
+      "callees": 34,
+      "callers": 1,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x1405b1500",
+          "text": "title_2ld"
+        },
+        {
+          "address": "0x1405b1500",
+          "text": "title_2ld"
+        },
+        {
+          "address": "0x1405b1500",
+          "text": "title_2ld"
+        },
+        {
+          "address": "0x1405b8668",
+          "text": "title_2ld9.png"
+        },
+        {
+          "address": "0x1405b8678",
+          "text": "title_2ld8.png"
+        },
+        {
+          "address": "0x1405b8678",
+          "text": "title_2ld8.png"
+        }
+      ]
+    },
+    {
+      "score": 91.14,
+      "address": "0x1402e6300",
+      "name": "sub_1402E6300",
+      "size": 863,
+      "tier": 1,
+      "callees": 40,
+      "callers": 1,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x1405ba3f8",
+          "text": "7=:@9?<B8>;A"
+        },
+        {
+          "address": "0x1405ba4c0",
+          "text": "/BISLPM-66675FM-%02d/BISLPM-66675FM-%02d"
+        }
+      ]
+    },
+    {
+      "score": 91.06,
+      "address": "0x1402a99d0",
+      "name": "sub_1402A99D0",
+      "size": 1364,
+      "tier": 0,
+      "callees": 40,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 91.06,
+      "address": "0x14035a180",
+      "name": "sub_14035A180",
+      "size": 852,
+      "tier": 0,
+      "callees": 42,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 90.71,
+      "address": "0x14033c9f0",
+      "name": "sub_14033C9F0",
+      "size": 1525,
+      "tier": 0,
+      "callees": 39,
+      "callers": 2,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 90.6,
+      "address": "0x14029d440",
+      "name": "sub_14029D440",
+      "size": 1305,
+      "tier": 0,
+      "callees": 40,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 90.51,
+      "address": "0x14030ff30",
+      "name": "sub_14030FF30",
+      "size": 2062,
+      "tier": 0,
+      "callees": 37,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 90.43,
+      "address": "0x140210730",
+      "name": "sub_140210730",
+      "size": 1412,
+      "tier": 0,
+      "callees": 37,
+      "callers": 1,
+      "vtables": [
+        {
+          "address": "0x1405b56d0",
+          "name": "??_7GOAL_EVENT@gb@@6B@",
+          "slot": 5
+        }
+      ],
+      "strings": [
+        {
+          "address": "0x1405b1490",
+          "text": "d:\\hd28\\kingdom2\\common\\task.h"
+        }
+      ]
+    },
+    {
+      "score": 90.32,
+      "address": "0x140326b60",
+      "name": "sub_140326B60",
+      "size": 1423,
+      "tier": 0,
+      "callees": 39,
+      "callers": 3,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 90.28,
+      "address": "0x140364d70",
+      "name": "sub_140364D70",
+      "size": 752,
+      "tier": 0,
+      "callees": 42,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 89.9,
+      "address": "0x1403291c0",
+      "name": "sub_1403291C0",
+      "size": 1472,
+      "tier": 0,
+      "callees": 39,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 89.74,
+      "address": "0x140351a00",
+      "name": "sub_140351A00",
+      "size": 940,
+      "tier": 0,
+      "callees": 41,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 89.69,
+      "address": "0x14050b240",
+      "name": "sub_14050B240",
+      "size": 2392,
+      "tier": 0,
+      "callees": 34,
+      "callers": 0,
+      "vtables": [
+        {
+          "address": "0x1405fe260",
+          "name": "??_7CSoundMenu@SettingMenu@@6B@",
+          "slot": 1
+        }
+      ],
+      "strings": []
+    },
+    {
+      "score": 89.27,
+      "address": "0x1402f2cf0",
+      "name": "sub_1402F2CF0",
+      "size": 1391,
+      "tier": 0,
+      "callees": 39,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 89.19,
+      "address": "0x1401d88e0",
+      "name": "sub_1401D88E0",
+      "size": 4197,
+      "tier": 0,
+      "callees": 1,
+      "callers": 1,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x1405b4990",
+          "text": "4I 2s 23i 4f 4f 4f 4i"
+        },
+        {
+          "address": "0x1405b49a8",
+          "text": "4s 2i 4f 4f 4f"
+        },
+        {
+          "address": "0x1405b49a8",
+          "text": "4s 2i 4f 4f 4f"
+        },
+        {
+          "address": "0x1405b49b8",
+          "text": "2s 1f"
+        },
+        {
+          "address": "0x1405b49b8",
+          "text": "2s 1f"
+        },
+        {
+          "address": "0x1405b49c0",
+          "text": "3f 1i 8f 9i 3I"
+        }
+      ]
+    },
+    {
+      "score": 88.25,
+      "address": "0x140398ef0",
+      "name": "sub_140398EF0",
+      "size": 2541,
+      "tier": 0,
+      "callees": 34,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 87.61,
+      "address": "0x140353020",
+      "name": "sub_140353020",
+      "size": 1896,
+      "tier": 0,
+      "callees": 36,
+      "callers": 2,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 87.34,
+      "address": "0x140296310",
+      "name": "sub_140296310",
+      "size": 1324,
+      "tier": 1,
+      "callees": 32,
+      "callers": 0,
+      "vtables": [
+        {
+          "address": "0x1405b7db8",
+          "name": "??_7GUMISAVE@gm@@6B@",
+          "slot": 2
+        },
+        {
+          "address": "0x1405b7e00",
+          "name": "??_7TINYSAVE@gm@@6B@",
+          "slot": 2
+        },
+        {
+          "address": "0x1405b7ee8",
+          "name": "??_7SAVEWINDOWBASE@gm@@6B@",
+          "slot": 2
+        }
+      ],
+      "strings": [
+        {
+          "address": "0x1405b74e0",
+          "text": "edit help"
+        },
+        {
+          "address": "0x1405b74e0",
+          "text": "edit help"
+        }
+      ]
+    },
+    {
+      "score": 87.16,
+      "address": "0x140338c50",
+      "name": "sub_140338C50",
+      "size": 1326,
+      "tier": 0,
+      "callees": 38,
+      "callers": 2,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 87.14,
+      "address": "0x1402ea670",
+      "name": "sub_1402EA670",
+      "size": 1631,
+      "tier": 0,
+      "callees": 37,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 87.11,
+      "address": "0x140169bd0",
+      "name": "sub_140169BD0",
+      "size": 3342,
+      "tier": 0,
+      "callees": 29,
+      "callers": 0,
+      "vtables": [
+        {
+          "address": "0x1405b1f60",
+          "name": "??_7Glow@dk@@6B@",
+          "slot": 1
+        }
+      ],
+      "strings": []
+    },
+    {
+      "score": 87.07,
+      "address": "0x14032e5c0",
+      "name": "sub_14032E5C0",
+      "size": 2134,
+      "tier": 0,
+      "callees": 35,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 86.89,
+      "address": "0x140099330",
+      "name": "sub_140099330",
+      "size": 3340,
+      "tier": 0,
+      "callees": 21,
+      "callers": 2,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x14061c510",
+          "text": "SQEX::CDev::Engine::Sd::Driver::SoundContainer::AddSound"
+        },
+        {
+          "address": "0x14061c550",
+          "text": "d:\\music2soundgit\\cdev\\sd\\cdev\\engine\\sd\\driver\\soundcontainer.cpp"
+        },
+        {
+          "address": "0x14061c5a0",
+          "text": "!\"[sd][Driver][WIN][PS3][X360][VITA] streaming only can use with Stream EX!!\""
+        },
+        {
+          "address": "0x14061e588",
+          "text": "d:\\music2soundgit\\cdev\\sd\\cdev\\engine\\sd\\driver\\track.cpp"
+        },
+        {
+          "address": "0x14061e6c8",
+          "text": "state_ == STATE_RUNNABLE"
+        },
+        {
+          "address": "0x14061e798",
+          "text": "SQEX::CDev::Engine::Sd::Driver::Track::Reserve"
+        }
+      ]
+    },
+    {
+      "score": 86.26,
+      "address": "0x14029cfa0",
+      "name": "sub_14029CFA0",
+      "size": 750,
+      "tier": 0,
+      "callees": 40,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 86.24,
+      "address": "0x1402e6010",
+      "name": "sub_1402E6010",
+      "size": 748,
+      "tier": 0,
+      "callees": 40,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 86.2,
+      "address": "0x1402e6940",
+      "name": "sub_1402E6940",
+      "size": 742,
+      "tier": 0,
+      "callees": 40,
+      "callers": 1,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 86.04,
+      "address": "0x1402a9130",
+      "name": "sub_1402A9130",
+      "size": 876,
+      "tier": 0,
+      "callees": 39,
+      "callers": 3,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 85.98,
+      "address": "0x140331870",
+      "name": "sub_140331870",
+      "size": 1124,
+      "tier": 0,
+      "callees": 38,
+      "callers": 3,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 85.75,
+      "address": "0x140379940",
+      "name": "sub_140379940",
+      "size": 3808,
+      "tier": 0,
+      "callees": 12,
+      "callers": 0,
+      "vtables": [],
+      "strings": [
+        {
+          "address": "0x1405b8830",
+          "text": "4c 3i"
+        },
+        {
+          "address": "0x1405b8830",
+          "text": "4c 3i"
+        },
+        {
+          "address": "0x1405b8830",
+          "text": "4c 3i"
+        },
+        {
+          "address": "0x1405b8830",
+          "text": "4c 3i"
+        },
+        {
+          "address": "0x1405b8830",
+          "text": "4c 3i"
+        },
+        {
+          "address": "0x1405b8830",
+          "text": "4c 3i"
+        }
+      ]
+    },
+    {
+      "score": 85.48,
+      "address": "0x140327d00",
+      "name": "sub_140327D00",
+      "size": 1469,
+      "tier": 0,
+      "callees": 35,
+      "callers": 10,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 85.4,
+      "address": "0x140152680",
+      "name": "sub_140152680",
+      "size": 691,
+      "tier": 0,
+      "callees": 40,
+      "callers": 0,
+      "vtables": [],
+      "strings": []
+    },
+    {
+      "score": 85.12,
+      "address": "0x140306790",
+      "name": "sub_140306790",
+      "size": 1321,
+      "tier": 0,
+      "callees": 36,
+      "callers": 7,
+      "vtables": [],
+      "strings": []
+    }
+  ],
+  "unmapped_claim_addresses": [
+    {
+      "address": "0x1C",
+      "domain": "native",
+      "source": "work/trainer/research/combat_features.json",
+      "pointer": "$[6].Evidence[0]"
+    },
+    {
+      "address": "0x5C4B68",
+      "domain": "native",
+      "source": "work/trainer/research/combat_features.json",
+      "pointer": "$[8].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[0].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[1].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[2].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[3].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[4].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[5].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[6].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[7].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[8].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[9].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[10].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[11].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[12].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[13].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[14].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[15].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[16].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[17].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[20].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/missions_features.json",
+      "pointer": "$[21].Evidence[0]"
+    },
+    {
+      "address": "0x140755A20",
+      "domain": "native",
+      "source": "work/trainer/research/motion_control.json",
+      "pointer": "$.claims[4]"
+    },
+    {
+      "address": "0x14041C4AA..0x14041C518",
+      "domain": "native",
+      "source": "work/trainer/research/motion_control.json",
+      "pointer": "$.claims[5]"
+    },
+    {
+      "address": "0x1401DA660 / 0x1401DB440",
+      "domain": "native",
+      "source": "work/trainer/research/motion_control.json",
+      "pointer": "$.claims[7]"
+    },
+    {
+      "address": "MotionFeatures.inl WriterHook / Stop / Start / UpdateRate",
+      "domain": "native",
+      "source": "work/trainer/research/motion_control.json",
+      "pointer": "$.claims[9]"
+    },
+    {
+      "address": "MotionFeatures.inl CurrentOwner / Maintain",
+      "domain": "native",
+      "source": "work/trainer/research/motion_control.json",
+      "pointer": "$.claims[10]"
+    },
+    {
+      "address": "0x9AD660",
+      "domain": "native",
+      "source": "work/trainer/research/rescue_features.json",
+      "pointer": "$[0].Evidence[0]"
+    },
+    {
+      "address": "0x9AD662",
+      "domain": "native",
+      "source": "work/trainer/research/rescue_features.json",
+      "pointer": "$[1].Evidence[0]"
+    },
+    {
+      "address": "0x2AE5760",
+      "domain": "native",
+      "source": "work/trainer/research/rescue_features.json",
+      "pointer": "$[2].Evidence[0]"
+    },
+    {
+      "address": "0x2A0FF68",
+      "domain": "native",
+      "source": "work/trainer/research/rescue_features.json",
+      "pointer": "$[3].Evidence[0]"
+    },
+    {
+      "address": "0x2AE8050",
+      "domain": "native",
+      "source": "work/trainer/research/rescue_features.json",
+      "pointer": "$[4].Evidence[0]"
+    },
+    {
+      "address": "0x717480",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[0].Evidence[0]"
+    },
+    {
+      "address": "0x717488",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[0].Evidence[0]"
+    },
+    {
+      "address": "0xAC1528",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[1].Evidence[1]"
+    },
+    {
+      "address": "0x718CA8",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[1].Evidence[1]"
+    },
+    {
+      "address": "0xAC183C",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[2].Evidence[0]"
+    },
+    {
+      "address": "0xAC1528",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[2].Evidence[1]"
+    },
+    {
+      "address": "0x718CA8",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[2].Evidence[1]"
+    },
+    {
+      "address": "0xAC1528",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[3].Evidence[1]"
+    },
+    {
+      "address": "0x718CA8",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[3].Evidence[1]"
+    },
+    {
+      "address": "0x749804",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[9].Evidence[0]"
+    },
+    {
+      "address": "0x04000000",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[9].Evidence[0]"
+    },
+    {
+      "address": "0x749804",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[10].Evidence[0]"
+    },
+    {
+      "address": "0x08000000",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[10].Evidence[0]"
+    },
+    {
+      "address": "0x749838",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[11].Evidence[0]"
+    },
+    {
+      "address": "0x9ACDE4",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[14].Evidence[0]"
+    },
+    {
+      "address": "0x9ACDE4",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[15].Evidence[0]"
+    },
+    {
+      "address": "0x9ACDE4",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[16].Evidence[0]"
+    },
+    {
+      "address": "0x9ACDE4",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[17].Evidence[0]"
+    },
+    {
+      "address": "0x717008",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[18].Evidence[0]"
+    },
+    {
+      "address": "0x717008",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[19].Evidence[0]"
+    },
+    {
+      "address": "0x717008",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[20].Evidence[0]"
+    },
+    {
+      "address": "0x717424",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[22].Evidence[0]"
+    },
+    {
+      "address": "0x717480",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[23].Evidence[0]"
+    },
+    {
+      "address": "0xAC1840",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[24].Evidence[0]"
+    },
+    {
+      "address": "0x717008",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[27].Evidence[0]"
+    },
+    {
+      "address": "0x717008",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[28].Evidence[0]"
+    },
+    {
+      "address": "0x717008",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[29].Evidence[0]"
+    },
+    {
+      "address": "0x2A11400",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[31].Evidence[0]"
+    },
+    {
+      "address": "0x20",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[31].Evidence[0]"
+    },
+    {
+      "address": "0x2A0C540",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[32].Evidence[0]"
+    },
+    {
+      "address": "0x29FB580",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[32].Evidence[0]"
+    },
+    {
+      "address": "0xABB854",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[33].Evidence[0]"
+    },
+    {
+      "address": "0xABB854",
+      "domain": "native",
+      "source": "work/trainer/research/world_features.json",
+      "pointer": "$[34].Evidence[0]"
+    }
+  ],
+  "coordinated_idb_correction": {
+    "native_before": 36425,
+    "native_after": 36451,
+    "added": [
+      "0x140147ba0",
+      "0x140148740",
+      "0x140148780",
+      "0x14038c950",
+      "0x14038c970",
+      "0x14038cac0",
+      "0x14038cad0",
+      "0x14038caf0",
+      "0x14038cb10",
+      "0x14038cb40",
+      "0x14038cb50",
+      "0x14038cb60",
+      "0x14038cb70",
+      "0x14038cb80",
+      "0x14038cb90",
+      "0x14038cba0",
+      "0x14038cbb0",
+      "0x14038cc10",
+      "0x14038cc60",
+      "0x14038cc70",
+      "0x14038cc80",
+      "0x14043ad1c",
+      "0x140450d60",
+      "0x140471dc6",
+      "0x140471ed4",
+      "0x140564e50"
+    ],
+    "removed": [],
+    "existing_names_sizes_changed": {},
+    "pseudocode_exports": 26,
+    "complete_asm_exports": 26,
+    "all_148_instruction_addresses_match_independent_disassembly": true,
+    "no_exe_patch": true,
+    "backup": "work/trainer/audit/KH2_before_CLR_additions.i64",
+    "final_idb": "outputs/KH2_Native_Trainer.i64",
+    "backup_bytes": 144699114,
+    "backup_sha256": "05e448613a477c2a1673c7a7f7069348940b6b0d967bab3486a5c65a0aba6d82",
+    "final_idb_bytes": 145092330,
+    "final_idb_sha256": "ebcb570b61951ec02c4fc709af6cb6c2ebedfdc5d410678c5023fde7815899d4"
+  }
+}

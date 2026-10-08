@@ -1,0 +1,637 @@
+--- v0.12.6/src/KH2Trainer.Bridge/TargetingFeatures.inl
++++ current/src/KH2Trainer.Bridge/TargetingFeatures.inl
+@@ -52,12 +52,49 @@
+         !memcmp(reinterpret_cast<void*>(g_base+0x3ABD60),scale,sizeof(scale)) &&
+         !memcmp(reinterpret_cast<void*>(g_base+0x3ABD80),distance,sizeof(distance));
+ }
+-bool Ready(const TrainerContext& c,float& acquire,float& retain,bool allowPause=false) {
+-    return actor_movement::Ready(c,allowPause) && Pins() && Parameters(acquire,retain);
+-}
+-}
+-bool TargetingHandle(const TrainerContext& c,unsigned slot,const double args[8],TrainerResult& result) {
+-    using namespace targeting;
++bool Ready(const TrainerContext& c,float& acquire,float& retain,bool allowPause=false) {
++    return actor_movement::Ready(c,allowPause) && Pins() && Parameters(acquire,retain);
++}
++uint32_t Bits(float value) { uint32_t bits=0;memcpy(&bits,&value,4);return bits; }
++float Float(uint32_t bits) { float value=0;memcpy(&value,&bits,4);return value; }
++bool PairValid(float factor,float distance,float acquire) {
++    // Includes every ordinary scale/default product, plus separate break overrides.
++    return isfinite(factor) && factor>=0.05f && factor<=10.0f &&
++        isfinite(distance) && distance>0 && distance<=10000000.0f && isfinite(factor*acquire);
++}
++bool PairHandle(const TrainerContext& c,const double args[8],TrainerResult& result) {
++    if(!args || !IsInteger(args[0],0,1)) {result={2,L"Choose apply or conditional restore."};return true;}
++    for(unsigned i=1;i<6;++i) if(!IsInteger(args[i],0,UINT32_MAX)) {
++        result={2,L"Targeting pair arguments must be exact Float32 bit patterns."};return true;
++    }
++    const bool restore=args[0]==1;
++    const uint32_t expectedScale=static_cast<uint32_t>(args[1]),expectedBreak=static_cast<uint32_t>(args[2]);
++    const uint32_t desiredScale=static_cast<uint32_t>(args[3]),desiredBreak=static_cast<uint32_t>(args[4]);
++    float acquire=0,retain=0;
++    if(!combat::HostFresh() || !Ready(c,acquire,retain) ||
++       !Writable(reinterpret_cast<void*>(g_base+Factor),8)) {
++        result={3,L"A stable playable Sora scene with writable targeting values is required."};return true;
++    }
++    const float factor=Float(desiredScale),distance=Float(desiredBreak);
++    if(!PairValid(factor,distance,acquire) || !PairValid(Float(expectedScale),Float(expectedBreak),acquire) ||
++       (!restore && (Bits(retain)!=static_cast<uint32_t>(args[5]) || Bits(factor*retain)!=desiredBreak))) {
++        result={2,L"The targeting pair or its native default changed. Wait for a fresh snapshot."};return true;
++    }
++    // Current game-thread dispatch and Ready serialize native/script writers. These globals
++    // are only four-byte aligned: this is NOT an aligned 64-bit hardware compare/exchange.
++    // No calls, waits or yields between comparing the whole pair and both Float32 stores.
++    const uint32_t scale=At<uint32_t>(Factor),currentBreak=At<uint32_t>(BreakDistance);
++    if(scale!=expectedScale || currentBreak!=expectedBreak) {
++        result={restore?0:4,restore?L"Targeting changed elsewhere; its complete current pair was preserved.":
++            L"Targeting changed before apply; no values were changed."};return true;
++    }
++    At<uint32_t>(Factor)=desiredScale;At<uint32_t>(BreakDistance)=desiredBreak;
++    result={0,restore?L"The original targeting pair was restored exactly.":L"The targeting pair was applied once."};return true;
++}
++}
++bool TargetingHandle(const TrainerContext& c,unsigned slot,const double args[8],TrainerResult& result) {
++    using namespace targeting;
++    if(slot==475)return PairHandle(c,args,result);
+     if(slot!=368 && slot!=369 && slot!=372) return false;
+     if((slot==368 && !combat::FiniteRange(args[0],0.05,10)) ||
+        (slot==369 && !combat::FiniteRange(args[0],1,100000))) {
+@@ -87,7 +124,8 @@
+     float acquire=0,retain=0;if(!Ready(c,acquire,retain,true))return;
+     const float factor=At<float>(Factor),distance=At<float>(BreakDistance);
+     if(isfinite(factor)) {SnapshotValue(368,factor);if(isfinite(factor*acquire))SnapshotValue(370,factor*acquire);}
+-    if(isfinite(distance))SnapshotValue(369,distance);
+-    SnapshotValue(371,acquire);SnapshotValue(373,retain);
+-}
+-void TargetingCapabilities() { for(unsigned slot=targeting::First;slot<=targeting::Last;++slot) SupportCapability(slot); }
++    if(isfinite(distance))SnapshotValue(369,distance);
++    SnapshotValue(371,acquire);SnapshotValue(373,retain);
++    if(PairValid(factor,distance,acquire)) {SnapshotValue(475,Bits(factor));SnapshotValue(476,Bits(distance));}
++}
++void TargetingCapabilities() { for(unsigned slot=targeting::First;slot<=targeting::Last;++slot) SupportCapability(slot);SupportCapability(475);SupportCapability(476); }
+--- v0.12.6/tests/KH2Trainer.Bridge.Tests/TargetingGuardTests.cpp
++++ current/tests/KH2Trainer.Bridge.Tests/TargetingGuardTests.cpp
+@@ -81,12 +81,18 @@
+     memcpy(reinterpret_cast<void*>(g_base+0x3ABD80),distance,sizeof(distance));
+ }
+ void Init(int form=0){Setup(form);Resource();}
+-TrainerResult Run(unsigned slot,double value=0) {
++TrainerResult Run(unsigned slot,double value=0) {
+     const double args[8]={value};TrainerResult r{};Check(TargetingHandle(context,slot,args,r),"write slot handled");return r;
+-}
+-void Reject(const char* why) {
++}
++TrainerResult Pair(bool restore,float expectedScale,float expectedBreak,float desiredScale,float desiredBreak,float retain=2000.5f) {
++    double args[8]={restore?1.0:0.0,double(targeting::Bits(expectedScale)),double(targeting::Bits(expectedBreak)),
++        double(targeting::Bits(desiredScale)),double(targeting::Bits(desiredBreak)),double(targeting::Bits(retain))};
++    TrainerResult r{};Check(TargetingHandle(context,475,args,r),"paired command handled");return r;
++}
++void Reject(const char* why) {
+     BYTE before[32];memcpy(before,reinterpret_cast<void*>(g_base+targeting::Factor-12),32);
+-    for(unsigned slot:{368u,369u,372u})Check(Run(slot,5).code!=0,why);
++    for(unsigned slot:{368u,369u,372u})Check(Run(slot,5).code!=0,why);
++    Check(Pair(false,1,2000.5f,4,8002).code!=0,why);
+     Check(!memcmp(before,reinterpret_cast<void*>(g_base+targeting::Factor-12),32),"rejection preserves both globals and surrounding bytes");
+ }
+ }
+@@ -152,7 +158,39 @@
+     Init();At<uint16_t>(Bar+18)=1;Check(Run(368,2).code==0,"link word does not alter first-match semantics");
+     Init();At<float>(targeting::Factor)=std::numeric_limits<float>::quiet_NaN();TargetingSnapshot(context);Check(!Valid(368)&&!Valid(370)&&Valid(369)&&Valid(371),"invalid live scalar suppresses only dependent diagnostics");Check(Run(372).code==0,"explicit reset repairs invalid live scalars");
+     Init();DWORD old=0,unused=0;void* page=reinterpret_cast<void*>((g_base+targeting::Factor)&~uintptr_t(4095));Check(VirtualProtect(page,4096,PAGE_READONLY,&old)!=FALSE,"real read-only globals");Reject("unwritable globals");VirtualProtect(page,4096,old,&unused);
+-    Init();TargetingCapabilities();Check(shared.supported[5]==(uint64_t(63)<<48),"exact capability mask");
+-    const double args[8]{};TrainerResult r{};for(unsigned slot:{367u,370u,371u,373u,374u,375u,376u})Check(!TargetingHandle(context,slot,args,r),"read-only and neighboring slots cannot mutate");
++    Init();TargetingCapabilities();Check(shared.supported[5]==(uint64_t(63)<<48),"exact capability mask");
++    Check(shared.supported[7]==((uint64_t(1)<<27)|(uint64_t(1)<<28)),"pair capabilities only 475 and 476");
++    for(int form=0;form<=6;++form)for(float scale:{.15f,4.0f}) {
++        Init(form);At<float>(targeting::Factor)=1.25f;At<float>(targeting::BreakDistance)=777.25f;
++        Check(Pair(false,1.25f,777.25f,scale,scale*2000.5f).code==0,"pair applies both reward scales in each Sora form");
++        TargetingSnapshot(context);Check(Valid(475)&&Valid(476)&&shared.values[475]==targeting::Bits(scale)&&shared.values[476]==targeting::Bits(scale*2000.5f),"snapshot pair is exact raw Float32 bits");
++        At<float>(Params+80)=3000.25f;
++        Check(Pair(true,scale,scale*2000.5f,1.25f,777.25f).code==0,"restore ignores changed retain parameter and exact original distance need not be scale times retain");
++        Check(At<uint32_t>(targeting::Factor)==targeting::Bits(1.25f)&&At<uint32_t>(targeting::BreakDistance)==targeting::Bits(777.25f),"nondefault original restored bit-exactly");
++    }
++    for(int which=0;which<2;++which) {
++        Init();Check(Pair(false,1,2000.5f,4,8002).code==0,"prepare pair conflict");
++        At<uint32_t>(which?targeting::BreakDistance:targeting::Factor)++;
++        const uint32_t s=At<uint32_t>(targeting::Factor),d=At<uint32_t>(targeting::BreakDistance);
++        Check(Pair(true,4,8002,1,2000.5f).code==0,"one-ULP foreign edit is successful restore no-op");
++        Check(At<uint32_t>(targeting::Factor)==s&&At<uint32_t>(targeting::BreakDistance)==d,"whole foreign pair preserved after either field changes");
++        Check(Pair(false,4,8002,.15f,.15f*2000.5f).code!=0,"apply conflict rejects without takeover");
++    }
++    Init();Check(Pair(false,1,2000.5f,4,8002,2000).code!=0,"stale native retain bits reject apply");
++    Check(Pair(false,1,2000.5f,4,8003).code!=0,"forged product rejected");
++    for(float f:{.049f,10.01f,0.0f,-0.0f,-1.0f,std::numeric_limits<float>::quiet_NaN(),std::numeric_limits<float>::infinity()}) {
++        Init();Check(Pair(true,1,2000.5f,f,777.25f).code!=0,"invalid desired scale cannot restore");
++        Check(Pair(true,1,2000.5f,1,f).code!=0 || (isfinite(f)&&f>0),"invalid desired break cannot restore");
++        At<float>(targeting::Factor)=f;TargetingSnapshot(context);Check(!Valid(475)&&!Valid(476),"invalid pair suppresses both exact slots");
++    }
++    Init();Check(Pair(true,1,2000.5f,.05f,10000000).code==0,"inclusive restorable pair boundaries");
++    Check(Pair(true,.05f,10000000,10,10000002).code!=0,"break above largest supported native default product rejected");
++    Init();double pairArgs[8]={0,double(targeting::Bits(1)),double(targeting::Bits(2000.5f)),double(targeting::Bits(4)),double(targeting::Bits(8002)),double(targeting::Bits(2000.5f))};TrainerResult pairResult{};
++    Check(TargetingHandle(context,475,nullptr,pairResult)&&pairResult.code!=0,"null pair arguments rejected");
++    for(unsigned i=0;i<6;++i)for(double invalid:{-1.0,.5,4294967296.0,std::numeric_limits<double>::quiet_NaN(),std::numeric_limits<double>::infinity()}) {
++        const double oldArg=pairArgs[i];pairArgs[i]=invalid;Check(TargetingHandle(context,475,pairArgs,pairResult)&&pairResult.code!=0,"every raw-bit argument requires uint32 and operation0/1");pairArgs[i]=oldArg;
++    }
++    for(int character:{4,14}) {Init();At<int>(Status+608)=character;Check(Pair(false,1,2000.5f,4,8002).code!=0,"pair does not widen Sora-only compatibility");}
++    const double args[8]{};TrainerResult r{};for(unsigned slot:{367u,370u,371u,373u,374u,375u,376u,474u,476u,477u})Check(!TargetingHandle(context,slot,args,r),"read-only and neighboring slots cannot mutate");
+     printf("TargetingGuardTests: %u checks, %u failures\n",checks,failures);VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);return failures?1:0;
+ }
+--- v0.12.6/src/KH2Trainer.Core/BridgeCommandRejectedException.cs
++++ current/src/KH2Trainer.Core/BridgeCommandRejectedException.cs
+@@ -0,0 +1,8 @@
++namespace KH2Trainer.Core;
++
++/// <summary>A nonzero status received in the acknowledgement of an ordinary bridge command.
++/// Its code alone does not generally prove that a handler made no writes.</summary>
++public sealed class BridgeCommandRejectedException(int code, string message) : InvalidOperationException(message)
++{
++    public int Code { get; } = code;
++}
+--- v0.12.6/src/KH2Trainer/ViewModels/MainViewModel.cs
++++ current/src/KH2Trainer/ViewModels/MainViewModel.cs
+@@ -363,7 +363,7 @@
+     {
+         // A full reset also ends Twitch effects, so they do not re-apply their values afterwards.
+         if (command == resetCommand) await Twitch.StopAllAsync("All trainer changes were reset");
+-        try { var result = await session.ExecuteAsync(command, arguments); Log($"{label}: {result.Message}"); if (!result.Success) throw new InvalidOperationException(result.Message); }
++        try { var result = await session.ExecuteAsync(command, arguments); Log($"{label}: {result.Message}"); if (!result.Success) throw new BridgeCommandRejectedException(result.Code, result.Message); }
+         catch (Exception e) { Log($"{label} failed: {e.Message}"); throw; }
+     }
+ 
+--- v0.12.6/src/KH2Trainer.Twitch/Effects/EffectCatalog.cs
++++ current/src/KH2Trainer.Twitch/Effects/EffectCatalog.cs
+@@ -202,10 +202,9 @@
+             Start = ctx => ctx.StartMovementAsync(MovementMask.Speed, v => MovementValues.FromValues(
+                 Math.Clamp(v.Value(0) * 2.5f, 0, 32), Math.Clamp(v.Value(1) * 2.5f, 0, 64), 0, 0)),
+         },
+-        // Setting the search scale also recalculates the break distance, so restoring the scale restores both.
+-        Values("eagle-eye", RewardCategory.Help, 500, 120, "targeting", "Eagle Eye", "Adlerauge",
++        LockOnPair("eagle-eye", RewardCategory.Help, 500, 120, "Eagle Eye", "Adlerauge",
+             "Lock-on reaches enemies far away for a while.", "Lock-on erreicht eine Weile lang weit entfernte Gegner.",
+-            ("targeting.search_scale", 4)),
++            4f),
+         new()
+         {
+             // The factor belongs to that enemy; it cannot be taken back once lock-on moves on, so it lasts for the enemy's life.
+@@ -404,9 +403,9 @@
+         Values("fast-forward", RewardCategory.Harm, 2000, 30, "time", "Fast Forward", "Vorspulen",
+             "The whole game runs at double speed. Good luck dodging.", "Das ganze Spiel läuft doppelt so schnell. Viel Glück beim Ausweichen.",
+             ("time.multiplier", 2)),
+-        Values("short-sighted", RewardCategory.Harm, 1000, 60, "targeting", "Short-Sighted", "Kurzsichtig",
++        LockOnPair("short-sighted", RewardCategory.Harm, 1000, 60, "Short-Sighted", "Kurzsichtig",
+             "Lock-on only reaches enemies right next to Sora for a while.", "Lock-on erreicht eine Weile lang nur Gegner direkt neben Sora.",
+-            ("targeting.search_scale", 0.15)),
++            .15f),
+         Form("antiform", 6, RewardCategory.Harm, 4000, 30, "Antiform", "Anti-Form",
+             "Turns Sora into Antiform for a while. No healing, no items, pure chaos.",
+             "Verwandelt Sora eine Weile lang in die Anti-Form. Keine Heilung, keine Items, nur Chaos."),
+@@ -734,7 +733,17 @@
+ 
+     // ---- Helpers ----------------------------------------------------------------------------
+ 
+-    private static bool TryColorState(EffectContext ctx, out int mode, out int severity)
++    private static EffectDefinition LockOnPair(string key, RewardCategory category, int cost, int duration,
++        string title, string titleDe, string prompt, string promptDe, float scale) => new()
++    {
++        Key = key, Category = category, Cost = cost, DurationSeconds = duration, Group = "targeting",
++        Title = title, TitleDe = titleDe, Prompt = prompt, PromptDe = promptDe,
++        Features = ["targeting.pair_compare_apply", "targeting.pair_break_bits", "targeting.default_break_distance"],
++        Check = ctx => ctx.LockOnStartReadiness(scale), ActiveCheck = ctx => ctx.LockOnActiveReadiness,
++        Start = ctx => ctx.StartLockOnPairAsync(scale), Monitor = ctx => ctx.LockOnProgress,
++    };
++
++    private static bool TryColorState(EffectContext ctx, out int mode, out int severity)
+     {
+         mode = severity = 0;
+         if (ctx.Read("display.color_state") is not double packed || packed < 0 || packed > 58 || Math.Truncate(packed) != packed) return false;
+--- v0.12.6/src/KH2Trainer.Twitch/Effects/EffectModel.cs
++++ current/src/KH2Trainer.Twitch/Effects/EffectModel.cs
+@@ -15,7 +15,9 @@
+     /// <summary>One coherent actor-generation publication. Older adapters fail closed.</summary>
+     MovementSnapshot Movement => MovementSnapshot.Unavailable;
+     /// <summary>Effective guard and owner decoded together with its actor identity.</summary>
+-    DamageGuardSnapshot DamageGuard => DamageGuardSnapshot.Unavailable;
++    DamageGuardSnapshot DamageGuard => DamageGuardSnapshot.Unavailable;
++    /// <summary>Exact targeting pair captured together; older adapters fail closed.</summary>
++    LockOnPairSnapshot LockOnPair => LockOnPairSnapshot.Unavailable;
+     MovementOperationHandle? PendingMovement => null;
+     Task<MovementCommandResult> ExecuteMovementAsync(MovementCommand command, CancellationToken cancellation = default) =>
+         throw new NotSupportedException("Typed movement ownership is unavailable.");
+@@ -160,7 +162,8 @@
+     private readonly Func<TimeSpan, Task> delay;
+     private readonly List<OwnedValue> owned = [];
+     private MovementEffectLease? movementLease;
+-    private DamageGuardEffectLease? damageGuardLease;
++    private DamageGuardEffectLease? damageGuardLease;
++    private LockOnPairEffectLease? lockOnPairLease;
+ 
+     public EffectContext(EffectDefinition definition, Redemption redemption, int durationSeconds, int amount,
+         IGameControl game, FeatureMap features, Random random, Func<TimeSpan, Task> delay)
+@@ -222,8 +225,24 @@
+         return Readiness.Wait("Waiting for player control (" + blockers + ")");
+     }
+     /// <summary>Values this effect still has to put back because an earlier restore was rejected.</summary>
+-    public bool HasPendingRestores => owned.Any(o => o.Restore) || movementLease?.PendingCleanup == true || damageGuardLease?.PendingCleanup == true;
+-    internal bool HasActorLease => movementLease != null || damageGuardLease != null;
++    public bool HasPendingRestores => owned.Any(o => o.Restore) || movementLease?.PendingCleanup == true || damageGuardLease?.PendingCleanup == true || lockOnPairLease?.PendingCleanup == true;
++    internal bool HasActorLease => movementLease != null || damageGuardLease != null;
++    internal bool HasDurableCleanup => HasActorLease || lockOnPairLease?.PendingCleanup == true;
++    internal Readiness LockOnStartReadiness(float scale) => game.LockOnPair.CanApply(scale) ? Readiness.Ready :
++        Readiness.Wait("Waiting for both current lock-on settings and their native default");
++    // A fresh foreign pair reaches the read-only monitor before any duration is charged.
++    // While control is blocked it is unavailable even with the timer-pause preference off.
++    internal Readiness LockOnActiveReadiness => lockOnPairLease?.Readiness(game.LockOnPair,
++        ControlReadiness().Kind == ReadinessKind.Ready) ?? Readiness.Wait("Waiting for lock-on settings");
++    internal EffectProgress LockOnProgress => lockOnPairLease?.Progress(game.LockOnPair) ?? EffectProgress.Running;
++    internal async Task StartLockOnPairAsync(float scale)
++    {
++        RequireControl();
++        var original = game.LockOnPair;
++        if (!original.CanApply(scale)) throw new EffectDeferredException("Waiting for a restorable lock-on pair");
++        lockOnPairLease = new(original, scale);
++        await lockOnPairLease.ApplyAsync(this);
++    }
+     internal ActorMovementIdentity ActorLeaseIdentity => movementLease != null ? game.Movement.Identity : damageGuardLease?.Identity ?? default;
+     internal Readiness DamageGuardStartReadiness => DamageGuardEffectLease.StartReadiness(game);
+     internal Readiness DamageGuardActiveReadiness => damageGuardLease?.Readiness ?? Readiness.Wait("Waiting for damage protection");
+@@ -335,9 +354,14 @@
+     /// Restores owned values in reverse order. A value the game rejected stays owned, so a later
+     /// call (the engine retries while the game is ready) can put it back. Returns how many restores were rejected.
+     /// </summary>
+-    public async Task<int> RestoreAsync()
+-    {
+-        int failures = 0;
++    public async Task<int> RestoreAsync()
++    {
++        int failures = 0;
++        if (lockOnPairLease != null)
++        {
++            try { await lockOnPairLease.RestoreAsync(this); }
++            catch (Exception error) { Detail = "Lock-on settings restore is still pending: " + error.Message; failures++; }
++        }
+         if (damageGuardLease != null)
+         {
+             await damageGuardLease.MaintainAsync(mayEnsure: false, release: true);
+--- v0.12.6/src/KH2Trainer.Twitch/Effects/EffectEngine.cs
++++ current/src/KH2Trainer.Twitch/Effects/EffectEngine.cs
+@@ -175,7 +175,7 @@
+             double step = Math.Max(0, (now - item.ObservedAt).TotalSeconds);
+             if (ready && item.WasControllable && step <= MaximumObservedIntervalSeconds) item.AvailableSeconds += step;
+             item.ObservedAt = now; item.WasControllable = ready;
+-            if (item.AvailableSeconds > RestoreWindow.TotalSeconds && !item.Effect.Context.HasActorLease)
++            if (item.AvailableSeconds > RestoreWindow.TotalSeconds && !item.Effect.Context.HasDurableCleanup)
+             {
+                 deferredEnds.Remove(item);
+                 item.Effect.Context.AbandonRestores();
+@@ -207,7 +207,7 @@
+             double step = Math.Max(0, (now - item.ObservedAt).TotalSeconds);
+             if (ready && item.WasControllable && step <= MaximumObservedIntervalSeconds) item.AvailableSeconds += step;
+             item.ObservedAt = now; item.WasControllable = ready;
+-            if (item.AvailableSeconds > RestoreWindow.TotalSeconds && !item.Context.HasActorLease)
++            if (item.AvailableSeconds > RestoreWindow.TotalSeconds && !item.Context.HasDurableCleanup)
+             {
+                 restoring.Remove(item);
+                 log($"Twitch: could not undo {Title(item.Context.Definition.Key)} ({string.Join(", ", item.Context.AbandonRestores())}). Set it back in the trainer if needed.");
+--- v0.12.6/src/KH2Trainer.Twitch/Effects/LockOnPairSnapshot.cs
++++ current/src/KH2Trainer.Twitch/Effects/LockOnPairSnapshot.cs
+@@ -0,0 +1,38 @@
++using KH2Trainer.Core;
++
++namespace KH2Trainer.Twitch;
++
++/// <summary>Two exact Float32 globals and their native default from one publication.</summary>
++public readonly record struct LockOnPairSnapshot(bool Available, uint ScaleBits, uint BreakBits, uint RetainBits)
++{
++    public static readonly LockOnPairSnapshot Unavailable = default;
++    public float Scale => BitConverter.UInt32BitsToSingle(ScaleBits);
++    public float BreakDistance => BitConverter.UInt32BitsToSingle(BreakBits);
++    public float RetainDefault => BitConverter.UInt32BitsToSingle(RetainBits);
++    internal static bool ValidPair(uint scale, uint distance) =>
++        BitConverter.UInt32BitsToSingle(scale) is var s && float.IsFinite(s) && s is >= .05f and <= 10f &&
++        BitConverter.UInt32BitsToSingle(distance) is var d && float.IsFinite(d) && d is > 0f and <= 10_000_000f;
++    internal bool CanApply(float scale) => Available && ValidPair(ScaleBits, BreakBits) &&
++        float.IsFinite(RetainDefault) && RetainDefault is >= .000001f and <= 1_000_000f &&
++        ValidPair(BitConverter.SingleToUInt32Bits(scale), BitConverter.SingleToUInt32Bits(scale * RetainDefault));
++
++    public static LockOnPairSnapshot FromSnapshot(TrainerSnapshot snapshot, uint now)
++    {
++        if (snapshot.ProtocolVersion != 4 || !snapshot.SceneReady || !GameplayState.HasFreshPublication(snapshot, now) ||
++            !Bits(snapshot, 475, out uint scale) || !Bits(snapshot, 476, out uint distance) ||
++            !snapshot.Supports(373) || !snapshot.HasValue(373)) return Unavailable;
++        double retain = snapshot.Values[373];
++        if (!double.IsFinite(retain) || retain is < .000001 or > 1_000_000 || (double)(float)retain != retain ||
++            !ValidPair(scale, distance)) return Unavailable;
++        return new(true, scale, distance, BitConverter.SingleToUInt32Bits((float)retain));
++    }
++
++    private static bool Bits(TrainerSnapshot snapshot, int slot, out uint value)
++    {
++        value = 0;
++        if (!snapshot.Supports(slot) || !snapshot.HasValue(slot)) return false;
++        double raw = snapshot.Values[slot];
++        if (!double.IsFinite(raw) || raw < 0 || raw > uint.MaxValue || raw != Math.Truncate(raw)) return false;
++        value = (uint)raw; return true;
++    }
++}
+--- v0.12.6/src/KH2Trainer.Twitch/Effects/LockOnPairEffectLease.cs
++++ current/src/KH2Trainer.Twitch/Effects/LockOnPairEffectLease.cs
+@@ -0,0 +1,54 @@
++using KH2Trainer.Core;
++
++namespace KH2Trainer.Twitch;
++
++/// <summary>Value ownership of global targeting settings; no actor lifetime or native receipt claim.</summary>
++internal sealed class LockOnPairEffectLease(LockOnPairSnapshot original, float scale)
++{
++    private readonly uint appliedScale = BitConverter.SingleToUInt32Bits(scale);
++    private readonly uint appliedBreak = BitConverter.SingleToUInt32Bits(scale * original.RetainDefault);
++    public bool PendingCleanup { get; private set; }
++    private bool stopping;
++
++    public async Task ApplyAsync(EffectContext context)
++    {
++        if (stopping || PendingCleanup) throw new InvalidOperationException("A targeting pair already awaits cleanup.");
++        // Ordinary command timeouts are not proof of no write. Register intent before publishing.
++        PendingCleanup = true;
++        try
++        {
++            await context.RunAsync("targeting.pair_compare_apply", 0, original.ScaleBits, original.BreakBits,
++                appliedScale, appliedBreak, original.RetainBits);
++        }
++        catch (BridgeCommandRejectedException error) when (error.Code is 2 or 3 or 4)
++        {
++            // Only this handler's received statuses are proven pre-write. In particular a
++            // foreign pair can already equal our desired pair: never restore it after rejection.
++            PendingCleanup = false; throw;
++        }
++        catch (EffectDeferredException)
++        {
++            // RunAsync's synchronous RequireControl refused before command publication.
++            PendingCleanup = false; throw;
++        }
++    }
++
++    public Readiness Readiness(LockOnPairSnapshot current, bool mayEnd) => current.Available && mayEnd ? ReadinessReady :
++        KH2Trainer.Twitch.Readiness.Wait("Waiting for the effect's complete lock-on settings");
++    private static readonly Readiness ReadinessReady = KH2Trainer.Twitch.Readiness.Ready;
++
++    public EffectProgress Progress(LockOnPairSnapshot current) => current.Available &&
++        (current.ScaleBits != appliedScale || current.BreakBits != appliedBreak)
++            ? EffectProgress.Ended("Lock-on settings changed elsewhere; the new settings were preserved") : EffectProgress.Running;
++
++    public async Task RestoreAsync(EffectContext context)
++    {
++        stopping = true;
++        if (!PendingCleanup) return;
++        // A native mismatch is an acknowledged no-op. Missing host readback does not authorize a
++        // scalar restore and does not prevent the native complete-pair comparison.
++        await context.RunAsync("targeting.pair_compare_apply", 1, appliedScale, appliedBreak,
++            original.ScaleBits, original.BreakBits, original.RetainBits);
++        PendingCleanup = false;
++    }
++}
+--- v0.12.6/tests/KH2Trainer.Twitch.Tests/Fakes.cs
++++ current/tests/KH2Trainer.Twitch.Tests/Fakes.cs
+@@ -28,6 +28,7 @@
+         Set("damage.player.general", 100); Set("damage.target.general", 100); Set("render.hide_captions", 0); Set("combat.movementcollision", 0);
+         Set("practice.field_pause", 0); Set("time.actor_effect_freeze", 0); Set("player_damage_guard", 0); Set("combat.autoheal", 0);
+         Set("display.color_state", 0);
++        Set("targeting.break_distance", 2000.5); Set("targeting.default_break_distance", 2000.5);
+         Set("combat.fullmp", 0); Set("combat.formtimer", 0); Set("drive.result", 0); Set("drive.requested", 0); Set("drive.phase", 0);
+     }
+ 
+@@ -152,7 +153,8 @@
+                 if (Get("inspect-item") == args[0]) Set("selected-item-stock", args[1]);
+                 break;
+             case "camera.fov": Set("camera.fov_enabled", 1); break;
+-            case "targeting.reset": Set("targeting.search_scale", 1); break;
++            case "targeting.reset": Set("targeting.search_scale", 1); break;
++            case "targeting.pair_compare_apply": DispatchLockOnPair(args); break;
+             case "display.restore_loaded": Set("display.brightness_preview", 0); Set("display.color_state", 0); ColorWrites++; break;
+             case "display.color_vision_preview": Set("display.color_state", args[0] == 0 ? 0 : args[0] * 16 + args[1]); ColorWrites++; break;
+             case "display.color_compare_apply":
+--- v0.12.6/tests/KH2Trainer.Twitch.Tests/FakeLockOnPair.cs
++++ current/tests/KH2Trainer.Twitch.Tests/FakeLockOnPair.cs
+@@ -0,0 +1,46 @@
++using KH2Trainer.Twitch;
++using KH2Trainer.Core;
++
++internal sealed partial class FakeGame
++{
++    public bool LockOnSnapshotAvailable { get; set; } = true;
++    public (float Scale, float Break)? NativeLockOnOverride { get; set; }
++    public int LockOnWrites { get; private set; }
++    public Action<double[]>? BeforeLockOnDispatch { get; set; }
++    public LockOnPairSnapshot LockOnPair
++    {
++        get
++        {
++            if (!IsConnected || !SceneReady || !LockOnSnapshotAvailable || !Supports(475) || !Supports(476) || !Supports(373) ||
++                Get("targeting.search_scale") is not double scale || Get("targeting.break_distance") is not double distance ||
++                Get("targeting.default_break_distance") is not double retain) return LockOnPairSnapshot.Unavailable;
++            uint scaleBits=BitConverter.SingleToUInt32Bits((float)scale),breakBits=BitConverter.SingleToUInt32Bits((float)distance);
++            if(!LockOnPairSnapshot.ValidPair(scaleBits,breakBits)||!double.IsFinite(retain)||retain<.000001||retain>1000000)return LockOnPairSnapshot.Unavailable;
++            return new(true, scaleBits, breakBits, BitConverter.SingleToUInt32Bits((float)retain));
++        }
++    }
++    private void DispatchLockOnPair(double[] args)
++    {
++        BeforeLockOnDispatch?.Invoke(args);
++        if (Gameplay.Role != PlayerRole.Sora || !Gameplay.IsControllable) throw new BridgeCommandRejectedException(3,"Sora control required.");
++        if (args.Any(a => !double.IsFinite(a) || a < 0 || a > uint.MaxValue || a != Math.Truncate(a)) || args[0] > 1)
++            throw new BridgeCommandRejectedException(2,"Exact raw bits required.");
++        float expectedScale = BitConverter.UInt32BitsToSingle((uint)args[1]),expectedBreak = BitConverter.UInt32BitsToSingle((uint)args[2]);
++        float desiredScale = BitConverter.UInt32BitsToSingle((uint)args[3]),desiredBreak = BitConverter.UInt32BitsToSingle((uint)args[4]);
++        float retain = (float)(Get("targeting.default_break_distance") ?? throw new InvalidOperationException("Missing native parameters."));
++        if (!LockOnPairSnapshot.ValidPair((uint)args[1], (uint)args[2]) || !LockOnPairSnapshot.ValidPair((uint)args[3], (uint)args[4]) ||
++            args[0] == 0 && (BitConverter.SingleToUInt32Bits(retain) != (uint)args[5] || BitConverter.SingleToUInt32Bits(desiredScale * retain) != (uint)args[4]))
++            throw new BridgeCommandRejectedException(2,"Invalid or stale pair.");
++        var live = NativeLockOnOverride ?? ((float)(Get("targeting.search_scale") ?? throw new InvalidOperationException()),
++            (float)(Get("targeting.break_distance") ?? throw new InvalidOperationException()));
++        if (BitConverter.SingleToUInt32Bits(live.Item1) != BitConverter.SingleToUInt32Bits(expectedScale) ||
++            BitConverter.SingleToUInt32Bits(live.Item2) != BitConverter.SingleToUInt32Bits(expectedBreak))
++        {
++            if (args[0] == 0) throw new BridgeCommandRejectedException(4,"Pair changed before apply.");
++            return;
++        }
++        if (NativeLockOnOverride != null) NativeLockOnOverride = (desiredScale,desiredBreak);
++        else { Set("targeting.search_scale", desiredScale); Set("targeting.break_distance", desiredBreak); }
++        LockOnWrites++;
++    }
++}
+--- v0.12.6/tests/KH2Trainer.Twitch.Tests/LockOnPairOwnershipTests.cs
++++ current/tests/KH2Trainer.Twitch.Tests/LockOnPairOwnershipTests.cs
+@@ -0,0 +1,163 @@
++using KH2Trainer.Core;
++using KH2Trainer.Twitch;
++
++internal static class LockOnPairOwnershipTests
++{
++    private sealed class Harness
++    {
++        public readonly FakeGame Game;
++        public readonly FakeSink Sink = new();
++        public readonly EffectEngine Engine;
++        public DateTimeOffset Now = new(2026, 10, 7, 12, 0, 0, TimeSpan.Zero);
++        public bool PauseTimers = true;
++        public Harness(IReadOnlyList<FeatureDefinition> features)
++        {
++            Game = new(features);
++            Engine = new(Game, new(features), EffectCatalog.All,
++                key => { var d = EffectCatalog.Find(key)!; return new(d.Title, d.DurationSeconds, d.Amount, SameEffectBehavior.Extend, ConflictBehavior.Queue); },
++                () => new(TimeSpan.FromMinutes(10), 600, PauseTimers), Sink, _ => { }, _ => Task.CompletedTask);
++        }
++        public void Redeem(string key, string id = "a") => Engine.Submit(new(id,key,"Viewer","",Now));
++        public Task Tick(double dt = .25) { Now = Now.AddSeconds(dt); return Engine.TickAsync(Now); }
++        public Task End(string key) => Engine.EndEffectAsync(key,Now);
++    }
++    private static uint Bits(float value) => BitConverter.SingleToUInt32Bits(value);
++    public static async Task RunAsync(IReadOnlyList<FeatureDefinition> features, Action<bool,string> check)
++    {
++        Decoder(check);
++        var map = new FeatureMap(features);
++        foreach (var key in new[] { "eagle-eye", "short-sighted" })
++        {
++            var definition = EffectCatalog.Find(key)!;
++            float appliedScale = key == "eagle-eye" ? 4f : .15f;
++            EffectContext Context(FakeGame game) => new(definition,new("a",key,"Viewer","",DateTimeOffset.UtcNow),60,0,game,map,new(1),_ => Task.CompletedTask);
++            check(definition.AllowedRoles == EffectPlayerRoles.Sora && !definition.Features.Contains("targeting.search_scale"), key+": Sora-only paired ownership replaces scalar writes");
++            foreach (float originalBreak in new[] { 777.25f, 2000.5f, 6501f, 10_000_000f })
++            {
++                var game = new FakeGame(features);game.Set("targeting.search_scale",1.2345678f);game.Set("targeting.break_distance",originalBreak);
++                var context=Context(game); await definition.Start(context);
++                check(game.Get("targeting.search_scale")==appliedScale && game.Get("targeting.break_distance")==appliedScale*2000.5f,key+": apply exact Float32 product");
++                await context.SustainAsync();game.Set("targeting.default_break_distance",3000.25f);
++                check(await context.RestoreAsync()==0&&!context.HasPendingRestores,key+": exact original pair restores after parameter default changes");
++                check(Bits((float)game.Get("targeting.search_scale")!.Value)==Bits(1.2345678f)&&Bits((float)game.Get("targeting.break_distance")!.Value)==Bits(originalBreak),key+": custom original break is preserved, never recalculated");
++                await context.RestoreAsync();check(game.LockOnWrites==2&&game.Count("targeting.search_scale")==0&&game.Count("targeting.break_distance")==0,key+": no scalar cleanup or repeated restore");
++            }
++            foreach (bool breakOnly in new[] { false,true })
++            {
++                var game=new FakeGame(features);var context=Context(game);await definition.Start(context);
++                string id=breakOnly?"targeting.break_distance":"targeting.search_scale";
++                game.Set(id,MathF.BitIncrement((float)game.Get(id)!.Value));
++                var foreign=game.LockOnPair;await context.SustainAsync();await context.RestoreAsync();
++                check(game.LockOnPair==foreign&&game.LockOnWrites==1&&!context.HasPendingRestores,key+": one-ULP "+id+" takeover preserves whole pair");
++            }
++            foreach (var role in new[] { PlayerRole.Roxas,PlayerRole.Mickey,PlayerRole.Other,PlayerRole.Unknown })
++            {
++                var h=new Harness(features);h.Game.Gameplay=new(true,role,GameplayBlockers.None);h.Redeem(key);await h.Tick();
++                check(h.Game.Commands.Count==0&&h.Engine.PendingEffects.Count==1,key+": unsupported "+role+" waits without widened compatibility");
++            }
++            foreach (bool optOut in new[] { false,true })
++            {
++                var h=new Harness(features){PauseTimers=!optOut};h.Redeem(key);await h.Tick();double remaining=h.Engine.ActiveEffects.Single().RemainingSeconds;
++                h.Game.LockOnSnapshotAvailable=false;await h.Tick();await h.Tick();
++                check(h.Engine.ActiveEffects.Single().RemainingSeconds==remaining,key+": missing pair pauses even timer opt-out="+optOut);
++                h.Game.LockOnSnapshotAvailable=true;await h.Tick();check(h.Engine.ActiveEffects.Single().RemainingSeconds==remaining,key+": missing interval never charged on return");
++                h.Game.Gameplay=new(true,PlayerRole.Sora,GameplayBlockers.Menu);await h.Tick();await h.Tick();
++                check(h.Engine.ActiveEffects.Single().RemainingSeconds==remaining&&h.Game.LockOnWrites==1,key+": owned pair during menu also pauses timer opt-out="+optOut);
++                h.Game.Set("targeting.break_distance",1234.5);await h.Tick();await h.Tick();
++                check(h.Engine.ActiveEffects.Single().RemainingSeconds==remaining&&h.Game.LockOnWrites==1,key+": foreign pair during menu does not count or get reapplied");
++                h.Game.Gameplay=new(true,PlayerRole.Sora,GameplayBlockers.None);await h.Tick();
++                check(h.Engine.ActiveEffects.Count==0&&h.Game.Get("targeting.break_distance")==1234.5&&h.Game.LockOnWrites==1,key+": control return ends on takeover without overwriting either field");
++            }
++            {
++                var game=new FakeGame(features);game.Set("targeting.break_distance",777.25);var context=Context(game);
++                game.BeforeLockOnDispatch=a=> { if(a[0]==0)game.NativeLockOnOverride=(1,888.5f); };
++                bool failed=false;try{await definition.Start(context);}catch(InvalidOperationException){failed=true;}
++                check(failed&&!context.HasPendingRestores&&game.LockOnWrites==0,key+": definite native rejection has no ownership");
++                await context.RestoreAsync();check(!context.HasPendingRestores&&game.NativeLockOnOverride==(1f,888.5f)&&game.LockOnWrites==0,key+": stale-apply cleanup is acknowledged no-op preserving native edit");
++            }
++            {
++                var game=new FakeGame(features);var context=Context(game);
++                game.BeforeLockOnDispatch=a=>{if(a[0]==0)game.NativeLockOnOverride=(appliedScale,appliedScale*2000.5f);};
++                bool rejected=false;try{await definition.Start(context);}catch(BridgeCommandRejectedException e){rejected=e.Code==4;}
++                await context.RestoreAsync();
++                check(rejected&&!context.HasPendingRestores&&game.NativeLockOnOverride==(appliedScale,appliedScale*2000.5f)&&game.Commands.Count==1&&game.LockOnWrites==0,
++                    key+": foreign pair already equal to desired is preserved after definite mismatch ACK");
++            }
++            foreach(int code in new[]{1,2,3,4,99})
++            {
++                var game=new FakeGame(features);var context=Context(game);
++                game.BeforeLockOnDispatch=_=>throw new BridgeCommandRejectedException(code,"synthetic native status");
++                try{await definition.Start(context);}catch(BridgeCommandRejectedException){}
++                check(context.HasPendingRestores==(code is not (2 or 3 or 4)),key+": only proven pre-write native status releases intent: "+code);
++            }
++            {
++                var game=new FakeGame(features);var context=Context(game);await definition.Start(context);
++                game.NativeLockOnOverride=(appliedScale,9000.125f);game.LockOnSnapshotAvailable=false;
++                await context.RestoreAsync();check(!context.HasPendingRestores&&game.NativeLockOnOverride==(appliedScale,9000.125f)&&game.LockOnWrites==1,key+": native comparison protects post-snapshot break edit without host readback");
++            }
++            {
++                var game=new FakeGame(features);var context=Context(game);await definition.Start(context);
++                game.Reject=(f,a)=>f=="targeting.pair_compare_apply"&&a[0]==1;
++                check(await context.RestoreAsync()==1&&context.HasPendingRestores,key+": cleanup reject retains intent");
++                game.IsConnected=false;check(await context.RestoreAsync()==1&&context.HasPendingRestores,key+": disconnect cannot settle cleanup");
++                game.IsConnected=true;game.Reject=null;await context.RestoreAsync();check(!context.HasPendingRestores&&game.LockOnWrites==2,key+": acknowledged retry restores once");
++            }
++            foreach(bool failedStart in new[]{false,true})
++            {
++                var h=new Harness(features);h.Game.Set("targeting.break_distance",777.25);
++                h.Game.AfterExecute=(f,a)=>{if(f=="targeting.pair_compare_apply"&&a[0]==0&&failedStart)throw new TimeoutException("Apply ACK lost");};
++                h.Game.Reject=(f,a)=>f=="targeting.pair_compare_apply"&&a[0]==1;
++                h.Redeem(key);await h.Tick();if(!failedStart)await h.End(key);
++                check(h.Engine.PendingCleanupCount==1&&h.Game.LockOnWrites==1,key+": "+(failedStart?"failed start":"end")+" retains intent");
++                for(int i=0;i<205;i++)await h.Tick(1);
++                check(h.Engine.PendingCleanupCount==1&&h.Game.LockOnWrites==1,key+": ambiguous cleanup survives ordinary 180-second window without another apply");
++                h.Game.Reject=null;h.Game.AfterExecute=null;await h.Engine.StopAllAsync("test stop",h.Now);await h.Tick(1);
++                check(h.Engine.PendingCleanupCount==0&&h.Game.Get("targeting.break_distance")==777.25,key+": delayed ACK settles exact original after long retry");
++            }
++            {
++                var h=new Harness(features);h.Redeem(key);await h.Tick();bool lost=true;
++                h.Game.AfterExecute=(f,a)=>{if(f=="targeting.pair_compare_apply"&&a[0]==1&&lost){lost=false;throw new TimeoutException("Restore ACK lost");}};
++                await h.End(key);check(h.Engine.PendingCleanupCount==1&&h.Game.LockOnWrites==2,key+": lost restore ACK retained even though original already visible");
++                await h.Tick(1);check(h.Engine.PendingCleanupCount==0&&h.Game.LockOnWrites==2,key+": subsequent native mismatch ACK is terminal no-op");
++            }
++            foreach(int missing in new[]{475,476,373})
++            {
++                var h=new Harness(features);h.Game.Unsupported.Add(missing);h.Redeem(key);await h.Tick();
++                check(h.Game.LockOnWrites==0,key+": missing required capability "+missing+" blocks before write");
++            }
++            foreach(double value in new[]{double.NaN,double.PositiveInfinity,-1d,0d,10000001d})
++            {
++                var game=new FakeGame(features);game.Set("targeting.break_distance",value);var context=Context(game);
++                check(definition.Check!(context).Kind==ReadinessKind.Wait,key+": invalid original distance waits "+value);
++            }
++        }
++    }
++
++    private static void Decoder(Action<bool,string> check)
++    {
++        TrainerSnapshot Snapshot()
++        {
++            var s=new TrainerSnapshot{Connected=true,ProtocolVersion=4,SceneReady=true,Status=1};
++            foreach(var (slot,value) in new (int,double)[]{(463,1000),(475,Bits(1.25f)),(476,Bits(777.25f)),(373,2000.5)})
++            {s.Values[slot]=value;s.Valid[slot/64]|=1UL<<(slot%64);s.Supported[slot/64]|=1UL<<(slot%64);}
++            return s;
++        }
++        var good=Snapshot();var result=LockOnPairSnapshot.FromSnapshot(good,1000);
++        check(result.Available&&result.ScaleBits==Bits(1.25f)&&result.BreakBits==Bits(777.25f)&&result.RetainBits==Bits(2000.5f),"lock-on decoder: coherent raw bits and exact float default");
++        foreach(int slot in new[]{463,475,476,373})
++        {
++            var s=Snapshot();s.Valid[slot/64]&=~(1UL<<(slot%64));check(!LockOnPairSnapshot.FromSnapshot(s,1000).Available,"lock-on decoder: required valid bit "+slot);
++            s=Snapshot();s.Supported[slot/64]&=~(1UL<<(slot%64));check(!LockOnPairSnapshot.FromSnapshot(s,1000).Available,"lock-on decoder: required capability "+slot);
++        }
++        foreach(int slot in new[]{475,476})foreach(double invalid in new[]{-1d,.5,4294967296d,double.NaN,double.PositiveInfinity,(double)Bits(float.NaN),(double)Bits(float.PositiveInfinity),0})
++        {
++            var s=Snapshot();s.Values[slot]=invalid;check(!LockOnPairSnapshot.FromSnapshot(s,1000).Available,"lock-on decoder: malformed/nonfinite/zero float bits rejected "+slot);
++        }
++        foreach(double invalid in new[]{0d,-1d,1000001d,2000.5000000001,double.NaN,double.PositiveInfinity})
++        {var s=Snapshot();s.Values[373]=invalid;check(!LockOnPairSnapshot.FromSnapshot(s,1000).Available,"lock-on decoder: bounded exactly-Float32 native default");}
++        foreach(var s in new[]{good with{Connected=false},good with{ProtocolVersion=3},good with{SceneReady=false},good with{Status=0},good with{ErrorCode=1}})
++            check(!LockOnPairSnapshot.FromSnapshot(s,1000).Available,"lock-on decoder: disconnected/legacy/not-ready publication rejected");
++        check(!LockOnPairSnapshot.FromSnapshot(good,2001).Available&&LockOnPairSnapshot.FromSnapshot(good,2000).Available,"lock-on decoder: precise freshness bound");
++        check(!LockOnPairSnapshot.FromSnapshot(good,999).Available,"lock-on decoder: future publication rejected");
++    }
++}
+--- v0.12.6/tests/KH2Trainer.Twitch.Tests/Program.cs
++++ current/tests/KH2Trainer.Twitch.Tests/Program.cs
+@@ -32,6 +32,7 @@
+ await Run("movement rewards", () => MovementRewardTests.RunAsync(features, Check));
+ await Run("ghost return ownership", () => GhostOwnershipTests.RunAsync(features, Check));
+ await Run("damage guard ownership", () => DamageGuardOwnershipTests.RunAsync(features, Check));
++await Run("lock-on pair ownership", () => LockOnPairOwnershipTests.RunAsync(features, Check));
+ await Run("api", () => ApiTests.RunAsync(Check));
+ await Run("service", () => ServiceTests.RunAsync(Check));
+ await Run("overlay", () => OverlayTests.RunAsync(features, Check));

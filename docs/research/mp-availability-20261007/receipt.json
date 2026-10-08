@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-07",
+  "status": "FROZEN: implementation, isolated tests and independent final review complete",
+  "scope": "Managed Crowd Control only. No live game, Twitch/network actions, native changes, UI/build/version/coverage edits or full build.",
+  "api": "EffectDefinition.ActiveCheck: optional read-only ongoing usability predicate, separate from Check and ControlReadiness. Cleanup does not invoke it. Internal EffectContext.ReadRestorableValue returns only a finite observation accepted by FeatureMap/FeatureDefinition.IsValidValue; no duplicate range constants.",
+  "changes": [
+    "Unlimited MP requires current integer MP maximum 1..255 and both MP capabilities while running. Missing, nonfinite, fractional, negative, greater-than-255 and zero observations pause usefulness.",
+    "ActiveCheck gates timer accounting, established monitors, sustain and paid extensions. Both endpoint samples must be usable; resource-conditioned intervals over one second charge zero even if control timer pausing is disabled.",
+    "Returning MP availability triggers immediate sustain without retroactive time charge. Extensions wait unpaid until useful. Control pause opt-out otherwise preserves existing wall-time semantics.",
+    "Cleanup retains control, role, finite owned-toggle readback and value comparison gates. Gauge loss does not block a zero write; rejected restores remain deferred and recover without an MP gauge.",
+    "MP-only start checks reject actual zero but wait for malformed or unavailable maxima.",
+    "Movement rewards retain Sora-only admission. Required originals must be finite, available and accepted by their FeatureDefinition edit bounds before the first write; missing or out-of-policy second originals after the first awaited write trigger existing partial failure cleanup. No defaults 8/2/160 are guessed.",
+    "Movement ActiveCheck also pauses runtime use while originals are missing or outside policy. SustainAsync validates each restoring live original against its own FeatureDefinition immediately before writing, preserving a non-restorable external value even if it appears during an earlier awaited command. Non-restoring values keep their existing sustain semantics.",
+    "Moon Jump describes increased base jump height and capped falling speed; gravity is unchanged and High Jump/special actions may use other values."
+  ],
+  "nativeReference": {
+    "path": "src/KH2Trainer.Bridge/PlayerFeatures.inl",
+    "rule": "Integer STATUS+388 is bounded to 0..255; positive values identify a usable MP gauge.",
+    "function": "PlayerLiving"
+  },
+  "tests": {
+    "log": "tests/KH2Trainer.Twitch.Tests/mp-movement-readiness-test.log",
+    "passed": 1687,
+    "failed": 0,
+    "newSuites": [
+      "MpAvailabilityTests",
+      "MovementRewardTests"
+    ],
+    "cases": [
+      "All three audited roles and supported-role transitions with missing/NaN/infinite/negative/fractional/out-of-byte-range/zero MP maxima.",
+      "Integer usable endpoints 1 and 255, capability loss/recovery, immediate recovery sustain and queued extensions.",
+      "Deferred cleanup across unsupported role/menu, refused restore, absent toggle readback, absent gauge, external toggle change and StopAll.",
+      "General timer pause opt-out, conservative long gaps, backward clock, ordinary effects without ActiveCheck, established monitor pause.",
+      "Movement role guards; missing/nonfinite/out-of-policy originals (walk100/run100/jump1200/fall0); exact per-feature minimum and maximum; missing or out-of-policy second original after first command; exact originals restored and writes clamped by the same catalog.",
+      "Script-set runtime run100/walk100/jump1200/fall0 pause duration/sustain; valid recovery stores a restorable original; ending preserves external values. A second out-of-policy value appearing during the first awaited sustain write is never overwritten or captured. Restore=false behavior remains unchanged.",
+      "Test-only permissive role definition reproduces equal-value replacement retaining the old Sora original; production catalog remains restricted."
+    ],
+    "noLiveValidation": true,
+    "command": "dotnet run --project tests/KH2Trainer.Twitch.Tests -- src/KH2Trainer/Data/features.json"
+  },
+  "remainingLimits": [
+    "Readiness is sampled, not a native cumulative useful-time counter. A pause entirely between two observations cannot be reconstructed. Native command guards still decide at dispatch.",
+    "ActiveCheck proves current resource observations, not that every ongoing native refill executed; native dispatch can refuse when deeper resources are unavailable.",
+    "OwnedValue has no Actor lifetime token. If another Actor has the same applied movement value, it retains the old original. Sora-only admission avoids writing to newly admitted roles but does not prove identity across two Sora actor lifetimes.",
+    "Actor identity and observations can change after a host sample. This change adds startup, ongoing sampled and per-owned-value restore-range checks; it does not add an atomic actor-bound multi-field operation or an actor-lifetime token.",
+    "Deferred cleanup remains in memory and needs later ticks; it cannot survive trainer shutdown."
+  ],
+  "fingerprints": [
+    {
+      "path": "src/KH2Trainer.Twitch/Effects/EffectCatalog.cs",
+      "sha256": "57b371a70bc104e4e149d8aff90945c46c0bf94f2981831080abfede251683a1",
+      "bytes": 53406
+    },
+    {
+      "path": "src/KH2Trainer.Twitch/Effects/EffectEngine.cs",
+      "sha256": "ca814bd713298d1c26025ff47f32073362a72de6ff1a67d2c11f5eb3d1bf9a5e",
+      "bytes": 36060
+    },
+    {
+      "path": "src/KH2Trainer.Twitch/Effects/EffectModel.cs",
+      "sha256": "f2caf56f27b5702fa306ec5c5eb5570388903eb37136f6ecbcb2a286855ae44c",
+      "bytes": 19720
+    },
+    {
+      "path": "src/KH2Trainer.Twitch/Effects/GameplayReadiness.md",
+      "sha256": "7604a7c27b94809b8e54087bf258d81d98fdb899ef5cf390a78ea6394e23286f",
+      "bytes": 7956
+    },
+    {
+      "path": "tests/KH2Trainer.Twitch.Tests/MpAvailabilityTests.cs",
+      "sha256": "8b804537d4f2f44ce21232d05fc09adea4d1549549e8aef5549fe68b7df924f6",
+      "bytes": 12738
+    },
+    {
+      "path": "tests/KH2Trainer.Twitch.Tests/MovementRewardTests.cs",
+      "sha256": "70607d19f01f29f7fd9a115fad3c32ed914f489419eee68051d6b71683e8949d",
+      "bytes": 15291
+    },
+    {
+      "path": "tests/KH2Trainer.Twitch.Tests/Program.cs",
+      "sha256": "e783f18c705a4283811789ce1cc11bb5417a912e483dd433db176683a11688a1",
+      "bytes": 1875
+    },
+    {
+      "path": "tests/KH2Trainer.Twitch.Tests/mp-movement-readiness-test.log",
+      "sha256": "660023ca6973b56ddcc596603a521cedd3725c7feed0966f82729adcf8b0f13a",
+      "bytes": 113648
+    }
+  ],
+  "review": {
+    "path": "docs/research/mp-active-readiness-20261007/independent-review.json",
+    "scope": "Final MP and Movement startup/runtime restore-range logic independently reviewed, including the per-value await-race guard. No blocking finding. Reviewer independently read the 1687/0 author log; no duplicate build. Actor-lifetime limitation remains explicit.",
+    "sha256": "6d92c86662c07c32fcbb50adf4ff1a784e2164d9f4bf199d4cc9476d34d50d36",
+    "revision": 3
+  }
+}

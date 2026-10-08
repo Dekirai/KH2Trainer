@@ -1,9 +1,7 @@
 // Combat evidence: research archive (see README): combat.json and combat_evidence.json.
 // All installation, commands, and snapshots run on the game's update thread.
 namespace combat {
-constexpr uintptr_t LockRva=0x2A11208, DamageSlotRva=0x5C4B68;
-constexpr uintptr_t ControllerRva=0x74A518, VtableRva=0x5C4A80, DamageRva=0x3A75F0;
-using DamageFn=intptr_t (__fastcall*)(uintptr_t,uintptr_t,int,unsigned,BYTE);
+constexpr uintptr_t LockRva=0x2A11208;
 template<class T> T& Field(uintptr_t p,size_t n) { return *reinterpret_cast<T*>(p+n); }
 bool FiniteRange(double v,double low,double high) { return isfinite(v)&&v>=low&&v<=high; }
 bool PhaseReady(bool allowFieldPause=false) {
@@ -60,80 +58,19 @@ bool GetTarget(const TrainerContext& c,Target& t,bool manual=false,bool allowFie
                           FiniteRange(Field<float>(actor,3404),0.000001,1000000)};
     return true;
 }
-struct GuardLease { bool enabled; uintptr_t player,status,scheduler,heap; BYTE room[10]; } guard{};
-bool hooked=false;
-uint64_t blockedHits=0; unsigned lastBlockedDamage=0;
-bool SameGuardScene() {
-    return guard.scheduler==At<uintptr_t>(0x716868)&&guard.heap==At<uintptr_t>(0x9BA920)&&
-           !memcmp(guard.room,reinterpret_cast<void*>(g_base+0x717008),sizeof(guard.room));
-}
-intptr_t __fastcall DamageHook(uintptr_t controller,uintptr_t actor,int delta,unsigned bar,BYTE effects);
-bool MayBlock(uintptr_t controller,uintptr_t actor,int delta,unsigned bar,int& hp) {
-    if(!guard.enabled||delta>=0||bar!=0||GetCurrentThreadId()!=g_gameThread||!HostFresh()||
-       controller!=g_base+ControllerRva||actor!=guard.player||!SameGuardScene())return false;
-    const TrainerContext c={g_base,actor,guard.status,true};
-    if(!PlayerReady(c)||DecodePacked(Field<uint32_t>(actor,0))!=controller||
-       Field<uintptr_t>(controller,0)!=g_base+VtableRva||
-       At<uintptr_t>(DamageSlotRva)!=reinterpret_cast<uintptr_t>(&DamageHook))return false;
-    hp=Field<int>(c.status,0);return true;
-}
-intptr_t __fastcall DamageHook(uintptr_t controller,uintptr_t actor,int delta,unsigned bar,BYTE effects) {
-    int hp=0; bool block=false;
-    __try { block=MayBlock(controller,actor,delta,bar,hp); }
-    __except(EXCEPTION_EXECUTE_HANDLER) { block=false; }
-    if(block) {
-        if(blockedHits<9007199254740991ULL)++blockedHits;
-        lastBlockedDamage=static_cast<unsigned>(-static_cast<int64_t>(delta));
-        return hp;
-    }
-    // Always forward with the exact native ABI. This call intentionally sits
-    // outside the validation exception handler; engine faults are not swallowed.
-    return reinterpret_cast<DamageFn>(g_base+DamageRva)(controller,actor,delta,bar,effects);
-}
-bool SwapSlot(uintptr_t expected,uintptr_t replacement) {
-    auto slot=reinterpret_cast<void* volatile*>(g_base+DamageSlotRva);
-    DWORD oldProtection=0,unused=0;
-    if(!VirtualProtect(reinterpret_cast<void*>(g_base+DamageSlotRva),sizeof(void*),PAGE_READWRITE,&oldProtection))return false;
-    const bool swapped=InterlockedCompareExchangePointer(slot,reinterpret_cast<void*>(replacement),
-                       reinterpret_cast<void*>(expected))==reinterpret_cast<void*>(expected);
-    const bool protectionRestored=VirtualProtect(reinterpret_cast<void*>(g_base+DamageSlotRva),sizeof(void*),oldProtection,&unused)!=FALSE;
-    if(!protectionRestored&&swapped) {
-        InterlockedCompareExchangePointer(slot,reinterpret_cast<void*>(expected),reinterpret_cast<void*>(replacement));
-        VirtualProtect(reinterpret_cast<void*>(g_base+DamageSlotRva),sizeof(void*),oldProtection,&unused);
-    }
-    return swapped&&protectionRestored;
-}
-void StopGuard() {
-    guard={};
-    if(hooked) {
-        SwapSlot(reinterpret_cast<uintptr_t>(&DamageHook),g_base+DamageRva);
-        hooked=At<uintptr_t>(DamageSlotRva)==reinterpret_cast<uintptr_t>(&DamageHook);
-    }
-}
-bool StartGuard(const TrainerContext& c) {
-    StopGuard();
-    if(!PlayerReady(c)||!HostFresh()||GetCurrentThreadId()!=g_gameThread||
-       DecodePacked(Field<uint32_t>(c.player,0))!=g_base+ControllerRva||
-       At<uintptr_t>(ControllerRva)!=g_base+VtableRva||
-       At<uintptr_t>(DamageSlotRva)!=g_base+DamageRva)return false;
-    if(!SwapSlot(g_base+DamageRva,reinterpret_cast<uintptr_t>(&DamageHook))) {
-        hooked=At<uintptr_t>(DamageSlotRva)==reinterpret_cast<uintptr_t>(&DamageHook);return false;
-    }
-    hooked=true;
-    guard={true,c.player,c.status,At<uintptr_t>(0x716868),At<uintptr_t>(0x9BA920),{}};
-    memcpy(guard.room,reinterpret_cast<void*>(g_base+0x717008),sizeof(guard.room));
-    blockedHits=0;lastBlockedDamage=0;return true;
-}
+#include "CombatGuardSupport.inl"
+
 }
 
 bool CombatHandle(const TrainerContext& c,unsigned slot,const double args[8],TrainerResult& result) {
+    if(slot==combat::OwnedGuardSlot) return combat::OwnedGuardHandle(c,args,result);
     if(slot<98||slot>110||slot==109)return false;
     result={1,L"This combat value is read-only."};
     if(slot==106) {
         if(!IsInteger(args[0],0,1)){result={2,L"Choose On or Off."};return true;}
         if(!args[0]){combat::StopGuard();result={0,L"Player HP damage guard disabled."};return true;}
-        if(!combat::StartGuard(c)){result={3,L"A living supported player, a fresh connection, and the original damage callback are required."};return true;}
-        result={0,L"Negative player HP changes are blocked at the native callback. Hit reactions and direct scripted changes still apply."};return true;
+        if(!combat::StartGuard(c)){result={3,L"A controlled supported player, a fresh connection and verified native callbacks are required."};return true;}
+        result={0,L"HP damage through the player callback is blocked, including its damage-driven Drive and MP gains. Hit reactions and direct scripted changes still apply."};return true;
     }
     if(slot!=102&&slot!=103&&slot!=104&&slot!=110)return true;
     combat::Target t{};
@@ -156,18 +93,13 @@ bool CombatHandle(const TrainerContext& c,unsigned slot,const double args[8],Tra
     combat::Field<float>(t.actor,3400)=slot==103?0.0f:static_cast<float>(args[0]);
     result={0,L"Target revenge value updated. Its native threshold and AI remain unchanged."};return true;
 }
-void CombatTick(const TrainerContext& c) {
-    if(!combat::guard.enabled) { if(combat::hooked)combat::StopGuard();return; }
-    // Keep the policy through a field pause, so a single resumed practice step
-    // retains damage protection. The callback itself still requires gameplay1.
-    if(!combat::HostFresh()||!combat::PlayerReady(c,true)||!combat::SameGuardScene()||
-       c.player!=combat::guard.player||c.status!=combat::guard.status||
-       DecodePacked(combat::Field<uint32_t>(c.player,0))!=c.base+combat::ControllerRva||
-       At<uintptr_t>(combat::ControllerRva)!=c.base+combat::VtableRva||
-       At<uintptr_t>(combat::DamageSlotRva)!=reinterpret_cast<uintptr_t>(&combat::DamageHook))combat::StopGuard();
-}
+void CombatTick(const TrainerContext& c) { combat::TickGuard(c); }
 void CombatSnapshot(const TrainerContext& c) {
-    SnapshotValue(106,combat::guard.enabled?1:0);
+    const bool effective=combat::GuardContext(c);
+    const uint64_t owner=effective?combat::guard.owner:0;
+    SnapshotValue(106,effective?1:0);
+    SnapshotValue(combat::GuardOwnerLowSlot,static_cast<uint32_t>(owner));
+    SnapshotValue(combat::GuardOwnerHighSlot,static_cast<uint32_t>(owner>>32));
     SnapshotValue(107,static_cast<double>(combat::blockedHits));
     SnapshotValue(108,combat::lastBlockedDamage);
     if(combat::PlayerReady(c,true)&&combat::Field<uintptr_t>(c.player,3528)==c.base+combat::LockRva&&
@@ -181,5 +113,9 @@ void CombatSnapshot(const TrainerContext& c) {
         if(t.revenge){SnapshotValue(100,combat::Field<float>(t.actor,3400));SnapshotValue(101,combat::Field<float>(t.actor,3404));}
     }
 }
-void CombatCapabilities() { for(unsigned s=98;s<=110;++s)if(s!=109)SupportCapability(s); }
+void CombatCapabilities() {
+    for(unsigned s=98;s<=110;++s)if(s!=109)SupportCapability(s);
+    SupportCapability(combat::OwnedGuardSlot);
+    SupportCapability(combat::GuardOwnerLowSlot);SupportCapability(combat::GuardOwnerHighSlot);
+}
 void CombatReset(const TrainerContext&) { combat::StopGuard(); }

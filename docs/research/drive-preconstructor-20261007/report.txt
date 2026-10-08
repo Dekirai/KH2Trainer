@@ -1,0 +1,90 @@
+Drive resources before construction — 2026-10-07
+
+Result
+The exact loaded-resource checkpoint is identified, but no safe new rejection
+guard is implemented. The native transition is already stateful at that point,
+and its cancellation callback does not restore the original player state. A
+check there would also miss faults in resource parsers that run earlier.
+The released main-Keyblade fallback and bounded sklt guard remain unchanged.
+The reported Final Form crash was not reproduced in this static work.
+
+Verified chain
+40CE60 commits the requested form and starts context40CAA0. It changes the source
+Actor, motion and eligible party before loading. Inside fiber40D000:
+  40D103: retire resource group5000 through39CCA0
+  40D10C: request target object/weapon graph through3E0630/3E0660
+  40D114:39D460 waits, repacks, relocates/loads, and waits again
+  40D119: returned with completed loading, followed by more possible yields
+  40D198: final source-player check before replacement
+  40D222: associated source cleanup starts
+  40D250: old descriptor callback tears down player ownership
+  40D259/40D2AC: allocate and construct the new player
+The later construction recursively creates hand0 and, when applicable, hand1.
+
+The registry does expose the effective loaded data
+Global29F33C8 heads a packed-pointer list of120-byte records. Important fields:
+name+4, phase+1, reference count+2, group+72, rounded reserved size+80,
+current payload+88, old payload+96, packed next+112.39CC40 uses the first name/
+group match and returns payload+88 after incrementing a reference count. It is
+not a safe existence query: a missing match is still dereferenced afterward.
+The lookup can serve the actual loaded replacement data, but original code
+does not establish the behavior of arbitrary third-party hooks.
+
+39D590/39E690 move payloads and update parser pointers. A pointer acquired
+before the transition is not a stable validation token. The complete target
+graph also includes locale-selected animation archives, optional MSETs,
+resolved weapons, hand MSETs and four recursive object dependencies. Its
+rounded allocation sizes are not exact logical file lengths.
+
+Why a constructor-only guard is too late
+Worker3A0C60 calls3F9850 and then3A64F0 before publishing request phase2.
+3A64F0 already walks BAR entries and prepares models. The main dispatcher
+3A0790 then calls3A6840 to fix up BAR pointers and typed content before calling
+the completion callback39DEE0. Both parser passes precede40D119.
+Thus malformed raw content needs bounded validation before these parser calls.
+An observer installed only at resource completion cannot retroactively protect
+the earlier parsing. A callback failure can additionally leave registry phase255
+and an unbounded native resource wait, as verified in the preceding analysis.
+
+Why cancellation does not supply the missing error contract
+40CDD0 cancels the native task.40CF20 releases transition ownership/effects,
+initializes a retained status with the requested form timer, and may restore
+party only when context+48 is set.40CE60 sets that byte for Revert0, not an
+ordinary nonzero form request. Cleanup does not restore form byte9ACDD4 or the
+source Actor flag set by Begin. A parallel task can already adjust HP/MP while
+the transition waits. Returning null from the new-player or weapon constructor
+is also unsafe because the callers proceed to dereference the result.
+
+After40D250 the old player's current-player globals, script and weapon owners
+have been torn down. A failure handler must not describe this as a normal old
+Actor to which execution can simply return. Conversely, this report does not
+claim that40D250 immediately frees the old Actor allocation.
+
+Next implementation contract
+1. Resolve an owned copy of the effective asset bytes before40CE60, including
+   active replacement identity and the complete bounded object graph. The
+   native file reader is not yet proven to be a side-effect-free staging API.
+2. Validate raw BAR and required typed content before native parser entry.
+   Do not invent an unconditional model-type4 requirement: the constructor
+   explicitly handles that entry being absent. Existing typed entries need
+   their own structural and model/joint/motion bounds.
+3. Close staging cleanup or a complete transition rollback before adding a
+   rejection hook. Then revalidate loaded graph identity after the final yield
+   and before source teardown. This includes Revert and both weapon branches.
+4. Keep later actor/model/weapon allocation failure as a distinct limit unless
+   the native callers receive a separately verified failure-handling redesign.
+
+Simply requiring the target to be loaded already would reject legitimate first
+use of locked forms and does not meet the requested behavior. No such substitute
+was added. The detailed future regression matrix is in report.json.
+
+Validation and scope
+59 complete dedicated IDA bodies;4157 actual ASM instructions;17218 original
+code bytes. Two descriptor/vtable data spans add168 original bytes. All match
+retail SHA2569002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed.
+verify.ps1 validates page/aggregate counts and PE bytes.32 address-specific
+claims reference the corresponding complete bodies. Supporting bodies are not
+automatically claims of complete subsystem semantics.
+No product, test, version, coverage or live-game changes; no suite rerun was
+needed for this research-only result. The four owned Drive files retain their
+previous hashes (fingerprints.json). No new IDB worker or IDB edit was made.

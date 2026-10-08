@@ -1,0 +1,41 @@
+Effective raw asset resolution before native loading — 2026-10-07
+
+Outcome
+A bounded independent reader is feasible for a specified provider manifest. The existing Core archive/codec classes cover much of the byte handling, but they do not reproduce the effective mod selection. This research supplies that missing ordering and its limits. No native loader was called and no product file changed.
+
+Verification
+31 complete dedicated IDA disassemblies: 6,348 instructions and 26,813 original code bytes, plus 4,057 original data bytes. All pages, offsets, totals, pseudocode pages and original PE spans pass verify.py. Retail SHA256 is9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed; Panacea dbghelp.dll is055d5032324eab2ed8f03f2a1b3ff3381642f82b3239a17164c25bef8815e68d. Six Panacea signature locators also match uniquely to the expected retail entrypoints.
+
+Retail path
+1065C0 builds package paths from the executable directory. 14F1E0 supplies kh2_first through kh2_sixth, followed by SettingMenu. The six KH2 providers enable decoding; SettingMenu does not.
+106940 tries providers in registration order. 107240 hashes the relative narrow asset-name bytes, using the mutable resource-prefix length to strip the prefix. It tries the original spelling and then a lowercase final slash component within that package before proceeding to the next provider. It selects the first matching32-byte HED row, reads the16-byte PKG header and48-byte remaster metadata, and changes the package's cached name, offset and metadata. Equal cached names skip preparation.
+107620 uses record+16+48*count as the original-payload start. For raw length above16 and an enabled provider, positive mode means transform+inflate, -1 means transform only, and other nonpositive values mean raw data.1062B0 itself is disabled by a nonzero platform global79CFCC. The native reader ignores actual read/inflate success and returns declared length.
+106700 has no generic loose-file fallback.106790 adds a destination capacity check but inherits these integrity limitations.106870's size-only mode still mutates lookup state.
+
+Panacea path for this exact DLL
+Its signature setup maps LoadFile to retail106700, lookup to106940, registration to12F070, preparation to107240, transform to1062B0 and inflate to4696F0. The mod installs FEB0 at LoadFile and FE20 around preparation.
+AC10 reads mod_path/dev_path/extract_path into UTF-16 roots. A230 identifies KH2 and appends the literal /kh2 from10C0. Relative roots remain dependent on process working directory; a settings file changed after startup is not a live configuration snapshot.
+
+FEB0 selects primary content in this order:
+1. mod_path/kh2/raw/<asset>
+2. dev_path/kh2/<asset>, if configured
+3. mod_path/kh2/<asset>
+4. extract_path/kh2/<asset>, if configured
+5. Original retail loading
+
+The raw candidate is a standalone PKG record with16-byte header,48-byte metadata rows and encoded original payload. It is not plain MDLX or MSET. The other three overrides contain plain original bytes. D660 performs the loose-file attribute checks in dev/mod/extract order. Existing files remain selected even if opening, reading or decoding later fails; validating a lower-priority vanilla file in that case would validate different bytes.
+
+The fake package is a separate metadata dependency
+D380 appends a FakePackageFile after retail providers. Its startup inventory scans extract, mod, dev and mod/raw roots. B810 normalizes backslashes to forward slashes and indexes the current files; B5C0 later compares keys exactly and copies stored metadata. That inventory order is not the content-selection order above.
+A file created after startup can pass D660's disk check while106940 cannot resolve its metadata owner. FEB0 still passes the lookup result into FA50 during a registered nonempty read. FA50 dereferences the package's cached name/metadata. This is a concrete unguarded dependency, not a reproduced current crash.
+For loose .mdlx assets, FA50→F070 may invoke E460's BAR/remaster scanner before12F070. E460 trusts counts and signed offsets and recursively visits type46 without an enclosing byte length or recursion bound. A native load with a registration flag changed is therefore not a reliable substitute for an independent staging reader.
+
+Proposed next implementation
+contract.json defines AssetEffectiveByteReader: accept explicit resolved roots and ordered package descriptors; reproduce priority; return an owned bounded buffer with source, metadata and decoded hashes. Reuse/refactor AssetPackageCodec for standalone raw records. Read exactly, check all arithmetic and spans, and reject corrupt selected overrides instead of falling through.
+Useful immediate scope is offline content validation. Authorizing NativeBegin from it needs additional binding to the running provider inventory/cache/hook state and to the bytes actually consumed later. File hashes alone do not close the race where a higher-priority file appears or an asynchronous loader uses changed content. Allocation and deeper model/bone/MSET/remaster semantics remain separate.
+
+Files
+evidence.json — full fresh ASM pages, pseudocode pages, original bytes and metadata
+report.json —31 addressed specific claims and explicit limitations
+contract.json — concrete Core API, precedence, codec/error contract and proposed tests
+verify.py / verification.json — original-byte and pagination verification

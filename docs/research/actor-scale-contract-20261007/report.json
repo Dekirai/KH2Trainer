@@ -1,0 +1,551 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-07",
+  "scope": "Actor+60 uniform scale: VM writers, transform composition, attachment lifecycle and worker quiescence",
+  "implemented": false,
+  "decision": "Research contract established for a future bounded positive scale transaction on coherent Sora/Roxas/Mickey. No Tiny/Giant reward or product writes are implemented by this round. Timed ownership and transition handling require separate implementation and tests.",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "freshEvidence": {
+    "functions": 59,
+    "instructions": 4370,
+    "originalFunctionBytes": 18300,
+    "dataSpans": 3,
+    "originalDataBytes": 48,
+    "verifierChecks": 76,
+    "failures": 0
+  },
+  "coverageLimit": "Complete exports are not complete semantic reviews. Some functions repeat earlier evidence; address claims describe only the explicitly reviewed behavior. No percentage or exclusive-writer assertion.",
+  "claims": [
+    {
+      "addr": "0x140130030",
+      "Finding": "Each worker drains queued callbacks synchronously, then signals its completion semaphore at context+104 and returns to waiting on the wake semaphore.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140130030]",
+        "verification.json"
+      ],
+      "Limitations": "Completion is signalled after callback return; abnormal exception or OS failure behavior is not upgraded to success."
+    },
+    {
+      "addr": "0x140130130",
+      "Finding": "The completion barrier walks all six context+104 semaphore wrappers, waits through0FDD90 and releases each token through0FDC90 before returning.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140130130]",
+        "verification.json"
+      ],
+      "Limitations": "The native code does not test failed WaitForSingleObject results. Proposed safety assumes valid original worker handles and normal native return."
+    },
+    {
+      "addr": "0x140142080",
+      "Finding": "Vector normalization computes sqrtf(x*x+y*y+z*z) in float32 and, if the result is nonzero, multiplies XYZ by its reciprocal; it does not normalize W.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140142080]",
+        "verification.json"
+      ],
+      "Limitations": "Nonzero finite inputs can overflow their squared norm; NaN/Inf is not explicitly rejected."
+    },
+    {
+      "addr": "0x140142120",
+      "Finding": "The vector helper builds the XYZ cross product used to construct orientation basis vectors.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140142120]",
+        "verification.json"
+      ],
+      "Limitations": "This claim does not provide an independent guarantee that input axes are nondegenerate."
+    },
+    {
+      "addr": "0x14041b400",
+      "Finding": "The BDX interpreter contains generic native-memory writes: case1 resolves a destination and pops into it through41C6C0; case2 memcpy writes a byte-counted region; case4 decodes a destination and writes a raw DWORD at41BA54 or a block through memcpy at41BA8A. Integer-add case6 recognizes @ADR via41C890, decodes it, adds the other signed operand and re-encodes. With the current-Actor trap result, offset60 is reachable without a field-specific setter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041b400]",
+        "verification.json"
+      ],
+      "Limitations": "This proves a native VM write mechanism, not that a shipped BDX program actually writes Actor+60. No retail asset was executed or exhaustively scanned. Generic stores do not establish exclusive ownership or a scale-specific native clamp."
+    },
+    {
+      "addr": "0x14041c6c0",
+      "Finding": "The VM pop/store helper consumes one8-byte stack entry. For destinations outside the VM-owned tagged ranges it writes the low DWORD at the supplied native pointer. It has no Actor, offset or scale-value validation.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041c6c0]",
+        "verification.json"
+      ],
+      "Limitations": "Its range logic concerns parallel VM type tags, not a native-object bounds check."
+    },
+    {
+      "addr": "0x14041c780",
+      "Finding": "The VM load helper reads the low DWORD from arbitrary supplied memory and pushes a value/tag pair; a recognized VM storage range can supply the companion tag. Native-object loads otherwise receive the generic tag.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041c780]",
+        "verification.json"
+      ],
+      "Limitations": "This is a load path, not a scale writer or proof of a specific script."
+    },
+    {
+      "addr": "0x14041c840",
+      "Finding": "The helper identifies the VM shared/local value ranges and returns their parallel-tag displacement, or zero outside those ranges.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041c840]",
+        "verification.json"
+      ],
+      "Limitations": "A zero result permits untagged native-field operation in the interpreter; it is not rejection."
+    },
+    {
+      "addr": "0x14041c900",
+      "Finding": "VM operand addressing consumes an unsigned16-bit offset. Address modes include current local storage, shared storage, and Decode32(first local DWORD)+offset.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041c900]",
+        "verification.json"
+      ],
+      "Limitations": "The first-local base is runtime script state; it is not always an Actor. Actor-specific reachability is instead established by the explicit player-pointer trap and pointer addition."
+    },
+    {
+      "addr": "0x14041c890",
+      "Finding": "The VM type discriminator returns2 for tag0x52444140 (@ADR),1 for INT/FLT tags,-1 for the generic tag and0 for unrecognized tags.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041c890]",
+        "verification.json"
+      ],
+      "Limitations": "This typing is used by the pointer-add branch; it is not an ownership or memory-safety check."
+    },
+    {
+      "addr": "0x14042b230",
+      "Finding": "Bank1 trap3 calls3B3E80, encodes the returned current Actor pointer into argument/result DWORD0 and writes @ADR tag0x52444140 to DWORD1. Original bank data7553A0 binds this exact function as a zero-argument returning trap.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14042b230]",
+        "verification.json"
+      ],
+      "Limitations": "A null player can be returned. This proof does not claim a specific retail script combines this trap with a+60 store."
+    },
+    {
+      "addr": "0x1403b3e80",
+      "Finding": "The current-player getter returns the QWORD global2A105D0 without a role-specific branch.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b3e80]",
+        "verification.json"
+      ],
+      "Limitations": "Caller-side role and lifetime validation remains necessary."
+    },
+    {
+      "addr": "0x14041b320",
+      "Finding": "VM entry setup establishes the instruction index and copies each supplied8-byte argument onto the operand stack after initializing a small local frame.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041b320]",
+        "verification.json"
+      ],
+      "Limitations": "It does not validate native pointers contained in argument values."
+    },
+    {
+      "addr": "0x1403e1240",
+      "Finding": "The BDX context constructor stores its owner Actor at context+96, allocates local/operand storage and retains shared storage; a nonnull owner increments Actor+1464.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1240]",
+        "verification.json"
+      ],
+      "Limitations": "The owner link is separate from arbitrary stack/local address values. Constructor behavior alone does not prove that local0 is always the Actor."
+    },
+    {
+      "addr": "0x1403e1730",
+      "Finding": "This wrapper allocates a112-byte BDX context and passes its second native argument as the context owner to3E1240.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1730]",
+        "verification.json"
+      ],
+      "Limitations": "No Actor-generation token is attached to the VM pointer."
+    },
+    {
+      "addr": "0x1403b44d0",
+      "Finding": "The Actor BDX setup looks up its type3 resource, creates an owner-bound context at Actor+1456 and supplies Encode32(actor)/@ADR as the argument to entry0 through3E1840, then selects entry1.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b44d0]",
+        "verification.json"
+      ],
+      "Limitations": "This proves native Actor-pointer injection into the script environment; the actual BDX program and its field accesses are resource-dependent."
+    },
+    {
+      "addr": "0x1403e1840",
+      "Finding": "The entry wrapper constructs a temporary BDX context sharing the original script/shared-state/owner, initializes arguments for the requested resolved entry, runs3E1C80, restores current-VM globals and cleans up the temporary context.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1840]",
+        "verification.json"
+      ],
+      "Limitations": "The fresh export confirms data flow, not a complete proof of every cleanup side effect."
+    },
+    {
+      "addr": "0x1403e1c80",
+      "Finding": "The VM runner executes41B400 under globals2A250B0/2A25048 and then handles child contexts. It marks an ended context and decrements owner+1464 when appropriate.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1c80]",
+        "verification.json"
+      ],
+      "Limitations": "No scale field is specially protected; this report does not newly review every child-list mutation."
+    },
+    {
+      "addr": "0x1403e2000",
+      "Finding": "This direct-offset entry wrapper creates a temporary context with the same owner/shared state, supplies arguments to41B320 and runs3E1C80 before restoring VM globals and cleanup.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e2000]",
+        "verification.json"
+      ],
+      "Limitations": "It explains synchronous attachment callbacks, not a guarantee that arbitrary callback scripts preserve scale."
+    },
+    {
+      "addr": "0x1404ad240",
+      "Finding": "The common Ptr32 encoder is the native helper used by the Actor-returning trap and pointer-arithmetic result.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404ad240]",
+        "verification.json"
+      ],
+      "Limitations": "Encoding a pointer does not establish lifetime or ownership."
+    },
+    {
+      "addr": "0x1404ad270",
+      "Finding": "The common nullable Ptr32 decoder is used by VM memory stores and Actor attachment pointers.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404ad270]",
+        "verification.json"
+      ],
+      "Limitations": "Decoded pointer validity must be checked by a trainer; this helper does not perform a readable-span or generation check."
+    },
+    {
+      "addr": "0x1403ccb90",
+      "Finding": "The common Actor transform reads float2732, multiplies it by float60 in that order, broadcasts the float32 result and multiplies all4 lanes from Actor+48. It overwrites the copied W with1 before1AA7D0 scales three basis rows. It publishes64/2056 matrices, composes parent/joint matrices for an attached Actor, and calls40B140 with RCX=[Actor+2560] when nonnull.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ccb90]",
+        "verification.json"
+      ],
+      "Limitations": "W initially computes scalar*(ramp*scalar), then is discarded; XYZ products and later matrix products still need independent finite checks. Positive scalar alone does not validate an arbitrary native XYZ/ramp/basis/parent. This is a shared transform, not a purely visual switch."
+    },
+    {
+      "addr": "0x14013fcc0",
+      "Finding": "Actual ABI is mutable vector pointer RCX and float XMM1. SHUFPS broadcasts the float and MULPS multiplies all four vector components in place.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14013fcc0]",
+        "verification.json"
+      ],
+      "Limitations": "Hex-Rays may render the scalar as double or omit it at callers; the ASM establishes the lane behavior."
+    },
+    {
+      "addr": "0x1401aa7d0",
+      "Finding": "Actual arguments are matrix pointer RCX and three-float scale-vector pointer RDX. The function applies the corresponding factor to each of the first3 four-float rows through13FCC0 and leaves the fourth row unchanged.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401aa7d0]",
+        "verification.json"
+      ],
+      "Limitations": "It performs no clamp, finite check, resource validation or radius update."
+    },
+    {
+      "addr": "0x14013f900",
+      "Finding": "Matrix-vector multiplication computes every output lane, including homogeneous W, using four float32 products and left-associated additions.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14013f900]",
+        "verification.json"
+      ],
+      "Limitations": "Finite individual inputs can still overflow products or sums. A future guard must check intermediates in native precision and cannot validate XYZ alone for general attachments."
+    },
+    {
+      "addr": "0x14013f850",
+      "Finding": "Matrix composition calls13F900 for all four rows of the right operand and copies all four results to the output.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14013f850]",
+        "verification.json"
+      ],
+      "Limitations": "Parent/child and motion transforms can compound scale. Finite source fields alone are insufficient without product/sum bounds."
+    },
+    {
+      "addr": "0x1401a94c0",
+      "Finding": "The matrix-copy helper copies four complete16-byte rows, preserving the scale-bearing basis and homogeneous components.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401a94c0]",
+        "verification.json"
+      ],
+      "Limitations": "A copy does not sanitize an invalid matrix."
+    },
+    {
+      "addr": "0x1403bac10",
+      "Finding": "The orientation-mode predicate reads Actor+2488 bit8, selecting the quaternion branch of the common transform.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bac10]",
+        "verification.json"
+      ],
+      "Limitations": "A future projection check must match this branch or reject unsupported orientation state."
+    },
+    {
+      "addr": "0x1403ba940",
+      "Finding": "The floor-aligned transform predicate requires Actor+2488 bit1, absence of Actor+288 bit1 and no parent attachment.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ba940]",
+        "verification.json"
+      ],
+      "Limitations": "It is a behavioral branch condition, not a general scene-readiness predicate."
+    },
+    {
+      "addr": "0x1403ba9a0",
+      "Finding": "The alternate floor-alignment gate inspects descriptor+12 bit1, Actor+396 mask0x1000020 and Actor+288 bit0x800000.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ba9a0]",
+        "verification.json"
+      ],
+      "Limitations": "A role label alone does not identify which common transform branch runs."
+    },
+    {
+      "addr": "0x1403cd220",
+      "Finding": "The floor-alignment helper converts the two collision resources referenced by Actor+1944/+1952, derives an orientation basis from the returned contact positions and normalizes it. Its caller subsequently reapplies the same XYZ*ramp*scalar factors.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cd220]",
+        "verification.json"
+      ],
+      "Limitations": "Scale can affect transformed joint/contact centers even though stored collision radii remain separate. Its own +60=1 store addresses the output matrix, not Actor+60."
+    },
+    {
+      "addr": "0x1403b50f0",
+      "Finding": "Joint lookup can return Actor+64/+2056 or compose a model joint matrix with Actor+2056. Special selectors use Actor position or collision-derived centers; ordinary joint output goes through13F850.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b50f0]",
+        "verification.json"
+      ],
+      "Limitations": "The complete body shows several selector-specific branches and virtual model lookups; arbitrary model resources remain native-owned."
+    },
+    {
+      "addr": "0x1403c7b20",
+      "Finding": "Motion-root offset retrieval calls the current motion object's virtual+40 only when present and not blending, then derives translation and yaw; absent/blended paths produce a zero offset.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c7b20]",
+        "verification.json"
+      ],
+      "Limitations": "Actor+2056 includes this motion offset. The helper invokes a native virtual call and should not be reused as a trainer probe."
+    },
+    {
+      "addr": "0x1403c6aa0",
+      "Finding": "Motion evaluation receives Actor+2056 from3BFAB0 and passes that matrix to single-motion1A4D40 or blended1A4CD0. It also processes animation events.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c6aa0]",
+        "verification.json"
+      ],
+      "Limitations": "A trainer should allow the normal update to rebuild matrices instead of calling this side-effectful evaluator after a scalar write."
+    },
+    {
+      "addr": "0x1401a4d40",
+      "Finding": "The single-motion model path copies its provided root matrix to model+696, negates two basis rows, and invokes motion/model evaluation; it swaps current/previous transform buffers.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401a4d40]",
+        "verification.json"
+      ],
+      "Limitations": "This confirms renderer/model consumption of the scale-bearing Actor matrix. Downstream virtual implementations are not all newly audited here."
+    },
+    {
+      "addr": "0x1401a4cd0",
+      "Finding": "The blended model path swaps the same current/previous buffers and forwards the provided root transform into1C3A30, then marks blend state.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401a4cd0]",
+        "verification.json"
+      ],
+      "Limitations": "The internals of1C3A30 and all asset deformation cases are outside this round."
+    },
+    {
+      "addr": "0x1403b64d0",
+      "Finding": "Position setter copies its vector into Actor+1648, forces position W=1 and rebuilds3CCB90. It does not write Actor+48 or+60.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b64d0]",
+        "verification.json"
+      ],
+      "Limitations": "This candidate was disambiguated from a scale setter."
+    },
+    {
+      "addr": "0x1403b6510",
+      "Finding": "The related position setter performs the same position copy/rebuild and sets Actor+2488 bit0x1000.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b6510]",
+        "verification.json"
+      ],
+      "Limitations": "It is not a scale setter and is unsuitable as a no-side-effect rebuild probe."
+    },
+    {
+      "addr": "0x1403d9fe0",
+      "Finding": "Attachment links the child to parent through packed Actor+1696, stores joint+1700/flags+1702, resets local position and optionally orientation, changes the descriptor mode, and links the render subobject into parent+2232/+2240. It does not reset Actor+60.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d9fe0]",
+        "verification.json"
+      ],
+      "Limitations": "An existing scale survives attachment; unchanged Actor identity does not preserve transform context. This routine has native side effects and is not proposed as a trainer API."
+    },
+    {
+      "addr": "0x1403da250",
+      "Finding": "Detach removes the render-list link, clears Actor+1696, restores descriptor-related state and world-space orientation/position, may resolve world collision and invoke an optional BDX callback, and rebuilds3CCB90. It does not reset Actor+60.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403da250]",
+        "verification.json"
+      ],
+      "Limitations": "Unchanged Actor generation does not imply an unchanged projection context. A callback may independently modify fields."
+    },
+    {
+      "addr": "0x1403d9cd0",
+      "Finding": "The bulk detach loop applies corresponding parent-list removal, descriptor/position restoration, optional VM callback and transform rebuild across the live Actor list.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d9cd0]",
+        "verification.json"
+      ],
+      "Limitations": "This is not a safe generic cleanup helper for a trainer. A native detach interval may be missed by frame-only scalar sampling."
+    },
+    {
+      "addr": "0x1403ba7c0",
+      "Finding": "The update-suppression predicate returns Actor+288 bit0x400.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ba7c0]",
+        "verification.json"
+      ],
+      "Limitations": "A scale write made while this gate is set can remain unreflected in matrices until later; future acquisition should require a naturally updating Actor."
+    },
+    {
+      "addr": "0x1403bfab0",
+      "Finding": "The motion job rebuilds3CCB90, evaluates motion with Actor+2056 and updates collision buffers unless3BA7C0 suppresses the work; it then sets native update flags.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bfab0]",
+        "verification.json"
+      ],
+      "Limitations": "This helper is executed by worker callbacks as well as described native scheduling, so a trainer must respect the enclosing barrier rather than merely check its own thread ID."
+    },
+    {
+      "addr": "0x1403bfce0",
+      "Finding": "The helper rebuilds the parent's transform for an attached non-suppressed Actor and marks the parent-readiness flag.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bfce0]",
+        "verification.json"
+      ],
+      "Limitations": "Attachment ordering affects transform dependencies; it does not reset scalar60."
+    },
+    {
+      "addr": "0x1403bf4e0",
+      "Finding": "The batch callback selects actorArray[index] and forwards it to3BFAB0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bf4e0]",
+        "verification.json"
+      ],
+      "Limitations": "Its argument layout and direct call prove which queued operation reads the scalar-bearing transform."
+    },
+    {
+      "addr": "0x1403beec0",
+      "Finding": "The queued motion flush handles some callbacks synchronously, batches others in groups through12FDB0 using3BF4E0, enforces parent readiness, and finishes with130130 followed by12FD90.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403beec0]",
+        "verification.json"
+      ],
+      "Limitations": "The barrier is native behavior only while the relevant bodies/callbacks are unchanged. Wait failure is not explicitly checked by the caller."
+    },
+    {
+      "addr": "0x1403bf5e0",
+      "Finding": "The Actor frame processes native Actor updates and attachment order, calls3BEEC0 before and after the remaining updates, then performs render publication/flag cleanup.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bf5e0]",
+        "verification.json"
+      ],
+      "Limitations": "Each normal3BEEC0 return follows its worker completion barrier. This is not an exhaustive concurrency proof for third-party mods."
+    },
+    {
+      "addr": "0x14012fd00",
+      "Finding": "The job-system begin routine marks its group active and, on first use, starts six worker contexts with callback130030.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012fd00]",
+        "verification.json"
+      ],
+      "Limitations": "Group activity alone is not a completion fence."
+    },
+    {
+      "addr": "0x14012fdb0",
+      "Finding": "The job enqueue routine first consumes each worker completion token, queues(callback,payload,index) under each queue mutex, and wakes the six worker semaphores.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012fdb0]",
+        "verification.json"
+      ],
+      "Limitations": "The API can schedule asynchronous transform reads; it is not a safe trainer API or a substitute for waiting."
+    },
+    {
+      "addr": "0x14012fd90",
+      "Finding": "The job-system end routine clears the group-active flag. It performs no wait itself.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012fd90]",
+        "verification.json"
+      ],
+      "Limitations": "Only the preceding130130 in3BEEC0 supplies the shown completion barrier."
+    },
+    {
+      "addr": "0x1400fdd90",
+      "Finding": "The semaphore wait wrapper increments/decrements its waiter count around WaitForSingleObject(handle+8,INFINITE).",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400fdd90]",
+        "verification.json"
+      ],
+      "Limitations": "This is an OS wait, not evidence that callers inspect success."
+    },
+    {
+      "addr": "0x1400fdc90",
+      "Finding": "The wrapper releases one token on its semaphore handle at+8.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400fdc90]",
+        "verification.json"
+      ],
+      "Limitations": "It preserves the native barrier's reusable completion token."
+    },
+    {
+      "addr": "0x1400fdcb0",
+      "Finding": "The worker wake wrapper releases its wake semaphore at context+24 and returns the API status/error.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400fdcb0]",
+        "verification.json"
+      ],
+      "Limitations": "It does not wait for job completion."
+    },
+    {
+      "addr": "0x1400fddc0",
+      "Finding": "The worker wait helper waits indefinitely on context+24, the wake semaphore.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400fddc0]",
+        "verification.json"
+      ],
+      "Limitations": "This is distinct from the completion semaphore at context+104."
+    },
+    {
+      "addr": "0x1403bf810",
+      "Finding": "Actor-system initialization schedules3BF550 and creates a subordinate task manager2A17180 containing direct callback3BF5E0 at priority5.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bf810]",
+        "verification.json"
+      ],
+      "Limitations": "This binds the Actor flush into native scheduling; it is not a new trainer hook."
+    },
+    {
+      "addr": "0x1403bf550",
+      "Finding": "The scheduled wrapper calls3F6540 and dispatches the Actor task manager2A17180 through14FC20.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bf550]",
+        "verification.json"
+      ],
+      "Limitations": "The side effects of3F6540 are outside this narrow scheduling claim."
+    },
+    {
+      "addr": "0x14014fc20",
+      "Finding": "The no-mask dispatcher forwards to14FD60 with group mask/value zero.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14014fc20]",
+        "verification.json"
+      ],
+      "Limitations": "This establishes the direct scheduler forwarding edge."
+    },
+    {
+      "addr": "0x14014fd60",
+      "Finding": "The task dispatcher calls a direct node callback with RCX=node when continuation+112 is null and returns to its loop after callback completion; fiber nodes use their separate continuation path.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14014fd60]",
+        "verification.json"
+      ],
+      "Limitations": "The Actor task inserted by3BF810 is direct. This body does not itself prove every possible fiber/module path."
+    },
+    {
+      "addr": "0x14014eb70",
+      "Finding": "The application update synchronously dispatches outer task manager9BA888 before returning. Current TrainerBridge HookedUpdate invokes OnFrame only after its selected original update returns.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14014eb70]",
+        "verification.json"
+      ],
+      "Limitations": "The source integration observation is hash-bound in fingerprints, not a new binary claim. The nested Actor job barrier is established separately; arbitrary third-party update wrappers/worker replacements are excluded."
+    }
+  ]
+}

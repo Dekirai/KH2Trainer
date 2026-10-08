@@ -64,6 +64,13 @@ internal static class TwitchUiChecks
 
         var host = new FakeHost(folder, catalog);
         var vm = new TwitchVm(host);
+        var pausedInfo = new ActiveEffectInfo("regen", "Regeneration", "Fixture", null, 29, 30, true, true, "Menu");
+        var pausedVm = new ActiveEffectVm(vm, pausedInfo);
+        Check(pausedVm.RemainingText == "paused · 29 s left" && pausedVm.PauseReason == "Menu",
+            "A paused reward must show its remaining time and explain its pause.");
+        pausedVm.Update(pausedInfo with { Paused = false, PauseReason = null });
+        Check(pausedVm.RemainingText == "29 s left" && pausedVm.PauseReason is null,
+            "Resuming a reward must clear the pause explanation without spending time.");
         var rewards = vm.Rewards.ToDictionary(r => r.Key);
         Check(vm.Groups.Count == 4 && vm.Groups.Sum(g => g.Rewards.Count) == EffectCatalog.All.Count && rewards.Count == EffectCatalog.All.Count,
             "Every effect must appear once in the reward groups.");

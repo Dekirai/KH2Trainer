@@ -1,0 +1,71 @@
+Gameplay-state observer for timed rewards — 2026-10-07
+
+Implemented source
+  src/KH2Trainer.Bridge/GameplayStateSupport.inl
+  SHA256 6A0AA352826D17C21A555B2F003A45FB81C9C01D59D55B70E7DFC9BF9B391083
+Tests
+  tests/KH2Trainer.Bridge.Tests/GameplayStateGuardTests.cpp
+  tests/KH2Trainer.Bridge.Tests/build_gameplay_state_tests.cmd
+  215 checks passed, zero failures, MSVC /W4 without warnings.
+
+Purpose and API
+GameplayStateSnapshot(freshContext) reads native game state after the engine update.
+GameplayStateCapabilities publishes slots456..462. Root owns publicationTick463.
+The module issues no native function calls, game writes, save writes, hooks or input.
+
+Slots and bits
+456 Known;457 Role(Unknown0,Sora1,Roxas2,Mickey3,Other4);458 Blockers;
+459 IsControllable;460 field module state;461 character ID;462 form ID.
+Unknown detail values for460/462 are -1.
+Blockers: Unknown1,Loading2,Menu4,Cutscene8,Transition16,NoPlayer32,
+Dead64,InputBlocked128,TrainerFieldPause256,TrainerActorFreeze512.
+
+Main findings
+- Pause menu9006B0 and window taskAC0F48 are menus. AC0F48 is not a cutscene.
+- Event context2A11478 has an explicit allocation/publication/cleanup lifecycle.
+  All native event modes conservatively suspend rewards, without dereferencing
+  event resources or assuming that every event mode disables every input.
+- Native player input3B2340 checks descriptor-vcall120, controller lock+36bit1
+  and global input lock2A10500. Both supported player classes use3A8E90.
+- The observer reproduces the shared native predicate, validates the live
+  vtable120 function pointer, and checks the controller/actor/pad association.
+- Actor stop, pending room/Drive transitions, zero HP, tutorial windows and
+  incomplete/unrecognized state remain separate external reasons.
+- Timer ownerABB854 alone is not an input lock: script entry4335D0 can pause
+  a timer. Foreign timer owners conservatively produce Unknown.
+- Trainer pause/freeze ownership is matched against existing WorldFeatures.
+  External reasons remain present while a trainer effect is active. A timed
+  reward may ignore only its own pause bit; it must not ignore Unknown/Menu/
+  Cutscene/Transition/Dead/InputBlocked or another trainer effect's bit.
+
+Evidence and validation
+gameplay_state_evidence.json stores41 complete fresh function bodies with1610
+joined ASM instructions and6584 original bytes, plus original vtable cells.
+All page cursors and actual line counts were checked. The production observer
+compares29 complete bodies (3796bytes) freshly on each read; mismatches fail closed.
+verify-gameplay-state-evidence.ps1 independently compares pins and captured bytes
+against the SHA256-bound original EXE and verifies the joined ASM counts.
+Original SHA2569002B2DE6A1F91A790BD0673DE125D1CF833F7942BFEC827CDCF6BA64D5849ED.
+
+Test scope
+Normal Sora/Roxas/Mickey, unsupported roles, loading/menu/event/transition/death,
+native controller and pad locks, owner-loss, simultaneous self/external blockers,
+foreign timer owners, stale heartbeat/wrap, wrong thread, access faults, pointer
+drift and first/last drift of every pin. Snapshot reads leave every byte of the
+synthetic game image unchanged. The role inspector itself is covered by pe's
+separate955-check Drive/role suite; this module's fixture stubs that dependency.
+
+Limits
+No live injection or gameplay test was run. Passing the observation means the
+documented control predicates pass; it does not promise every action is legal
+during every animation. Unknown controllers/code changes fail closed. Native
+event modes and script-paused timers may be conservative false negatives.
+Existing World ownership has no native generation token for same-value foreign
+writes. Per-frame reads and SEH do not constitute a lock against arbitrary mods.
+AC183C (camera bank) and2A0D628 (background resource requests) are deliberately not
+mislabelled as cutscene state.
+
+
+Additional scene-lifecycle verification: 152680 shows 9BA8D1 is the temporary
+event/preload phase; 152A90 clears scene-ready during room teardown. It is
+classified as Loading, not a generic pause-menu/cutscene marker.

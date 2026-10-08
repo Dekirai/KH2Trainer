@@ -1,0 +1,235 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-07",
+  "scope": "Native motion-worker synchronous BDX event path and STATUS observer concurrency; no claim that a retail motion event uses the General status setter",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "decision": "A sole game-thread STATUS notification contract is insufficient for the observed native call graph. The ledger now admits serialized notifications from multiple native threads with per-thread nesting; no native hook or timed STATUS transaction is installed.",
+  "claims": [
+    {
+      "addr": "0x1403beec0",
+      "Finding": "Processes actors with a nonnull Actor+2496 object synchronously first. Remaining queued actors are batched in groups of five through12FDB0 with callback3BF4E0. All normal returns pass130130 before12FD90; attachment ordering may insert additional barriers.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403beec0]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x1403bf4e0",
+      "Finding": "Worker callback reads one Actor pointer from the supplied array at index*8 and tail-jumps3BFAB0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bf4e0]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x1403bfab0",
+      "Finding": "Motion job calls3CCB90 and3C6AA0 on the Actor before updating optional geometry/volume objects and setting Actor+2488 completion bits.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bfab0]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x1403bf550",
+      "Finding": "Actor task invokes3F6540 and then the actor manager14FC20 synchronously; this wrapper is separate from the inner motion-worker dispatch.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bf550]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x1403bf5e0",
+      "Finding": "Main actor pass invokes3BFD30 serially, calls3BEEC0 twice for motion completion and performs off-field party recovery3C3150 only after the second motion barrier.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bf5e0]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x1403bfd30",
+      "Finding": "Actor frame dispatch calls descriptor callbacks+8/+16/+24/+32/+40 and advances motion on the calling thread, then appends nonfrozen actors to the motion work list through packed next2708.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bfd30]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x14040a380",
+      "Finding": "Optional Actor+2496 geometry object iterates joint mappings and updates matrix-backed objects through164110; presence of this object causes the earlier synchronous motion path in3BEEC0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040a380]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x14040b140",
+      "Finding": "Resets a volume count and, when ownerActor+2488bit400 is set, iterates animation collision entries and transforms each through3C9C00.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040b140]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x1403c6aa0",
+      "Finding": "After skeletal motion evaluation, enumerates current motion events, detects newly present event IDs against the previous list and calls3B5E80 when the event record bit0 is set. This executes inside3BFAB0 without an intervening main-thread queue.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c6aa0]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x1403b5e80",
+      "Finding": "When Actor+1456 is nonnull, builds three tagged operands (Actor address, event ID, motion-event pointer) and calls3E1840 synchronously with BDX event27. ASM passes the operand address in64-bitR8; the pseudocode cast is not the native ABI.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b5e80]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x1403e1840",
+      "Finding": "Finds the requested BDX event, constructs a stack VM context, sets context+56bit1 and, if the entry PC is positive, calls41B320 followed immediately by3E1C80 on the same thread. It preserves/restores two VM current-context globals around the execution.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1840]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x1403e1c80",
+      "Finding": "Calls41B400 with the native trap-table root753490, updates completion/refcounts and recursively executes linked child contexts. The current-VM globals2A250B0/2A25048 are process globals, not thread-local storage in this body.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1c80]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x14041b320",
+      "Finding": "Prepares a VM event PC and copies the requested argument vector into its stack; the caller3E1840 proceeds synchronously to execute that context.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041b320]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x140431200",
+      "Finding": "Decodes a STATUS operand and reads signed index/percentage operands before tail-jumping3C2650. The static trap descriptor7566E0 stores this callback and argument count3.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140431200]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x1403c2650",
+      "Finding": "The scripted coefficient setter writes one byte at STATUS+424+signed index. It computes (signed percentage * resource WORD[36+index] +99)/100 and stores the low byte, without a percentage clamp or signed-index bound. Index6 is the General field monitored by the ledger.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c2650]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x140130030",
+      "Finding": "Worker waits on its wake semaphore, drains queued work callbacks synchronously and signals its completion semaphore after they return.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140130030]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x140130130",
+      "Finding": "Waits for completion on all six job contexts and returns completion tokens. This is the normal-return barrier used by3BEEC0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140130130]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x14012fdb0",
+      "Finding": "Waits the six completion semaphores, assigns each callback/argument/index record round-robin to one of six queues under its mutex, then releases all six wake semaphores. This body has no synchronous callback branch.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012fdb0]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x14041b400",
+      "Finding": "The BDX interpreter executes trap callbacks synchronously and provides generic native memory stores. The function extent ends with231 bytes of padding/switch data after its final RET; these bytes are separately checked and are not extra instructions.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041b400]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x1403e1240",
+      "Finding": "Constructs VM storage using the global VM allocator. It initializes shared/context pointers and special-cases five script names whose512-unit stack field is expanded to1024; there is no worker-to-main dispatch in construction.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1240]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    },
+    {
+      "addr": "0x14041c690",
+      "Finding": "Finds an event by scanning event-ID/PC pairs from BDXheader+28 until the next PC is zero. Only a matching event produces a nonzero entry.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14041c690]",
+        "verification.json"
+      ],
+      "Limitations": "This is a native control-flow finding, not a proof that every retail asset reaches every branch or that all possible native/mod writers have been enumerated."
+    }
+  ],
+  "threading": {
+    "path": "3BEEC0 ->12FDB0/130030 ->3BF4E0 ->3BFAB0 ->3C6AA0 ->3B5E80 ->3E1840 ->3E1C80 ->41B400",
+    "conditions": [
+      "Worker jobs enabled and actor left for the batched path; actors with Actor+2496 are handled synchronously first.",
+      "Model/motion data exposes a newly present flagged motion event.",
+      "Actor+1456 points to a BDX context with event27."
+    ],
+    "statusLimit": "A BDX event can reach native traps, including the registered3C2650 adapter, but no retail event27 bytecode using that trap has been identified here.",
+    "globalLimit": "3E1840/3E1C80 explicitly save/set process-wide current-VM globals. This evidence does not establish how all shipped actors avoid concurrent VM execution; do not claim those globals are thread-local or protected by an unseen lock."
+  },
+  "implementation": {
+    "files": [
+      "src/KH2Trainer.Bridge/StatusRevisionLedger.h",
+      "tests/KH2Trainer.Bridge.Tests/StatusRevisionLedgerTests.cpp"
+    ],
+    "nativeWrites": false,
+    "liveInstalled": false,
+    "properties": [
+      "80 bounded STATUS slots; pool epoch, allocation token, five field revisions, nonwrapping process-local serial.",
+      "Before-entry invalidation including same-value writes; disjoint field masks remain independent.",
+      "32 outstanding frames with per-thread LIFO, arbitrary cross-thread exit order and no allocation/compare while any writer remains active.",
+      "Native abnormal exit faults the ledger, so a failed release/reset is never misreported as known deallocation.",
+      "Bootstrap adoption requires a separately validated live allocation. A retired slot requires an observed Initialize before capture.",
+      "Notifications require caller serialization; release that lock before the native original. The pure model itself contains no synchronization or installed hooks."
+    ],
+    "tests": {
+      "checks": 930,
+      "failures": 0,
+      "scope": "Isolated metadata state machine. No claim of installed callback, IPC receipt or gameplay verification."
+    }
+  },
+  "next": [
+    "Install verified entry plans at a proven quiescent boundary, with persistent trampoline/unwind storage, exact source bytes, rollback and observer-loss handling.",
+    "Wire native wrappers with serialized metadata notifications and finally/AbnormalTermination; bootstrap only after preexisting native writers have completed.",
+    "Combine ledger stamps with actor_lifetime generations, exact scalar comparisons, role/context validation and durable typed command receipts.",
+    "Migrate timed loot/general-damage rewards to those receipts; their existing scalar path is not changed by this preparatory ledger."
+  ]
+}

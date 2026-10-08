@@ -1,0 +1,19 @@
+Event control refinement, 2026-10-07
+
+Decision: keep Crowd Control paused during every active native event. The engine
+has several distinct predicates for event presence, event flags and mode flags.
+Their names alone cannot establish whether the player can meaningfully act.
+
+3ABC80 includes global mode bits, event presence and the input-lock bitmap.
+3AC230 can return true while an event still exists if event flags1 and2 are clear.
+3AC260 tests bit1 in the event-mode descriptor. 3AD2D0 installs an existing event
+context and applies several separate mode-dependent actions. 3EAD50 resolves mode
+keys through a table search. 3A57F0 and script wrapper433570 expose the lock bitmap.
+
+All9 claimed bodies were exported completely and693 original bytes were compared
+with the supported retail EXE. The JSON report records narrow per-function claims.
+3AC320 was excluded: its IDA body includes a shared chunk outside the contiguous
+extent, so that discovery is not counted as complete-body evidence.
+
+Next: follow consumers and real script callers before allowing particular event
+or minigame modes. No control predicate or timer behavior changed in this batch.

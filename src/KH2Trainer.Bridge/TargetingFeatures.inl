@@ -55,9 +55,46 @@ bool Pins() {
 bool Ready(const TrainerContext& c,float& acquire,float& retain,bool allowPause=false) {
     return actor_movement::Ready(c,allowPause) && Pins() && Parameters(acquire,retain);
 }
+uint32_t Bits(float value) { uint32_t bits=0;memcpy(&bits,&value,4);return bits; }
+float Float(uint32_t bits) { float value=0;memcpy(&value,&bits,4);return value; }
+bool PairValid(float factor,float distance,float acquire) {
+    // Includes every ordinary scale/default product, plus separate break overrides.
+    return isfinite(factor) && factor>=0.05f && factor<=10.0f &&
+        isfinite(distance) && distance>0 && distance<=10000000.0f && isfinite(factor*acquire);
+}
+bool PairHandle(const TrainerContext& c,const double args[8],TrainerResult& result) {
+    if(!args || !IsInteger(args[0],0,1)) {result={2,L"Choose apply or conditional restore."};return true;}
+    for(unsigned i=1;i<6;++i) if(!IsInteger(args[i],0,UINT32_MAX)) {
+        result={2,L"Targeting pair arguments must be exact Float32 bit patterns."};return true;
+    }
+    const bool restore=args[0]==1;
+    const uint32_t expectedScale=static_cast<uint32_t>(args[1]),expectedBreak=static_cast<uint32_t>(args[2]);
+    const uint32_t desiredScale=static_cast<uint32_t>(args[3]),desiredBreak=static_cast<uint32_t>(args[4]);
+    float acquire=0,retain=0;
+    if(!combat::HostFresh() || !Ready(c,acquire,retain) ||
+       !Writable(reinterpret_cast<void*>(g_base+Factor),8)) {
+        result={3,L"A stable playable Sora scene with writable targeting values is required."};return true;
+    }
+    const float factor=Float(desiredScale),distance=Float(desiredBreak);
+    if(!PairValid(factor,distance,acquire) || !PairValid(Float(expectedScale),Float(expectedBreak),acquire) ||
+       (!restore && (Bits(retain)!=static_cast<uint32_t>(args[5]) || Bits(factor*retain)!=desiredBreak))) {
+        result={2,L"The targeting pair or its native default changed. Wait for a fresh snapshot."};return true;
+    }
+    // Current game-thread dispatch and Ready serialize native/script writers. These globals
+    // are only four-byte aligned: this is NOT an aligned 64-bit hardware compare/exchange.
+    // No calls, waits or yields between comparing the whole pair and both Float32 stores.
+    const uint32_t scale=At<uint32_t>(Factor),currentBreak=At<uint32_t>(BreakDistance);
+    if(scale!=expectedScale || currentBreak!=expectedBreak) {
+        result={restore?0:4,restore?L"Targeting changed elsewhere; its complete current pair was preserved.":
+            L"Targeting changed before apply; no values were changed."};return true;
+    }
+    At<uint32_t>(Factor)=desiredScale;At<uint32_t>(BreakDistance)=desiredBreak;
+    result={0,restore?L"The original targeting pair was restored exactly.":L"The targeting pair was applied once."};return true;
+}
 }
 bool TargetingHandle(const TrainerContext& c,unsigned slot,const double args[8],TrainerResult& result) {
     using namespace targeting;
+    if(slot==475)return PairHandle(c,args,result);
     if(slot!=368 && slot!=369 && slot!=372) return false;
     if((slot==368 && !combat::FiniteRange(args[0],0.05,10)) ||
        (slot==369 && !combat::FiniteRange(args[0],1,100000))) {
@@ -89,5 +126,6 @@ void TargetingSnapshot(const TrainerContext& c) {
     if(isfinite(factor)) {SnapshotValue(368,factor);if(isfinite(factor*acquire))SnapshotValue(370,factor*acquire);}
     if(isfinite(distance))SnapshotValue(369,distance);
     SnapshotValue(371,acquire);SnapshotValue(373,retain);
+    if(PairValid(factor,distance,acquire)) {SnapshotValue(475,Bits(factor));SnapshotValue(476,Bits(distance));}
 }
-void TargetingCapabilities() { for(unsigned slot=targeting::First;slot<=targeting::Last;++slot) SupportCapability(slot); }
+void TargetingCapabilities() { for(unsigned slot=targeting::First;slot<=targeting::Last;++slot) SupportCapability(slot);SupportCapability(475);SupportCapability(476); }

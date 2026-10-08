@@ -1,0 +1,12 @@
+MP ActiveCheck and movement ownership-policy review
+===================================================
+
+No blocking finding in the reviewed changes against v0.12.2 Source.zip. MP gauge validation, prior/current usability accounting, monitor/sustain/extension gates and visible reasons are coherent. Losing MP maximum alone does not block releasing the owned MP toggle.
+
+Both identified movement policy gaps are closed. ReadRestorableValue validates originals using the current FeatureDefinition.IsValidValue contract before starting, and the second original is checked again after the awaited first command. During runtime, all three movement rewards also use MovementReadiness as ActiveCheck. Each restoring owned value gets an additional fresh policy check inside SustainAsync before dispatch and before saving a new Original. An out-of-policy second value appearing during an earlier awaited command is therefore preserved. Intentionally non-restoring values retain their existing behavior. Cleanup remains separate from the usefulness gate.
+
+The actual tests cover walk100/run100/jump1200/fall0, both policy boundaries, loss/change after the first awaited write, script changes during runtime, pause/recovery accounting, valid replacement originals, external-value preservation and the second sustain-command race. Current author log reports1687 passed/0 failed; a byte-identical copy is under validation/twitch-tests.txt. This reviewer read the source and log and did not build or execute game code.
+
+Actor-lifetime ownership remains unresolved: equal-valued replacement Actors cannot be distinguished, including Sora-to-Sora. Existing ownership also uses a numeric tolerance. Timed movement rewards therefore remain Sora-only; manual native Roxas/Mickey support is separate. Host observations remain advisory and are not an atomic native compare-and-write. No complete lifecycle or live-game guarantee is claimed.
+
+Current source/test/catalog/document hashes, unchanged native Movement hashes and the baseline archive are recorded in independent-review.json. All reviewer-owned research files are now frozen.

@@ -8,6 +8,8 @@
 #include <string.h>
 #include <initializer_list>
 #include <limits>
+#include <limits.h>
+#include <intrin.h>
 namespace {
 uintptr_t g_base=0; DWORD g_gameThread=0; volatile LONG g_disabled=0;
 struct TrainerContext { uintptr_t base,player,status; bool sceneReady; } context{};
@@ -26,6 +28,11 @@ uintptr_t DecodePacked(uint32_t p){return p?g_base+p:0;}
 bool IsInteger(double v,double lo,double hi){return isfinite(v)&&floor(v)==v&&v>=lo&&v<=hi;}
 void SnapshotValue(unsigned s,double v){shared.values[s]=v;shared.valid[s/64]|=uint64_t(1)<<(s%64);}
 void SupportCapability(unsigned s){shared.supported[s/64]|=uint64_t(1)<<(s%64);}
+#include "../../src/KH2Trainer.Bridge/PlayerRoleSupport.inl"
+#include "../../src/KH2Trainer.Bridge/ActorLifetimeSupport.inl"
+// This isolated target/movement/loot fixture never admits damage protection.
+// CombatGuardTests exercises its actual controller, lifetime and native dispatch.
+bool PlayerHealthControlReady(const TrainerContext&) { return false; }
 #include "../../src/KH2Trainer.Bridge/CombatFeatures.inl"
 #include "../../src/KH2Trainer.Bridge/DamageTuningFeatures.inl"
 #include "../../src/KH2Trainer.Bridge/ActorMovementFeatures.inl"
@@ -77,9 +84,15 @@ void Init(int form=0){Setup(form);Resource();}
 TrainerResult Run(unsigned slot,double value=0) {
     const double args[8]={value};TrainerResult r{};Check(TargetingHandle(context,slot,args,r),"write slot handled");return r;
 }
+TrainerResult Pair(bool restore,float expectedScale,float expectedBreak,float desiredScale,float desiredBreak,float retain=2000.5f) {
+    double args[8]={restore?1.0:0.0,double(targeting::Bits(expectedScale)),double(targeting::Bits(expectedBreak)),
+        double(targeting::Bits(desiredScale)),double(targeting::Bits(desiredBreak)),double(targeting::Bits(retain))};
+    TrainerResult r{};Check(TargetingHandle(context,475,args,r),"paired command handled");return r;
+}
 void Reject(const char* why) {
     BYTE before[32];memcpy(before,reinterpret_cast<void*>(g_base+targeting::Factor-12),32);
     for(unsigned slot:{368u,369u,372u})Check(Run(slot,5).code!=0,why);
+    Check(Pair(false,1,2000.5f,4,8002).code!=0,why);
     Check(!memcmp(before,reinterpret_cast<void*>(g_base+targeting::Factor-12),32),"rejection preserves both globals and surrounding bytes");
 }
 }
@@ -146,6 +159,38 @@ int main() {
     Init();At<float>(targeting::Factor)=std::numeric_limits<float>::quiet_NaN();TargetingSnapshot(context);Check(!Valid(368)&&!Valid(370)&&Valid(369)&&Valid(371),"invalid live scalar suppresses only dependent diagnostics");Check(Run(372).code==0,"explicit reset repairs invalid live scalars");
     Init();DWORD old=0,unused=0;void* page=reinterpret_cast<void*>((g_base+targeting::Factor)&~uintptr_t(4095));Check(VirtualProtect(page,4096,PAGE_READONLY,&old)!=FALSE,"real read-only globals");Reject("unwritable globals");VirtualProtect(page,4096,old,&unused);
     Init();TargetingCapabilities();Check(shared.supported[5]==(uint64_t(63)<<48),"exact capability mask");
-    const double args[8]{};TrainerResult r{};for(unsigned slot:{367u,370u,371u,373u,374u,375u,376u})Check(!TargetingHandle(context,slot,args,r),"read-only and neighboring slots cannot mutate");
+    Check(shared.supported[7]==((uint64_t(1)<<27)|(uint64_t(1)<<28)),"pair capabilities only 475 and 476");
+    for(int form=0;form<=6;++form)for(float scale:{.15f,4.0f}) {
+        Init(form);At<float>(targeting::Factor)=1.25f;At<float>(targeting::BreakDistance)=777.25f;
+        Check(Pair(false,1.25f,777.25f,scale,scale*2000.5f).code==0,"pair applies both reward scales in each Sora form");
+        TargetingSnapshot(context);Check(Valid(475)&&Valid(476)&&shared.values[475]==targeting::Bits(scale)&&shared.values[476]==targeting::Bits(scale*2000.5f),"snapshot pair is exact raw Float32 bits");
+        At<float>(Params+80)=3000.25f;
+        Check(Pair(true,scale,scale*2000.5f,1.25f,777.25f).code==0,"restore ignores changed retain parameter and exact original distance need not be scale times retain");
+        Check(At<uint32_t>(targeting::Factor)==targeting::Bits(1.25f)&&At<uint32_t>(targeting::BreakDistance)==targeting::Bits(777.25f),"nondefault original restored bit-exactly");
+    }
+    for(int which=0;which<2;++which) {
+        Init();Check(Pair(false,1,2000.5f,4,8002).code==0,"prepare pair conflict");
+        At<uint32_t>(which?targeting::BreakDistance:targeting::Factor)++;
+        const uint32_t s=At<uint32_t>(targeting::Factor),d=At<uint32_t>(targeting::BreakDistance);
+        Check(Pair(true,4,8002,1,2000.5f).code==0,"one-ULP foreign edit is successful restore no-op");
+        Check(At<uint32_t>(targeting::Factor)==s&&At<uint32_t>(targeting::BreakDistance)==d,"whole foreign pair preserved after either field changes");
+        Check(Pair(false,4,8002,.15f,.15f*2000.5f).code!=0,"apply conflict rejects without takeover");
+    }
+    Init();Check(Pair(false,1,2000.5f,4,8002,2000).code!=0,"stale native retain bits reject apply");
+    Check(Pair(false,1,2000.5f,4,8003).code!=0,"forged product rejected");
+    for(float f:{.049f,10.01f,0.0f,-0.0f,-1.0f,std::numeric_limits<float>::quiet_NaN(),std::numeric_limits<float>::infinity()}) {
+        Init();Check(Pair(true,1,2000.5f,f,777.25f).code!=0,"invalid desired scale cannot restore");
+        Check(Pair(true,1,2000.5f,1,f).code!=0 || (isfinite(f)&&f>0),"invalid desired break cannot restore");
+        At<float>(targeting::Factor)=f;TargetingSnapshot(context);Check(!Valid(475)&&!Valid(476),"invalid pair suppresses both exact slots");
+    }
+    Init();Check(Pair(true,1,2000.5f,.05f,10000000).code==0,"inclusive restorable pair boundaries");
+    Check(Pair(true,.05f,10000000,10,10000002).code!=0,"break above largest supported native default product rejected");
+    Init();double pairArgs[8]={0,double(targeting::Bits(1)),double(targeting::Bits(2000.5f)),double(targeting::Bits(4)),double(targeting::Bits(8002)),double(targeting::Bits(2000.5f))};TrainerResult pairResult{};
+    Check(TargetingHandle(context,475,nullptr,pairResult)&&pairResult.code!=0,"null pair arguments rejected");
+    for(unsigned i=0;i<6;++i)for(double invalid:{-1.0,.5,4294967296.0,std::numeric_limits<double>::quiet_NaN(),std::numeric_limits<double>::infinity()}) {
+        const double oldArg=pairArgs[i];pairArgs[i]=invalid;Check(TargetingHandle(context,475,pairArgs,pairResult)&&pairResult.code!=0,"every raw-bit argument requires uint32 and operation0/1");pairArgs[i]=oldArg;
+    }
+    for(int character:{4,14}) {Init();At<int>(Status+608)=character;Check(Pair(false,1,2000.5f,4,8002).code!=0,"pair does not widen Sora-only compatibility");}
+    const double args[8]{};TrainerResult r{};for(unsigned slot:{367u,370u,371u,373u,374u,375u,376u,474u,476u,477u})Check(!TargetingHandle(context,slot,args,r),"read-only and neighboring slots cannot mutate");
     printf("TargetingGuardTests: %u checks, %u failures\n",checks,failures);VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);return failures?1:0;
 }

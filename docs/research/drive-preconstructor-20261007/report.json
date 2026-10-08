@@ -1,0 +1,376 @@
+{
+  "date": "2026-10-07",
+  "scope": "Drive effective-resource readiness before construction; static analysis only",
+  "original_exe_sha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "evidence_summary": {
+    "complete_functions": 59,
+    "dedicated_asm_instructions": 4157,
+    "original_function_bytes": 17218,
+    "original_data_bytes": 168,
+    "original_data_regions": 2,
+    "verification": "verification.json",
+    "prior_callback_evidence": "../../../artifacts/next-research/drive-resource-content/evidence.json#code_ranges[addr=0x14039DEE0]"
+  },
+  "implementation": {
+    "changed": false,
+    "reason": "No verified failure contract permits rejection after native resource parsing/state mutation while preserving a usable player. A guard at40D119 alone is both too late for parser faults and too early to remain fresh until construction. The existing fallback/sklt code and tests are unchanged.",
+    "native_reproduction": false,
+    "tests_rerun": false
+  },
+  "claims": [
+    {
+      "addr": "0x14040ce60",
+      "Finding": "NativeBegin commits target form before resource completion: calls40CAA0, changes motion and source vectors, hides eligible partners through400B20 for nonzero form, sets source DWORD288 bit0x100 and writes byte9ACDD4. A same-form equality return exists, but no resource-error rollback branch.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040ce60]",
+        "evidence.json#functions[addr=0x14040caa0]",
+        "evidence.json#functions[addr=0x140400b20]"
+      ],
+      "Limitations": "Only the stated mutations are covered; the ignored AL from3BA720 is not a success result."
+    },
+    {
+      "addr": "0x14040caa0",
+      "Finding": "The56-byte transition context owns source+0, form+8, modelID+12, flags+16, effect+24, retained status+32, fiber task+40 and restore-party byte+48. It cancels an older context task, retains/rebuilds status for form1..6, sets transition bit2, installs40CF10 and cleanup40CF20, and may install40CE00.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040caa0]",
+        "evidence.json#functions[addr=0x14040cf10]",
+        "evidence.json#functions[addr=0x14040cf20]",
+        "evidence.json#functions[addr=0x14040ce00]",
+        "evidence.json#functions[addr=0x1403c04c0]"
+      ],
+      "Limitations": "Task creation/allocation can itself fail; a preflight heap estimate cannot promise future success."
+    },
+    {
+      "addr": "0x14040cf10",
+      "Finding": "Task entry loads context from task+24, forwards task in RDX and tail-jumps into40D000. It supplies no resource-validation or error-return API.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040cf10]",
+        "evidence.json#functions[addr=0x14040d000]"
+      ],
+      "Limitations": "Wrapping this task entry does not by itself intercept later resumptions inside the native fiber."
+    },
+    {
+      "addr": "0x14040d000",
+      "Finding": "Form1..6 retire group5000 through39CCA0, schedule the target graph through3E0630, and call39D460 at40D114. Return40D119 is after the resource wait but before additional motion/yield waits. The last old-player check starts40D198; source-associated cleanup starts40D222 and descriptor vcall+56 occurs40D250. Allocation/405030 construction follows at40D259/40D2AC.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040d000]",
+        "evidence.json#functions[addr=0x14039d460]",
+        "evidence.json#functions[addr=0x14039cca0]",
+        "evidence.json#functions[addr=0x1403e0630]",
+        "evidence.json#functions[addr=0x140404bb0]",
+        "evidence.json#functions[addr=0x140405030]"
+      ],
+      "Limitations": "40D119 is not an immediate atomic constructor boundary; assets/context can change during later yields. No rejection hook is implemented."
+    },
+    {
+      "addr": "0x140404bb0",
+      "Finding": "The proven Sora descriptor750300 points to vtable5CBA28; vtable+56 points to404BB0. This callback clears2AE9A28 and delegates source teardown to3A8F30.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140404bb0]",
+        "evidence.json#functions[addr=0x1403a8f30]"
+      ],
+      "Limitations": "The captured data regions prove original dispatch for this exact EXE; foreign vtable changes remain a separate runtime concern."
+    },
+    {
+      "addr": "0x1403a8f30",
+      "Finding": "Source teardown clears current-player global2A105D0, calls player-associated cleanup, clears+3520 and optionally+3576, then delegates3D6770. Rejection after40D250 therefore cannot merely return to a still-normal old player.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a8f30]",
+        "evidence.json#functions[addr=0x1403d6770]"
+      ],
+      "Limitations": "Not claiming the actor's raw allocation is freed here; later lifecycle owns its disposal."
+    },
+    {
+      "addr": "0x1403d6770",
+      "Finding": "Unless source DWORD288 bit0x10000000 is set, teardown removes script ownership, invokes both weapon descriptor+56 callbacks, synchronizes current status, and calls3D36D0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d6770]"
+      ],
+      "Limitations": "Those nested destructor/script side effects are not a proven reversible transaction."
+    },
+    {
+      "addr": "0x14040cf20",
+      "Finding": "Transition cleanup releases the effect and global visual state, initializes retained status with the requested form's timer via3C17C0, releases status via3C07E0, optionally restores party only if context+48 is set, clears transition flags, clears matching global context and frees it. It does not restore9ACDD4 or source DWORD288 bit0x100.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040cf20]",
+        "evidence.json#functions[addr=0x14040cc00]",
+        "evidence.json#functions[addr=0x1403c17c0]",
+        "evidence.json#functions[addr=0x1403c07e0]",
+        "evidence.json#functions[addr=0x140400440]"
+      ],
+      "Limitations": "Cleanup is lifecycle cleanup, not a rollback guarantee. Missing writes are established in this complete body; nested callees have the documented specific roles."
+    },
+    {
+      "addr": "0x14040cdd0",
+      "Finding": "Cancel locates the global context's task+40 and calls1500C0, then clears global2AE9FA8. It performs no explicit source/form/party rollback.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040cdd0]",
+        "evidence.json#functions[addr=0x14040cf20]"
+      ],
+      "Limitations": "Task cancellation is not exposed by the trainer; cleanup behavior is covered separately."
+    },
+    {
+      "addr": "0x14040ce00",
+      "Finding": "While context and retained status exist, a parallel task invokes HP/MP status adjustment helpers with6 each update; when ownership vanishes it terminates itself.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040ce00]"
+      ],
+      "Limitations": "Waiting for resource validation occurs after these status side effects can begin."
+    },
+    {
+      "addr": "0x1403c04e0",
+      "Finding": "The status-retain lookup selects the first active matching character record from the80x632 pool, increments refcount+612 and saves current status. If absent it allocates a free status record.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c04e0]",
+        "evidence.json#functions[addr=0x1403c04c0]",
+        "evidence.json#functions[addr=0x1403c0620]",
+        "evidence.json#functions[addr=0x1403c07e0]"
+      ],
+      "Limitations": "A whole-status byte rollback would need to preserve the pool/refcount/backlink lifecycle; no such write is implemented."
+    },
+    {
+      "addr": "0x1403c17c0",
+      "Finding": "Cleanup/normal completion can refill HP/MP, clear MP charge, set status431=2 and initialize form timer436/440 from form level (or Anti parameters).",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c17c0]"
+      ],
+      "Limitations": "This reinforces that cancellation is not observationally neutral; not a proof that an abandoned form is still controllable."
+    },
+    {
+      "addr": "0x140400b20",
+      "Finding": "For up to two actual active companions, form-specific conditions call400990 to remove/save eligible partners. There is no minimum-party prerequisite in this path.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140400b20]",
+        "evidence.json#functions[addr=0x140400440]"
+      ],
+      "Limitations": "Absence of a minimum does not remove the saved-party capacity/lifecycle gates already in the trainer."
+    },
+    {
+      "addr": "0x140400440",
+      "Finding": "Restore consumes saved party IDs, finds native party/world slots, may create companion actors, and clears saved-party count.40CF20 calls it only for context+48;40CE60 sets that byte for target0, not a nonzero forced form.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140400440]",
+        "evidence.json#functions[addr=0x140400c50]",
+        "evidence.json#functions[addr=0x14040ce60]",
+        "evidence.json#functions[addr=0x14040cf20]"
+      ],
+      "Limitations": "Calling it manually during failure is not proven safe: it creates actors and needs resource/state assumptions."
+    },
+    {
+      "addr": "0x1403e0660",
+      "Finding": "Preload recursively schedules model MDLX, locale-sensitive animation archive, optional additional MSET, both resolved weapon models and hand MSET names, and four object dependencies at WORD88..94.3E0630 chooses the requested form's object and group5000.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e0660]",
+        "evidence.json#functions[addr=0x1403e0630]"
+      ],
+      "Limitations": "A target MDLX or second-keyblade filename alone is not the complete load graph. No finite recursion/cycle guarantee for arbitrary mod object tables is supplied by this native body."
+    },
+    {
+      "addr": "0x14039e000",
+      "Finding": "Resource registration finds/reuses an exact name/group record, can reuse retired names, otherwise allocates120 bytes with rounded size+80, payload+88/+96 and packed next+112. It resets phase to0; a zero size does not form a safe failure return.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039e000]",
+        "evidence.json#functions[addr=0x14039e1e0]",
+        "evidence.json#functions[addr=0x14039df00]",
+        "evidence.json#functions[addr=0x14039df10]"
+      ],
+      "Limitations": "Registry size is rounded reserved capacity, not a retained exact file length or a content-validity certificate."
+    },
+    {
+      "addr": "0x14039d590",
+      "Finding": "Resource packing sorts/reinserts retired groups, resets working flags, assigns payload+88 from low/high buffers and can evict retired entries.39E690 relocates or reloads their contents afterward.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039d590]",
+        "evidence.json#functions[addr=0x14039e690]"
+      ],
+      "Limitations": "A pre-Begin cached payload address cannot be carried into the constructor without fresh identity/span validation."
+    },
+    {
+      "addr": "0x14039d460",
+      "Finding": "The resource boundary is active: it waits, repacks through39D590, processes or frees registry entries, and waits again. It is not a read-only readiness query.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039d460]",
+        "evidence.json#functions[addr=0x14039d590]",
+        "evidence.json#functions[addr=0x14039e340]",
+        "evidence.json#functions[addr=0x14039e690]"
+      ],
+      "Limitations": "Calling it speculatively from a trainer as a validation helper can mutate global resource placement and owner state."
+    },
+    {
+      "addr": "0x14039e340",
+      "Finding": "The wait loops on pending file/model work and active registry records whose phase is neither0 nor3. It has no finite error return for a phase255 record.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039e340]"
+      ],
+      "Limitations": "The prior original-byte-verified callback39DEE0 sets255 on null completion; that bounded callback is referenced from the previous report, not recounted as a new function."
+    },
+    {
+      "addr": "0x14039e690",
+      "Finding": "Relocation/load dispatch records the new payload, handles overlapping old data, recursively moves dependencies, calls3A0BD0 with callback39DEE0 for new data, or unfixes/copies/refixes existing BAR data.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039e690]",
+        "evidence.json#functions[addr=0x1403a0bd0]",
+        "evidence.json#functions[addr=0x1403a6120]",
+        "evidence.json#functions[addr=0x14039e900]"
+      ],
+      "Limitations": "Loaded contents can be parsed and mutated before Drive resumes; parser safety cannot be established by a later range check."
+    },
+    {
+      "addr": "0x1403a0c60",
+      "Finding": "The asynchronous worker reads into request+56 through3F9850, stores bytecount/result+80, runs3A64F0 for nonzero type1 loads, then publishes request phase2.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a0c60]",
+        "evidence.json#functions[addr=0x1403f9850]",
+        "evidence.json#functions[addr=0x1403a64f0]"
+      ],
+      "Limitations": "This is before the main-thread completion callback and before40D119. Thread details do not authorize adding calls or locks here."
+    },
+    {
+      "addr": "0x1403a0790",
+      "Finding": "The completed-request dispatcher invokes3A6840 on a successful type1 payload before calling the request callback with payload/result/context and removing the request. Null result becomes a null payload for the callback.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a0790]",
+        "evidence.json#functions[addr=0x1403a6840]",
+        "evidence.json#functions[addr=0x1403a0710]"
+      ],
+      "Limitations": "Intercepting only39DEE0 would be too late to protect3A64F0 and3A6840 from malformed contents."
+    },
+    {
+      "addr": "0x1403a64f0",
+      "Finding": "The pre-fixup pass walks raw BAR offsets recursively; type4 dispatches model preparation1A7DF0 and1BE1C0. Other supported entries resolve runtime replacements. It receives no byte-span parameter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a64f0]"
+      ],
+      "Limitations": "The complete helper is captured, but all nested model/texture/parser algorithms are not validated in this pass."
+    },
+    {
+      "addr": "0x1403a6840",
+      "Finding": "BAR fixup reads/rewrites self+8, converts entry offsets to encoded pointers, recurses into container types and invokes typed model/texture/motion parsers. It receives no byte-span parameter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a6840]",
+        "evidence.json#functions[addr=0x1403a6120]"
+      ],
+      "Limitations": "A valid BAR magic and header alone does not bound downstream typed data.3A6120 is the corresponding relocation pass."
+    },
+    {
+      "addr": "0x14039cc40",
+      "Finding": "Construction lookup uses first matching name (and exact group unless-1), increments WORD reference count+2 and returns payload+88. Missing or retired records only take a diagnostic traversal; a missing record is still used afterward.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039cc40]",
+        "evidence.json#functions[addr=0x14039e1e0]"
+      ],
+      "Limitations": "Do not call this function merely to test existence: it mutates a refcount and does not safely reject null."
+    },
+    {
+      "addr": "0x1403e6120",
+      "Finding": "The actor resource bundle resolves MDLX, conditional animation archive and optional extra MSET through39CC40;3E63D0 releases previous refs, assigns the object and calls it. These are the effective loaded payloads consumed by construction.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e6120]",
+        "evidence.json#functions[addr=0x1403e63d0]"
+      ],
+      "Limitations": "Resource-bundle acquisition is not a pure content probe; it increments/decrements references and may trigger additional manager behavior."
+    },
+    {
+      "addr": "0x1403b3200",
+      "Finding": "Actor construction resolves its bundle, looks up BAR model type4 (optional branch), texture type7 and collision type23; model presence invokes its runtime vtable+64 for instance creation. Missing model type4 has a native alternate branch, but the outer BAR is always dereferenced by the lookup.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b3200]",
+        "evidence.json#functions[addr=0x1403e62e0]",
+        "evidence.json#functions[addr=0x1403e6310]",
+        "evidence.json#functions[addr=0x1403a6420]",
+        "evidence.json#functions[addr=0x1403e6470]"
+      ],
+      "Limitations": "No blanket rule that every MDLX needs type4 is proposed. Full model-instance/geometry validation remains open."
+    },
+    {
+      "addr": "0x1403a7a40",
+      "Finding": "The player constructor publishes current actor, installs status, creates hand0 when its resolver is nonzero, and creates hand1 for form1..6/10 when its resolver is nonzero.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a7a40]",
+        "evidence.json#functions[addr=0x140405030]",
+        "evidence.json#functions[addr=0x1403d7c70]"
+      ],
+      "Limitations": "This happens inside405030, before the transition can inspect the finished new actor."
+    },
+    {
+      "addr": "0x1403d7c70",
+      "Finding": "Weapon creation allocates3088 bytes, constructs3EF750 and publishes the weapon slot; allocation failure stores0 but still invokes motion helpers on null+344.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d7c70]",
+        "evidence.json#functions[addr=0x1403ef750]"
+      ],
+      "Limitations": "This later allocation failure cannot be removed by a pre-Begin resource-content predicate."
+    },
+    {
+      "addr": "0x1403ef750",
+      "Finding": "The weapon constructor builds a base actor/resource bundle and, for nonempty hand wmst, obtains effective MSET through39CC40, links motion and attaches via the parent sklt row. Empty wmst skips that branch only.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ef750]",
+        "evidence.json#functions[addr=0x14039cc40]"
+      ],
+      "Limitations": "The released sklt guard covers the table-row lookup. Valid joint content and the loaded model/motion relation still require typed-resource validation."
+    },
+    {
+      "addr": "0x1403f9850",
+      "Finding": "The loader uses106700 under the native file-manager lock, registers/looks up replacement metadata and embeds a replacement-context pointer in BAR fields. The same loader feeds asynchronous resource work.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403f9850]",
+        "evidence.json#functions[addr=0x140106700]",
+        "evidence.json#functions[addr=0x1403a0a70]",
+        "evidence.json#functions[addr=0x1403a0ba0]"
+      ],
+      "Limitations": "This is not a side-effect-free arbitrary-buffer reader:12EF30/12F070 and replacement metadata ownership need a separate staging contract. Actual active third-party hook behavior is not asserted from original bytes."
+    },
+    {
+      "addr": "0x1403f95f0",
+      "Finding": "Native file-size query formats the path and calls1063D0 under the file-manager lock;3A09B0 is a thunk to it.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403f95f0]",
+        "evidence.json#functions[addr=0x1403a09b0]"
+      ],
+      "Limitations": "Existence/size success proves neither BAR contents nor that a later mod-resolved read returns the same bytes."
+    }
+  ],
+  "registry_contract": {
+    "head_rva": "0x29F33C8",
+    "record_bytes": 120,
+    "fields": {
+      "kind": "BYTE+0",
+      "phase": "BYTE+1;3 means completed, not typed content validated",
+      "references": "WORD+2;native constructor increments",
+      "name": "NUL-terminated bytes+4..67;native comparer is unbounded",
+      "flags": "DWORD+68;working/move flags",
+      "group": "signed DWORD+72",
+      "reserved_span": "QWORD+80;rounded allocation size",
+      "current_payload": "QWORD+88",
+      "previous_payload": "QWORD+96",
+      "extra": "DWORD/QWORD+104;kind-dependent",
+      "next": "packed DWORD+112"
+    },
+    "lifetime": "39D590/39E690 can replace or move payloads, and39D460/39E900 can unlink/free records. Inspect a bounded complete acyclic list and fresh first match; do not retain raw pointers across yields.",
+    "first_match": "39E1E0 returns the first exact string/group match; group-1 accepts any group. A later valid duplicate cannot repair an earlier invalid first match."
+  },
+  "checkpoint_contract": {
+    "before_native_begin": "Only currently installed table/scene/Save predicates are proven here. Cold target resources need a separate effective-reader/staging contract before player/form/party mutations.",
+    "raw_validation": "The actual raw bytes must be checked before3A0C60's3A64F0 and3A0790's3A6840. A callback39DEE0 interception is already too late.",
+    "loaded_validation": "40D119 is an observable candidate after wait. A decisive fresh check would need the verified fiber/context after its last yield and before source cleanup starts40D222 (definitely before descriptor call40D250).",
+    "failure_exit": "No safe native rollback found.40CF20 is cleanup;40CDD0 cancellation cannot restore source form/status/party/resource state. Do not simply return null from405030 or3D7C70: callers dereference those results.",
+    "allocation": "Actor/model/weapon creation occurs later and can still fail even after a complete resource check."
+  },
+  "next_implementable_work": {
+    "phase1": "Build a pure bounded raw BAR/model/motion parser on owned bytes and an effective asset-source identity. Native3F9850 cannot yet be treated as a side-effect-free staging reader.",
+    "phase2": "Close an explicit transaction around resource staging BEFORE40CE60, or derive a full rollback for every mutated owner. Native cancellation is insufficient.",
+    "phase3": "Validate fresh loaded graph immediately before old actor teardown, bind transition context/source/form/task and compare graph identities. Required hands include main hand and optional secondary; retain normal0..6 semantics.",
+    "do_not_substitute": "Rejecting every cold/not-yet-loaded form would block legitimate first-use locked forms and would not satisfy the requested feature."
+  },
+  "test_plan": [
+    "Malformed root/nested BAR counts, offsets, overflow, link flags and cycles before any native parser call.",
+    "MDLX with optional absent type4 follows the proven native branch; typed existing entries require their own bounds.",
+    "MSET selected-child/type9/type16 and parent/weapon-joint dependencies validated against bounded content, without invented negative-joint rules.",
+    "Registry duplicate names/groups respect first match; moved payload, retired node, zero size, non3 phase and list cycles invalidate snapshots.",
+    "Missing file/null completion255 never enters the constructor; demonstrate an owned failure transaction rather than pretending timeout cancels native work.",
+    "Rejected stage must make zero form-slot/status/party/Actor writes; every currently valid0..6 target and49 transition pair stays valid.",
+    "Repeat plan after initial Revert and after every yield/context/resource change; never reuse original pointers.",
+    "Allocation failure remains a separately documented runtime limit unless constructor callers themselves receive a proven error-handling redesign."
+  ]
+}

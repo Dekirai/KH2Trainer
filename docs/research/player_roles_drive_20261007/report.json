@@ -1,0 +1,187 @@
+{
+  "date": "2026-10-07",
+  "status": "implementation and isolated tests complete; live crash not reproduced",
+  "testResult": {
+    "suite": "DriveGuardTests",
+    "checks": 955,
+    "failures": 0,
+    "warnings": 0,
+    "log": "artifacts/player-role-validation/native-DriveGuardTests.txt",
+    "kind": "synthetic memory and fake native calls"
+  },
+  "independentReview": {
+    "reviewer": "native_debug",
+    "scope": "PlayerRoleSupport read-only source inspection",
+    "result": "no concrete defect found"
+  },
+  "files": {
+    "src/KH2Trainer.Bridge/PlayerRoleSupport.inl": "bb9fc7439879e0a6bc9cb86192043179d032995a9fe62aeb2721bbb178beb5f5",
+    "src/KH2Trainer.Bridge/DriveFeatures.inl": "64d847acefdf499171fea96a10650f9f93c98347e938916b71c99ba9d25cfae4",
+    "src/KH2Trainer.Bridge/DriveWeaponSupport.inl": "472bf73fa802c3147e26a7d0341e8ef43b7c2f3b477b9d22be1c47d26b9ddb6c",
+    "tests/KH2Trainer.Bridge.Tests/PlayerRoleTests.cpp": "50286754221ac653cb65691be52f151b5811518ce33e0458155991f3559e4821",
+    "tests/KH2Trainer.Bridge.Tests/DriveGuardTests.cpp": "582d87413ac8daf358261a9d40a15f5d7eb752ecc01448bfc8945691cd7dacf7",
+    "tests/KH2Trainer.Bridge.Tests/DriveWeaponTests.cpp": "586aecf077be1676627a4370bb256587ed9cafa8ca22f1175e317c39cb7fddda"
+  },
+  "claims": [
+    {
+      "addr": "0x1403B5B20",
+      "Finding": "Returns character ID WORD+76 from the decoded current Actor object entry+8.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Exact inspected retail build. Static evidence; no live process execution."
+    },
+    {
+      "addr": "0x1403E60C0",
+      "Finding": "Maps character14 to save slot1 and15 to6; a save-slot address cannot distinguish Sora and Roxas.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Exact inspected retail build. Static evidence; no live process execution."
+    },
+    {
+      "addr": "0x1403AA4F0",
+      "Finding": "Drive predicate requires actual object character1 and current form nonzero below7.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Exact inspected retail build. Static evidence; no live process execution."
+    },
+    {
+      "addr": "0x1403AA960",
+      "Finding": "Branches explicitly on character14 when setting saved player flag mask0x1.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Exact inspected retail build. Static evidence; no live process execution."
+    },
+    {
+      "addr": "0x140405030",
+      "Finding": "Normal player constructor sets descriptor750300, flag1736 bit1000000 and current-player auxiliary pointer.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Exact inspected retail build. Static evidence; no live process execution."
+    },
+    {
+      "addr": "0x140415670",
+      "Finding": "Rescue constructor uses base player form11, descriptor7523B8, flag2000000, restores status/gauge and increments rescue counters9AD660/9AD662.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Exact inspected retail build. Static evidence; no live process execution."
+    },
+    {
+      "addr": "0x1403C0620",
+      "Finding": "Obtains status by actual character ID; characters1/14 receive the common Drive-save pointer and selected form record.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Exact inspected retail build. Static evidence; no live process execution."
+    },
+    {
+      "addr": "0x1403C04E0",
+      "Finding": "Status lookup scans allocated members of the80-record632-byte pool, matching actual character ID and incrementing refcount; misses allocate from the free-index stack.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Exact inspected retail build. Static evidence; no live process execution."
+    },
+    {
+      "addr": "0x1403E0F10",
+      "Finding": "Object lookup searches three loaded tables in order, each with count+4 and96-byte rows+8.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Exact inspected retail build. Static evidence; no live process execution."
+    },
+    {
+      "addr": "0x1403A7CB0",
+      "Finding": "Ordinary player construction delegates to405030, with separate constructors for named special object cases; shared descriptor is insufficient for role identity.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Exact inspected retail build. Static evidence; no live process execution."
+    },
+    {
+      "addr": "0x1403A7A40",
+      "Finding": "Common player constructor sets current global player, gets status using object character ID, sets status backlink and conditionally constructs nonzero offhand model.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Exact inspected retail build. Static evidence; no live process execution."
+    },
+    {
+      "addr": "0x1403E0CC0",
+      "Finding": "Weapon slot1 for character1/14 reads leading weapon WORD of form record selected by signed object+87; zero returns model0.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Exact inspected retail build. Static evidence; no live process execution."
+    },
+    {
+      "addr": "0x1403EF8B0",
+      "Finding": "Nonzero group/item select went[group] base plus item model ordinal; zero group/base returns model0.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Exact inspected retail build. Static evidence; no live process execution."
+    },
+    {
+      "addr": "0x1403EF910",
+      "Finding": "Uses wmst32-byte row indexed by slot+2*group to form obj/name.mset; empty row returns null.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Exact inspected retail build. Static evidence; no live process execution."
+    },
+    {
+      "addr": "0x1403D7600",
+      "Finding": "Loads selected weapon pointer from Actor3424+8*slot and forwards it to3B5D40 without null validation.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Exact inspected retail build. Static evidence; no live process execution."
+    },
+    {
+      "addr": "0x1403B5D40",
+      "Finding": "Immediately reads weapon2744 and later dereferences selected type15 content; null offhand is unsafe.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Exact inspected retail build. Static evidence; no live process execution."
+    },
+    {
+      "addr": "0x1403EF750",
+      "Finding": "Weapon construction loads the slot/group MSET when the table row is nonempty, links motion and attaches to parent.",
+      "Evidence": [
+        "evidence.json",
+        "verification.json"
+      ],
+      "Limitations": "Exact inspected retail build. Static evidence; no live process execution."
+    }
+  ],
+  "limits": [
+    "Existing offhand fallback was already present; locked dual-form and additional unlocked Final empty-offhand regressions pass. Latest live crash is not reproduced.",
+    "Role classification is not gameplay/input permission. Caller owns engine-thread and feature-specific gates.",
+    "No new Motion/ActorMovement compatibility for Roxas/Mickey is claimed.",
+    "Model and MSET table bounds/names do not validate all asset contents or defeat concurrent external writers."
+  ],
+  "reportedPrecondition": "Not-yet-unlocked Final Form with a missing offhand. Existing regressions cover locked dual forms1/4/5; new additional regression covers unlocked Final with the same empty offhand."
+}

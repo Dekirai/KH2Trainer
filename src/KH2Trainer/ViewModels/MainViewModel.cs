@@ -15,7 +15,7 @@ public sealed record ProcessChoice(GameProcess Process) { public string Label =>
 public enum ConnectionState { NoGame, GameFound, Connecting, WaitingForScene, Ready, Warning }
 
 /// <summary>The application shell: navigation, game connection, search, favorites and activity.</summary>
-public sealed class MainViewModel : Observable, IFeatureHost, ITwitchHost, IDisposable
+public sealed class MainViewModel : Observable, IFeatureHost, ITwitchHost, ITwitchMovementHost, IDisposable
 {
     private static readonly string[] QuickActionIds = ["player.restore", "player.position.bookmark", "player.position.return", "trainer.reset", "developer.show", "developer.hide"];
     private const int MaxSearchResults = 150;
@@ -42,6 +42,9 @@ public sealed class MainViewModel : Observable, IFeatureHost, ITwitchHost, IDisp
     public IReadOnlyList<FeatureDefinition> Catalog { get; }
     public IReadOnlyList<FeatureVm> Features => features;
     internal GameSession Session => session;
+    public MovementOperationHandle? PendingMovement => session.PendingMovement;
+    public Task<MovementCommandResult> ExecuteMovementAsync(MovementCommand command, CancellationToken cancellation = default) => session.ExecuteMovementAsync(command, cancellation);
+    public Task<MovementCommandResult> ResolveMovementAsync(MovementOperationHandle handle, CancellationToken cancellation = default) => session.ResolveMovementAsync(handle, cancellation);
     internal TrainerSnapshot Snapshot => snapshot;
     public TrainerSnapshot ReadGameSnapshot() => session.ReadSnapshot();
     public string VersionLabel { get; } = "Version " + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(2) ?? "dev");
@@ -360,7 +363,7 @@ public sealed class MainViewModel : Observable, IFeatureHost, ITwitchHost, IDisp
     {
         // A full reset also ends Twitch effects, so they do not re-apply their values afterwards.
         if (command == resetCommand) await Twitch.StopAllAsync("All trainer changes were reset");
-        try { var result = await session.ExecuteAsync(command, arguments); Log($"{label}: {result.Message}"); if (!result.Success) throw new InvalidOperationException(result.Message); }
+        try { var result = await session.ExecuteAsync(command, arguments); Log($"{label}: {result.Message}"); if (!result.Success) throw new BridgeCommandRejectedException(result.Code, result.Message); }
         catch (Exception e) { Log($"{label} failed: {e.Message}"); throw; }
     }
 

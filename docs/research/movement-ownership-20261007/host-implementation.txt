@@ -1,0 +1,61 @@
+Protocol-v4 movement ownership — host implementation receipt
+2026-10-07. Static review and isolated synthetic tests; no live game validation.
+
+Implemented:
+- Core binary request128/response192 at1024/1152, MOV1/schema1 both directions.
+- Every nonempty mask1..15; walk/run and fall/jump rewards use3 and12.
+- UInt64 identities/owners/operations and Float32 bits remain exact integers.
+- One command semaphore/pending publication survives GameSession reconnect.
+- Lost ACK recovery queries retained native results without replaying mutations.
+- An ambiguous original remains globally blocking through QueryMiss, query refusal
+  and uncertain WriteFault. Query results are checked against the original intent.
+- A new bridge invalidates an old origin only with fresh independent instance proof.
+- IGameControl supplies one coherent MovementSnapshot and typed result methods.
+- MainViewModel forwards the optional ITwitchMovementHost interface to GameSession.
+- MovementEffectLease keeps actor-specific receipts, acknowledges copied mutations,
+  queries actual lease state and collects confirmed terminal native records.
+- Super Speed, Snail Mode and Moon Jump use native cohorts for Sora/Roxas/Mickey.
+- Reapply preserves an unchanged sibling's original. No scalar fallback exists.
+- Old living actors keep release intents while off-current. New actors use their
+  own original receipt, even with equal values or reconstructed addresses.
+- Async maintenance precedes ActiveCheck; time requires stable identity before,
+  after and across observations. Unknown/rebind intervals are not charged.
+- Initial no-write refusal respects MaxWait; cleanup survives scalar retry limits.
+- Bound/unbound uncertain mutation receipts are retained without repeated ACKs.
+  QueryLease uncertainty is not mistaken for an unresolved transport publication.
+- Fresh bridge recovery never copies old originals into the new process.
+
+Isolated author validation:
+- Core console suite with actual features.json:748 passed,0 failed.
+- Twitch console suite with actual features.json:1755 passed,0 failed.
+- Earlier independent Python specification:9625 checks,0 failures;2401 traces.
+- No full application build or native/live test was run by this agent.
+- Logs and exact final source SHA256 values are in host-implementation.json.
+
+Important test cases:
+All15 masks; UInt64 values above2^53; exact Float32/signed-zero policy; malformed
+headers/reserved/correlation fields; fresh coherent snapshots; cancellation before
+and after publication; reconnect; ordinary-command barriers after query misses and
+rejections; wrong recovered desired vector; unbound uncertain write; independent
+new-instance proof; all three roles; invalid/missing originals; compare-before-write
+race; equal-value replacements; Sora-to-Sora reconstruction; old Sora returning;
+switch during awaited acquire/query; unacknowledged apply without fulfillment;
+external field preservation; unchanged sibling originals; menu cleanup intent;
+definite refusal deadline; same-instance fault versus fresh-instance recovery.
+
+Limits:
+Host tests use a fake native journal and a synthetic shared mapping. Native
+constructor/destructor coverage and journal fault handling have separate receipts.
+No claim of frame-exact timing or CPU-atomic multiple stores against uncooperative
+external writers is made. Identical external writes within the same actor lifetime
+are not observable from value comparison. Finite native watch/journal capacity
+fails closed; unresolved ownership is not evicted. A living old actor may require
+returning as current before restoration; while cleanup remains unresolved, the
+effect group stays reserved. A fresh bridge invalidates inaccessible host records;
+it is not proof that another still-running process finished its native cleanup.
+Unexpected engine/read exceptions can leave an uncertain operation with no typed
+ACK. The host keeps it blocked rather than declaring no write.
+
+Integration is active for coordinated protocol4. Restart a game that still has
+the previous bridge loaded. Root owns packaging, version and final application
+verification. The independent host review is a separate artifact, not this receipt.

@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "date": "2026-10-07",
+  "status": "native implementation and targeted synthetic integration passed",
+  "protocol": 4,
+  "wireMagic": "MOV1 request and response",
+  "wireSchema": 1,
+  "sources": [
+    {
+      "path": "src/KH2Trainer.Bridge/MovementProtocol.h",
+      "bytes": 2476,
+      "sha256": "4693b066089b5cc7d356733641ff584cd2b9d5891dc8ce60a8093aa73dda8977"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/MovementTransactionSupport.inl",
+      "bytes": 15158,
+      "sha256": "146896144f5eccef9a8f55f8196bb0ccb6486c83cea1883d380b56e977f50a18"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/TrainerBridge.cpp",
+      "bytes": 45762,
+      "sha256": "f5501886866013290b57a6f3d3a5d4fe46c11ce6abff82ef1c3b2be08491c430"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/DevToolsProtocol.h",
+      "bytes": 5386,
+      "sha256": "7d5b2232c4aca74a1f8a76f1b376610534b34d1f38ff390e8e7545b02ac632fa"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/ActorLifetimeSupport.inl",
+      "bytes": 16522,
+      "sha256": "af75f86b8179cc12047dab5b8aff1e9a6c3f4fb57a3b7bfa74b8e6a263132671"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/ActorLifetimePins.inl",
+      "bytes": 31182,
+      "sha256": "8fc4ff53474539fa272ab8a8b175b03f34260d8f2900eebef32b22971e1766c7"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/MovementTransactionTests.cpp",
+      "bytes": 17672,
+      "sha256": "c07f68aeca2d904b792629c41ec0de854c541a87fc7e4ed1c80006940c922574"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/PlayerBridgeTests.cpp",
+      "bytes": 43130,
+      "sha256": "f61434e36f383fc870c3394deb7c32b53eeaebd42c0e634038c047522bca0f9f"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/run-tests.ps1",
+      "bytes": 6443,
+      "sha256": "ff15bd2fa6e3b326f05f11af8809a063bb12abdd87436ef4b3c78341b8424ff0"
+    }
+  ],
+  "tests": [
+    {
+      "suite": "ActorLifetimeTests",
+      "checks": 6023,
+      "failures": 0,
+      "log": "artifacts/movement-ownership-tests/native-ActorLifetimeTests.txt",
+      "sha256": "49249e1380a610a776cb5b4257a5e76eca63ab2ed8683b02d51e243ef9843a30"
+    },
+    {
+      "suite": "MovementTransactionTests",
+      "checks": 439,
+      "failures": 0,
+      "log": "artifacts/movement-ownership-tests/native-MovementTransactionTests.txt",
+      "sha256": "0fcc49de3c2d40fb204be11552ae77ead554e17f220294c49b6b656249269b69"
+    },
+    {
+      "suite": "PlayerBridgeTests",
+      "checks": 620,
+      "failures": 0,
+      "log": "artifacts/agent-validation/native-ipc-20261007/native-PlayerBridgeTests.txt",
+      "sha256": "d9553c204747af77c6c668ba810a2421d9970c3b89be5ffb11e741bbec295210"
+    }
+  ],
+  "scope": "Native journal uses the separately verified lifetime observer; host and full package verification are separate receipts. Tests execute synthetic memory and fake callbacks only, never game code.",
+  "independentReview": "native-transaction-review.json",
+  "ipcIntegration": "native-ipc-validation.json",
+  "implementationNotes": "native-implementation.txt",
+  "liveGame": false,
+  "liveTwitch": false,
+  "gameOrSaveWrites": false
+}

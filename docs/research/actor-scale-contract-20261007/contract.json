@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "status": "research_complete_implementation_separate",
+  "field": {
+    "owner": "coherent current playable Actor",
+    "offset": 60,
+    "type": "float32",
+    "width": 4,
+    "meaning": "positive uniform transform factor multiplied by native ramp2732 and XYZ48/52/56",
+    "exclude": [
+      48,
+      52,
+      56,
+      2732,
+      2736,
+      1776,
+      1780,
+      1784
+    ],
+    "abi": "No native setter proposed. One validated float32 transaction write; natural next motion update rebuilds matrices."
+  },
+  "roles": {
+    "allowed": [
+      "Sora",
+      "Roxas",
+      "Mickey"
+    ],
+    "proof": "../player_roles_drive_20261007/report.json",
+    "condition": "Use player_roles::Inspect coherence and the existing actor_lifetime generation. The common transform/VM getter has no role exclusion; do not infer readiness from a character number alone."
+  },
+  "productPolicyProposal": {
+    "tiny": 0.5,
+    "giant": 2,
+    "scalarMinimum": 0.25,
+    "scalarMaximum": 4,
+    "units": "Absolute Actor+60 scalar. The XYZ/ramp product controls actual size.",
+    "evidenceStrength": "Deliberately small proposed UI policy, not a native clamp or demonstrated safe gameplay range. Separate implementation can choose a stricter subset."
+  },
+  "acquireRequirements": [
+    "Known original build and unchanged relevant native scheduling/transform bodies. Current bridge instance, engine thread, fresh heartbeat and no outstanding ambiguous mutation.",
+    "Observer Ready and exact pinned Actor generation; fresh coherent role, current global Actor, STATUS/backlinks/list membership, scene heap/scheduler/map generation and normal game control. Reject pending scene/Drive/rescue/form transition, deleting/frozen/invalid Actor.",
+    "Unattached current Actor: decoded Actor+1696==0. Do not use Actor+60 itself or current address as lifetime identity. Save role/form/object binding and native projection context.",
+    "No native custom transform callback flag Actor+1736 bit0x08000000. Allow only a verified orientation branch; scalar candidate and original must be finite positive and within disclosed policy.",
+    "Initial conservative subset: XYZ48/52/56 and ramp2732 equal native unit values, with stable positive scalar. If allowing nonunit native axes/ramp later, validate them and every compounded operation explicitly; no field writes to normalize them.",
+    "Check writable four-byte field span and expected scalar bits immediately before commit. Compute current original and candidate float32 projections from current data, not a stale snapshot. Valid existing world/model matrices alone do not prove every future script/asset is bounded."
+  ],
+  "projectionRules": [
+    "Native order is p=f32(ramp*scalar), v[i]=f32(axis[i]*p), then basis-row lane=f32(basisLane*v[i]). Validate each product, not just each input. Fourth vector lane temporarily computes scalar*p but is overwritten with1 before matrix row scaling.",
+    "Matrix composition uses all four lanes and f32(f32(f32(m0*x+m1*y)+m2*z)+m3*w). Finite inputs do not prevent overflow/underflow; native normalization also squares and sums XYZ. Reject degenerate/nonfinite intermediates and unsupported custom/attachment paths.",
+    "The bounded proposal does not promise all asset deformation, joint indices, child transforms or malicious script values are safe. Attached weapons inherit parent transforms normally; their model/joint data remain native-owned."
+  ],
+  "scheduling": {
+    "nativeChain": "3BF810 -> scheduled3BF550 -> Actor manager2A17180 -> direct3BF5E0 ->3BEEC0 ->12FDB0/3BF4E0/3BFAB0 ->130130 ->12FD90",
+    "workerCompletion": "130030 signals context+104 only after queued callbacks return.130130 waits all six wrappers beginning8BB040, stride112, and releases completion tokens before return.",
+    "integration": "Use the existing post-original HookedUpdate/TrainerFrame boundary. Never initiate native transform/motion calls or use a mid-job sample. Native semaphore failures and modified third-party scheduling are outside the proved normal-return contract."
+  },
+  "lifetimeAndOwnership": {
+    "acquire": "Capture original scalar bits once, with opaque bridge+Actor generation and mutation identity. Reapplication must never replace the original with a previously applied value.",
+    "conflict": "If scalar bits differ from the last trainer-owned value, release ownership without overwriting. A same-value native write is invisible to value comparison; this is an explicit limitation, not exclusive ownership.",
+    "currentOrRoleChange": "Stop applying to the old Actor. Retain its pinned lease only for narrowly validated conditional cleanup, never transfer originals to the replacement Actor. Known retirement is terminal no-write; observer Fault is uncertain and must not be called destruction.",
+    "fieldOrControlChange": "Stop timer/application on field, scheduler, heap, map, transition or control changes. No stale Actor dereference or release merely because a host timer expired. Deferred cleanup needs a fresh safe native context.",
+    "attachmentChange": "3D9FE0/3DA250 preserve scalar60 and alter projection context. A frame-only unattached check cannot prove no attachment interval occurred. Before any restore, validate the saved original against the current transform context. If safety/ownership cannot be established, defer or relinquish explicitly; do not force a baseline under a new parent.",
+    "pendingDesign": "The product must specify transition handling and test it. Actor generation prevents address reuse, but does not itself observe attachments, native XYZ events, ramp changes or same-value native scalar writes. This research does not introduce a new attachment hook."
+  },
+  "collisionPolicy": {
+    "label": "Transform size, with joint/weapon and collision-center consequences; world-collision radii remain unchanged.",
+    "proof": "../actor-scale-writers-20261007/report.json",
+    "details": "3C9C00 transforms centers through3B50F0 but copies signed resource radius/height without scale.3C94C0/3C9780/3C9890/3C90B0 use those dimensions. World resolver3B9090/16FEC0/1752E0 uses separate Actor1776/1780/1784 values. Floor-alignment3CD220 and joint-derived centers can therefore change even though radii do not.",
+    "excludedClaims": [
+      "Purely cosmetic",
+      "Guaranteed proportional hurtboxes/hitboxes",
+      "World collision automatically shrinks/grows",
+      "Invulnerability",
+      "No native scripts can change the value"
+    ]
+  },
+  "suggestedTests": [
+    "All three coherent roles and supported forms; forged/mixed role descriptors, zero/malformed scalar, readonly field, pending transition and noncurrent Actor reject without writes.",
+    "Bit-exact four-byte commit; native XYZ/ramp/world-radius fields unchanged. Float32 product/sum overflow, underflow/degenerate basis, invalid homogeneous components and native orientation branches.",
+    "Acquire/reapply/release idempotence through lost ACK; native scalar conflict; partial write fault journal state; host timeout/disconnect.",
+    "Same address reused with a new Actor generation; former Actor still alive after current-player replacement; observer failure distinct from known retirement.",
+    "Attach/detach while owned; changed XYZ/ramp while scalar remains trainer-applied; release original under changed context; explicit no-write/deferred terminal outcomes.",
+    "Expected worker job callbacks, wait-before-return, modified callback/pin rejection; no direct motion rebuild calls or cross-thread writes.",
+    "Collision documentation/readouts retain unscaled radius semantics; no assertion based only on a synthetic fixture that gameplay appearance is correct."
+  ],
+  "liveValidation": "Not performed. No game process, UI, save, product build or product source mutation occurred in this round."
+}

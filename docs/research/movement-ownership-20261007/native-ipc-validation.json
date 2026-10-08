@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "date": "2026-10-07",
+  "status": "frozen",
+  "scope": "Actual TrainerFrame typed movement IPC integration; synthetic rejection and retained-receipt replay only.",
+  "modified_test": "tests/KH2Trainer.Bridge.Tests/PlayerBridgeTests.cpp",
+  "test_sha256": "F61434E36F383FC870C3394DEB7C32B53EEAEBD42C0E634038C047522BCA0F9F",
+  "entrypoint": "TypedMovementIntegrationTests, called from main before the existing command checks",
+  "production_changes": [],
+  "run": {
+    "working_directory": "C:/Users/shinz/source/repos/KH2Trainer",
+    "command": "& 'tests/KH2Trainer.Bridge.Tests/run-tests.ps1' -Suite PlayerBridgeTests -LogDirectory 'artifacts/agent-validation/native-ipc-20261007'",
+    "suite": "PlayerBridgeTests",
+    "checks": 620,
+    "failures": 0,
+    "previous_checks": 302,
+    "additional_checks": 318,
+    "compiler_flags": "MSVC x64, /std:c++17 /O2 /W4 /MT /EHsc; no compiler warnings in the captured log",
+    "log": "artifacts/agent-validation/native-ipc-20261007/native-PlayerBridgeTests.txt",
+    "log_sha256": "D9553C204747AF77C6C668BA810A2421D9970C3B89BE5FFB11E741BBEC295210"
+  },
+  "verified": [
+    "Command 1466 passes through the production TrainerFrame dispatcher, not a direct call to movement_tx::Execute.",
+    "The 128-byte request at offset 1024 is preserved. The 192-byte response at offset 1152 has the matching shared and binary request sequence, schema, client ID, operation ID, nonce and current tick. A tail canary checks the response extent; the snapshot seqlock finishes even.",
+    "An already acknowledged shared request sequence does not execute again or replace the response.",
+    "New packets with commandIssuedAt zero, age 8000 ms, or a future timestamp reject Expired without reserving a receipt.",
+    "Every one of the eight generic scalar arguments rejects when 1.0, NaN or positive infinity; no new typed mutation receipt is reserved.",
+    "Zero or expired host heartbeat rejects a new packet as HostExpired without a new receipt.",
+    "A synthetically faulted ActorLifetime observer rejects a fresh valid Acquire as ObserverFault and stores an immutable rejection receipt.",
+    "Identical duplicates replay the retained rejection despite expired command, expired host or malformed scalar arguments; the original receipt is unchanged.",
+    "An explicitly seeded prior Applied receipt is replayed unchanged despite the same pre-rejections. This checks replay only and does not simulate a successful new native mutation or lease.",
+    "The same operation ID with changed desired bits rejects RequestIdConflict and leaves its retained receipt unchanged.",
+    "Wrong schema and stale bridge nonce reject UnsupportedSchema and StaleBridge.",
+    "Snapshot slots 466..471 publish supported, valid schema 1 diagnostics; Fault publishes zero generation, exact 32-bit nonce halves and observer status 2.",
+    "No new lease, Actor/status field change or constructor/destructor hook-slot change occurs; the fixture restores private journal, observer and shared state before the existing tests."
+  ],
+  "limits": [
+    "The test uses synthetic memory, a faulted observer and a fixed nonce. It does not install lifetime hooks, inject into a process or execute game functions.",
+    "Successful fresh acquire/reapply/release writes and real constructor/destructor observations are outside this integration fixture and belong to their dedicated synthetic suites.",
+    "The response sequence check observes the completed TrainerFrame call; it does not independently prove interprocess memory ordering under concurrent access.",
+    "No full build or other test suite was run for this assignment."
+  ]
+}

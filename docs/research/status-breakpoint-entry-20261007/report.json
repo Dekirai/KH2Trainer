@@ -1,0 +1,81 @@
+{
+  "date": "2026-10-07",
+  "status": "implemented_prerequisites_not_installed",
+  "sourceHashes": {
+    "src/KH2Trainer.Bridge/StatusBreakpointRouter.h": "b04ddd9c37053170d93c3a2a5858337922beebd7944ef5056b63c67c96934234",
+    "src/KH2Trainer.Bridge/StatusEntryPlan.h": "8077246092503a65390c52828cc8aca77f169564669fc9eefa97b9b1e70f6a9c",
+    "tests/KH2Trainer.Bridge.Tests/StatusBreakpointTests.cpp": "59bb623d05c7f733b30381dcc7f389573dcfa4f840f2ddeafe3976ae287d6525",
+    "tests/KH2Trainer.Bridge.Tests/StatusEntryPlanTests.cpp": "f790ad7049ea3c370599d64a2beb5267b629b742873c8e5b6d81a629b7e120d4",
+    "src/KH2Trainer.Bridge/StatusObserverSupport.h": "98277fd5c5df27b3f49b0bf259549d544432a4a70c2e900cebb127c314cee042",
+    "tests/KH2Trainer.Bridge.Tests/StatusObserverTests.cpp": "1bb271118c0d4aca7b599cfa96266aa697042644414845ead83d0250e3ded2ac",
+    "tests/KH2Trainer.Bridge.Tests/StatusBreakpointProductionCompile.cpp": "1b35ae0a6b4f4db21c5e1e8bddb64b6aec46182c7cf698e89af5ae4dccd3a448",
+    "tests/KH2Trainer.Bridge.Tests/run-tests.ps1": "2818c51b094b5fb758cd16021ad9a3a6cefaa9a6080199ab22f928aeab5bb8a3"
+  },
+  "lastDeliveredRelease": {
+    "path": "C:\\Users\\shinz\\source\\repos\\KH2Trainer\\artifacts\\packages\\KH2_Trainer_v0.12.8\\KH2_Trainer.exe",
+    "version": "0.12.8.0",
+    "length": 163888751,
+    "sha256": "c653f0528be35e6361f71d93ec6d22bb9f832d8a91f058382adf59713ec8cc6d",
+    "packageCheck": {
+      "success": true,
+      "is64Bit": true,
+      "protocol": 4,
+      "featureCount": 353,
+      "catalogs": {
+        "items": 535,
+        "abilities": 171,
+        "characters": 13
+      },
+      "diagnostics": {
+        "messages": 8,
+        "prompts": 3,
+        "languages": 6,
+        "sourceSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed"
+      },
+      "embeddedBridgeSha256": "06db1c6a3e0fbcc5b69b310e48b72ce657b81188305fd6f59eacf86b7d962535",
+      "scope": "Packaged runtime and embedded assets only. No window, game code or gameplay validation."
+    },
+    "requiresKH2Restart": true
+  },
+  "originalBodyDefinitionsUnchangedFromV0128": true,
+  "implementation": [
+    "BuildBreakpoint creates the same original trampoline/unwind image as the relative-jump planner, with a one-byte CC patch and no near-relay requirement.",
+    "Router prepares five full-body fingerprints and immutable targets, pins callback modules, registers a resident VEH, then conditionally replaces each first byte with an 8-bit compare-exchange. No remaining instruction bytes change.",
+    "The x64 handler only routes owned EXCEPTION_BREAKPOINT records with matching exception address and RIP. It changes RIP only and performs no allocation, locking, native original call or memory probe.",
+    "Partial publication, cache/protection failures, a debugger or code drift fault confidence. Already published routes continue forwarding; production has no teardown or reset.",
+    "Typed STATUS wrappers observe before the native writes, forward once outside the metadata lock, preserve integer arguments/returns and LastError, and drain through finally on native SEH.",
+    "Observer bootstrap cannot acquire or compare ownership. Arming requires an external proven barrier and no tracked calls. The barrier itself is not supplied by these components."
+  ],
+  "tests": {
+    "suites": {
+      "StatusBreakpointTests": 428,
+      "StatusEntryPlanTests": 2573,
+      "StatusObserverTests": 2740,
+      "StatusRevisionLedgerTests": 930
+    },
+    "checks": 6671,
+    "failures": 0,
+    "scope": "Fresh root MSVC runs; private executable memory, real Windows VEH/unwind APIs, synthetic STATUS pools and native test callbacks. No game process or game code executed."
+  },
+  "productionCompile": "The runner separately compiles the real MEM_IMAGE-only Router without KH2_STATUS_BREAKPOINT_TESTS; compile-only, not executed.",
+  "concurrencyProbe": "Four native test threads execute original private functions before and during all five entry-byte changes. Every result is the original or wrapped result. Native LOCK INC counters equal total completed calls after join; instruction tails remain exact. A separate four-thread probe starts after publication.",
+  "limitations": [
+    "Resident entry routing does not prove pre-existing native writer calls have drained. No game installer or ownership transaction is connected to TrainerBridge yet.",
+    "Tests demonstrate the exercised Windows execution paths, not universal hardware, debugger, exception-handler or arbitrary mod compatibility.",
+    "A later handler that consumes owned breakpoints or foreign code executing our original trampolines outside the wrappers is outside the observation contract.",
+    "Caller must supply the exact pinned STATUS definitions, fully bound wrappers, RX originals with registered unwind metadata, and process-long object/module lifetimes.",
+    "Runtime code drift faults metadata; it cannot make externally corrupted native code safe to execute.",
+    "Production has no removal API because a handler or wrapper can already be in flight. Test teardown requires joined callers in its isolated process."
+  ],
+  "next": "Implement and verify the native bootstrap drain, bind the actual five entries/pool/Actor lifetime, then add durable typed field receipts and replace legacy timed scalar cleanup.",
+  "references": [
+    "https://learn.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-addvectoredexceptionhandler",
+    "https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-flushinstructioncache",
+    "https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualprotect",
+    "../status-entry-observation-20261007/report.txt",
+    "../status-bootstrap-20261007/"
+  ],
+  "liveGame": false,
+  "liveTwitch": false,
+  "gameOrSaveWrites": false
+}

@@ -1,0 +1,363 @@
+{
+  "schema": 1,
+  "title": "Actor movement for verified Roxas and rescue Mickey",
+  "status": "Implemented; Root central native tests passed; independently reviewed; live gameplay untested.",
+  "inputSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "scope": "Only ActorMovementFeatures.inl and its existing native test source changed. No EffectCatalog, bridge, version, coverage, live process or IDB mutation.",
+  "implementation": {
+    "legacyReady": "actor_movement::Ready body unchanged: Sora-only dependency contract used by CollisionFeatures and TargetingFeatures.",
+    "newReady": "actor_movement::MovementReady is called only by ActorMovementHandle/Snapshot. It reuses damage/scene/thread/pool/lifetime guards and actual player_role::Inspect, then pins the selected movement vtable slot and all8 wrapper bytes.",
+    "write": "One writable float32 field per successful command, no native function call or retained Actor/restore pointer.",
+    "snapshot": "Same identity gates, paused-field observation allowed, individual nonfinite values omitted.",
+    "restore": "Completed runtime values remain until native script/reconstruction overwrites them. No automatic restore or reapplication. Explicit profile application is one-time.",
+    "nativeSupport": [
+      {
+        "role": "Sora",
+        "characterId": 1,
+        "forms": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "descriptor": "0x750300",
+        "vtable": "0x5CBA28",
+        "callback": "0x404FB0",
+        "extra": "Actor form must also match saved current Sora Form byte9ACDD4."
+      },
+      {
+        "role": "Roxas",
+        "characterId": 14,
+        "forms": [
+          0,
+          10
+        ],
+        "descriptor": "0x750300",
+        "vtable": "0x5CBA28",
+        "callback": "0x404FB0",
+        "extra": "Actor/object/status must agree. Do not substitute Sora's saved current Form byte for Roxas identity."
+      },
+      {
+        "role": "rescue Mickey",
+        "characterId": 4,
+        "forms": [
+          11
+        ],
+        "descriptor": "0x7523B8",
+        "vtable": "0x5D15A0",
+        "callback": "0x4154E0",
+        "extra": "Exact rescue class only. Attached/inactive/deleting/departure/transition states rejected."
+      }
+    ]
+  },
+  "features": [
+    {
+      "id": "movement.walk_speed",
+      "slot": 344,
+      "offset": 296,
+      "type": "float32",
+      "range": [
+        0,
+        32
+      ]
+    },
+    {
+      "id": "movement.run_speed",
+      "slot": 345,
+      "offset": 300,
+      "type": "float32",
+      "range": [
+        0,
+        64
+      ]
+    },
+    {
+      "id": "movement.fall_speed",
+      "slot": 346,
+      "offset": 312,
+      "type": "float32",
+      "range": [
+        0.1,
+        100
+      ]
+    },
+    {
+      "id": "movement.base_jump_height",
+      "slot": 347,
+      "offset": 304,
+      "type": "float32",
+      "range": [
+        0,
+        1000
+      ]
+    }
+  ],
+  "crowdControl": {
+    "status": "Not approved for cross-role timed effects in this change.",
+    "potentialRewards": [
+      "super-speed",
+      "snail",
+      "moon-jump"
+    ],
+    "reason": "Current managed OwnedValue state is not bound to a concrete Actor lifetime. A same-valued role replacement may retain an old Actor's restore value. Role admission alone does not fix this. EffectCatalog remains owned by the other agent.",
+    "text": "Moon Jump changes base jump height and maximum falling speed; it does not modify native gravity. High Jump and special actions can override base height."
+  },
+  "tests": {
+    "path": "../../../tests/KH2Trainer.Bridge.Tests/ActorMovementGuardTests.cpp",
+    "execution": "Root executed the native suites; this agent read and copied the resulting logs without another build.",
+    "added": "Actual role helper fixtures for Roxas forms0/10 and rescue Mickey11; all4 fields with endpoints/fraction, exact4-byte Actor delta, status/save preservation, paused snapshots/write refusal, wrong descriptor/object/form, both wrapper byte corruption, current Actor replacement, full list/pool lifetime, read-only memory, host/thread/transition gates, and retained negative legacy Ready for Collision/Targeting.",
+    "results": {
+      "ActorMovementGuardTests": {
+        "checks": 2044,
+        "failures": 0,
+        "log": "validation/native-ActorMovementGuardTests.txt",
+        "sha256": "2344af7633ff48b4858b0a1d6d1c6efef2477457d83c1ae358c3f5ad5a247827",
+        "execution": "Root central isolated native run; log inspected, no reviewer build."
+      },
+      "CollisionGuardTests": {
+        "checks": 595,
+        "failures": 0,
+        "log": "validation/native-CollisionGuardTests.txt",
+        "sha256": "8ca588f84017f7fce4ec4b589fe5d06429bfad478a603c807787dbf23a9b8bc5",
+        "execution": "Root central isolated native run; log inspected, no reviewer build."
+      },
+      "TargetingGuardTests": {
+        "checks": 614,
+        "failures": 0,
+        "log": "validation/native-TargetingGuardTests.txt",
+        "sha256": "4d4ee7ce205740928f8903d35ee2d79ab6175268ab38fcdcc698d7c6fbfd67ab",
+        "execution": "Root central isolated native run; log inspected, no reviewer build."
+      }
+    }
+  },
+  "evidenceSummary": {
+    "completeFreshFunctions": 22,
+    "instructions": 1863,
+    "originalFunctionBytes": 8984,
+    "originalDataBytes": 656,
+    "runtimeWrapperPins": 2,
+    "runtimePinBytes": 16,
+    "validation": "verify.py compares each complete saved body and static vtable/descriptor against the SHA-pinned original EXE; no game process or native call."
+  },
+  "priorRoleEvidence": [
+    "../player_roles_drive_20261007/report.json",
+    "../player_roles_drive_20261007/evidence.json",
+    "../player_roles_drive_20261007/verification.json"
+  ],
+  "limitations": [
+    "No live gameplay test. Static layout/use and isolated fixture intentions are separate from real gameplay behavior.",
+    "No universal movement multiplier: special Actions can choose other movement paths; High Jump can replace base jump height.",
+    "Ranges are trainer edit policy. Loaded character-group defaults can differ from base initializer2/8/160; preset20 is not a measured per-character fall default.",
+    "Gameplay/input gates are the module's existing gates, not a new atomic application-wide control policy.",
+    "No compatibility is asserted for arbitrary mod-rewritten code or concurrent external writes.",
+    "The extension does not broaden Collision, Targeting, Motion, Drive, or any timed Twitch effect."
+  ],
+  "claims": [
+    {
+      "addr": "0x140405030",
+      "Finding": "The normal Sora/Roxas constructor calls the common base-player constructor using its supplied form, then installs descriptor750300 and category0x1000000; the movement block is inherited.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140405030]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x140415670",
+      "Finding": "The rescue-Mickey constructor calls the same base-player constructor with form11 before installing descriptor7523B8/category0x2000000 and rescue-specific state. It does not replace the inherited movement block.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140415670]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x1404158C0",
+      "Finding": "The rescue spawn path allocates3680 bytes and directly calls3A7A40 with form11, then installs the same Mickey descriptor and rescue state. This is an additional concrete constructor path, not a generic Mickey-model assumption.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404158C0]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x1403A7A40",
+      "Finding": "Common player initialization builds the inherited actor, stores supplied form at+3552, installs shared input/controller pointers, sets player category0x80/current player, and binds a status record by actual object character ID and form.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403A7A40]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x1403D5840",
+      "Finding": "The common player ancestor calls3D2DA0 and sets categorybit4, keeping the inherited base actor layout. The jump selector's eligibility bit is therefore present in all three admitted playable classes.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403D5840]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x1403D2DA0",
+      "Finding": "This common ancestor calls3DA940 on the same RCX Actor, adds combat fields and sets categorybit2; it does not shift or replace the base movement block.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403D2DA0]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x1403DA940",
+      "Finding": "This ancestor calls3B3200 on the same Actor, then conditionally calls40A480(Actor+296,object.weaponGroup). Loaded character-group data can replace initial walk/run/jump values.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403DA940]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x1403B3200",
+      "Finding": "The common Actor constructor initializes physics and calls40A440 on Actor+296, then initializes the motion owner at Actor+344. This establishes the same underlying fields before role-specific constructors run.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403B3200]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x14040A440",
+      "Finding": "Initializes movement-relative+0 walk2,+4 run8,+8 base jump160, and+16 fall cap from loaded parameter+20; these are base initializers, not necessarily final character-specific defaults.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040A440]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x14040A480",
+      "Finding": "Loads group-specific movement records and copies walk/run/base-jump and other parameters into the existing block; it leaves the relative+16 fall cap unchanged. Scripts and reconstruction can supersede one-time edits.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040A480]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x140404FB0",
+      "Finding": "Exact eight-byte Sora/Roxas movement wrapper moves RDX Actor to RCX and tail-jumps3A8FA0. Its address is vtable5CBA28+296.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140404FB0]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x1404154E0",
+      "Finding": "Exact eight-byte rescue-Mickey movement wrapper performs the same RDX-to-RCX tail jump to3A8FA0. Its address is vtable5D15A0+296.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404154E0]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x1403A8FA0",
+      "Finding": "Shared movement input consumes Actor+296/+300 at analog threshold0.8 and updates input direction/magnitude. Special Action IDs2/24/53 and Action flags can bypass normal movement or use Actor+316.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403A8FA0]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x1403A89A0",
+      "Finding": "Common player update decodes the role descriptor and calls vtable+296 with the same Actor. It then processes controller actions and common motion state.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403A89A0]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x1404150E0",
+      "Finding": "Rescue-Mickey's vtable+32 callback ends in3A89A0. At HP1 it marks Actor+288 bit0x100 and starts rescue departure behavior; the retained movement gate rejects this state.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404150E0]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x1403B59B0",
+      "Finding": "Reads Actor+304 as fallback jump height with motion3. An eligible positive High Jump level replaces it with a growth-table height and motion201; no character-ID-specific layout is used.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403B59B0]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x1403B5A40",
+      "Finding": "Companion jump-height selector reads the same Actor+304 fallback and applies the same conditional High Jump override, without the motion output.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403B5A40]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x140422630",
+      "Finding": "A common jump Action prepares a vector using3B59B0, invokes native jump/motion setup, then writes Actor states280/284. Parameter edits affect later consumers and do not invoke this Action.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140422630]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x1403CB100",
+      "Finding": "A common jump movement callback computes vertical ascent/descent and caps displacement by timestep*Actor+312. The field is a fall-speed cap, not gravity.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403CB100]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x1403CB360",
+      "Finding": "Related common jump callback uses Actor in R8, output RDX and float timestepXMM3; it applies the same Actor+312 cap and updates descent flags. No character-specific storage offset is selected.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403CB360]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x140422780",
+      "Finding": "A common air Action applies native acceleration0.40816328 and caps vertical velocity by Actor+312 before timestep scaling; trainer edits do not change the acceleration constant.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140422780]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    },
+    {
+      "addr": "0x1403A7CB0",
+      "Finding": "The normal player factory selects several explicit special-object constructors; remaining normal playable objects use405030. Only the exact role-helper identities are admitted, not every object accepted by this factory.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403A7CB0]",
+        "verification.json"
+      ],
+      "Limitations": "Exact original build, static evidence. Shared fields and consumers establish the contract; special Actions, scripts, growth abilities and mods can replace or bypass the values. No live gameplay validation."
+    }
+  ],
+  "independentReview": {
+    "reviewer": "managed_tools",
+    "result": "No concrete blocking finding in the native delta. Read-only review, no independent build.",
+    "scope": "Role/form/vtable/pin selection, one-float store, no retained pointers, preserved Sora-only dependency gate."
+  }
+}

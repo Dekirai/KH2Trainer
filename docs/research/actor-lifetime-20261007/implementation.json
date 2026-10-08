@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "date": "2026-10-07",
+  "status": "Implementation and synthetic verification; no live injection or game execution.",
+  "module": "src/KH2Trainer.Bridge/ActorLifetimeSupport.inl",
+  "pins": "src/KH2Trainer.Bridge/ActorLifetimePins.inl",
+  "evidence": [
+    "report.json",
+    "contract.json",
+    "evidence.json",
+    "verification.json",
+    "product-verification.json"
+  ],
+  "api": {
+    "Install": "bool Install(const TrainerContext&). Game thread, exact base; pins resident bridge, creates random nonzero64-bit session nonce and installs all3CAS-protected slots. No adoption is allowed until all3hooks and code/table checks pass. Failure is sticky and cannot silently resume.",
+    "Ready": "bool Ready(). On engine thread, checks all12 complete native bodies, relocated table/vptr chain, image metadata and ownership of all3slots. Fault blocks all resolution/writes. It deliberately does not expire with host heartbeat.",
+    "ObserveCurrent": "uint64_t ObserveCurrent(const TrainerContext&). Uses the actual player_role::Inspect. Sora/Roxas/rescue Mickey only; returns same generation for same live watch. Unready scene by itself does not reset lifetime; dispatch retains its own scene/control gates. A constructor retires old generations at that address; serial for the new coherent Actor is minted at next adoption.",
+    "Resolve": "uintptr_t Resolve(uint64_t). Returns tracked address only while observer is ready, generation alive, and address is still in the bounded complete native active Actor list. Not being listed blocks resolution without claiming destructor completion.",
+    "IsRetired": "bool IsRetired(uint64_t). Always false during observer Fault/Uninstalled. In intact observation, returns true for a recorded retired generation or a previously issued unpinned token that has been evicted. Pinned receipts are never evicted, so a pinned token's retired state requires a native constructor/death notification.",
+    "Pin": "bool Pin(uint64_t). Pins an existing live watch, rejects missing/retired tokens, faults on counter overflow.",
+    "Unpin": "void Unpin(uint64_t). Engine-thread private-reference release; still usable after observation fault. Retired unreferenced tombstones may be discarded. Live watches remain available until later bounded eviction.",
+    "BridgeInstance": "uint64_t BridgeInstance(). Once-per-install BCrypt random nonzero nonce. Host must combine it with process/bridge identity and exact uint64 generation. Split64-bit values across exact32-bit snapshot halves.",
+    "Status": "unsigned Status():0Uninstalled,1Observing,2Fault. Fault is observation uncertainty, not proof of Actor destruction."
+  },
+  "callbacks": {
+    "birth": "void __fastcall(uintptr_t Action,uintptr_t Actor), direct _ReturnAddress()==base+3B396D filter. Wrong action object or null Actor on the constructor signal faults; ordinary nonconstructor calls are forwarded without changing generation.",
+    "death": "uintptr_t __fastcall(uintptr_t Descriptor,uintptr_t Actor) preserves Original'sRAX. Correct class descriptor and non-null Actor retire matching watches BEFORE Original. Null Actor still forwards exactly once. No Actor dereference after Original.",
+    "metadataFailure": "Each wrapper catches only its own Notify exception and sets sticky Fault; Original executes outside that catch. Native exceptions remain visible and no private lock is held across Original. Complete pin-query faults also become sticky Fault.",
+    "pageFailure": "Slot installation checks exact RVA/alignment, bounded cell, committed image mapping and AllocationBase. Scoped protection is restored on success/CAS conflict. If protection reports failure, rollback re-queries actual state, obtains/rechecks writable permission before any owned CAS and best-effort restores original page protection. Failed rollback may leave a resident forwarding wrapper; observation remains faulted."
+  },
+  "watchLifecycle": {
+    "capacity": 128,
+    "serialWidth": 64,
+    "reservedSerial": 0,
+    "wrap": "Never; exhaustion is a sticky fault.",
+    "adoption": "New serial at first coherent adoption and every re-adoption after the preceding same-address generation was retired or evicted. No partial constructor Actor is inspected.",
+    "offcurrent": "Pinned old Sora remains alive/resolvable while Mickey is current; changing current player is not death.",
+    "capacityPolicy": "Unresolved pinned entries are never evicted. If all128entries are pinned, further adoption faults. Unpinned observation tokens can be retired by bounded reuse, always with a new serial.",
+    "teardown": "Bulk heap absence can block live-list resolution without asserting death. Later observed same-address construction retires the previous generation. Host must retain uncertain original values until an acknowledged resolution or explicit abandonment."
+  },
+  "integration": [
+    "Include <intrin.h> before the namespace/module.",
+    "Include ActorLifetimeSupport.inl after PlayerRoleSupport.inl.",
+    "Install on the native engine thread after thread identity is established; do not call from a host worker.",
+    "Before mutable receipt/cohort actions call Ready and ObserveCurrent, then atomically validate generation/session/current Actor/property and expected bits using the native command operation.",
+    "Pin each unresolved native receipt/lease and Unpin only when resolved or explicitly abandoned.",
+    "Keep all heartbeat, gameplay state and movement-range checks in the dispatch; this module observes identity only.",
+    "Common test runner may add ActorLifetimeTests with ProductionDefine ACTOR_LIFETIME_PRODUCTION_COMPILE. Standalone build_actor_lifetime_tests.cmd already builds/runs it and compiles the shipping branch."
+  ],
+  "verification": {
+    "checks": 6023,
+    "failures": 0,
+    "compiler": "MSVC x64 /std:c++17 /O2 /W4 /MT /EHsc; no warnings. Production branch compile-only also passed.",
+    "pinBodies": 12,
+    "pinnedBytes": 5703,
+    "tests": "tests/KH2Trainer.Bridge.Tests/ActorLifetimeTests.cpp",
+    "build": "tests/KH2Trainer.Bridge.Tests/build_actor_lifetime_tests.cmd",
+    "logs": [
+      "test-run.txt",
+      "product-verification.json"
+    ]
+  },
+  "limits": [
+    "No live game test or game-memory mutation was performed in this work.",
+    "Constructor observation is mid-construction; unsupported foreign threads can write Actor fields before this notification. The supported lifecycle/dispatch is the engine thread. Any observed foreign-thread callback faults observation and still forwards.",
+    "Runtime checks cannot prove that hostile foreign code did not remove/reinstall hooks between samples or construct Actors while bypassing the pinned native constructor.",
+    "Destructor-slot observation is class-specific. Bulk heap teardown is not falsely reported as a destructor; live-list and fresh gameplay validation remain required.",
+    "Field value equality alone still does not establish ownership against same-value writers. This module supplies lifetime identity; conditional cohort/journal integration must enforce its separate ownership contract.",
+    "BCrypt session nonce is probabilistic session uniqueness, supplemented by process/bridge identity; it is not a native game serial."
+  ],
+  "reviews": [
+    {
+      "reviewer": "root",
+      "finding": "Rollback CAS after uncertain protection restoration could fault; Notify failures could suppress forwarding.",
+      "resolution": "Both corrected, with slot-image/alignment guards, seven protection-failure outcomes and metadata/native-exception separation tests."
+    }
+  ]
+}

@@ -1,0 +1,2152 @@
+{
+  "schema": 1,
+  "targetSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "imageBase": "0x140000000",
+  "method": {
+    "baseline": "Hash-pinned historical full audit; original counts/tiers are preserved as historical recorded evidence, not rerun proof.",
+    "currentClaims": "Only explicit top-level claims/Claims/findings with addr/Address, Finding and resolvable evidence are considered. References, names, callsites, raw exports and test counts alone do not create semantic claims.",
+    "deduplication": "Counts use canonical native function-start addresses. Interior instructions map only through a validated full-body instruction list. Separate callback ranges, unresolved addresses and duplicate occurrences do not expand the function inventory.",
+    "semanticLimit": "One concrete finding does not prove all branches, side effects, resource lifetimes or live behavior. No function is promoted to complete semantic understanding.",
+    "domains": "Native, CIL and shader addresses stay separate. Six bodyless CIL metadata placeholders remain separate from 439 real CIL bodies.",
+    "asmLimit": "Complete current ASM requires finished aggregate/page cursors, matching counts, unique ordered instruction addresses, exact existing inventory extent and contiguous original body bytes. analyze_batch previews are raw-only. Original byte comparison is independently reported."
+  },
+  "baselineCounts": {
+    "native": {
+      "total": 36451,
+      "valid_exports": 36451,
+      "export_kinds": {
+        "pseudocode": 36450,
+        "assembly": 1
+      },
+      "tiers": {
+        "3": 1373,
+        "0": 34221,
+        "1": 518,
+        "2": 339
+      },
+      "specific_static_claim": 1712,
+      "semantic_open": 34739,
+      "bodyless_metadata_entries": 0
+    },
+    "cil": {
+      "total": 445,
+      "valid_exports": 445,
+      "export_kinds": {
+        "cil_disassembly": 439,
+        "cil_metadata_placeholder": 6
+      },
+      "tiers": {
+        "3": 439,
+        "0": 6
+      },
+      "specific_static_claim": 439,
+      "semantic_open": 0,
+      "bodyless_metadata_entries": 6
+    },
+    "shader": {
+      "total": 47,
+      "valid_exports": 47,
+      "export_kinds": {
+        "shader_disassembly": 47
+      },
+      "tiers": {
+        "3": 47
+      },
+      "specific_static_claim": 47,
+      "semantic_open": 0,
+      "bodyless_metadata_entries": 0
+    },
+    "native_candidate": {
+      "total": 0,
+      "valid_exports": 0,
+      "export_kinds": {},
+      "tiers": {},
+      "specific_static_claim": 0,
+      "semantic_open": 0,
+      "bodyless_metadata_entries": 0
+    }
+  },
+  "native": {
+    "inventoryFunctions": 36451,
+    "newInventoryFunctions": 0,
+    "historicalValidExports": 36451,
+    "legacyFunctionsWithSpecificClaim": 1712,
+    "newUniqueFunctionsWithSpecificClaim": 255,
+    "alreadyClaimedFunctionsWithAdditionalFindings": 204,
+    "mergedFunctionsWithSpecificClaim": 1967,
+    "functionsWithoutSpecificClaim": 34484,
+    "legacyRecordedFullAsmFunctions": 1571,
+    "currentFullAsmFunctions": 517,
+    "additionalFullAsmFunctionsBeyondLegacy": 311,
+    "mergedRecordedFullAsmFunctions": 1882,
+    "completeSemanticFunctionCount": null,
+    "completeSemanticFunctionCountReason": "Not measured or established by these inputs."
+  },
+  "newClaims": {
+    "occurrences": 636,
+    "supportedFunctionClaimOccurrences": 635,
+    "supportedCodeRangeClaimOccurrences": 1,
+    "canonicalFunctions": 459,
+    "classifications": {
+      "exact_inventory_function_start": 631,
+      "instruction_inside_evidenced_function": 4,
+      "separate_code_range_not_inventory_function": 1
+    },
+    "unresolvedOccurrences": 0,
+    "duplicateClaimGroupsAcrossAllRecordedSources": 371
+  },
+  "currentEvidence": {
+    "records": 813,
+    "completeBodyRecords": 780,
+    "originalPeCompared": true,
+    "recordedByteComparisonsPassing": 783,
+    "recordedByteComparisonsFailing": 0,
+    "note": "Body occurrences from overlapping investigations are not unique functions."
+  },
+  "excludedDomains": {
+    "occurrences": 68,
+    "byDomain": {
+      "src/kh2trainer.bridge/actorlifetimesupport.inl": 1,
+      "panacea": 66,
+      "external_unidentified": 1
+    },
+    "byKind": {
+      "foreign_subtree": 10,
+      "function": 29,
+      "claim": 29
+    },
+    "records": [
+      {
+        "source": "docs/research/actor-lifetime-20261007/implementation.json",
+        "pointer": "$",
+        "kind": "foreign_subtree",
+        "domain": "src/kh2trainer.bridge/actorlifetimesupport.inl",
+        "module": "src/KH2Trainer.Bridge/ActorLifetimeSupport.inl",
+        "addressAsRecorded": null,
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.functions[15]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x18000d380",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.functions[16]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x18000c180",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.functions[17]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x18000feb0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.functions[18]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x18000fe20",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.functions[19]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x18000b810",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.functions[20]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180010e60",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.functions[21]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x18000d660",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.functions[22]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180011fc0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.functions[23]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x18000fa50",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.functions[24]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x18000f070",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.functions[25]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x18000ac10",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.functions[26]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180009810",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.functions[27]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x18000b5c0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.functions[28]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x18000a230",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.functions[29]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x1800010c0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.functions[30]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x18000e460",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.data[2]",
+        "kind": "foreign_subtree",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180055340",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.data[3]",
+        "kind": "foreign_subtree",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180054030",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.data[4]",
+        "kind": "foreign_subtree",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180054180",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.data[5]",
+        "kind": "foreign_subtree",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x1800541d0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.data[6]",
+        "kind": "foreign_subtree",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180054340",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.data[7]",
+        "kind": "foreign_subtree",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180054430",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.data[8]",
+        "kind": "foreign_subtree",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180054468",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/evidence.json",
+        "pointer": "$.data[9]",
+        "kind": "foreign_subtree",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x1800545B0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/report.json",
+        "pointer": "$.claims[15]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "Panacea",
+        "addressAsRecorded": "0x1800010c0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/report.json",
+        "pointer": "$.claims[16]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "Panacea",
+        "addressAsRecorded": "0x18000ac10",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/report.json",
+        "pointer": "$.claims[17]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "Panacea",
+        "addressAsRecorded": "0x18000a230",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/report.json",
+        "pointer": "$.claims[18]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "Panacea",
+        "addressAsRecorded": "0x180009810",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/report.json",
+        "pointer": "$.claims[19]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "Panacea",
+        "addressAsRecorded": "0x18000c180",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/report.json",
+        "pointer": "$.claims[20]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "Panacea",
+        "addressAsRecorded": "0x18000d380",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/report.json",
+        "pointer": "$.claims[21]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "Panacea",
+        "addressAsRecorded": "0x18000b810",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/report.json",
+        "pointer": "$.claims[22]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "Panacea",
+        "addressAsRecorded": "0x180011fc0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/report.json",
+        "pointer": "$.claims[23]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "Panacea",
+        "addressAsRecorded": "0x18000b5c0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/report.json",
+        "pointer": "$.claims[24]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "Panacea",
+        "addressAsRecorded": "0x18000d660",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/report.json",
+        "pointer": "$.claims[25]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "Panacea",
+        "addressAsRecorded": "0x18000feb0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/report.json",
+        "pointer": "$.claims[26]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "Panacea",
+        "addressAsRecorded": "0x18000fe20",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/report.json",
+        "pointer": "$.claims[27]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "Panacea",
+        "addressAsRecorded": "0x180010e60",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/report.json",
+        "pointer": "$.claims[28]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "Panacea",
+        "addressAsRecorded": "0x18000fa50",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/report.json",
+        "pointer": "$.claims[29]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "Panacea",
+        "addressAsRecorded": "0x18000f070",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-effective-bytes-20261007/report.json",
+        "pointer": "$.claims[30]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "Panacea",
+        "addressAsRecorded": "0x18000e460",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/contract.json",
+        "pointer": "$.moduleIdentities[1]",
+        "kind": "foreign_subtree",
+        "domain": "external_unidentified",
+        "module": null,
+        "addressAsRecorded": null,
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/evidence.json",
+        "pointer": "$.functions[43]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x1800011c0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/evidence.json",
+        "pointer": "$.functions[44]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x18000fa50",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/evidence.json",
+        "pointer": "$.functions[45]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x18000fe20",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/evidence.json",
+        "pointer": "$.functions[46]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x18000feb0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/evidence.json",
+        "pointer": "$.functions[47]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x1800110c0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/evidence.json",
+        "pointer": "$.functions[48]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180011260",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/evidence.json",
+        "pointer": "$.functions[49]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x1800114a0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/evidence.json",
+        "pointer": "$.functions[50]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180012860",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/evidence.json",
+        "pointer": "$.functions[51]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180013410",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/evidence.json",
+        "pointer": "$.functions[52]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180013780",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/evidence.json",
+        "pointer": "$.functions[53]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180013b30",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/evidence.json",
+        "pointer": "$.functions[54]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x1800141d0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/evidence.json",
+        "pointer": "$.functions[55]",
+        "kind": "function",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180045330",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/report.json",
+        "pointer": "$.claims[36]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x1800011c0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/report.json",
+        "pointer": "$.claims[37]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x18000fa50",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/report.json",
+        "pointer": "$.claims[38]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x18000feb0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/report.json",
+        "pointer": "$.claims[39]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x18000fe20",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/report.json",
+        "pointer": "$.claims[40]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x1800110c0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/report.json",
+        "pointer": "$.claims[41]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180011260",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/report.json",
+        "pointer": "$.claims[42]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x1800114a0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/report.json",
+        "pointer": "$.claims[43]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180013410",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/report.json",
+        "pointer": "$.claims[44]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180013780",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/report.json",
+        "pointer": "$.claims[45]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x1800141d0",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/report.json",
+        "pointer": "$.claims[46]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180013b30",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/report.json",
+        "pointer": "$.claims[47]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180012860",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      },
+      {
+        "source": "docs/research/drive-provider-binding-20261007/report.json",
+        "pointer": "$.claims[48]",
+        "kind": "claim",
+        "domain": "panacea",
+        "module": "panacea",
+        "addressAsRecorded": "0x180045330",
+        "reason": "outside_retail_native_domain",
+        "countedAsRetailEvidence": false,
+        "originalRetailPeComparisonAttempted": false
+      }
+    ],
+    "scope": "These records are outside the retail-native evidence/claim totals; no original-retail byte comparison was attempted. Ambiguous mixed-module rows are not guessed. Contradictory metadata and actual retail byte mismatches remain fatal."
+  },
+  "newUniqueFunctionAddresses": [
+    "0x140024560",
+    "0x140025310",
+    "0x1400fd950",
+    "0x1400fda30",
+    "0x1400fdc70",
+    "0x1400fdcb0",
+    "0x1400fddc0",
+    "0x1401023c0",
+    "0x140102840",
+    "0x140104100",
+    "0x140106250",
+    "0x1401063d0",
+    "0x140106460",
+    "0x1401064d0",
+    "0x1401065c0",
+    "0x140106700",
+    "0x140106790",
+    "0x140106870",
+    "0x140106940",
+    "0x140107010",
+    "0x140129d30",
+    "0x14012d8e0",
+    "0x14012e100",
+    "0x14012e460",
+    "0x14012ef30",
+    "0x14012f070",
+    "0x14012fd00",
+    "0x14012fd90",
+    "0x140135470",
+    "0x140140200",
+    "0x140141ae0",
+    "0x140142120",
+    "0x14014f1e0",
+    "0x14014fc20",
+    "0x1401515c0",
+    "0x140151870",
+    "0x1401524a0",
+    "0x1401524e0",
+    "0x140152680",
+    "0x140152940",
+    "0x140154b50",
+    "0x140157040",
+    "0x14015ec70",
+    "0x14015ed20",
+    "0x14015edd0",
+    "0x14015ee10",
+    "0x14015eea0",
+    "0x14015ef30",
+    "0x140168870",
+    "0x14016c9b0",
+    "0x14016c9d0",
+    "0x140183220",
+    "0x1401832a0",
+    "0x14019b780",
+    "0x14019be10",
+    "0x1401a4cd0",
+    "0x1401a4d40",
+    "0x1401aa7d0",
+    "0x1401aac80",
+    "0x1401aad20",
+    "0x1401ab220",
+    "0x1401d3570",
+    "0x1401dad10",
+    "0x1402c4050",
+    "0x1402c40c0",
+    "0x1402c4480",
+    "0x1402ce6b0",
+    "0x1402d05f0",
+    "0x1402d0680",
+    "0x1402d0710",
+    "0x1402d1480",
+    "0x1402d8fe0",
+    "0x1402e2d60",
+    "0x1402fc760",
+    "0x14039a830",
+    "0x14039c6a0",
+    "0x14039cc40",
+    "0x14039d460",
+    "0x14039d590",
+    "0x14039e000",
+    "0x14039e340",
+    "0x14039e690",
+    "0x1403a0790",
+    "0x1403a09c0",
+    "0x1403a0c60",
+    "0x1403a5790",
+    "0x1403a57f0",
+    "0x1403a7070",
+    "0x1403a7890",
+    "0x1403a7cb0",
+    "0x1403a81c0",
+    "0x1403a85f0",
+    "0x1403a8980",
+    "0x1403a89a0",
+    "0x1403a8e90",
+    "0x1403a8f30",
+    "0x1403a9220",
+    "0x1403a9cf0",
+    "0x1403aa4f0",
+    "0x1403aa8d0",
+    "0x1403aa960",
+    "0x1403abc80",
+    "0x1403abed0",
+    "0x1403abef0",
+    "0x1403abf20",
+    "0x1403ac0e0",
+    "0x1403ac190",
+    "0x1403ac230",
+    "0x1403ac260",
+    "0x1403ad2d0",
+    "0x1403b20b0",
+    "0x1403b22d0",
+    "0x1403b2340",
+    "0x1403b26b0",
+    "0x1403b3e80",
+    "0x1403b4da0",
+    "0x1403b4e80",
+    "0x1403b5650",
+    "0x1403b5c10",
+    "0x1403b5e80",
+    "0x1403b62c0",
+    "0x1403b64d0",
+    "0x1403b6510",
+    "0x1403b6950",
+    "0x1403b77c0",
+    "0x1403ba9a0",
+    "0x1403bac10",
+    "0x1403bb600",
+    "0x1403bf2c0",
+    "0x1403bf300",
+    "0x1403bf550",
+    "0x1403bfbc0",
+    "0x1403c0010",
+    "0x1403c0280",
+    "0x1403c02e0",
+    "0x1403c0390",
+    "0x1403c03f0",
+    "0x1403c04c0",
+    "0x1403c06b0",
+    "0x1403c07e0",
+    "0x1403c0840",
+    "0x1403c0c30",
+    "0x1403c0cd0",
+    "0x1403c1880",
+    "0x1403c1d10",
+    "0x1403c2650",
+    "0x1403c26c0",
+    "0x1403c2cd0",
+    "0x1403c2db0",
+    "0x1403c3150",
+    "0x1403c3bd0",
+    "0x1403c63c0",
+    "0x1403c7b20",
+    "0x1403cc3d0",
+    "0x1403cc730",
+    "0x1403cc9c0",
+    "0x1403cd220",
+    "0x1403d1730",
+    "0x1403d2da0",
+    "0x1403d36d0",
+    "0x1403d3cf0",
+    "0x1403d5310",
+    "0x1403d57f0",
+    "0x1403d5840",
+    "0x1403d5dc0",
+    "0x1403d5e50",
+    "0x1403d6560",
+    "0x1403d65a0",
+    "0x1403d6770",
+    "0x1403d6850",
+    "0x1403d7620",
+    "0x1403d9cd0",
+    "0x1403d9fe0",
+    "0x1403da250",
+    "0x1403da940",
+    "0x1403db100",
+    "0x1403dcb30",
+    "0x1403dcb80",
+    "0x1403dcc10",
+    "0x1403ddc30",
+    "0x1403de460",
+    "0x1403e3ef0",
+    "0x1403e4f90",
+    "0x1403e6120",
+    "0x1403e8aa0",
+    "0x1403eaad0",
+    "0x1403eaae0",
+    "0x1403eab20",
+    "0x1403ead50",
+    "0x1403ead90",
+    "0x1403ed190",
+    "0x1403f22e0",
+    "0x1403f2470",
+    "0x1403f2990",
+    "0x1403f3a90",
+    "0x1403f95f0",
+    "0x1403f9850",
+    "0x1403fd5a0",
+    "0x1403fd690",
+    "0x1403fd830",
+    "0x1403ff000",
+    "0x140401680",
+    "0x1404049e0",
+    "0x140404a20",
+    "0x140404a30",
+    "0x140404bb0",
+    "0x140404c50",
+    "0x140404d60",
+    "0x140404ee0",
+    "0x140404f70",
+    "0x1404060e0",
+    "0x140406390",
+    "0x140409ab0",
+    "0x140409ac0",
+    "0x140409d20",
+    "0x14040a380",
+    "0x14040a480",
+    "0x14040cdd0",
+    "0x14040ce00",
+    "0x14040d6e0",
+    "0x140411b90",
+    "0x140411f30",
+    "0x140414dd0",
+    "0x140414eb0",
+    "0x1404150d0",
+    "0x1404150e0",
+    "0x1404151e0",
+    "0x140415280",
+    "0x140415380",
+    "0x140415410",
+    "0x1404154a0",
+    "0x1404154e0",
+    "0x140416030",
+    "0x140416270",
+    "0x140416a10",
+    "0x14041c6c0",
+    "0x14041c780",
+    "0x14041c840",
+    "0x14041c890",
+    "0x14041c900",
+    "0x14041e8e0",
+    "0x14041e8f0",
+    "0x140422900",
+    "0x14042b230",
+    "0x14042dc60",
+    "0x140431200",
+    "0x140433570",
+    "0x140439b8c",
+    "0x140439d5c",
+    "0x140439f50",
+    "0x14043a028",
+    "0x1404696f0",
+    "0x140577820",
+    "0x140577a30",
+    "0x140577d20"
+  ],
+  "revisitedFunctionAddresses": [
+    "0x1400fdc90",
+    "0x1400fdd90",
+    "0x140106000",
+    "0x1401062b0",
+    "0x140106440",
+    "0x140106480",
+    "0x140107180",
+    "0x140107240",
+    "0x140107620",
+    "0x140107760",
+    "0x140111ae0",
+    "0x14011c150",
+    "0x140125d00",
+    "0x14012cd80",
+    "0x14012d5a0",
+    "0x14012e5c0",
+    "0x14012f140",
+    "0x14012fdb0",
+    "0x140130030",
+    "0x140130130",
+    "0x14013f850",
+    "0x14013f900",
+    "0x14013fcc0",
+    "0x1401411b0",
+    "0x140141270",
+    "0x140141320",
+    "0x140142080",
+    "0x140142280",
+    "0x14014eb70",
+    "0x14014fd60",
+    "0x1401515e0",
+    "0x140152430",
+    "0x140152570",
+    "0x140154700",
+    "0x140157090",
+    "0x1401570f0",
+    "0x140157110",
+    "0x140157130",
+    "0x1401571b0",
+    "0x1401638f0",
+    "0x14016b270",
+    "0x14016fec0",
+    "0x1401752e0",
+    "0x140192050",
+    "0x140193280",
+    "0x14019c2b0",
+    "0x14019c3a0",
+    "0x14019c470",
+    "0x1401a8e60",
+    "0x1401a90c0",
+    "0x1401a94c0",
+    "0x1401aadc0",
+    "0x1401aae60",
+    "0x1401abf00",
+    "0x1401ac0a0",
+    "0x1401c3840",
+    "0x1401c5f20",
+    "0x1401d2610",
+    "0x1401d30c0",
+    "0x1401da6a0",
+    "0x1401dafb0",
+    "0x1401db470",
+    "0x1401db700",
+    "0x1402cb5d0",
+    "0x14038cf20",
+    "0x1403a3a70",
+    "0x1403a6480",
+    "0x1403a64f0",
+    "0x1403a6840",
+    "0x1403a75f0",
+    "0x1403a7a40",
+    "0x1403a8fa0",
+    "0x1403aa850",
+    "0x1403aba10",
+    "0x1403aba20",
+    "0x1403aba40",
+    "0x1403abab0",
+    "0x1403abd60",
+    "0x1403abd80",
+    "0x1403ac350",
+    "0x1403ad5e0",
+    "0x1403ad610",
+    "0x1403b3200",
+    "0x1403b3d60",
+    "0x1403b44d0",
+    "0x1403b4700",
+    "0x1403b4f10",
+    "0x1403b50f0",
+    "0x1403b59b0",
+    "0x1403b5a40",
+    "0x1403b5b20",
+    "0x1403b5d40",
+    "0x1403b6100",
+    "0x1403b89a0",
+    "0x1403b9090",
+    "0x1403ba070",
+    "0x1403ba7c0",
+    "0x1403ba940",
+    "0x1403bea30",
+    "0x1403beec0",
+    "0x1403bf4e0",
+    "0x1403bf5e0",
+    "0x1403bf810",
+    "0x1403bfa40",
+    "0x1403bfab0",
+    "0x1403bfb70",
+    "0x1403bfce0",
+    "0x1403bfd30",
+    "0x1403c04e0",
+    "0x1403c0620",
+    "0x1403c0860",
+    "0x1403c0890",
+    "0x1403c0ad0",
+    "0x1403c1190",
+    "0x1403c12f0",
+    "0x1403c17c0",
+    "0x1403c1d90",
+    "0x1403c2040",
+    "0x1403c2100",
+    "0x1403c2120",
+    "0x1403c2240",
+    "0x1403c3270",
+    "0x1403c65e0",
+    "0x1403c6740",
+    "0x1403c6aa0",
+    "0x1403c7300",
+    "0x1403c73c0",
+    "0x1403c8a40",
+    "0x1403c90b0",
+    "0x1403c94c0",
+    "0x1403c9780",
+    "0x1403c9890",
+    "0x1403c9c00",
+    "0x1403cb100",
+    "0x1403cb360",
+    "0x1403cbfc0",
+    "0x1403cc3b0",
+    "0x1403ccb90",
+    "0x1403d2eb0",
+    "0x1403d3790",
+    "0x1403d3ba0",
+    "0x1403d5c50",
+    "0x1403d7470",
+    "0x1403d7600",
+    "0x1403d7c70",
+    "0x1403da520",
+    "0x1403dc170",
+    "0x1403dc500",
+    "0x1403dca50",
+    "0x1403dcbb0",
+    "0x1403dd280",
+    "0x1403de3d0",
+    "0x1403e0660",
+    "0x1403e0cc0",
+    "0x1403e0f10",
+    "0x1403e1240",
+    "0x1403e1730",
+    "0x1403e1840",
+    "0x1403e1c80",
+    "0x1403e2000",
+    "0x1403e6010",
+    "0x1403e60c0",
+    "0x1403e8380",
+    "0x1403ecf30",
+    "0x1403ef750",
+    "0x1403ef8b0",
+    "0x1403ef910",
+    "0x1403f29e0",
+    "0x1403f4c30",
+    "0x1403f9fe0",
+    "0x140400440",
+    "0x140400b20",
+    "0x1404014a0",
+    "0x1404016b0",
+    "0x140401730",
+    "0x140404fb0",
+    "0x140405030",
+    "0x14040a440",
+    "0x14040ad70",
+    "0x14040b140",
+    "0x14040caa0",
+    "0x14040ce60",
+    "0x14040cf10",
+    "0x14040cf20",
+    "0x14040d000",
+    "0x14040d530",
+    "0x140415670",
+    "0x140415840",
+    "0x1404158c0",
+    "0x14041b320",
+    "0x14041b400",
+    "0x14041c690",
+    "0x140422630",
+    "0x140422780",
+    "0x1404308d0",
+    "0x1404335d0",
+    "0x1404ad240",
+    "0x1404ad270",
+    "0x1404ad2c0",
+    "0x1404ad390",
+    "0x1404ad3f0",
+    "0x140505d00",
+    "0x1405061f0",
+    "0x140506240"
+  ],
+  "sourceArchive": {
+    "path": "docs/legacy/KH2_Trainer_v0.11_Source.zip",
+    "sha256": "35e3cb99435e447af21c321799ad8d50145372827410d9f11bd5eb21289c2d5d",
+    "members": 798,
+    "containsFullAudit": false
+  },
+  "legacyClaimSources": {
+    "claimOccurrences": 3701,
+    "sourcePathPresentInFrozenSourceArchive": 3096,
+    "sourcePathAbsentFromFrozenSourceArchive": 605,
+    "scope": "All historical claim text/source pointers are preserved in the baseline full audit; absence here is not silently treated as a fresh source verification."
+  },
+  "baselineArchive": {
+    "path": "docs/research/coverage/baseline-v011-full-audit.zip",
+    "sha256": "51e768aa1fa686c17d3abbb7c00f7b43329418563c8d85e086e50505ba828b11"
+  },
+  "inputs": [
+    {
+      "path": "docs/research/actor-lifetime-20261007/contract.json",
+      "bytes": 6021,
+      "sha256": "7eedc527fc596394870a6f8536b23cad7b836d24609956401060b9276fc29e90"
+    },
+    {
+      "path": "docs/research/actor-lifetime-20261007/evidence.json",
+      "bytes": 1146617,
+      "sha256": "7416fc1b4d5898e3e758e4f9265248cb3e3475e24c425a9b47b1f7bf1a6f7deb"
+    },
+    {
+      "path": "docs/research/actor-lifetime-20261007/implementation-fingerprints.json",
+      "bytes": 824,
+      "sha256": "ee2c3ae41c904da41f80a12dfd1800d7297a1fcaba60515e9f91d5b531036c6a"
+    },
+    {
+      "path": "docs/research/actor-lifetime-20261007/implementation.json",
+      "bytes": 7597,
+      "sha256": "963c801c1fbac2afc247f4d4bbd4026c1f858cfbe8b70056fa8b8953479b88ad"
+    },
+    {
+      "path": "docs/research/actor-lifetime-20261007/product-verification.json",
+      "bytes": 432,
+      "sha256": "77fc331294e70f46219155f4a0cd88c8a4c46d628930e3c051e927ddca7b9e10"
+    },
+    {
+      "path": "docs/research/actor-lifetime-20261007/report.json",
+      "bytes": 29328,
+      "sha256": "419f18e1e098147c2d58f56868548bad9ddfaf2ed58bf908094e3c41dc3e2955"
+    },
+    {
+      "path": "docs/research/actor-lifetime-20261007/verification.json",
+      "bytes": 300,
+      "sha256": "27627888b71f17cdd970e7aea258ba23926d6904f9bc134d1971c763a505301c"
+    },
+    {
+      "path": "docs/research/actor-movement-roles-20261007/evidence.json",
+      "bytes": 850166,
+      "sha256": "5bebf41a18d164b30d24df43556627060c50fcef2f1c3103a3a9e1908d857ef6"
+    },
+    {
+      "path": "docs/research/actor-movement-roles-20261007/fingerprints.json",
+      "bytes": 1398,
+      "sha256": "3bc4df849abdfc2ddd8608613148a076b8d16c23344fa977fa5232eaeb5d82bc"
+    },
+    {
+      "path": "docs/research/actor-movement-roles-20261007/report.json",
+      "bytes": 20111,
+      "sha256": "2f9956b06849f8d086792d8503ef9d8023681ccdf203696f667d910e8d1390de"
+    },
+    {
+      "path": "docs/research/actor-movement-roles-20261007/verification.json",
+      "bytes": 5590,
+      "sha256": "da8117bffe54cf3c14793eee736f30c8bd977bfecf8dbf1dacc6ec421c0e8803"
+    },
+    {
+      "path": "docs/research/actor-scale-20261007/evidence.json",
+      "bytes": 574387,
+      "sha256": "ccf52cbbb9637ee513096f670985f157693969f83b5d69be84b97468d79a99aa"
+    },
+    {
+      "path": "docs/research/actor-scale-20261007/independent-review.json",
+      "bytes": 704,
+      "sha256": "d2ff037a3d44fe532c3b288257f731aea6f4df685fab97e6e5e408658ccf1e43"
+    },
+    {
+      "path": "docs/research/actor-scale-20261007/report.json",
+      "bytes": 5197,
+      "sha256": "9e6a8b4492bf367ac678e99a6b51d9fddbce94e3b0fb418cde8d3f66771c55e3"
+    },
+    {
+      "path": "docs/research/actor-scale-20261007/verification.json",
+      "bytes": 282,
+      "sha256": "9a319990395e8d48b6d92bc33414fdc99ec4800bb79648804dac3f686c686d5c"
+    },
+    {
+      "path": "docs/research/actor-scale-contract-20261007/contract.json",
+      "bytes": 7846,
+      "sha256": "95c059ad9b3205d3c0a54584fd5e39745c755de238bb82301b3b051b69d7fdbc"
+    },
+    {
+      "path": "docs/research/actor-scale-contract-20261007/displacement-search.json",
+      "bytes": 33478,
+      "sha256": "2146841ca9eeea18c1c0e9cb139afcba5334aa5d6ffeb2fea70ce9c488ec8942"
+    },
+    {
+      "path": "docs/research/actor-scale-contract-20261007/evidence.json",
+      "bytes": 2341212,
+      "sha256": "e32d1f78405f38d3a1e35cc5e24a26e0e7ad7bbafa56c49e4c6fa92ccdfd4f40"
+    },
+    {
+      "path": "docs/research/actor-scale-contract-20261007/fingerprints.json",
+      "bytes": 3865,
+      "sha256": "f28f980373b144541f5ae71a889a3a26b5807ff7f9a357ca015376c27af29008"
+    },
+    {
+      "path": "docs/research/actor-scale-contract-20261007/report.json",
+      "bytes": 28061,
+      "sha256": "f30f20176e52c51e6e276cfaf9f9e2495497cf029af40b7433840cc7b59eabe4"
+    },
+    {
+      "path": "docs/research/actor-scale-contract-20261007/verification.json",
+      "bytes": 13526,
+      "sha256": "c38dbf2eeb50f8918677cf8413505d77407134d21a1ffdb14c89a8bf12372cb1"
+    },
+    {
+      "path": "docs/research/actor-scale-contract-20261007/verifier-tests.json",
+      "bytes": 136,
+      "sha256": "f22e4e13f9f8661c51d3c16c10680f0519219e2a2184bfac24a8c4b1bc441423"
+    },
+    {
+      "path": "docs/research/actor-scale-contract-20261007/xrefs.json",
+      "bytes": 40309,
+      "sha256": "68853ba60836ee070576cba2270f3dca01e3a1f50eaaac3b954af40f3db3a1c9"
+    },
+    {
+      "path": "docs/research/actor-scale-projection-20261007/evidence.json",
+      "bytes": 1033393,
+      "sha256": "ecb8f65a5338126088e52e12bd34b56ef66f8f61135b0c3e111a2ca8ce96b5f2"
+    },
+    {
+      "path": "docs/research/actor-scale-projection-20261007/report.json",
+      "bytes": 11958,
+      "sha256": "d0455e8f961200a8024be7e4231329a7b6644a7fa1b9e343ce6b2753c29814d7"
+    },
+    {
+      "path": "docs/research/actor-scale-projection-20261007/review.json",
+      "bytes": 747,
+      "sha256": "7b0153005875bb8270d5becc01b4d77a82e01935e866f83a47dbfbeeac3d116b"
+    },
+    {
+      "path": "docs/research/actor-scale-projection-20261007/verification.json",
+      "bytes": 6232,
+      "sha256": "be36d6c09527cf28803b16920b52a919976a7eaa9afd29ac89eae13f85009eb7"
+    },
+    {
+      "path": "docs/research/actor-scale-writers-20261007/additional-data.json",
+      "bytes": 589,
+      "sha256": "e5b7793ab43ba95ddaeaede6de8fa29447599980feb218da4a3e585bfcf354bb"
+    },
+    {
+      "path": "docs/research/actor-scale-writers-20261007/additional-search-evidence.json",
+      "bytes": 29325,
+      "sha256": "35c88e3898b0a1fd675455fcac9e7f740309a64963ff1799855e2ab3f36c74a5"
+    },
+    {
+      "path": "docs/research/actor-scale-writers-20261007/evidence.json",
+      "bytes": 2238856,
+      "sha256": "d6c5a5dbdb8043beebd0b0fd44ac4e876f2f26034c5b2a06e1600398a91a9f3e"
+    },
+    {
+      "path": "docs/research/actor-scale-writers-20261007/fingerprints.json",
+      "bytes": 1705,
+      "sha256": "efddd478b5b4413cc3cf0baaee9dc85a26cb2a263ca5b9bc63b1800a010eaf4b"
+    },
+    {
+      "path": "docs/research/actor-scale-writers-20261007/report.json",
+      "bytes": 24679,
+      "sha256": "49fa181765dc821b58a8d2cd2f7861ab20b409b4daf79bc087a25518877bbd2d"
+    },
+    {
+      "path": "docs/research/actor-scale-writers-20261007/search-evidence.json",
+      "bytes": 143572,
+      "sha256": "a652b75ea8f6708775c8b873466a387c86450aaa015ef01020a03117ef41e1ce"
+    },
+    {
+      "path": "docs/research/actor-scale-writers-20261007/verification.json",
+      "bytes": 10592,
+      "sha256": "8e45a2b41e7911ba856c635b873105b59fc799f8a2dbe0f46bac0afd14707785"
+    },
+    {
+      "path": "docs/research/actor-scale-writers-20261007/verifier-tests.json",
+      "bytes": 136,
+      "sha256": "61bb534c73178ad455901f94be0616c2c1b266a2338a4f84379bdbc3c0c47486"
+    },
+    {
+      "path": "docs/research/color-ownership-20261007/native_evidence.json",
+      "bytes": 164763,
+      "sha256": "e6079cc3dfffe9377dab349fbe6d3eae1bc66e8079c08042c55059e224edfdf6"
+    },
+    {
+      "path": "docs/research/color-ownership-20261007/native_full_pseudocode.json",
+      "bytes": 24541,
+      "sha256": "5ad66431f2751c6211510bbc69a65740b8709514997a2226f7eeb580e9e5d5e9"
+    },
+    {
+      "path": "docs/research/color-ownership-20261007/original_verification.json",
+      "bytes": 1786,
+      "sha256": "e3aa6a1599afaecae8d6bcae89d028d3b7bcc4c81a483b4b6e699131c6c328b5"
+    },
+    {
+      "path": "docs/research/color-ownership-20261007/report.json",
+      "bytes": 6015,
+      "sha256": "80fb4cf466b78babc293eb6ebee8bbee8f5b86ca6004eaa7e9a6cdfef9c7a63b"
+    },
+    {
+      "path": "docs/research/color-ownership-20261007/session_and_xrefs.json",
+      "bytes": 3057,
+      "sha256": "1f8e199362093243352c2a0f0f35f5913e2271ddea55e97de8bf41ccd3e6257b"
+    },
+    {
+      "path": "docs/research/coverage/imported/drive-resource-content/evidence.json",
+      "bytes": 1692523,
+      "sha256": "a0ba914b7e27a6cf58afd42bf0ff8ef0fdafe5e5a4a48409e6097d9db0b9223a"
+    },
+    {
+      "path": "docs/research/coverage/imported/drive-resource-content/findings.json",
+      "bytes": 12830,
+      "sha256": "fb1e3ee3b86dcb27378dffd8fe7d48ae01cb24aa1ddfb45087ca297d8b54008e"
+    },
+    {
+      "path": "docs/research/coverage/imported/drive-resource-content/next_guard_tests.json",
+      "bytes": 2406,
+      "sha256": "14a7d0ef3493eec113b9daa2160552033935eb313e45304e1fc1788fdf856ecf"
+    },
+    {
+      "path": "docs/research/coverage/imported/drive-resource-content/verification.json",
+      "bytes": 251,
+      "sha256": "41ae4bc7cab62768ad64aad1371944d44f77c77e4192fd4008761e27c57f05f4"
+    },
+    {
+      "path": "docs/research/drive-color-independent-review-20261007.json",
+      "bytes": 5944,
+      "sha256": "455ab2c4f3ca5631705efd838839709e52022f5f3fdfef3068a77cd0d402a0f1"
+    },
+    {
+      "path": "docs/research/drive-effective-bytes-20261007/contract.json",
+      "bytes": 8230,
+      "sha256": "01a1498175f2c303b8f1be8db4e61e66bf29e494cbe7991213262a1651775777"
+    },
+    {
+      "path": "docs/research/drive-effective-bytes-20261007/evidence.json",
+      "bytes": 3193621,
+      "sha256": "4f4605edd163a7bbefb90495cd72302918cd4c117b1d291ab9ea3fae023289d2"
+    },
+    {
+      "path": "docs/research/drive-effective-bytes-20261007/report.json",
+      "bytes": 20441,
+      "sha256": "cc124b1dbf3eb31ebf6273fd5007a1233b6fbbb3ebad4a06004255b1a270ec8a"
+    },
+    {
+      "path": "docs/research/drive-effective-bytes-20261007/verification.json",
+      "bytes": 3021,
+      "sha256": "ed8f9854e2d0dcfeb7da4f21fa5a3d852458da56f9a3f35109807851c355c853"
+    },
+    {
+      "path": "docs/research/drive-preconstructor-20261007/evidence.json",
+      "bytes": 1834052,
+      "sha256": "eef60544027d0cb9748198fe02bb72f3c2a300ce06e2eed8681517b6ddb3795b"
+    },
+    {
+      "path": "docs/research/drive-preconstructor-20261007/fingerprints.json",
+      "bytes": 896,
+      "sha256": "328a0a379a9a0d3ba584259d1b6223999ea12a2ecfc7830f05307fea91e4393d"
+    },
+    {
+      "path": "docs/research/drive-preconstructor-20261007/report.json",
+      "bytes": 23622,
+      "sha256": "7f1b9c5a0559b4afd98ee19dfb71378da91078b01805ca422b5c15dbc19b5b5d"
+    },
+    {
+      "path": "docs/research/drive-preconstructor-20261007/verification.json",
+      "bytes": 300,
+      "sha256": "1b6692036567e99bab2a367a62ecc432d9c83df5f5579b1b63d0c89cea3cce99"
+    },
+    {
+      "path": "docs/research/drive-provider-binding-20261007/contract.json",
+      "bytes": 10946,
+      "sha256": "1739cc39ce5ece64dbe32dfc96806adb600d9927f20b2958c2106b95710c1a0f"
+    },
+    {
+      "path": "docs/research/drive-provider-binding-20261007/evidence.json",
+      "bytes": 2283136,
+      "sha256": "db3da22daa05440368932e406fc9b59091316c5c5f81831023e5c59c7f391daa"
+    },
+    {
+      "path": "docs/research/drive-provider-binding-20261007/fingerprints.json",
+      "bytes": 1436,
+      "sha256": "b37b1a93704b423beefdea74fddb5d273b398a15e9a5ba0316b11f7de464326c"
+    },
+    {
+      "path": "docs/research/drive-provider-binding-20261007/report.json",
+      "bytes": 26382,
+      "sha256": "5a6e9c19193246fe5b7eeece2ba458b25b01c05640d105c38222b1230cddbca6"
+    },
+    {
+      "path": "docs/research/drive-provider-binding-20261007/verification.json",
+      "bytes": 1036,
+      "sha256": "4b17e715aa9b264b011ab5b22b46e6347225dd1b24885c1b37db375aa96a2433"
+    },
+    {
+      "path": "docs/research/drive-raw-staging-20261007/evidence.json",
+      "bytes": 332017,
+      "sha256": "79672bcc71f2e4ae5ce4173cdf366d1a1a4f00140037a6417afa24c54a521785"
+    },
+    {
+      "path": "docs/research/drive-raw-staging-20261007/report.json",
+      "bytes": 4276,
+      "sha256": "5da48165ce5b2c342442edc5b1d67751a7d4c231550e19d4fd581392d3ba6028"
+    },
+    {
+      "path": "docs/research/drive-raw-staging-20261007/verification.json",
+      "bytes": 304,
+      "sha256": "7d94093f684cc0a070e4e784d398e2808a6ff26435b5e47adec3d8ffd73531d6"
+    },
+    {
+      "path": "docs/research/drive-skeleton-guard-20261007/evidence.json",
+      "bytes": 1817588,
+      "sha256": "ccf134754c93ad4d1f0695eeee17859c267638412fa6a6547a5699d3de9f759d"
+    },
+    {
+      "path": "docs/research/drive-skeleton-guard-20261007/fingerprints.json",
+      "bytes": 2154,
+      "sha256": "e3f56be603af7fa4bc19df3bd5729f458bbcc42d1ed7acf41e97be0e6541c0f3"
+    },
+    {
+      "path": "docs/research/drive-skeleton-guard-20261007/report.json",
+      "bytes": 6215,
+      "sha256": "a601a1427eb06a9db02e900880834b9d38c0c89a846db106119934ff86e50eec"
+    },
+    {
+      "path": "docs/research/drive-skeleton-guard-20261007/verification.json",
+      "bytes": 299,
+      "sha256": "1942f4d7a04bf59f485e8b1bf7eb88e8376219780558fa81a662ae6d33f797ad"
+    },
+    {
+      "path": "docs/research/effective-asset-reader-20261007/contract.json",
+      "bytes": 4169,
+      "sha256": "7fa2c3185eecaf690e977ed86c096df44eb3af2432d003cf3974b96086296159"
+    },
+    {
+      "path": "docs/research/effective-asset-reader-20261007/fingerprints.json",
+      "bytes": 4185,
+      "sha256": "fa7bd89c8c98df41bdf3d187d7feebd1d55023e040611182a2e54a61799826fd"
+    },
+    {
+      "path": "docs/research/effective-asset-reader-20261007/independent-review.json",
+      "bytes": 4235,
+      "sha256": "b86a25dbf01865df091ed642624a94eadc0c6696d10bb4716173fbc4c9304494"
+    },
+    {
+      "path": "docs/research/effective-asset-reader-20261007/report.json",
+      "bytes": 8577,
+      "sha256": "ec5658a74fc562795f2dd74b89e6f8c8a8552619e1c34a25d1e906ec817fb1e1"
+    },
+    {
+      "path": "docs/research/effective-asset-reader-20261007/verification.json",
+      "bytes": 2547,
+      "sha256": "4c28a2c5b9ba2b2a3482704fdce576c9740009487faa52de598a384676363429"
+    },
+    {
+      "path": "docs/research/event-control-refinement-20261007/evidence.json",
+      "bytes": 92900,
+      "sha256": "a5536ec259e6e59f9a51afd10cabf690640a41387a872b5db9df829730d6cffb"
+    },
+    {
+      "path": "docs/research/event-control-refinement-20261007/report.json",
+      "bytes": 4978,
+      "sha256": "d9e929e4872de6ae0d91764de19027106e92ea64161d988fdea3b707f81ae174"
+    },
+    {
+      "path": "docs/research/event-control-refinement-20261007/verification.json",
+      "bytes": 2407,
+      "sha256": "c4241ec41ad6588b38387827b1599fc78d03a7b3ad5909f915ba39e87d426696"
+    },
+    {
+      "path": "docs/research/gameplay_state_contract.json",
+      "bytes": 12666,
+      "sha256": "bbef5f369b8840a509e2c22007afcc6cf3e8e8922510e408ff50b7c9d984a580"
+    },
+    {
+      "path": "docs/research/gameplay_state_evidence.json",
+      "bytes": 776778,
+      "sha256": "937933ae5d1f116fbaf3dbe56d0b70dca19db11546c366ce26a61776f60239ee"
+    },
+    {
+      "path": "docs/research/gameplay_state_verification.json",
+      "bytes": 259,
+      "sha256": "30cd2f2fc025e8ed2b5e87db2d72c12f1989b86ca7d883a6bc76eeb21efd93aa"
+    },
+    {
+      "path": "docs/research/lockon-pair-ownership-20261007/evidence.json",
+      "bytes": 135237,
+      "sha256": "24bcb9c156e09ee294ea490c326d30f9a12cf96b22ffaea5abac862b099b5b37"
+    },
+    {
+      "path": "docs/research/lockon-pair-ownership-20261007/independent-review.json",
+      "bytes": 7455,
+      "sha256": "8e233eb0ca4821dfc2e783604432faa10704f69b1faf523630d1f9dd88a40ff4"
+    },
+    {
+      "path": "docs/research/lockon-pair-ownership-20261007/report.json",
+      "bytes": 11986,
+      "sha256": "6609d4313f47866409fb2996c201d0858368d37fa5ba873981cfd56f279aa942"
+    },
+    {
+      "path": "docs/research/lockon-pair-ownership-20261007/root-integration.json",
+      "bytes": 1659,
+      "sha256": "826a4cab4b4e98fcbbc511f0851c47dee8b95c8af4f045c87b23fa5c72b2175c"
+    },
+    {
+      "path": "docs/research/lockon-pair-ownership-20261007/verification.json",
+      "bytes": 584,
+      "sha256": "474fb311cb271b4f280f5d16abe98c240dc9046470da0f0c7ee6290acd11b4e8"
+    },
+    {
+      "path": "docs/research/motion-payload-bounds-20261007/constants.json",
+      "bytes": 2341,
+      "sha256": "cfdbb421443ad4244223f21d8f21168c0b2dc8679c6040dd1f99760d0a854a62"
+    },
+    {
+      "path": "docs/research/motion-payload-bounds-20261007/contract.json",
+      "bytes": 4404,
+      "sha256": "960288af4689206bacf97cd6e9c972666ec59f7e68d63444c17f3709dce72913"
+    },
+    {
+      "path": "docs/research/motion-payload-bounds-20261007/evidence.json",
+      "bytes": 913116,
+      "sha256": "e648f7166f1bded57d7be2faf33b5c89ae94e695036b7266c355ccbaffbc211b"
+    },
+    {
+      "path": "docs/research/motion-payload-bounds-20261007/fingerprints.json",
+      "bytes": 3080,
+      "sha256": "e7646ddccf042900c91eb4b4b8994265af79b9cd51eab0d2b3f37c12fc9bef57"
+    },
+    {
+      "path": "docs/research/motion-payload-bounds-20261007/implementation.json",
+      "bytes": 2160,
+      "sha256": "9a5e9e74e51ed1aecb219dbc3247ec28dd96bd834daed829a39049089f0f2fc4"
+    },
+    {
+      "path": "docs/research/motion-payload-bounds-20261007/independent-review.json",
+      "bytes": 2795,
+      "sha256": "0b242af116557168fc54af2a37b4a181e46b87ab82b30afa8a3f5a7204a80158"
+    },
+    {
+      "path": "docs/research/motion-payload-bounds-20261007/metadata-integration.json",
+      "bytes": 1491,
+      "sha256": "82d684c8eeb0a228968b2c75db819e95e3987e3e97010b8790300d605766ff75"
+    },
+    {
+      "path": "docs/research/motion-payload-bounds-20261007/report.json",
+      "bytes": 16630,
+      "sha256": "3080886722b76ff205ec220dd709dfabe6f942bf2153e2997176ca432e7f1aff"
+    },
+    {
+      "path": "docs/research/motion-payload-bounds-20261007/retail-sampling.json",
+      "bytes": 93166,
+      "sha256": "32f0471f967d15fd96ac221b8f8ac4f9574d9183446cd2e15f34734814f86e0c"
+    },
+    {
+      "path": "docs/research/motion-payload-bounds-20261007/session.json",
+      "bytes": 603,
+      "sha256": "b6e67915ff45b7430e8dc39e121df27a9d152a4062a7d5b989194d27a105a05e"
+    },
+    {
+      "path": "docs/research/motion-payload-bounds-20261007/verification.json",
+      "bytes": 9914,
+      "sha256": "9f977cc575922bf6e7373bc7fbed3c68a8c87976cf59ed5d6329f98e25cc51e0"
+    },
+    {
+      "path": "docs/research/motion-payload-bounds-20261007/verify-checks.json",
+      "bytes": 120,
+      "sha256": "a289398d4cee1197b22f9bf242bcce7e4e4e5d4162925a6e5656976a89e7ac7d"
+    },
+    {
+      "path": "docs/research/movement-ownership-20261007/host-implementation.json",
+      "bytes": 5255,
+      "sha256": "66ea40a10c1141b54ab4d675b47ce3048d1a00e3746819c96a6566791fcd20f9"
+    },
+    {
+      "path": "docs/research/movement-ownership-20261007/host-transport-review.json",
+      "bytes": 11458,
+      "sha256": "714c2cdb2bb6cc9af4ecdac137ff001b36069b2c50234e1b8c8b64477f343dc4"
+    },
+    {
+      "path": "docs/research/movement-ownership-20261007/native-implementation.json",
+      "bytes": 3188,
+      "sha256": "0cab134671b0a7ad18d7238baa3de1e47f9c229678c769bcb4377f427118f18d"
+    },
+    {
+      "path": "docs/research/movement-ownership-20261007/native-ipc-validation.json",
+      "bytes": 3664,
+      "sha256": "ec421af407c504932b94afebc178b7a3f839fcb927910cd93cd4a8e9a1c8042e"
+    },
+    {
+      "path": "docs/research/movement-ownership-20261007/native-transaction-review.json",
+      "bytes": 4630,
+      "sha256": "a7a9977818e2029ad811e6f95eab985ad2dece516820848a6ff06a492c26e1fd"
+    },
+    {
+      "path": "docs/research/mp-active-readiness-20261007/independent-review.json",
+      "bytes": 8045,
+      "sha256": "6d92c86662c07c32fcbb50adf4ff1a784e2164d9f4bf199d4cc9476d34d50d36"
+    },
+    {
+      "path": "docs/research/mp-availability-20261007/receipt.json",
+      "bytes": 7334,
+      "sha256": "e0a3488012779aeaeb5211c15c61b5c3596bd79a6539d263c991fae6a8439bae"
+    },
+    {
+      "path": "docs/research/player-damage-guard-20261007/evidence.json",
+      "bytes": 681200,
+      "sha256": "d4f993fa29f25a1e614f08ac59d9ac078be4d22a3b697bbde72829a9fb5511f1"
+    },
+    {
+      "path": "docs/research/player-damage-guard-20261007/host-implementation.json",
+      "bytes": 6280,
+      "sha256": "e5997f2497947d9ff302c1b9170fc09c2482287d36fce9edb6603a46959aad98"
+    },
+    {
+      "path": "docs/research/player-damage-guard-20261007/native-validation.json",
+      "bytes": 5948,
+      "sha256": "672dde582eae1ade4f8697da538b7bf4c007ca0ae66713b0310d8f9a86589e15"
+    },
+    {
+      "path": "docs/research/player-damage-guard-20261007/report.json",
+      "bytes": 18228,
+      "sha256": "aea1884aa4f128af6b6cb2d57a2dbaf3ecb82decf09badd9a657b7f08dcadfa6"
+    },
+    {
+      "path": "docs/research/player-damage-guard-20261007/root-integration.json",
+      "bytes": 4141,
+      "sha256": "2b4f85739c58c585874a6872332ffbbfdfdc44e690a212a6534d64b7c0b4c791"
+    },
+    {
+      "path": "docs/research/player-damage-guard-20261007/verification.json",
+      "bytes": 484,
+      "sha256": "770602b9e199c586dfe1931d704e6758344b0490a99d1a8529275a7a2e8cde3e"
+    },
+    {
+      "path": "docs/research/player-health-20261007/evidence.json",
+      "bytes": 456777,
+      "sha256": "7be70c5ba4be3325bb30395017c0d610883ecd61d58dbf95fedf02aa499f0ab1"
+    },
+    {
+      "path": "docs/research/player-health-20261007/health-role-catalog-independent-review.json",
+      "bytes": 2360,
+      "sha256": "0c85c5890cfc476255214ad64e5abe9eba8b026419ef2b5e32164d1e28fa35c8"
+    },
+    {
+      "path": "docs/research/player-health-20261007/independent-review-native-debug.json",
+      "bytes": 2529,
+      "sha256": "1fd10eacf44a92542d5680bf1e7e4b63a1fe8b9563acff01884e705f2305efcd"
+    },
+    {
+      "path": "docs/research/player-health-20261007/report.json",
+      "bytes": 9423,
+      "sha256": "dd2f0e24d4368bd1631375457183dc930a0cd1fe481e6f31eb8535cbcec78599"
+    },
+    {
+      "path": "docs/research/player-health-20261007/verification.json",
+      "bytes": 440,
+      "sha256": "dd0c5ce78af349c44557bde496ac2a0e69f7ab56e4f5d0ddaceab2f6163c41be"
+    },
+    {
+      "path": "docs/research/player-input-classification-20261007/claims.json",
+      "bytes": 37133,
+      "sha256": "940d862129996b49bd071a90b9fc1fd6522e67fe00fd7d00505019cf9a6def2e"
+    },
+    {
+      "path": "docs/research/player-input-classification-20261007/evidence.json",
+      "bytes": 1481758,
+      "sha256": "d5e794aedd3fcc65ca38e94a63e5d1a250d8ea3f0f5428b6888fcc5a64cc1bc5"
+    },
+    {
+      "path": "docs/research/player-input-classification-20261007/report.json",
+      "bytes": 8188,
+      "sha256": "fedb15a21ff920fb30e4f2c4e8ca078810717cfbde70596d9ce216271f43d845"
+    },
+    {
+      "path": "docs/research/player-input-classification-20261007/review.json",
+      "bytes": 3950,
+      "sha256": "f611ea0648f6a4d3097dd5879ec20945da38ae7f4ebb20b1406d41c1de0f7f96"
+    },
+    {
+      "path": "docs/research/player-input-classification-20261007/verification.json",
+      "bytes": 3558,
+      "sha256": "49f357cb7d5a6feef8e5ef99cc6ae65dadb78ef61636d3af2bbe1b6ea944500f"
+    },
+    {
+      "path": "docs/research/player-input-classification-20261007/xrefs-extra.json",
+      "bytes": 3950,
+      "sha256": "18e2f2a4fd7a4b86219ee0dc71316a68440af41fdcbd824f01b988900c1edcb6"
+    },
+    {
+      "path": "docs/research/player-position-ownership-20261007/evidence.json",
+      "bytes": 16978,
+      "sha256": "eee0e214888b9736853afcb48b04898e242582b0a09d324f3f631776d48d926f"
+    },
+    {
+      "path": "docs/research/player-position-ownership-20261007/native-review.json",
+      "bytes": 4669,
+      "sha256": "5ee96ffbb42b3284b82ec5a0b4d820cb27f412f0e43dc92c325b5906e6a8dfd7"
+    },
+    {
+      "path": "docs/research/player-position-ownership-20261007/report.json",
+      "bytes": 3771,
+      "sha256": "a6b7686b5582ccca05d8d6ae2bf3b5e9e63db63f6144477a7da0942c1a17948e"
+    },
+    {
+      "path": "docs/research/player-position-ownership-20261007/verification.json",
+      "bytes": 1133,
+      "sha256": "d65f920d46b01273f3b7468af22f3efb91bc809f5d38971d574ed4ac70869606"
+    },
+    {
+      "path": "docs/research/player-status-paths.json",
+      "bytes": 46742,
+      "sha256": "a2e4eba3b62ba3df4020c223bfe09a32bf69db7e16961a7f957807b2c8d742cb"
+    },
+    {
+      "path": "docs/research/player_roles_drive_20261007/evidence.json",
+      "bytes": 193958,
+      "sha256": "05c53ca8deb98a5667e758ab876746c728b20134b53768e8737196921eb05bba"
+    },
+    {
+      "path": "docs/research/player_roles_drive_20261007/report.json",
+      "bytes": 8185,
+      "sha256": "7913a8eb55327eea750191aaec62d8096570c4ab0210446b77b81f5725de90b9"
+    },
+    {
+      "path": "docs/research/player_roles_drive_20261007/verification.json",
+      "bytes": 14427,
+      "sha256": "e133f379d58ba1de8b15dc82612b07bcdcec79960b698f5213e782f0df36527e"
+    },
+    {
+      "path": "docs/research/reward-ownership-audit-20261007/baseline-source-excerpts.json",
+      "bytes": 11006,
+      "sha256": "adbf9df4a1658a729c573ca3681fc15aac112eb9df7318a2b917db5dc7627bd2"
+    },
+    {
+      "path": "docs/research/reward-ownership-audit-20261007/catalog-runtime.json",
+      "bytes": 18004,
+      "sha256": "0a85339cd045896f31a300469de0ee1022ef4d64bbc8358e92d702582c5e7d49"
+    },
+    {
+      "path": "docs/research/reward-ownership-audit-20261007/ghost-fix-receipt.json",
+      "bytes": 2789,
+      "sha256": "3df3f21630ed76659877603a9ad96b3d8ea109350f3dfd68a67dd1b475f20c58"
+    },
+    {
+      "path": "docs/research/reward-ownership-audit-20261007/manifest.json",
+      "bytes": 2300,
+      "sha256": "f1c3df48f1aaefb36209e28ce543bbd9856b198000fe986e0d5c315f1efed8b7"
+    },
+    {
+      "path": "docs/research/reward-ownership-audit-20261007/native-evidence-full.json",
+      "bytes": 91168,
+      "sha256": "8ff9d34aea47603cb59ef8fd01766457b6c0ade502bcea150717e8172a040620"
+    },
+    {
+      "path": "docs/research/reward-ownership-audit-20261007/native-evidence.json",
+      "bytes": 51861,
+      "sha256": "4ccf7a6d2f86819755f7e967177a0c0c5b989367b4ec61bfaac0c70992127b5b"
+    },
+    {
+      "path": "docs/research/reward-ownership-audit-20261007/native-validation.json",
+      "bytes": 4835,
+      "sha256": "7428c48f90d0135a32bd1a2c4639c86b2305498621a052161f809bec64130f6a"
+    },
+    {
+      "path": "docs/research/reward-ownership-audit-20261007/rewards.json",
+      "bytes": 122030,
+      "sha256": "a07f4d9d81ddf990daca88123fc0ebf171e546677a3735f4b5fed88717a109b9"
+    },
+    {
+      "path": "docs/research/status-bootstrap-20261007/contract.json",
+      "bytes": 4710,
+      "sha256": "e226dc7781064b2efe0ba479731f155425cc11e4030855ccb3d2e53de120d532"
+    },
+    {
+      "path": "docs/research/status-bootstrap-20261007/evidence.json",
+      "bytes": 1232908,
+      "sha256": "324210e3a065dfb59b35f24c5f44911bcd4b8f60e63b9d445bb3685f72f75fdb"
+    },
+    {
+      "path": "docs/research/status-bootstrap-20261007/report.json",
+      "bytes": 15431,
+      "sha256": "09398b25171e9f84a663b2c0b82af6e593b389a70cf412630d39386cd54a0331"
+    },
+    {
+      "path": "docs/research/status-bootstrap-20261007/router-review.json",
+      "bytes": 1277,
+      "sha256": "8e832f37a4a29345df6cfbe53c9a28cc52ac092137c14ee2a69aabf0c7083b38"
+    },
+    {
+      "path": "docs/research/status-bootstrap-20261007/verification.json",
+      "bytes": 15555,
+      "sha256": "b683bd37e2996d8136b22257735e24c9dbf6921373e2357cd7e5f2e3ff439719"
+    },
+    {
+      "path": "docs/research/status-breakpoint-entry-20261007/independent-wrapper-review.json",
+      "bytes": 1992,
+      "sha256": "60958db1768d2811298b9dcc6eed78750e39097241638f4e67fc4b32d4af08b0"
+    },
+    {
+      "path": "docs/research/status-breakpoint-entry-20261007/report.json",
+      "bytes": 5924,
+      "sha256": "4237858b7fd824f54aa2acec9ca2435ccc9d144a5de2d08aadd02a93fd3c2642"
+    },
+    {
+      "path": "docs/research/status-entry-observation-20261007/evidence.json",
+      "bytes": 151656,
+      "sha256": "e828599ded2974b18c9be30a34000e71b7a960cda0982a7a69bd4f6f78343dff"
+    },
+    {
+      "path": "docs/research/status-entry-observation-20261007/ledger-review.json",
+      "bytes": 2226,
+      "sha256": "42e772710f4af22c17d46edb2974b8aab92d4102f7359bdbb010cdae1e12b6e0"
+    },
+    {
+      "path": "docs/research/status-entry-observation-20261007/manifest.json",
+      "bytes": 1600,
+      "sha256": "54098a1087011264f8900e8421f6d18607e17fc7952f5eb4ff168726ab3f34b3"
+    },
+    {
+      "path": "docs/research/status-entry-observation-20261007/pe-unwind.json",
+      "bytes": 4301,
+      "sha256": "068f18ae65f4184565b21cbcb23fb3a7e7e5fb0a666c836e26cdc2aa40c5aca4"
+    },
+    {
+      "path": "docs/research/status-entry-observation-20261007/report.json",
+      "bytes": 13109,
+      "sha256": "c61a0bcd55104a0405d0b85625c2ebbf630c23a7b6f45fc2b4761abcff5556e5"
+    },
+    {
+      "path": "docs/research/status-entry-observation-20261007/verification.json",
+      "bytes": 1419,
+      "sha256": "d087400f9a00cf7f25da192e5d5d15c8a1dec47b9612832bedf14ba13b96ab97"
+    },
+    {
+      "path": "docs/research/status-observer-wrappers-20261007/implementation.json",
+      "bytes": 985,
+      "sha256": "2d7d3c44dce47066b5b50f87883bee62cd53d18d8a4bb3896b34f28ad630e4e7"
+    },
+    {
+      "path": "docs/research/status-observer-wrappers-20261007/manifest.json",
+      "bytes": 869,
+      "sha256": "3c0c7c54bfe3786ae0bc54def9c8a1c284e23af662dc617ae9a798e74d9820bc"
+    },
+    {
+      "path": "docs/research/status-observer-wrappers-20261007/report.json",
+      "bytes": 4316,
+      "sha256": "becbed6dd4ae421289a41bd62d030d768e68cbd628dfe83392c807bda1310254"
+    },
+    {
+      "path": "docs/research/status-observer-wrappers-20261007/verification.json",
+      "bytes": 872,
+      "sha256": "7f4c907e7bd62a8bb66dced721b472e8ac45d1982a859fb393986cfe1e66979b"
+    },
+    {
+      "path": "docs/research/status-rebuild-ownership-20261007/evidence.json",
+      "bytes": 1532247,
+      "sha256": "97970af23079622afb090d21e9c29d63ffc470acb8f0bd898e401675372c8897"
+    },
+    {
+      "path": "docs/research/status-rebuild-ownership-20261007/manifest.json",
+      "bytes": 1163,
+      "sha256": "eec132ed9abe2a096964039858b4d96b683d03d63115f04594a98064f0b79268"
+    },
+    {
+      "path": "docs/research/status-rebuild-ownership-20261007/report.json",
+      "bytes": 38352,
+      "sha256": "3db87adca9e16081ecb549fa1a11b4359c5b215adad0e84de2281dd07e0f945d"
+    },
+    {
+      "path": "docs/research/status-rebuild-ownership-20261007/verification.json",
+      "bytes": 389,
+      "sha256": "1fa6c69d6aac0d10c3576db1a2991c7c48ff2d063c1b54a9bf8184eb5a9b9c0a"
+    },
+    {
+      "path": "docs/research/status-rebuild-ownership-20261007/write-census.json",
+      "bytes": 13449,
+      "sha256": "c37652ff35f4f403ed6c9fe1b1e924a60c60a80bd106fad053fcc828113cca92"
+    },
+    {
+      "path": "docs/research/status-worker-observation-20261007/evidence.json",
+      "bytes": 1084696,
+      "sha256": "cc8d07a615d8d0a7ea18613c634df43f98c347a446bd57f59484a2618b3faef5"
+    },
+    {
+      "path": "docs/research/status-worker-observation-20261007/report.json",
+      "bytes": 14633,
+      "sha256": "c31ce909aa635de19de6686b0121c9383e5cb63fae40b11b10d19dbd9d88fe1a"
+    },
+    {
+      "path": "docs/research/status-worker-observation-20261007/review.json",
+      "bytes": 2785,
+      "sha256": "c558638e03691fe277f32b7fd0fc0723dc3e7d8fe937f518cac7c151b146bace"
+    },
+    {
+      "path": "docs/research/status-worker-observation-20261007/verification.json",
+      "bytes": 5478,
+      "sha256": "c135ee7edd5997be78d6ecb124eee1b1972e7b4bf0f52a9a2e226c19071ac8d2"
+    },
+    {
+      "path": "docs/research/twitch_readiness_independent_review_20261007.json",
+      "bytes": 5587,
+      "sha256": "2150ec036d1fc928cc74fb8ce57fecacb22254363c42ee4ffcd5dc0b23849ad3"
+    }
+  ],
+  "validationScope": "Static reconciliation, strict metadata checks and optional original PE byte comparison. No IDB/game/save/UI/network writes, builds or gameplay tests."
+}

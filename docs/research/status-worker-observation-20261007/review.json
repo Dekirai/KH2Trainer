@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-07",
+  "reviewer": "native_debug",
+  "result": "No concrete correction found in the checked call-graph claims",
+  "scope": "Limited independent report-to-saved-ASM review. Read the twelve listed full bodies; did not perform a new exhaustive audit of all21 bodies or a new original-byte verification.",
+  "inputHashes": {
+    "report.json": "c31ce909aa635de19de6686b0121c9383e5cb63fae40b11b10d19dbd9d88fe1a",
+    "evidence.json": "cc8d07a615d8d0a7ea18613c634df43f98c347a446bd57f59484a2618b3faef5",
+    "verification.json": "c135ee7edd5997be78d6ecb124eee1b1972e7b4bf0f52a9a2e226c19071ac8d2"
+  },
+  "reviewedBodies": [
+    "0x1403beec0",
+    "0x1403bf4e0",
+    "0x1403bfab0",
+    "0x1403c6aa0",
+    "0x1403b5e80",
+    "0x1403e1840",
+    "0x1403e1c80",
+    "0x140130030",
+    "0x140130130",
+    "0x14012fdb0",
+    "0x140431200",
+    "0x14041c690"
+  ],
+  "checks": [
+    "3BEEC0 processes Actor+2496 cases synchronously, batches remaining actors through12FDB0 with callback3BF4E0, and reaches130130 on its normal-return path before12FD90.",
+    "12FDB0 enqueues callback/argument/index records in six queues;130030 calls the queued function directly after releasing the queue mutex and then signals completion.130130 waits and returns the six completion tokens.",
+    "3BF4E0 selects actor[index] and tail-jumps3BFAB0.3BFAB0 calls3C6AA0 on the embedded motion component at actor+344; the report phrase on the Actor describes that association, not a direct actor-pointer ABI.",
+    "3C6AA0 tests motion-event record bit0, compares IDs with the prior list and calls3B5E80 directly for newly present IDs.3B5E80 requires actor+1456, builds three tagged operands and invokes event27 through3E1840 with the operand pointer in64-bit R8.",
+    "3E1840 uses positive entryPC and calls41B320 then3E1C80 synchronously.3E1C80 invokes41B400 using trap-table root753490 and uses ordinary global addresses for current contexts.",
+    "431200 reads the three arguments and tail-jumps3C2650.41C690 scans header+28 ID/PC pairs with zero-PC termination. These instructions support reachability conditional on asset contents, not an assertion that a retail event invokes431200."
+  ],
+  "findings": [],
+  "limits": [
+    "No retail motion-event asset that executes the STATUS setter was established by this review.",
+    "A normal-return motion barrier does not by itself prove complete installer quiescence for every possible writer or modified callback.",
+    "The authors21-body/2485-instruction/10237-byte-plus40-data verification result is not presented as a second independent byte audit here.",
+    "No product, existing report/evidence, test or package files were changed; no live action or build was performed."
+  ]
+}

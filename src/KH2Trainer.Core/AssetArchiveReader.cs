@@ -287,11 +287,12 @@ internal sealed class AssetSliceStream : Stream
 {
     private readonly Stream source;
     private readonly long start, length;
+    private readonly bool leaveOpen;
     private long position;
-    internal AssetSliceStream(Stream source, long start, long length)
+    internal AssetSliceStream(Stream source, long start, long length, bool leaveOpen = false)
     {
         AssetArchiveReader.RequireSpan(start, length, source.Length);
-        this.source = source; this.start = start; this.length = length;
+        this.source = source; this.start = start; this.length = length; this.leaveOpen = leaveOpen;
     }
     public override bool CanRead => source.CanRead;
     public override bool CanSeek => source.CanSeek;
@@ -312,8 +313,8 @@ internal sealed class AssetSliceStream : Stream
     }
     public override long Seek(long offset, SeekOrigin origin)
     { Position = checked((origin switch { SeekOrigin.Begin => 0, SeekOrigin.Current => position, SeekOrigin.End => length, _ => throw new ArgumentOutOfRangeException(nameof(origin)) }) + offset); return position; }
-    protected override void Dispose(bool disposing) { if (disposing) source.Dispose(); base.Dispose(disposing); }
-    public override async ValueTask DisposeAsync() { await source.DisposeAsync().ConfigureAwait(false); GC.SuppressFinalize(this); }
+    protected override void Dispose(bool disposing) { if (disposing && !leaveOpen) source.Dispose(); base.Dispose(disposing); }
+    public override async ValueTask DisposeAsync() { if (!leaveOpen) await source.DisposeAsync().ConfigureAwait(false); GC.SuppressFinalize(this); }
     public override void Flush() { }
     public override void SetLength(long value) => throw new NotSupportedException();
     public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();

@@ -3,7 +3,7 @@
     "Id": "player.hp",
     "Category": "Player",
     "Name": "Current HP",
-    "Description": "Set the living player's HP within the current maximum. This does not revive a defeated player.",
+    "Description": "Set the controlled player's HP within the current maximum. Supports verified Sora, Roxas and rescue Mickey. Scripted minimum HP remains effective; this does not revive a defeated player.",
     "Kind": "Number",
     "CommandId": 1000,
     "ValueSlot": 0,
@@ -21,6 +21,11 @@
         "Address": "0x3D2EB0",
         "Finding": "RCX=Actor, EDX=signed HP delta, R8D=bar index 0, R9B=effects 0. Calls signed HP clamp and native health UI.",
         "Level": "Static IDA decompile and relevant ABI/field assembly verified; live behavior not yet tested."
+      },
+      {
+        "Address": "0x1403D2EB0 / 0x1403C2040 / 0x1403DCBB0 / 0x1403DCC10",
+        "Finding": "Player identity and control revalidated per command/tick. HP verifies selected HUD/animation memory paths; full MP clears recharge before its bounded addition. See docs/research/player-health-20261007.",
+        "Level": "Complete original-byte verified native bodies, runtime pins and integrated synthetic role/control/dispatch checks; live gameplay not tested."
       }
     ]
   },
@@ -103,7 +108,7 @@
     "Id": "player.heal",
     "Category": "Player",
     "Name": "Heal Player",
-    "Description": "Restore HP through the player's native HP routine.",
+    "Description": "Restore the controlled player's HP through the native routine. Supports verified Sora, Roxas and rescue Mickey while control and required HP display resources are available.",
     "Kind": "Action",
     "CommandId": 1004,
     "ValueSlot": -1,
@@ -121,6 +126,11 @@
         "Address": "0x3D2EB0",
         "Finding": "Positive delta maximum-current, bar0, effects0.",
         "Level": "Static IDA decompile and relevant ABI/field assembly verified; live behavior not yet tested."
+      },
+      {
+        "Address": "0x1403D2EB0 / 0x1403C2040 / 0x1403DCBB0 / 0x1403DCC10",
+        "Finding": "Player identity and control revalidated per command/tick. HP verifies selected HUD/animation memory paths; full MP clears recharge before its bounded addition. See docs/research/player-health-20261007.",
+        "Level": "Complete original-byte verified native bodies, runtime pins and integrated synthetic role/control/dispatch checks; live gameplay not tested."
       }
     ]
   },
@@ -128,7 +138,7 @@
     "Id": "player.mp.restore",
     "Category": "Player",
     "Name": "Restore MP",
-    "Description": "Fill MP and finish the MP recharge state through the game routine.",
+    "Description": "Fill MP and finish recharge for verified Sora, Roxas or rescue Mickey while the player is controllable.",
     "Kind": "Action",
     "CommandId": 1005,
     "ValueSlot": -1,
@@ -146,6 +156,11 @@
         "Address": "0x3C2040",
         "Finding": "RCX=Status, EDX low byte=effects0; clears recharge floats and adds MP.",
         "Level": "Static IDA decompile and relevant ABI/field assembly verified; live behavior not yet tested."
+      },
+      {
+        "Address": "0x1403D2EB0 / 0x1403C2040 / 0x1403DCBB0 / 0x1403DCC10",
+        "Finding": "Player identity and control revalidated per command/tick. HP verifies selected HUD/animation memory paths; full MP clears recharge before its bounded addition. See docs/research/player-health-20261007.",
+        "Level": "Complete original-byte verified native bodies, runtime pins and integrated synthetic role/control/dispatch checks; live gameplay not tested."
       }
     ]
   },
@@ -153,7 +168,7 @@
     "Id": "player.restore",
     "Category": "Player",
     "Name": "Restore HP and MP",
-    "Description": "Restore HP and MP for a living player.",
+    "Description": "Restore HP and MP for verified, controllable Sora, Roxas or rescue Mickey. Both resource paths are checked before either changes.",
     "Kind": "Action",
     "CommandId": 1006,
     "ValueSlot": -1,
@@ -171,6 +186,11 @@
         "Address": "0x3D2EB0 / 0x3C2040",
         "Finding": "Uses both verified recovery routines.",
         "Level": "Static IDA decompile and relevant ABI/field assembly verified; live behavior not yet tested."
+      },
+      {
+        "Address": "0x1403D2EB0 / 0x1403C2040 / 0x1403DCBB0 / 0x1403DCC10",
+        "Finding": "Player identity and control revalidated per command/tick. HP verifies selected HUD/animation memory paths; full MP clears recharge before its bounded addition. See docs/research/player-health-20261007.",
+        "Level": "Complete original-byte verified native bodies, runtime pins and integrated synthetic role/control/dispatch checks; live gameplay not tested."
       }
     ]
   },
@@ -403,7 +423,7 @@
     "Id": "player.position.bookmark",
     "Category": "Position",
     "Name": "Save Position Bookmark",
-    "Description": "Remember this position. The bookmark is discarded when the scene, scheduler or player instance changes.",
+    "Description": "Remember this position for the verified player instance. Scene changes, player replacement or Disable All discard the bookmark.",
     "Kind": "Action",
     "CommandId": 1016,
     "ValueSlot": -1,
@@ -444,7 +464,7 @@
     "Evidence": [
       {
         "Address": "0x3B6100",
-        "Finding": "Uses native setter only after exact actor/status/scheduler/10-byte-room identity checks.",
+        "Finding": "Uses native setter only after pinned Actor generation, current actor/status, scheduler and10-byte-room checks. Same-address actor replacement is rejected.",
         "Level": "Static IDA decompile and relevant ABI/field assembly verified; live behavior not yet tested."
       }
     ]
@@ -453,7 +473,7 @@
     "Id": "combat.autoheal",
     "Category": "Combat Practice",
     "Name": "Auto Heal",
-    "Description": "Refill living-player HP after each game update. A lethal hit within an update can still defeat the player.",
+    "Description": "Continuously refill HP for verified Sora, Roxas or rescue Mickey. Native healing waits during menus, events, input locks or unavailable HP display resources.",
     "Kind": "Toggle",
     "CommandId": 1018,
     "ValueSlot": 18,
@@ -471,6 +491,11 @@
         "Address": "0x3D2EB0",
         "Finding": "Only calls native recovery when0<HP<maximum.",
         "Level": "Static IDA decompile and relevant ABI/field assembly verified; live behavior not yet tested."
+      },
+      {
+        "Address": "0x1403D2EB0 / 0x1403C2040 / 0x1403DCBB0 / 0x1403DCC10",
+        "Finding": "Player identity and control revalidated per command/tick. HP verifies selected HUD/animation memory paths; full MP clears recharge before its bounded addition. See docs/research/player-health-20261007.",
+        "Level": "Complete original-byte verified native bodies, runtime pins and integrated synthetic role/control/dispatch checks; live gameplay not tested."
       }
     ]
   },
@@ -478,7 +503,7 @@
     "Id": "combat.fullmp",
     "Category": "Combat Practice",
     "Name": "Keep MP Full",
-    "Description": "Refill MP and clear recharge after each game update.",
+    "Description": "Continuously refill MP for verified Sora, Roxas or rescue Mickey. Native recovery waits whenever player control is unavailable.",
     "Kind": "Toggle",
     "CommandId": 1019,
     "ValueSlot": 19,
@@ -496,6 +521,11 @@
         "Address": "0x3C2040",
         "Finding": "Native full-MP path clears both recharge floats.",
         "Level": "Static IDA decompile and relevant ABI/field assembly verified; live behavior not yet tested."
+      },
+      {
+        "Address": "0x1403D2EB0 / 0x1403C2040 / 0x1403DCBB0 / 0x1403DCC10",
+        "Finding": "Player identity and control revalidated per command/tick. HP verifies selected HUD/animation memory paths; full MP clears recharge before its bounded addition. See docs/research/player-health-20261007.",
+        "Level": "Complete original-byte verified native bodies, runtime pins and integrated synthetic role/control/dispatch checks; live gameplay not tested."
       }
     ]
   },
@@ -1165,7 +1195,7 @@
     "RequiresScene": true,
     "ChangesProgression": false,
     "CanSaveInProfile": false,
-    "RestoreBehavior": "Clear only the two owned bits when the same actor/status/scheduler/room and null override pointer still match. Scene or actor replacement automatically disables the trainer toggle. Foreign changes are preserved; old actor memory is never touched.",
+    "RestoreBehavior": "Release stays pending until the original player generation and scene can be verified. A destroyed generation is forgotten without writes; matching owned bits are restored on the same current player. Pending release blocks another activation. Foreign profiles are preserved.",
     "Evidence": [
       {
         "Address": "0x3CBFC0 / 0x3CC3B0",
@@ -1558,79 +1588,79 @@
         "DefaultValue": 2,
         "Choices": [
           {
-            "Label": "0 — zz",
+            "Label": "0 â€” zz",
             "Value": 0
           },
           {
-            "Label": "1 — es",
+            "Label": "1 â€” es",
             "Value": 1
           },
           {
-            "Label": "2 — tt",
+            "Label": "2 â€” tt",
             "Value": 2
           },
           {
-            "Label": "3 — di",
+            "Label": "3 â€” di",
             "Value": 3
           },
           {
-            "Label": "4 — hb",
+            "Label": "4 â€” hb",
             "Value": 4
           },
           {
-            "Label": "5 — bb",
+            "Label": "5 â€” bb",
             "Value": 5
           },
           {
-            "Label": "6 — he",
+            "Label": "6 â€” he",
             "Value": 6
           },
           {
-            "Label": "7 — al",
+            "Label": "7 â€” al",
             "Value": 7
           },
           {
-            "Label": "8 — mu",
+            "Label": "8 â€” mu",
             "Value": 8
           },
           {
-            "Label": "9 — po",
+            "Label": "9 â€” po",
             "Value": 9
           },
           {
-            "Label": "10 — lk",
+            "Label": "10 â€” lk",
             "Value": 10
           },
           {
-            "Label": "11 — lm",
+            "Label": "11 â€” lm",
             "Value": 11
           },
           {
-            "Label": "12 — dc",
+            "Label": "12 â€” dc",
             "Value": 12
           },
           {
-            "Label": "13 — wi",
+            "Label": "13 â€” wi",
             "Value": 13
           },
           {
-            "Label": "14 — nm",
+            "Label": "14 â€” nm",
             "Value": 14
           },
           {
-            "Label": "15 — wm",
+            "Label": "15 â€” wm",
             "Value": 15
           },
           {
-            "Label": "16 — ca",
+            "Label": "16 â€” ca",
             "Value": 16
           },
           {
-            "Label": "17 — tr",
+            "Label": "17 â€” tr",
             "Value": 17
           },
           {
-            "Label": "18 — eh",
+            "Label": "18 â€” eh",
             "Value": 18
           }
         ]
@@ -3191,7 +3221,7 @@
     "Id": "player_damage_guard",
     "Category": "Combat Practice",
     "Name": "Block player HP damage",
-    "Description": "Block negative HP changes before the supported player's native HP callback subtracts them. Healing still works. Hit reactions, status effects, direct script writes, and scripted death paths remain active. Turns off after a player or scene change or connection loss.",
+    "Description": "Block negative main-HP changes through the verified Sora, Roxas or rescue Mickey callback. Healing still works. The blocked callback also skips its damage-driven Drive/MP gains. Hit reactions, status effects and direct scripted changes remain active. Turns off after a character or scene change or connection loss.",
     "Kind": "Toggle",
     "CommandId": 1106,
     "ValueSlot": 106,
@@ -3202,12 +3232,12 @@
     "RequiresScene": true,
     "ChangesProgression": false,
     "CanSaveInProfile": false,
-    "RestoreBehavior": "Restores the original callback only if the trainer still owns its slot. No HP floor or save data is modified.",
+    "RestoreBehavior": "Disable protection and release its actor instance. Transparent module-pinned callbacks remain installed for the game process lifetime; HP, its minimum and save data are not changed.",
     "Evidence": [
       {
-        "Address": "RVA 0x3D3BA0 → 0x3D3790 → VTable 0x5C4B68 → 0x3A75F0",
-        "Finding": "Exact callback replacement using compare-and-swap; only negative main-HP deltas for the validated current player are suppressed.",
-        "Level": "Static code and guarded implementation"
+        "Address": "RVA 0x5CBB10 / 0x5D1688 to 0x404EE0 / 0x415410 to 0x3A85F0",
+        "Finding": "Actual Sora/Roxas and Mickey damage callbacks, exact five-argument ABI and resulting HP return. Nine full byte pins, actor lifetime observation and owner-conditional release. See docs/research/player-damage-guard-20261007.",
+        "Level": "Complete native bodies and original bytes verified; isolated role/dispatch/ownership tests. Live gameplay not tested."
       }
     ]
   },
@@ -3229,7 +3259,7 @@
     "RestoreBehavior": "No saved progression is changed.",
     "Evidence": [
       {
-        "Address": "RVA 0x3A75F0 callback ABI",
+        "Address": "RVA 0x404EE0 / 0x415410 callback ABI",
         "Finding": "Trainer counter increments only when the guarded negative HP callback is suppressed.",
         "Level": "Static code and guarded implementation"
       }
@@ -3253,7 +3283,7 @@
     "RestoreBehavior": "No saved progression is changed.",
     "Evidence": [
       {
-        "Address": "RVA 0x3A75F0 callback ABI",
+        "Address": "RVA 0x404EE0 / 0x415410 callback ABI",
         "Finding": "Signed 32-bit delta magnitude is widened before negation.",
         "Level": "Static code and guarded implementation"
       }
@@ -3572,7 +3602,7 @@
     "Id": "drive.requested",
     "Category": "Drive and Forms",
     "Name": "Requested Drive Form",
-    "Description": "Target of the active or most recently queued switch. Base Sora is 0; forms 1–6 are Valor, Wisdom, Limit, Master, Final and Antiform. This is the requested target, not the current Actor form.",
+    "Description": "Target of the active or most recently queued switch. Base Sora is 0; forms 1â€“6 are Valor, Wisdom, Limit, Master, Final and Antiform. This is the requested target, not the current Actor form.",
     "Kind": "ReadOnly",
     "CommandId": 0,
     "ValueSlot": 124,
@@ -5235,7 +5265,7 @@
     "Id": "render.color_severity",
     "Category": "Graphics Diagnostics",
     "Name": "GX color-vision severity",
-    "Description": "Current final presentation constant; native enabled setting clamps to 1–10.",
+    "Description": "Current final presentation constant; native enabled setting clamps to 1â€“10.",
     "Kind": "ReadOnly",
     "CommandId": 0,
     "ValueSlot": 194,
@@ -5250,7 +5280,7 @@
     "Evidence": [
       {
         "Address": "0x140125D00",
-        "Finding": "uint32 at verified GX object +23368. Current final presentation constant; native enabled setting clamps to 1–10.",
+        "Finding": "uint32 at verified GX object +23368. Current final presentation constant; native enabled setting clamps to 1â€“10.",
         "Level": "Static native code and shader evidence; live diagnostics not yet validated."
       }
     ]
@@ -7304,9 +7334,9 @@
   },
   {
     "Id": "movement.walk_speed",
-    "Category": "Sora movement",
+    "Category": "Player movement",
     "Name": "Walking speed",
-    "Description": "Normal ground movement below the analog run threshold uses this value. Special actions can use other rules.",
+    "Description": "Normal ground movement below the analog run threshold uses this value. Special actions can use other rules. Supports Sora, prologue Roxas and rescue Mickey when their native actor checks pass.",
     "Kind": "Number",
     "CommandId": 1344,
     "ValueSlot": 344,
@@ -7319,20 +7349,25 @@
     "RequiresScene": true,
     "ChangesProgression": false,
     "CanSaveInProfile": true,
-    "RestoreBehavior": "Applied once to the current Sora actor, including supported Drive forms. No automatic restore on disconnect. Scripts or actor replacement may overwrite it. Applying a profile sends the value once; re-enter the scene or transform to obtain a newly initialized actor.",
+    "RestoreBehavior": "Applied once to the current Sora, Roxas or rescue Mickey actor. No automatic restore on disconnect. Scripts or actor replacement may overwrite it. Applying a profile sends the value once; the displayed preset is not a captured restore value.",
     "Evidence": [
       {
         "Address": "0x1403A8FA0 / 0x140404FB0",
         "Finding": "The shared Sora input callback selects Actor+296 below an input magnitude of 0.8.",
         "Level": "Full native IDA assembly and synthetic memory guards. Live movement validation is pending. The edit bounds are trainer policy, not native limits."
+      },
+      {
+        "Address": "0x1403DA940 / 0x140405030 / 0x140415670 / 0x140404FB0 / 0x1404154E0",
+        "Finding": "Verified player constructors share the Actor movement block; exact normal and rescue-Mickey input wrappers reach the shared movement consumer. Actor/object/status identity is checked before the one-time write. Collision and targeting keep their separate Sora-only gate.",
+        "Level": "Static IDA and synthetic tests; see docs/research/actor-movement-roles-20261007. Live character movement is not yet validated."
       }
     ]
   },
   {
     "Id": "movement.run_speed",
-    "Category": "Sora movement",
+    "Category": "Player movement",
     "Name": "Running speed",
-    "Description": "Normal ground movement at or above the analog run threshold uses this value. Animation playback uses a separate control.",
+    "Description": "Normal ground movement at or above the analog run threshold uses this value. Animation playback uses a separate control. Supports Sora, prologue Roxas and rescue Mickey when their native actor checks pass.",
     "Kind": "Number",
     "CommandId": 1345,
     "ValueSlot": 345,
@@ -7345,20 +7380,25 @@
     "RequiresScene": true,
     "ChangesProgression": false,
     "CanSaveInProfile": true,
-    "RestoreBehavior": "Applied once to the current Sora actor, including supported Drive forms. No automatic restore on disconnect. Scripts or actor replacement may overwrite it. Applying a profile sends the value once; re-enter the scene or transform to obtain a newly initialized actor.",
+    "RestoreBehavior": "Applied once to the current Sora, Roxas or rescue Mickey actor. No automatic restore on disconnect. Scripts or actor replacement may overwrite it. Applying a profile sends the value once; the displayed preset is not a captured restore value.",
     "Evidence": [
       {
         "Address": "0x1403A8FA0 / 0x1403B7AD0",
         "Finding": "The shared Sora input callback selects Actor+300 at input magnitude 0.8 or above; downstream movement uses the selected magnitude.",
         "Level": "Full native IDA assembly and synthetic memory guards. Live movement validation is pending. The edit bounds are trainer policy, not native limits."
+      },
+      {
+        "Address": "0x1403DA940 / 0x140405030 / 0x140415670 / 0x140404FB0 / 0x1404154E0",
+        "Finding": "Verified player constructors share the Actor movement block; exact normal and rescue-Mickey input wrappers reach the shared movement consumer. Actor/object/status identity is checked before the one-time write. Collision and targeting keep their separate Sora-only gate.",
+        "Level": "Static IDA and synthetic tests; see docs/research/actor-movement-roles-20261007. Live character movement is not yet validated."
       }
     ]
   },
   {
     "Id": "movement.fall_speed",
-    "Category": "Sora movement",
+    "Category": "Player movement",
     "Name": "Maximum falling speed",
-    "Description": "Limit downward speed in the verified jump and air-action paths. Gravity and ascent remain controlled by native actions. The game's initial cap comes from loaded parameters; the editor preset of 20 is not a restore value.",
+    "Description": "Limit downward speed in the verified jump and air-action paths. Gravity and ascent remain controlled by native actions. The game's initial cap comes from loaded parameters; the editor preset of 20 is not a restore value. Supports Sora, prologue Roxas and rescue Mickey when their native actor checks pass.",
     "Kind": "Number",
     "CommandId": 1346,
     "ValueSlot": 346,
@@ -7371,20 +7411,25 @@
     "RequiresScene": true,
     "ChangesProgression": false,
     "CanSaveInProfile": true,
-    "RestoreBehavior": "Applied once to the current Sora actor, including supported Drive forms. No automatic restore on disconnect. Scripts or actor replacement may overwrite it. Applying a profile sends the value once; re-enter the scene or transform to obtain a newly initialized actor.",
+    "RestoreBehavior": "Applied once to the current Sora, Roxas or rescue Mickey actor. No automatic restore on disconnect. Scripts or actor replacement may overwrite it. Applying a profile sends the value once; the displayed preset is not a captured restore value.",
     "Evidence": [
       {
         "Address": "0x1403CB100 / 0x1403CB360 / 0x1403CB500 / 0x140422780",
         "Finding": "Jump paths cap downward displacement by time step times Actor+312; the air-action path also caps vertical velocity with this field.",
         "Level": "Full native IDA assembly and synthetic memory guards. Live movement validation is pending. The edit bounds are trainer policy, not native limits."
+      },
+      {
+        "Address": "0x1403DA940 / 0x140405030 / 0x140415670 / 0x140404FB0 / 0x1404154E0",
+        "Finding": "Verified player constructors share the Actor movement block; exact normal and rescue-Mickey input wrappers reach the shared movement consumer. Actor/object/status identity is checked before the one-time write. Collision and targeting keep their separate Sora-only gate.",
+        "Level": "Static IDA and synthetic tests; see docs/research/actor-movement-roles-20261007. Live character movement is not yet validated."
       }
     ]
   },
   {
     "Id": "movement.base_jump_height",
-    "Category": "Sora movement",
+    "Category": "Player movement",
     "Name": "Base jump height",
-    "Description": "Change the fallback height for future normal jumps. High Jump growth abilities can replace it. Special actions and an active jump may use different values.",
+    "Description": "Change the fallback height for future normal jumps. High Jump growth abilities can replace it. Special actions and an active jump may use different values. Supports Sora, prologue Roxas and rescue Mickey when their native actor checks pass.",
     "Kind": "Number",
     "CommandId": 1347,
     "ValueSlot": 347,
@@ -7397,12 +7442,17 @@
     "RequiresScene": true,
     "ChangesProgression": false,
     "CanSaveInProfile": true,
-    "RestoreBehavior": "Applied once to the current Sora actor, including supported Drive forms. No automatic restore on disconnect. Scripts or actor replacement may overwrite it. Applying a profile sends the value once; re-enter the scene or transform to obtain a newly initialized actor.",
+    "RestoreBehavior": "Applied once to the current Sora, Roxas or rescue Mickey actor. No automatic restore on disconnect. Scripts or actor replacement may overwrite it. Applying a profile sends the value once; the displayed preset is not a captured restore value.",
     "Evidence": [
       {
         "Address": "0x1403B59B0 / 0x1403B5A40 / 0x140422630",
         "Finding": "Actor+304 supplies the fallback height; a positive High Jump level selects a table height and optional motion201 instead.",
         "Level": "Full native IDA assembly and synthetic memory guards. Live movement validation is pending. The edit bounds are trainer policy, not native limits."
+      },
+      {
+        "Address": "0x1403DA940 / 0x140405030 / 0x140415670 / 0x140404FB0 / 0x1404154E0",
+        "Finding": "Verified player constructors share the Actor movement block; exact normal and rescue-Mickey input wrappers reach the shared movement consumer. Actor/object/status identity is checked before the one-time write. Collision and targeting keep their separate Sora-only gate.",
+        "Level": "Static IDA and synthetic tests; see docs/research/actor-movement-roles-20261007. Live character movement is not yet validated."
       }
     ]
   },
@@ -8928,7 +8978,7 @@
     "Id": "gummi.editor.preview.fov",
     "Category": "Gummi Editor",
     "Name": "Preview horizontal FOV",
-    "Description": "Set the preview camera horizontal field of view once. Enter the editor preview first. The 20–90 degree range matches native zoom input; normal zoom and reset remain active.",
+    "Description": "Set the preview camera horizontal field of view once. Enter the editor preview first. The 20â€“90 degree range matches native zoom input; normal zoom and reset remain active.",
     "Kind": "Number",
     "CommandId": 1425,
     "ValueSlot": -1,
@@ -8945,7 +8995,7 @@
     "Evidence": [
       {
         "Address": "0x14019DDE0 / 0x1402901A0",
-        "Finding": "RCX=camera+16, XMM1=radians, R8D=0. Native zoom clamps to 20–90 degrees.",
+        "Finding": "RCX=camera+16, XMM1=radians, R8D=0. Native zoom clamps to 20â€“90 degrees.",
         "Level": "Complete native IDA assembly and original bytes; isolated owner, numeric and callout tests. No live editor validation."
       }
     ]
@@ -9583,5 +9633,460 @@
         "Level": "Complete native ASM/original bytes and isolated execution/guard tests; live graphics not tested."
       }
     ]
+  },
+  {
+    "Id": "gameplay.known",
+    "Category": "Gameplay state",
+    "Name": "Control state verified",
+    "Description": "Whether the native input and player identity checks could be evaluated. Zero keeps Crowd Control waiting.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 456,
+    "CapabilitySlot": 456,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only observation; no saved data changes.",
+    "Evidence": [
+      {
+        "Address": "0x1403B2340 / 0x1403A8E90 / 0x1403B5B20 / 0x1403AC350",
+        "Finding": "Whether the native input and player identity checks could be evaluated. Zero keeps Crowd Control waiting.",
+        "Level": "Native IDA analysis and isolated state/transport tests; live gameplay not tested."
+      }
+    ]
+  },
+  {
+    "Id": "gameplay.role",
+    "Category": "Gameplay state",
+    "Name": "Controlled character",
+    "Description": "0 unknown, 1 Sora, 2 Roxas, 3 rescue Mickey, 4 another actor. This checks the actor, object and status together.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 457,
+    "CapabilitySlot": 457,
+    "Minimum": 0,
+    "Maximum": 4,
+    "DefaultValue": 0,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only observation; no saved data changes.",
+    "Evidence": [
+      {
+        "Address": "0x1403B2340 / 0x1403A8E90 / 0x1403B5B20 / 0x1403AC350",
+        "Finding": "0 unknown, 1 Sora, 2 Roxas, 3 rescue Mickey, 4 another actor. This checks the actor, object and status together.",
+        "Level": "Native IDA analysis and isolated state/transport tests; live gameplay not tested."
+      }
+    ]
+  },
+  {
+    "Id": "gameplay.blockers",
+    "Category": "Gameplay state",
+    "Name": "Control blockers",
+    "Description": "Bit mask: 1 unknown, 2 loading, 4 menu, 8 event, 16 transition, 32 no player, 64 dead, 128 input locked, 256 trainer field pause, 512 trainer actor freeze. Several reasons can apply together.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 458,
+    "CapabilitySlot": 458,
+    "Minimum": 0,
+    "Maximum": 1023,
+    "DefaultValue": 0,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only observation; no saved data changes.",
+    "Evidence": [
+      {
+        "Address": "0x1403B2340 / 0x1403A8E90 / 0x1403B5B20 / 0x1403AC350",
+        "Finding": "Bit mask: 1 unknown, 2 loading, 4 menu, 8 event, 16 transition, 32 no player, 64 dead, 128 input locked, 256 trainer field pause, 512 trainer actor freeze. Several reasons can apply together.",
+        "Level": "Native IDA analysis and isolated state/transport tests; live gameplay not tested."
+      }
+    ]
+  },
+  {
+    "Id": "gameplay.controllable",
+    "Category": "Gameplay state",
+    "Name": "Player accepts control",
+    "Description": "One only while the verified field player has no observed input blocker. Reward compatibility also depends on the current character.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 459,
+    "CapabilitySlot": 459,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only observation; no saved data changes.",
+    "Evidence": [
+      {
+        "Address": "0x1403B2340 / 0x1403A8E90 / 0x1403B5B20 / 0x1403AC350",
+        "Finding": "One only while the verified field player has no observed input blocker. Reward compatibility also depends on the current character.",
+        "Level": "Native IDA analysis and isolated state/transport tests; live gameplay not tested."
+      }
+    ]
+  },
+  {
+    "Id": "gameplay.field_state",
+    "Category": "Gameplay state",
+    "Name": "Field module state",
+    "Description": "Native field state: 0 inactive, 1 running, 2 paused, 3 closing.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 460,
+    "CapabilitySlot": 460,
+    "Minimum": -1,
+    "Maximum": 3,
+    "DefaultValue": 0,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only observation; no saved data changes.",
+    "Evidence": [
+      {
+        "Address": "0x1403B2340 / 0x1403A8E90 / 0x1403B5B20 / 0x1403AC350",
+        "Finding": "Native field state: 0 inactive, 1 running, 2 paused, 3 closing.",
+        "Level": "Native IDA analysis and isolated state/transport tests; live gameplay not tested."
+      }
+    ]
+  },
+  {
+    "Id": "gameplay.character_id",
+    "Category": "Gameplay state",
+    "Name": "Player character ID",
+    "Description": "Verified object/status character ID. Sora is 1, rescue Mickey is 4 and Roxas is 14.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 461,
+    "CapabilitySlot": 461,
+    "Minimum": 0,
+    "Maximum": 15,
+    "DefaultValue": 0,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only observation; no saved data changes.",
+    "Evidence": [
+      {
+        "Address": "0x1403B2340 / 0x1403A8E90 / 0x1403B5B20 / 0x1403AC350",
+        "Finding": "Verified object/status character ID. Sora is 1, rescue Mickey is 4 and Roxas is 14.",
+        "Level": "Native IDA analysis and isolated state/transport tests; live gameplay not tested."
+      }
+    ]
+  },
+  {
+    "Id": "gameplay.form_id",
+    "Category": "Gameplay state",
+    "Name": "Player form ID",
+    "Description": "Verified actor form ID, including dual-wield Roxas (10) and rescue Mickey (11). Reading an ID does not enable that form.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 462,
+    "CapabilitySlot": 462,
+    "Minimum": -1,
+    "Maximum": 11,
+    "DefaultValue": 0,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only observation; no saved data changes.",
+    "Evidence": [
+      {
+        "Address": "0x1403B2340 / 0x1403A8E90 / 0x1403B5B20 / 0x1403AC350",
+        "Finding": "Verified actor form ID, including dual-wield Roxas (10) and rescue Mickey (11). Reading an ID does not enable that form.",
+        "Level": "Native IDA analysis and isolated state/transport tests; live gameplay not tested."
+      }
+    ]
+  },
+  {
+    "Id": "gameplay.publication_tick",
+    "Category": "Gameplay state",
+    "Name": "Last state publication",
+    "Description": "Windows uptime in milliseconds when the bridge published this snapshot. Crowd Control rejects observations older than one second.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 463,
+    "CapabilitySlot": 463,
+    "Minimum": 0,
+    "Maximum": 4294967295,
+    "DefaultValue": 0,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Read-only observation; no saved data changes.",
+    "Evidence": [
+      {
+        "Address": "TrainerBridge.cpp::TrainerFrame / GetTickCount",
+        "Finding": "Windows uptime in milliseconds when the bridge published this snapshot. Crowd Control rejects observations older than one second.",
+        "Level": "Native IDA analysis and isolated state/transport tests; live gameplay not tested."
+      }
+    ]
+  },
+  {
+    "Category": "Display automation",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RestoreBehavior": "Color only. Conditional restore preserves a changed color pair and leaves brightness unchanged.",
+    "Evidence": [
+      {
+        "Address": "0x1405061F0 / 0x140125D00 / DisplayFeatures.inl",
+        "Finding": "Color mode and severity are compared and applied together under the existing presentation mutex and renderer lifetime checks.",
+        "Level": "Full native IDA assembly and original-byte verification; isolated tests. Live display not tested."
+      }
+    ],
+    "Id": "display.color_compare_apply",
+    "Name": "Conditional color preview",
+    "Description": "Apply color correction only while its current mode and strength match the expected values. Used by Crowd Control to preserve later manual changes. Off uses strength 0; modes 1 to 3 use strength 1 to 10.",
+    "Kind": "Action",
+    "CommandId": 1464,
+    "ValueSlot": -1,
+    "CapabilitySlot": 464,
+    "Arguments": [
+      {
+        "Name": "Operation",
+        "Minimum": 0,
+        "Maximum": 1,
+        "DefaultValue": 0,
+        "Choices": [
+          {
+            "Label": "Apply if unchanged",
+            "Value": 0
+          },
+          {
+            "Label": "Restore if unchanged",
+            "Value": 1
+          }
+        ]
+      },
+      {
+        "Name": "Expected mode",
+        "Minimum": 0,
+        "Maximum": 3,
+        "DefaultValue": 0
+      },
+      {
+        "Name": "Expected strength",
+        "Minimum": 0,
+        "Maximum": 10,
+        "DefaultValue": 0
+      },
+      {
+        "Name": "New mode",
+        "Minimum": 0,
+        "Maximum": 3,
+        "DefaultValue": 1
+      },
+      {
+        "Name": "New strength",
+        "Minimum": 0,
+        "Maximum": 10,
+        "DefaultValue": 5
+      }
+    ]
+  },
+  {
+    "Category": "Display automation",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "Minimum": 0,
+    "Maximum": 58,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RestoreBehavior": "Color only. Conditional restore preserves a changed color pair and leaves brightness unchanged.",
+    "Evidence": [
+      {
+        "Address": "0x1405061F0 / 0x140125D00 / DisplayFeatures.inl",
+        "Finding": "Color mode and severity are compared and applied together under the existing presentation mutex and renderer lifetime checks.",
+        "Level": "Full native IDA assembly and original-byte verification; isolated tests. Live display not tested."
+      }
+    ],
+    "Id": "display.color_state",
+    "Name": "Current color correction",
+    "Description": "Current color mode and strength, captured together. Crowd Control uses this value to restore the previous correction after its effect ends.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 465,
+    "CapabilitySlot": 465
+  },
+  {
+    "Id": "combat.damage_guard_owned",
+    "Category": "Combat automation",
+    "Name": "Owned player damage guard",
+    "Description": "Manage Crowd Control damage protection for one verified character instance. An expired reward releases only its own protection, preserving a later manual activation.",
+    "Kind": "Action",
+    "CommandId": 1472,
+    "ValueSlot": -1,
+    "CapabilitySlot": 472,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Conditional release preserves other owners. Protection ends on character/scene change; the reward rechecks and rearms on the next supported controlled character.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x5CBB10 / 0x5D1688 to 0x404EE0 / 0x415410 to 0x3A85F0",
+        "Finding": "Actual Sora/Roxas and Mickey damage callbacks, exact five-argument ABI and resulting HP return. Nine full byte pins, actor lifetime observation and owner-conditional release. See docs/research/player-damage-guard-20261007.",
+        "Level": "Complete native bodies and original bytes verified; isolated role/dispatch/ownership tests. Live gameplay not tested."
+      }
+    ],
+    "Arguments": [
+      {
+        "Name": "Enable (0 / 1)",
+        "Minimum": 0,
+        "Maximum": 1,
+        "DefaultValue": 0
+      },
+      {
+        "Name": "Owner low",
+        "Minimum": 0,
+        "Maximum": 4294967295,
+        "DefaultValue": 0
+      },
+      {
+        "Name": "Owner high",
+        "Minimum": 0,
+        "Maximum": 4294967295,
+        "DefaultValue": 0
+      },
+      {
+        "Name": "Bridge low",
+        "Minimum": 0,
+        "Maximum": 4294967295,
+        "DefaultValue": 0
+      },
+      {
+        "Name": "Bridge high",
+        "Minimum": 0,
+        "Maximum": 4294967295,
+        "DefaultValue": 0
+      },
+      {
+        "Name": "Instance low",
+        "Minimum": 0,
+        "Maximum": 4294967295,
+        "DefaultValue": 0
+      },
+      {
+        "Name": "Instance high",
+        "Minimum": 0,
+        "Maximum": 4294967295,
+        "DefaultValue": 0
+      }
+    ]
+  },
+  {
+    "Category": "Combat automation",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "Minimum": 0,
+    "Maximum": 4294967295,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RestoreBehavior": "Conditional paired restore preserves a later changed search scale or break distance. Same-value native writes cannot be distinguished. Pending cleanup is retained across connection loss.",
+    "Evidence": [
+      {
+        "Address": "0x1403ABD60 / 0x1403ABD80 / 0x14038CF20",
+        "Finding": "The scale setter also writes the separate break distance; native callers can override that distance afterwards. Crowd Control captures and compares both exact Float32 values. See docs/research/lockon-pair-ownership-20261007.",
+        "Level": "Complete original native bodies and isolated pair/transport tests. Live gameplay not tested."
+      }
+    ],
+    "Id": "targeting.pair_compare_apply",
+    "Name": "Conditional targeting ranges",
+    "Description": "Used by Crowd Control to change and restore search scale and lock-on distance together while preserving later changes. Advanced arguments use exact Float32 bit patterns; the Targeting tab provides ordinary range controls.",
+    "Kind": "Action",
+    "CommandId": 1475,
+    "ValueSlot": -1,
+    "CapabilitySlot": 475,
+    "Arguments": [
+      {
+        "Name": "Operation",
+        "Minimum": 0,
+        "Maximum": 1,
+        "DefaultValue": 0,
+        "Choices": [
+          {
+            "Label": "Apply if unchanged",
+            "Value": 0
+          },
+          {
+            "Label": "Restore if unchanged",
+            "Value": 1
+          }
+        ]
+      },
+      {
+        "Name": "Old scale bits",
+        "Minimum": 0,
+        "Maximum": 4294967295,
+        "DefaultValue": 1065353216
+      },
+      {
+        "Name": "Old distance bits",
+        "Minimum": 0,
+        "Maximum": 4294967295,
+        "DefaultValue": 1157234688
+      },
+      {
+        "Name": "New scale bits",
+        "Minimum": 0,
+        "Maximum": 4294967295,
+        "DefaultValue": 1073741824
+      },
+      {
+        "Name": "New distance bits",
+        "Minimum": 0,
+        "Maximum": 4294967295,
+        "DefaultValue": 1165623296
+      },
+      {
+        "Name": "Default bits",
+        "Minimum": 0,
+        "Maximum": 4294967295,
+        "DefaultValue": 1157234688
+      }
+    ]
+  },
+  {
+    "Category": "Combat automation",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "Minimum": 0,
+    "Maximum": 4294967295,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RestoreBehavior": "Conditional paired restore preserves a later changed search scale or break distance. Same-value native writes cannot be distinguished. Pending cleanup is retained across connection loss.",
+    "Evidence": [
+      {
+        "Address": "0x1403ABD60 / 0x1403ABD80 / 0x14038CF20",
+        "Finding": "The scale setter also writes the separate break distance; native callers can override that distance afterwards. Crowd Control captures and compares both exact Float32 values. See docs/research/lockon-pair-ownership-20261007.",
+        "Level": "Complete original native bodies and isolated pair/transport tests. Live gameplay not tested."
+      }
+    ],
+    "Id": "targeting.pair_break_bits",
+    "Name": "Lock-on distance bits",
+    "Description": "Exact Float32 representation of the current lock-on distance, captured with the search scale for conditional restoration. The Targeting tab shows its numeric distance.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 476,
+    "CapabilitySlot": 476
   }
 ]

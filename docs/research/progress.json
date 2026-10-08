@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "date": "2026-10-07",
+  "target": {
+    "path": "E:\\SteamLibrary\\steamapps\\common\\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-\\KINGDOM HEARTS II FINAL MIX.exe",
+    "sha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+    "imageBase": "0x140000000"
+  },
+  "implementation": "src is authoritative; docs/legacy contains prior release only.",
+  "coverage": {
+    "complete": false,
+    "baselineDate": "2026-10-04",
+    "nativeFunctions": 36451,
+    "functionsWithSpecificStaticClaims": 1967,
+    "functionsWithoutSpecificStaticClaims": 34484,
+    "newClaimsMergedIntoGlobalAudit": true,
+    "currentAudit": "docs/research/coverage/summary.json",
+    "semanticCompleteness": "Not measured or established; a specific claim is not a whole-function proof."
+  },
+  "validation": {
+    "liveGame": false,
+    "liveTwitch": false,
+    "gameOrSaveWrites": false
+  },
+  "nextAnalysis": [
+    "Implement a bounded bootstrap audit for retained old-thread handles and complete native stacks; unknown or unverified unwind paths must never count as drained. Apply the read-only stack audit constraints before implementation.",
+    "Bind exact STATUS entry definitions, validated original trampolines, typed wrappers, pool ownership and Actor lifetimes only after the older-writer drain is proved.",
+    "Add typed per-field STATUS transaction receipts and conditional restore that rejects intervening same-value native/manual changes.",
+    "Combine bounded offline root-motion projection with effective runtime resource binding, Actor/Motion lifetime, per-actor scale cleanup and attachment/axis/ramp handling before Tiny/Giant.",
+    "Bind the full primary-plus-remaster resource graph through the actual provider/cache and preconstructor handoff; verify request/resource lifetimes, allocator ownership and failure behavior.",
+    "Refine conservative event/minigame classifications using bounded event-mode witnesses and actual player-input consumers.",
+    "Extend specific semantic analysis into uncovered native functions, preserving the distinction between a finding, complete ASM and full semantic understanding."
+  ],
+  "implementedSincePreviousCheckpoint": [
+    "Added a resident one-byte STATUS breakpoint router with exact body comparisons, immutable targets, module pins, cache flush, fault handling and process-lifetime forwarding. It is not installed in TrainerBridge.",
+    "Added breakpoint planning while preserving the original-body definitions and generated original/unwind image from v0.12.8.",
+    "Added five typed STATUS wrappers preserving native arguments, return values, LastError and SEH while serializing metadata around calls. Bootstrap remains distinct from observing.",
+    "Verified actual private-code Windows VEH routing, including callers already running while all five entry gates publish, plus partial failures and full-tail drift. Production MEM_IMAGE-only code compiles separately without test overrides.",
+    "Verified the normal 25-function native writer closure and five retained root frames. HookedUpdate return is not a global writer barrier; runtime stack drain remains unimplemented.",
+    "Research packaging now excludes local IDA databases, working folders and compiled output while preserving all current durable evidence. The 22-check isolated fixture preserves its original files.",
+    "Read-only audit confirms the reported missing or invalid second-Keyblade case is already guarded in the delivered v0.12.8, including revalidation after Revert. No new release or live game test was performed."
+  ],
+  "lastDeliveredRelease": {
+    "version": "0.12.8",
+    "path": "C:\\Users\\shinz\\source\\repos\\KH2Trainer\\artifacts\\packages\\KH2_Trainer_v0.12.8\\KH2_Trainer.exe",
+    "sha256": "c653f0528be35e6361f71d93ec6d22bb9f832d8a91f058382adf59713ec8cc6d",
+    "newPrerequisitesInstalledInThisRelease": false
+  }
+}

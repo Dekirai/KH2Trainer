@@ -1,0 +1,35 @@
+{
+  "status": "Proposed next implementation only; no source or tests changed",
+  "minimal_guard": "BoundedSkltForPlannedForm(formObject, offhandJoint)",
+  "phase": "Read-only before each NativeBegin preflight, including initial requested-target validation and a second check after native Revert against the fresh base state.",
+  "native_anchors": [
+    "0x1403F50A4 (system sklt install)",
+    "0x1403EAB20 (publishes2AE5798)",
+    "0x1403EAAE0/0x1403EAAD0 (8-byte bsearch key)",
+    "0x1403B5C10 (object BYTE7)",
+    "0x1403D7635 (signed hand joint dereference)"
+  ],
+  "acceptance": [
+    "Existing valid owning system BAR, complete first type2/tag sklt entry and matching installed pointer.",
+    "8-byte table header and count*8 row bytes fully inside the sklt payload; safe address arithmetic.",
+    "Rows strictly ordered by DWORD key so the native bsearch target is deterministic.",
+    "Exact key equals selected form object's BYTE7; offhand signedWORD row+6 readable.",
+    "No new unlock/gauge/party restrictions. Valid existing form weapon remains unchanged."
+  ],
+  "tests": [
+    "Known sklt table and exact form key accepted; assert no writes by the helper.",
+    "BYTE7 differs from WORD78: correct BYTE7 key accepted and weapon-group-key-only row rejected.",
+    "Missing exact key, null/mismatched installed pointer and missing/incorrect tag/type rejected before dispatch.",
+    "Bad owner signature/self-pointer/allocation size, truncated entry and header, count overflow/count beyondpayload, invalid packed pointer rejected.",
+    "Unsorted/duplicate keys rejected; first matching BAR tag precedence preserved.",
+    "Signed joint values are copied exactly; do not reject negative values solely by sign before native joint semantics are proven.",
+    "Command-level regression: missing sklt gives zero NativeBegin calls and zero fallback weapon-slot writes.",
+    "Revert→target: resources valid before Revert but sklt invalid after Revert yields no second Begin.",
+    "Standard valid form requests1..6 preserve cost/party/unlock-independent behavior; the new guard applies only to attachment paths needing a skeleton row."
+  ],
+  "not_covered": [
+    "Actual MDLX/MSET presence/content and mod resolution.",
+    "Future allocation success, other native memory exhaustion, or active-fiber recovery.",
+    "The user's latest crash root cause; no live stack/reproduction exists."
+  ]
+}

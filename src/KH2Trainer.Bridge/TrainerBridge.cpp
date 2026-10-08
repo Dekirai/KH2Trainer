@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <initializer_list>
+#include <limits.h>
+#include <intrin.h>
 
 #if !defined(_M_X64)
 #error This payload requires the native Windows x64 ABI.
@@ -281,7 +283,10 @@ TrainerContext MakeTrainerContext() {
     return c;
 }
 
+#include "PlayerRoleSupport.inl"
+#include "ActorLifetimeSupport.inl"
 #include "ProgressionFeatures.inl"
+bool PlayerHealthControlReady(const TrainerContext& c);
 #include "PlayerFeatures.inl"
 #include "WorldFeatures.inl"
 #include "CombatFeatures.inl"
@@ -308,6 +313,11 @@ TrainerContext MakeTrainerContext() {
 #include "MissionFeatures.inl"
 #include "MissionEventFeatures.inl"
 #include "CameraExtraFeatures.inl"
+#include "GameplayStateSupport.inl"
+#include "MovementTransactionSupport.inl"
+static_assert(offsetof(SharedState,reservedBeforeSnapshot)==movement_tx::RequestOffset,"Typed movement IPC base");
+static_assert(movement_tx::ResponseOffset+sizeof(movement_tx::Response)<=offsetof(SharedState,snapshotSequence),"Typed movement IPC extent");
+bool PlayerHealthControlReady(const TrainerContext& c) { return gameplay_state::Inspect(c).controllable; }
 
 bool g_hostExpired = false;
 bool HostHeartbeatFresh(DWORD now, DWORD heartbeat) {
@@ -317,6 +327,7 @@ bool HostHeartbeatFresh(DWORD now, DWORD heartbeat) {
 }
 
 void ResetTrainerEffects(const TrainerContext& c) {
+    movement_tx::Tick(c,true);
     shortcuts::Reset();
     PlayerReset(c);
     WorldReset(c);
@@ -340,6 +351,7 @@ void BestEffortTrainerFailureReset() {
     // only the engine thread may release owned gameplay fields/task callbacks.
     if (!g_base || !g_gameThread || g_gameThread != GetCurrentThreadId()) return;
     const TrainerContext c{g_base, 0, 0, false};
+    __try { movement_tx::Tick(c,true); } __except (EXCEPTION_EXECUTE_HANDLER) {}
     __try { PlayerReset(c); } __except (EXCEPTION_EXECUTE_HANDLER) {}
     __try { WorldReset(c); } __except (EXCEPTION_EXECUTE_HANDLER) {}
     __try { CameraExtraReset(c); } __except (EXCEPTION_EXECUTE_HANDLER) {}
@@ -367,16 +379,37 @@ void TrainerFrame() {
         ResetTrainerEffects(c);
     }
     g_hostExpired = !hostFresh;
+    // Install on the update thread after a supported player is fully formed.
+    // Observation continues through host disconnects so a construction gap can
+    // never silently turn a previous actor token into a new actor's identity.
+    if(actor_lifetime::Status()==actor_lifetime::Uninstalled && actor_movement::MovementReady(c,true))
+        actor_lifetime::Install(c);
+    actor_lifetime::ObserveCurrent(c);
+    PlayerMaintainCollision();
+    movement_tx::Tick(c,g_hostExpired);
     const LONG request = InterlockedCompareExchange(&g_shared->requestSequence, 0, 0);
     if (request != InterlockedCompareExchange(&g_shared->responseSequence, 0, 0)) {
         MemoryBarrier();
         const LONG commandId = g_shared->commandId;
         double args[8];
         memcpy(args, g_shared->arguments, sizeof(args));
+        const bool typedMovement=commandId==movement_tx::Command;
+        movement_tx::Request movementRequest{};
+        if(typedMovement)memcpy(&movementRequest,reinterpret_cast<const BYTE*>(g_shared)+movement_tx::RequestOffset,sizeof(movementRequest));
         TrainerResult result{1, L"Unsupported command."};
         bool finite = true;
         for (double value : args) if (!isfinite(value)) finite = false;
-        if (!finite) result = {2, L"Every argument must be a finite number."};
+        if(typedMovement) {
+            movement_tx::Reason rejected=movement_tx::Reason::None;
+            bool emptyArguments=true;for(double value:args)if(value!=0)emptyArguments=false;
+            if(!finite || !emptyArguments)rejected=movement_tx::Reason::InvalidRequest;
+            else if(g_hostExpired)rejected=movement_tx::Reason::HostExpired;
+            else if(!g_shared->commandIssuedAt || static_cast<DWORD>(now-g_shared->commandIssuedAt)>=8000)rejected=movement_tx::Reason::Expired;
+            const auto response=movement_tx::Execute(c,movementRequest,static_cast<uint32_t>(request),rejected);
+            memcpy(reinterpret_cast<BYTE*>(g_shared)+movement_tx::ResponseOffset,&response,sizeof(response));
+            result={response.outcome==movement_tx::Outcome::Rejected?3:0,L"Movement transaction acknowledged. Its typed receipt records the exact outcome."};
+        }
+        else if (!finite) result = {2, L"Every argument must be a finite number."};
         else if (g_hostExpired) result = {3, L"The trainer heartbeat expired. Reconnect before sending commands."};
         else if (!g_shared->commandIssuedAt || static_cast<DWORD>(now - g_shared->commandIssuedAt) >= 8000)
             result = {4, L"The command expired before the game could execute it. No action was applied."};
@@ -412,6 +445,8 @@ void TrainerFrame() {
         RendererAaTick(c);
         CameraExtraTick(c);
     }
+    c=MakeTrainerContext();
+    movement_tx::Tick(c,g_hostExpired);
     InterlockedIncrement(&g_shared->snapshotSequence);
     g_shared->sceneReady = c.sceneReady ? 1 : 0;
     ZeroMemory(g_shared->validValues, sizeof(g_shared->validValues));
@@ -428,6 +463,7 @@ void TrainerFrame() {
     RendererDiagnosticsCapabilities(); SpatialAudioCapabilities(); GummiEditorCapabilities();
     WindowDisplayCapabilities();
     RendererAaCapabilities();
+    GameplayStateCapabilities();
     SupportCapability(112); SupportCapability(113); SupportCapability(114); SupportCapability(118);
     PlayerSnapshot(c); WorldSnapshot(c); ProgressionSnapshot(c); CombatSnapshot(c);
     DriveSnapshot(c); GummiSnapshot(c); RenderSnapshot(c);
@@ -440,7 +476,12 @@ void TrainerFrame() {
     RendererDiagnosticsSnapshot(c); SpatialAudioSnapshot(c); GummiEditorSnapshot(c);
     WindowDisplaySnapshot(c);
     RendererAaSnapshot(c);
+    GameplayStateSnapshot(c);
+    movement_tx::Snapshot(c);
     ShortcutSnapshot();
+    // The host must not spend reward time using a snapshot left by a stalled game.
+    SupportCapability(463);
+    SnapshotValue(463, GetTickCount());
     MemoryBarrier();
     InterlockedIncrement(&g_shared->snapshotSequence);
 }

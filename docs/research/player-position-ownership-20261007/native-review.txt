@@ -1,0 +1,25 @@
+Player bookmark/collision lifetime integration — independent static review
+2026-10-07, native_debug
+
+No blocking finding in the source versions fingerprinted in the companion JSON.
+No product changes, build, native game call, injection or UI action was performed.
+
+Bookmark and collision pins balance. Same-address construction retires the old
+token before an old bookmark or collision release can write to the new Actor.
+Unknown/off-current instances retain collision ownership; a new acquisition
+cannot replace that unresolved lease. Host-expired frames still run the pending
+cleanup path. An observer fault is not interpreted as a destructor event.
+
+The integration fixture exercises the real role/list/pool/lifetime helpers and
+substitutes only native callbacks. Root reported 641 checks and zero failures;
+this reviewer did not run a parallel build.
+
+Fatal failure is an explicit unresolved boundary: after the one best-effort reset,
+g_disabled stops further TrainerFrame work. Off-current or unverified collision
+leases can remain pinned and their bits can remain set. A wrong-thread fatal
+failure skips restoration. The final regression confirms that off-current fatal failure preserves the
+lease/flags without later automatic recovery.
+
+Native same-value collision writes on the same lifetime remain indistinguishable
+from the trainer's two-bit profile. Generation tracking solves Actor-address ABA,
+not general write ownership against every native or external writer.

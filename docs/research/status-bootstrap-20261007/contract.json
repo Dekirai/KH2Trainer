@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "status": "Design prerequisite; runtime stack drain not implemented or proved here.",
+  "goal": "Bootstrap exact STATUS revision observation after all five permanent one-byte entry gates are active, without assuming older unobserved calls finished.",
+  "phases": [
+    {
+      "name": "Prepare",
+      "requirements": [
+        "No STATUS lease may exist. Fully construct immutable original trampolines and typed wrappers, RX protection, cache flush and unwind registration before gate publication.",
+        "Metadata storage, locks, wrapper bindings, router and generated code have process lifetime. Initialize observation before any wrapper can execute; keep a separate bootstrap gate closed.",
+        "Validate the complete known writer closure, imports and dynamic condition-variable bindings under the supported native/OS contract."
+      ]
+    },
+    {
+      "name": "Publish",
+      "requirements": [
+        "Install all five entry gates with exact-byte ownership and cache flush, leaving every other original byte intact.",
+        "A partial installation or failed flush/protection restore cannot be used for baseline adoption. Resident routing must continue to forward already patched entries even when confidence is lost.",
+        "Only calls entering after gates are visible are known to have BeforeEntry; old PCs in the original body or helper stack remain unobserved."
+      ]
+    },
+    {
+      "name": "Identify old threads",
+      "requirements": [
+        "After complete gate publication, enumerate all process threads and retain real handles with stable lifetime identity. Thread ID reuse alone cannot identify the same thread.",
+        "An exiting retained thread is drained; an unreadable, unsuspendable, truncated or corrupt stack is unresolved.",
+        "A new thread created after complete gate publication can only become a supported writer through a tracked entry; this relies on supported native control flow, not arbitrary SetThreadContext or jumps into the middle of a function."
+      ]
+    },
+    {
+      "name": "Drain",
+      "requirements": [
+        "Inspect each pre-existing thread under a short, bounded suspension using prebuilt static module/unwind metadata. Include the current game thread through an appropriate captured context without suspending itself.",
+        "Before declaring an old thread drained, prove the complete relevant call stack contains no PC/return continuation inside any of the five original writer bodies; unknown frame termination never counts as clean.",
+        "Do not hold a metadata lock across SuspendThread, invoke arbitrary function-table callbacks, initialize libraries, acquire loader locks or allocate while another thread is suspended. Resume every successfully suspended thread on every path.",
+        "If an older writer remains, resume that thread and retry later; do not rewrite its PC, mint a synthetic Before ticket, reset the ledger or suppress its native call.",
+        "The five normal writer closures have no engine fiber yield, under the recorded external API assumptions. Exceptional/custom callback paths need independent treatment and cannot silently inherit this proof."
+      ]
+    },
+    {
+      "name": "Adopt",
+      "requirements": [
+        "All retained pre-existing threads must be proved drained; every gate, copied original and required code/import contract remains intact.",
+        "Under metadata serialization require no tracked native writer active; then validate the pool/free-list/refcount/backlink, actor generation, role, exact fields and revision identity before acquisition.",
+        "Keep all subsequent native entry/exit observations active on every thread, including menus, off-current actors and host expiry. Before and after every manual field mutation, maintain the same ownership rules.",
+        "Native abnormal completion, missing exit, invalid index, lost hook, overflow or unknown acknowledgement remains uncertainty, never permission to restore stale values."
+      ]
+    }
+  ],
+  "rejectedShortcuts": [
+    "One or several HookedUpdate returns",
+    "A fixed sleep or frame count",
+    "g_gameThread identity alone",
+    "Current RIP outside a writer without unwinding callers",
+    "Only checking six motion workers",
+    "An empty ledger active count immediately after installation",
+    "Snapshotting only pointer/refcount/backlink and equal scalar bits",
+    "Treating resource phase0/1 as completed because its scheduler callback returned"
+  ],
+  "runtimeStatus": "Root's separate StatusBreakpointRouter/EntryPlan can prepare entry interception; no bootstrap completion or typed STATUS receipt integration is established by this research."
+}

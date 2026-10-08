@@ -1,4 +1,5 @@
 using System.Globalization;
+using KH2Trainer.Core;
 
 namespace KH2Trainer.Twitch;
 
@@ -32,32 +33,40 @@ public static class EffectCatalog
         new()
         {
             Key = "heal", Category = RewardCategory.Help, Cost = 500,
-            Title = "Heal Sora", TitleDe = "Sora heilen",
-            Prompt = "Restores Sora's HP. Refunded if Sora is already at full health.",
-            PromptDe = "Füllt Soras HP auf. Bei vollen HP gibt es die Punkte zurück.",
+            AllowedRoles = EffectPlayerRoles.FieldPlayers,
+            Title = "Heal Player", TitleDe = "Spieler heilen",
+            Prompt = "Restores the controlled character's HP. Refunded if health is already full.",
+            PromptDe = "Füllt die HP der gesteuerten Figur auf. Bei vollen HP gibt es die Punkte zurück.",
             Features = ["player.heal", "player.hp", "player.hp.max"],
-            Check = ctx => Full(ctx, "player.hp", "player.hp.max") ? Readiness.Reject("Sora already has full HP.") : Readiness.Ready,
+            Check = ctx => Full(ctx, "player.hp", "player.hp.max") ? Readiness.Reject("The current character already has full HP.") : Readiness.Ready,
             Start = ctx => ctx.RunAsync("player.heal"),
         },
         new()
         {
             Key = "restore-mp", Category = RewardCategory.Help, Cost = 300,
+            AllowedRoles = EffectPlayerRoles.FieldPlayers,
             Title = "Refill MP", TitleDe = "MP auffüllen",
-            Prompt = "Refills Sora's MP and ends the MP recharge.",
-            PromptDe = "Füllt Soras MP auf und beendet die MP-Aufladung.",
+            Prompt = "Refills the controlled character's MP and ends MP recharge. Supports Sora, Roxas and Mickey.",
+            PromptDe = "Füllt die MP der gesteuerten Figur und beendet die MP-Aufladung. Für Sora, Roxas und Micky.",
             Features = ["player.mp.restore", "player.mp", "player.mp.max"],
-            Check = ctx => Full(ctx, "player.mp", "player.mp.max") ? Readiness.Reject("Sora already has full MP.") : Readiness.Ready,
+            Check = ctx =>
+            {
+                var gauge = MpGauge(ctx, rejectNoGauge: true);
+                return gauge.Kind != ReadinessKind.Ready ? gauge :
+                    Full(ctx, "player.mp", "player.mp.max") ? Readiness.Reject("The current character already has full MP.") : Readiness.Ready;
+            },
             Start = ctx => ctx.RunAsync("player.mp.restore"),
         },
         new()
         {
             Key = "full-restore", Category = RewardCategory.Help, Cost = 800,
+            AllowedRoles = EffectPlayerRoles.FieldPlayers,
             Title = "Full Restore (HP + MP)", TitleDe = "Komplett heilen (HP + MP)",
-            Prompt = "Restores HP and MP at once. Refunded if both are already full.",
-            PromptDe = "Füllt HP und MP auf einmal auf. Sind beide voll, gibt es die Punkte zurück.",
+            Prompt = "Restores the controlled character's HP and MP. Refunded if every available gauge is full.",
+            PromptDe = "Füllt HP und MP der gesteuerten Figur auf. Sind alle vorhandenen Leisten voll, gibt es die Punkte zurück.",
             Features = ["player.restore", "player.hp", "player.hp.max", "player.mp", "player.mp.max"],
-            Check = ctx => Full(ctx, "player.hp", "player.hp.max") && Full(ctx, "player.mp", "player.mp.max")
-                ? Readiness.Reject("Sora already has full HP and MP.") : Readiness.Ready,
+            Check = ctx => Full(ctx, "player.hp", "player.hp.max") && (ctx.Read("player.mp.max") is <= 0 || Full(ctx, "player.mp", "player.mp.max"))
+                ? Readiness.Reject("The current character's available HP and MP gauges are already full.") : Readiness.Ready,
             Start = ctx => ctx.RunAsync("player.restore"),
         },
         new()
@@ -141,14 +150,23 @@ public static class EffectCatalog
             Start = async ctx => { await ctx.RunAsync("boost.strength.add", ctx.Amount); ctx.Detail = $"+{ctx.Amount} Strength"; },
         },
         Values("regen", RewardCategory.Help, 3000, 60, "regen", "Regeneration", "Regeneration",
-            "Sora's HP refills constantly for a while.", "Soras HP füllen sich eine Weile lang ständig auf.",
+            "The controlled character's HP refills constantly for a while.", "Die HP der gesteuerten Figur füllen sich eine Weile lang ständig auf.",
             ("combat.autoheal", 1)),
         Values("infinite-mp", RewardCategory.Help, 2000, 60, "mp", "Unlimited MP", "Unendlich MP",
-            "Magic without limits for a while.", "Eine Weile lang Magie ohne Grenzen.",
+            "Keeps the controlled character's MP full for a while. Requires an MP gauge.", "Hält die MP der gesteuerten Figur eine Weile lang voll. Benötigt eine MP-Leiste.",
             ("combat.fullmp", 1)),
-        Values("invincible", RewardCategory.Help, 5000, 30, "defense", "Invincibility", "Unverwundbar",
-            "Sora takes no HP damage for a while.", "Sora nimmt eine Weile lang keinen HP-Schaden.",
-            ("player_damage_guard", 1)),
+        new()
+        {
+            Key = "invincible", Category = RewardCategory.Help, Cost = 5000, DurationSeconds = 30, Group = "defense",
+            AllowedRoles = EffectPlayerRoles.FieldPlayers,
+            Title = "Invincibility", TitleDe = "Unverwundbar",
+            Prompt = "Blocks normal HP damage to the controlled character. Time counts only while protection is confirmed; scripted HP changes can bypass it.",
+            PromptDe = "Blockiert normalen HP-Schaden an der gesteuerten Figur. Die Zeit zählt nur bei bestätigtem Schutz; direkte HP-Änderungen durch Skripte können ihn umgehen.",
+            Features = ["player_damage_guard", "combat.damage_guard_owned"],
+            Check = ctx => ctx.DamageGuardStartReadiness,
+            ActiveCheck = ctx => ctx.DamageGuardActiveReadiness,
+            Start = ctx => ctx.StartDamageGuardAsync(),
+        },
         new()
         {
             Key = "lucky-streak", Category = RewardCategory.Help, Cost = 2000, DurationSeconds = 120, Group = "loot",
@@ -175,19 +193,18 @@ public static class EffectCatalog
         {
             Key = "super-speed", Category = RewardCategory.Help, Cost = 1500, DurationSeconds = 45, Group = "speed",
             Title = "Super Speed", TitleDe = "Supertempo",
-            Prompt = "Sora runs much faster for a while.",
-            PromptDe = "Sora rennt eine Weile lang viel schneller.",
+            Prompt = "The controlled character runs much faster for a while.",
+            PromptDe = "Die gesteuerte Figur rennt eine Weile lang viel schneller.",
+            AllowedRoles = EffectPlayerRoles.FieldPlayers,
             Features = ["movement.run_speed", "movement.walk_speed"],
-            Start = async ctx =>
-            {
-                await ctx.SetAsync("movement.run_speed", (ctx.Read("movement.run_speed") ?? 8) * 2.5);
-                await ctx.SetAsync("movement.walk_speed", (ctx.Read("movement.walk_speed") ?? 2) * 2.5);
-            },
+            Check = ctx => ctx.MovementStartReadiness(MovementMask.Speed),
+            ActiveCheck = ctx => ctx.MovementActiveReadiness,
+            Start = ctx => ctx.StartMovementAsync(MovementMask.Speed, v => MovementValues.FromValues(
+                Math.Clamp(v.Value(0) * 2.5f, 0, 32), Math.Clamp(v.Value(1) * 2.5f, 0, 64), 0, 0)),
         },
-        // Setting the search scale also recalculates the break distance, so restoring the scale restores both.
-        Values("eagle-eye", RewardCategory.Help, 500, 120, "targeting", "Eagle Eye", "Adlerauge",
+        LockOnPair("eagle-eye", RewardCategory.Help, 500, 120, "Eagle Eye", "Adlerauge",
             "Lock-on reaches enemies far away for a while.", "Lock-on erreicht eine Weile lang weit entfernte Gegner.",
-            ("targeting.search_scale", 4)),
+            4f),
         new()
         {
             // The factor belongs to that enemy; it cannot be taken back once lock-on moves on, so it lasts for the enemy's life.
@@ -212,6 +229,7 @@ public static class EffectCatalog
         new()
         {
             Key = "gummi-repair", Category = RewardCategory.Help, Cost = 1000,
+            RequiresPlayerControl = false,
             Title = "Repair Gummi Ship", TitleDe = "Gumi-Jet reparieren",
             Prompt = "Restores the Gummi Ship's HP. Gummi missions only; refunded elsewhere.",
             PromptDe = "Repariert den Gumi-Jet vollständig. Nur in Gumi-Missionen, sonst gibt es die Punkte zurück.",
@@ -227,6 +245,7 @@ public static class EffectCatalog
         new()
         {
             Key = "gummi-clear", Category = RewardCategory.Help, Cost = 500,
+            RequiresPlayerControl = false,
             Title = "Clear Enemy Bullets", TitleDe = "Gegnerschüsse löschen",
             Prompt = "Removes the enemy bullets on screen. Gummi missions only; refunded elsewhere.",
             PromptDe = "Entfernt die Gegnerschüsse auf dem Bildschirm. Nur in Gumi-Missionen, sonst gibt es die Punkte zurück.",
@@ -239,13 +258,14 @@ public static class EffectCatalog
         new()
         {
             Key = "one-hp", Category = RewardCategory.Harm, Cost = 5000,
+            AllowedRoles = EffectPlayerRoles.FieldPlayers,
             Title = "One HP Left", TitleDe = "Nur noch 1 HP",
-            Prompt = "Drops Sora to 1 HP. One hit and it's over...",
-            PromptDe = "Setzt Sora auf 1 HP. Ein Treffer und es ist vorbei...",
+            Prompt = "Drops the controlled character to 1 HP. One hit and it's over...",
+            PromptDe = "Setzt die gesteuerte Figur auf 1 HP. Ein Treffer und es ist vorbei...",
             Features = ["player.hp", "combat.autoheal"],
             Check = ctx =>
             {
-                if (ctx.Read("player.hp") is <= 1) return Readiness.Reject("Sora already has 1 HP.");
+                if (ctx.Read("player.hp") is <= 1) return Readiness.Reject("The current character already has 1 HP.");
                 // Regeneration would refill the HP within a frame.
                 return ctx.Read("combat.autoheal") == 1 ? Readiness.Wait("Waiting for Regeneration to end.") : Readiness.Ready;
             },
@@ -371,21 +391,21 @@ public static class EffectCatalog
         {
             Key = "snail", Category = RewardCategory.Harm, Cost = 1500, DurationSeconds = 30, Group = "speed",
             Title = "Snail Mode", TitleDe = "Schneckenmodus",
-            Prompt = "Sora moves at a snail's pace for a while.",
-            PromptDe = "Sora bewegt sich eine Weile lang im Schneckentempo.",
+            Prompt = "The controlled character moves at a snail's pace for a while.",
+            PromptDe = "Die gesteuerte Figur bewegt sich eine Weile lang im Schneckentempo.",
+            AllowedRoles = EffectPlayerRoles.FieldPlayers,
             Features = ["movement.run_speed", "movement.walk_speed"],
-            Start = async ctx =>
-            {
-                await ctx.SetAsync("movement.run_speed", Math.Max(1, (ctx.Read("movement.run_speed") ?? 8) * 0.25));
-                await ctx.SetAsync("movement.walk_speed", Math.Max(0.5, (ctx.Read("movement.walk_speed") ?? 2) * 0.25));
-            },
+            Check = ctx => ctx.MovementStartReadiness(MovementMask.Speed),
+            ActiveCheck = ctx => ctx.MovementActiveReadiness,
+            Start = ctx => ctx.StartMovementAsync(MovementMask.Speed, v => MovementValues.FromValues(
+                Math.Clamp(v.Value(0) * .25f, .5f, 32), Math.Clamp(v.Value(1) * .25f, 1, 64), 0, 0)),
         },
         Values("fast-forward", RewardCategory.Harm, 2000, 30, "time", "Fast Forward", "Vorspulen",
             "The whole game runs at double speed. Good luck dodging.", "Das ganze Spiel läuft doppelt so schnell. Viel Glück beim Ausweichen.",
             ("time.multiplier", 2)),
-        Values("short-sighted", RewardCategory.Harm, 1000, 60, "targeting", "Short-Sighted", "Kurzsichtig",
+        LockOnPair("short-sighted", RewardCategory.Harm, 1000, 60, "Short-Sighted", "Kurzsichtig",
             "Lock-on only reaches enemies right next to Sora for a while.", "Lock-on erreicht eine Weile lang nur Gegner direkt neben Sora.",
-            ("targeting.search_scale", 0.15)),
+            .15f),
         Form("antiform", 6, RewardCategory.Harm, 4000, 30, "Antiform", "Anti-Form",
             "Turns Sora into Antiform for a while. No healing, no items, pure chaos.",
             "Verwandelt Sora eine Weile lang in die Anti-Form. Keine Heilung, keine Items, nur Chaos."),
@@ -402,19 +422,19 @@ public static class EffectCatalog
             Start = ctx => StartForm(ctx, ctx.Random.Next(1, 7)),
             Monitor = FormMonitor,
             End = EndForm,
+            CancelPending = ctx => ctx.CancelDriveQueueAsync(),
         },
         new()
         {
             Key = "moon-jump", Category = RewardCategory.Funny, Cost = 1000, DurationSeconds = 45, Group = "jump",
             Title = "Moon Jump", TitleDe = "Mondsprung",
-            Prompt = "Low gravity for a while: floaty jumps and slow falls.",
-            PromptDe = "Eine Weile lang geringe Schwerkraft: schwebende Sprünge und langsames Fallen.",
+            Prompt = "Raises the controlled character's base jump height and limits falling speed. Gravity is unchanged; High Jump and special actions may use different values.",
+            PromptDe = "Erhöht die Basis-Sprunghöhe der gesteuerten Figur und begrenzt das Falltempo. Die Schwerkraft bleibt gleich; Sportsfreund und Spezialaktionen können andere Werte verwenden.",
+            AllowedRoles = EffectPlayerRoles.FieldPlayers,
             Features = ["movement.base_jump_height", "movement.fall_speed"],
-            Start = async ctx =>
-            {
-                await ctx.SetAsync("movement.base_jump_height", (ctx.Read("movement.base_jump_height") ?? 160) * 4);
-                await ctx.SetAsync("movement.fall_speed", 3);
-            },
+            Check = ctx => ctx.MovementStartReadiness(MovementMask.Air),
+            ActiveCheck = ctx => ctx.MovementActiveReadiness,
+            Start = ctx => ctx.StartMovementAsync(MovementMask.Air, v => MovementValues.FromValues(0, 0, 3, Math.Clamp(v.Value(3) * 4, 0, 1000))),
         },
         Values("slow-mo", RewardCategory.Funny, 1500, 30, "time", "Slow Motion", "Zeitlupe",
             "The whole game runs at half speed for a while.", "Das ganze Spiel läuft eine Weile lang mit halber Geschwindigkeit.",
@@ -439,12 +459,14 @@ public static class EffectCatalog
         new()
         {
             Key = "color-chaos", Category = RewardCategory.Funny, Cost = 1000, DurationSeconds = 60, Group = "display",
+            AllowedRoles = EffectPlayerRoles.FieldPlayers,
             Title = "Color Chaos", TitleDe = "Farbchaos",
             Prompt = "A random color-vision filter at full strength for a while.",
             PromptDe = "Eine Weile lang ein zufälliger Farbsehfilter in voller Stärke.",
-            Features = ["display.color_vision_preview", "display.restore_loaded"],
-            Start = async ctx => { int mode = ctx.Random.Next(1, 4); await ctx.RunAsync("display.color_vision_preview", mode, 10); ctx.Detail = $"Filter {mode}"; },
-            End = ctx => ctx.RunAsync("display.restore_loaded"),
+            Features = ["display.color_compare_apply", "display.color_state"],
+            Check = ctx => TryColorState(ctx, out _, out _) ? Readiness.Ready : Readiness.Wait("Waiting for the current color filter"),
+            Start = StartColorChaos,
+            End = EndColorChaos,
         },
         Values("silence", RewardCategory.Funny, 500, 90, "music", "Silence!", "Ruhe!",
             "Mutes the music for a while.", "Schaltet die Musik eine Weile lang stumm.",
@@ -453,32 +475,22 @@ public static class EffectCatalog
         {
             Key = "ghost-walk", Category = RewardCategory.Funny, Cost = 2000, DurationSeconds = 12, Group = "position",
             Title = "Ghost Walk", TitleDe = "Geistermodus",
-            Prompt = "Sora walks through walls for a few seconds, then snaps back to the starting point.",
-            PromptDe = "Sora läuft ein paar Sekunden durch Wände und springt danach zum Startpunkt zurück.",
-            Features = ["player.position.bookmark", "player.position.return", "combat.movementcollision", "drive.phase", "world.reload_room", "world.current_room", "world.current_world",
-                "player.position.x", "player.position.y", "player.position.z"],
+            Prompt = "Sora walks through walls briefly, then returns to the starting point if the saved character and scene are still valid.",
+            PromptDe = "Sora läuft kurz durch Wände und kehrt zum Startpunkt zurück, solange die gespeicherte Figur und Szene noch gültig sind.",
+            Features = ["player.position.bookmark", "player.position.return", "combat.movementcollision", "drive.phase"],
             Check = NoDriveTransition,
             Start = async ctx =>
             {
-                ctx.State["world"] = ctx.Read("world.current_world") ?? -1;
-                ctx.State["room"] = ctx.Read("world.current_room") ?? -1;
-                foreach (string axis in new[] { "x", "y", "z" })
-                    if (ctx.Read("player.position." + axis) is double value) ctx.State[axis] = value;
                 await ctx.RunAsync("player.position.bookmark");
                 await ctx.SetAsync("combat.movementcollision", 1, sustain: false);
             },
             End = async ctx =>
             {
-                // Back to the start while walls are still off, then walls on again.
-                bool sameRoom = ctx.Read("world.current_world") == ctx.State["world"] && ctx.Read("world.current_room") == ctx.State["room"];
+                // The native bookmark validates the captured Actor lifetime and scene.
+                // A rejected return must never be bypassed with raw coordinates or a reload.
                 bool back = await TryRunAsync(ctx, "player.position.return");
-                // A pause, freeze or Drive Form drops the bookmark; the stored coordinates still work.
-                if (!back && sameRoom && ctx.State.ContainsKey("x") && ctx.State.ContainsKey("y") && ctx.State.ContainsKey("z"))
-                    back = await TryRunAsync(ctx, "player.position.x", ctx.State["x"]) && await TryRunAsync(ctx, "player.position.y", ctx.State["y"])
-                        && await TryRunAsync(ctx, "player.position.z", ctx.State["z"]);
+                if (!back) ctx.Detail = "Return skipped: the saved position is no longer available.";
                 await ctx.RestoreAsync();
-                // Last resort, so Sora is never left inside a wall.
-                if (!back && sameRoom && ctx.SceneReady && await TryRunAsync(ctx, "world.reload_room")) ctx.Detail = "room reloaded";
             },
         },
         new()
@@ -540,12 +552,44 @@ public static class EffectCatalog
     {
         Key = key, Category = category, Cost = cost, DurationSeconds = duration, Group = group,
         Title = title, TitleDe = titleDe, Prompt = prompt, PromptDe = promptDe,
-        Features = [value.Feature],
+        Features = value.Feature == "combat.fullmp" ? [value.Feature, "player.mp.max"] : [value.Feature],
+        AllowedRoles = value.Feature is "audio.music" or "audio.voice" or "render.hide_captions" or "combat.autoheal" or "combat.fullmp"
+            ? EffectPlayerRoles.FieldPlayers : EffectPlayerRoles.Sora,
+        SelfPauseFeature = value.Feature is "practice.field_pause" or "time.actor_effect_freeze" ? value.Feature : null,
+        SelfPauseBlocker = value.Feature switch
+        {
+            "practice.field_pause" => GameplayBlockers.TrainerFieldPause,
+            "time.actor_effect_freeze" => GameplayBlockers.TrainerActorFreeze,
+            _ => GameplayBlockers.None
+        },
         // The streamer may already have it on; then the redemption would change nothing.
-        Check = ctx => ctx.Read(value.Feature) is double current && EffectContext.Near(current, value.Value)
-            ? Readiness.Reject($"{title} is already active.") : Readiness.Ready,
+        Check = ctx =>
+        {
+            if (value.Feature == "combat.fullmp")
+            {
+                var gauge = MpGauge(ctx, rejectNoGauge: true);
+                if (gauge.Kind != ReadinessKind.Ready) return gauge;
+            }
+            return ctx.Read(value.Feature) is double current && EffectContext.Near(current, value.Value)
+                ? Readiness.Reject($"{title} is already active.") : Readiness.Ready;
+        },
+        ActiveCheck = value.Feature == "combat.fullmp" ? ctx =>
+            !ctx.Supports(value.Feature) ? Readiness.Wait("Waiting until Unlimited MP is available.") : MpGauge(ctx, rejectNoGauge: false) : null,
         Start = ctx => ctx.SetAsync(value.Feature, value.Value, sustain: sustain),
     };
+
+    private static Readiness MpGauge(EffectContext ctx, bool rejectNoGauge)
+    {
+        // PlayerLiving bounds native STATUS+388 to an integer in 0..255. A zero gauge
+        // is valid but cannot benefit from MP-only rewards. Unknown/invalid data waits.
+        if (!ctx.Supports("player.mp.max") || ctx.Read("player.mp.max") is not double maximum ||
+            maximum < 0 || maximum > 255 || maximum != Math.Truncate(maximum))
+            return Readiness.Wait("Waiting for the current character's MP gauge.");
+        if (maximum == 0)
+            return rejectNoGauge ? Readiness.Reject("The current character has no MP gauge.") :
+                Readiness.Wait("Paused until the current character has an MP gauge.");
+        return Readiness.Ready;
+    }
 
     private static EffectDefinition Form(string key, int form, RewardCategory category, int cost, int duration, string name, string nameDe,
         string? prompt = null, string? promptDe = null) => new()
@@ -560,6 +604,7 @@ public static class EffectCatalog
         Start = ctx => StartForm(ctx, form),
         Monitor = FormMonitor,
         End = EndForm,
+        CancelPending = ctx => ctx.CancelDriveQueueAsync(),
     };
 
     // A property, not a field: the catalog is built by a static initializer that runs before later fields are set.
@@ -622,16 +667,17 @@ public static class EffectCatalog
 
     private static async Task EndForm(EffectContext ctx)
     {
-        await ctx.RestoreAsync();
         if (!ctx.Established)
         {
             // Still transforming: drop the trainer's pending steps (a native transition already running finishes).
-            await TryRunAsync(ctx, "drive.cancel");
+            await ctx.CancelDriveQueueAsync();
+            await ctx.RestoreAsync();
             return;
         }
+        await ctx.RestoreAsync();
         // A replacing form reverts by itself, Kick Out already sent the revert, and a form the game ended needs nothing.
         if (ctx.EndReason is EndReason.Replaced or EndReason.Interrupted || ctx.Read("player.form.id") != ctx.State["form"]) return;
-        await TryRunAsync(ctx, "drive.revert");
+        await ctx.RunAsync("drive.revert");
     }
 
     /// <summary>
@@ -645,18 +691,26 @@ public static class EffectCatalog
         Features = ["camera.fov", "camera.fov_enabled"],
         Start = async ctx =>
         {
-            ctx.State["fovWasEnabled"] = ctx.Read("camera.fov_enabled") ?? 0;
-            ctx.State["fovOriginal"] = ctx.Read("camera.fov") ?? 70;
-            await ctx.SetAsync("camera.fov", fov, restore: false);
-            // Menus, doors and camera changes switch the override off; owning the switch lets the engine turn it back on.
-            await ctx.SetAsync("camera.fov_enabled", 1, restore: false);
+            ctx.State["fovWasEnabled"] = ctx.Read("camera.fov_enabled") ?? throw new EffectDeferredException("Waiting for camera state");
+            ctx.State["fovOriginal"] = ctx.Read("camera.fov") ?? throw new EffectDeferredException("Waiting for camera field of view");
+            // Capture the switch before the FOV setter implicitly enables it. If the second
+            // command fails, the normal owned-value cleanup can undo the first command.
+            await ctx.SetAsync("camera.fov_enabled", 1);
+            await ctx.SetAsync("camera.fov", fov);
         },
         End = async ctx =>
         {
-            await ctx.RestoreAsync();
-            if (ctx.Read("camera.fov") is double current && !EffectContext.Near(current, fov)) return; // Someone else changed it.
-            if (ctx.State["fovWasEnabled"] != 0) await TryRunAsync(ctx, "camera.fov", ctx.State["fovOriginal"]);
-            else await TryRunAsync(ctx, "camera.fov_enabled", 0);
+            double enabled = ctx.Read("camera.fov_enabled") ?? throw new EffectDeferredException("Waiting for camera state before restoring");
+            if (enabled == 0) { ctx.AbandonRestores(); return; } // The native lease or the streamer's override already ended.
+            double current = ctx.Read("camera.fov") ?? throw new EffectDeferredException("Waiting for camera field of view before restoring");
+            if (!EffectContext.Near(current, fov)) { ctx.AbandonRestores(); return; } // Someone else changed it.
+            try
+            {
+                if (ctx.State["fovWasEnabled"] != 0) await ctx.RunAsync("camera.fov", ctx.State["fovOriginal"]);
+                else await ctx.RunAsync("camera.fov_enabled", 0);
+            }
+            catch (Exception error) { throw new EffectDeferredException("Camera restore is still pending: " + error.Message); }
+            ctx.AbandonRestores();
         },
     };
 
@@ -671,13 +725,58 @@ public static class EffectCatalog
     private static EffectDefinition Brightness(string key, int cost, int duration, double level, string title, string titleDe, string prompt, string promptDe) => new()
     {
         Key = key, Category = RewardCategory.Annoying, Cost = cost, DurationSeconds = duration, Group = "display",
+        AllowedRoles = EffectPlayerRoles.FieldPlayers,
         Title = title, TitleDe = titleDe, Prompt = prompt, PromptDe = promptDe,
-        Features = ["display.brightness_preview", "display.restore_loaded"],
-        Start = ctx => ctx.SetAsync("display.brightness_preview", level, restore: false),
-        End = async ctx => { await ctx.RestoreAsync(); await ctx.RunAsync("display.restore_loaded"); },
+        Features = ["display.brightness_preview"],
+        Start = ctx => ctx.SetAsync("display.brightness_preview", level),
     };
 
     // ---- Helpers ----------------------------------------------------------------------------
+
+    private static EffectDefinition LockOnPair(string key, RewardCategory category, int cost, int duration,
+        string title, string titleDe, string prompt, string promptDe, float scale) => new()
+    {
+        Key = key, Category = category, Cost = cost, DurationSeconds = duration, Group = "targeting",
+        Title = title, TitleDe = titleDe, Prompt = prompt, PromptDe = promptDe,
+        Features = ["targeting.pair_compare_apply", "targeting.pair_break_bits", "targeting.default_break_distance"],
+        Check = ctx => ctx.LockOnStartReadiness(scale), ActiveCheck = ctx => ctx.LockOnActiveReadiness,
+        Start = ctx => ctx.StartLockOnPairAsync(scale), Monitor = ctx => ctx.LockOnProgress,
+    };
+
+    private static bool TryColorState(EffectContext ctx, out int mode, out int severity)
+    {
+        mode = severity = 0;
+        if (ctx.Read("display.color_state") is not double packed || packed < 0 || packed > 58 || Math.Truncate(packed) != packed) return false;
+        mode = (int)packed / 16; severity = (int)packed % 16;
+        return mode is >= 0 and <= 3 && (mode == 0 ? severity == 0 : severity is >= 1 and <= 10);
+    }
+
+    private static async Task StartColorChaos(EffectContext ctx)
+    {
+        if (!TryColorState(ctx, out int originalMode, out int originalSeverity))
+            throw new EffectDeferredException("Waiting for the current color filter");
+        // Do not charge for applying a full-strength filter that was already selected.
+        int[] choices = Enumerable.Range(1, 3).Where(m => originalSeverity != 10 || m != originalMode).ToArray();
+        int mode = choices[ctx.Random.Next(choices.Length)];
+        await ctx.RunAsync("display.color_compare_apply", 0, originalMode, originalSeverity, mode, 10);
+        ctx.State["colorOriginalMode"] = originalMode; ctx.State["colorOriginalSeverity"] = originalSeverity;
+        ctx.State["colorAppliedMode"] = mode; ctx.State["colorOwned"] = 1;
+        ctx.Detail = $"Filter {mode}";
+    }
+
+    private static async Task EndColorChaos(EffectContext ctx)
+    {
+        if (ctx.State.GetValueOrDefault("colorOwned") != 1) return;
+        try
+        {
+            // The native action compares the complete pair under the presentation mutex.
+            // A changed pair is a successful no-op, including changes after the last snapshot.
+            await ctx.RunAsync("display.color_compare_apply", 1, ctx.State["colorAppliedMode"], 10,
+                ctx.State["colorOriginalMode"], ctx.State["colorOriginalSeverity"]);
+        }
+        catch (Exception error) { throw new EffectDeferredException("Color-filter restore is still pending: " + error.Message); }
+        ctx.State["colorOwned"] = 0;
+    }
 
     private static bool Full(EffectContext ctx, string value, string maximum) =>
         ctx.Read(value) is double current && ctx.Read(maximum) is double max && max > 0 && current >= max;
@@ -701,6 +800,9 @@ public static class EffectCatalog
     private static async Task<bool> TryRunAsync(EffectContext ctx, string featureId, params double[] arguments)
     {
         try { await ctx.RunAsync(featureId, arguments); return true; }
+        catch (EffectDeferredException) { throw; }
+        catch (Exception) when (ctx.ControlReadiness().Kind != ReadinessKind.Ready)
+        { throw new EffectDeferredException("The game became unavailable before cleanup completed"); }
         catch (Exception) { return false; }
     }
 

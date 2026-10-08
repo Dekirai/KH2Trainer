@@ -1,0 +1,76 @@
+STATUS entry observation: fixed-build plan
+=========================================
+
+Result
+------
+The five entry prefixes can be relocated without instruction rewriting. A pure planner and isolated Windows unwind tests are implemented. No entry patch was installed and no game code was executed.
+
+Source: src/KH2Trainer.Bridge/StatusEntryPlan.h
+Tests: tests/KH2Trainer.Bridge.Tests/StatusEntryPlanTests.cpp
+Result: 2573 checks, 0 failures; MSVC x64 /W4 without warnings.
+Original verification: 5 full IDA bodies, 377 instructions, 2222 code bytes and 228 PE unwind-record bytes.
+
+Entry                Copied bytes   Native arguments
+0x1403C0010 Init      5              RCX STATUS; returns RAX
+0x1403C1D90 Rebuild   7              RCX STATUS, RDX optional CharSave; preserve RAX
+0x1403C2650 Writer    5              RCX STATUS, EDX signed index, R8D signed percent; preserve RAX
+0x1403C1880 Reset     10             RCX pool; void
+0x1403C07E0 Release   6              RCX STATUS; preserve RAX
+
+Each structured claim in report.json references its exact complete evidence function. The prior writer graph remains in ../status-rebuild-ownership-20261007.
+
+Planner contract
+----------------
+Build accepts a Kind, module base, readable original-body span, intended trampoline address and distinct near observer-relay address. It validates every byte of the entire native function. Failure leaves the output untouched. The caller owns actual readable input and private output storage.
+
+The entry patch is JMP rel32 to the observer relay plus NOP padding. It must not target the original trampoline directly: that would bypass BeforeEntry. The original trampoline contains the exact prefix followed by MOV R11,continuation and JMP R11. R11 is volatile and none of the five full bodies reads or writes it. The tail preserves integer argument registers, nonvolatile registers and flags.
+
+The caller-owned image is 80 bytes, aligned to16. XDATA is at+32, RUNTIME_FUNCTION at+64. The code range is prefix+13 bytes. No platform API, allocation, page-protection change, thread operation or native call is made by the planner.
+
+The boundary map relocates only exact instruction starts inside the copied prefix. It leaves the original continuation untouched and rejects interior-byte pointers. This is a primitive for a later proven transaction; it is not permission to suspend arbitrary threads.
+
+Important unwind result
+-----------------------
+The first implementation used FF25 [RIP+0]. Real RtlVirtualUnwind treated that memory-indirect jump as an epilog and failed to undo copied PUSH/SUB or restore the copied save. Six assertions failed. Extending SizeOfProlog over the jump did not resolve it.
+
+The final R11 register-indirect jump avoids this epilog form. Tests use actual RtlAddFunctionTable, RtlLookupFunctionEntry and RtlVirtualUnwind at every original prefix boundary and both tail boundaries. Saved registers are deliberately changed after the simulated save, so a wrong stack offset cannot pass merely because the register was never altered. Source input is read-only; private output becomes RX. The generated code is never executed.
+
+Init and Coefficient synthetic XDATA:
+01 05 02 00 05 34 01 00
+The copied MOV saves RBX at current RSP+8. Retail XDATA records offset48 after the later PUSH/SUB; copying it unmodified would be wrong.
+
+Rebuild:
+01 07 03 00 07 42 03 70 02 30 00 00
+Release:
+01 06 02 00 06 32 02 30
+Reset:
+01 0A 00 00
+
+Rebuild's later four chained runtime-function regions stay in original code. Their captured PE records are retained in pe-unwind.json.
+
+Windows reference:
+https://learn.microsoft.com/en-us/cpp/build/prolog-and-epilog?view=msvc-170
+https://learn.microsoft.com/en-us/cpp/build/exception-handling-x64?view=msvc-170
+https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-rtladdfunctiontable
+https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-rtlvirtualunwind
+
+Observer and metadata contract
+------------------------------
+The wrapper invalidates under a metadata lock before calling the immutable original trampoline exactly once. It drops the lock for the entire native call. A finally block reacquires the lock and calls Exit(frame,!AbnormalTermination()); a failed release/reset cannot be declared completed. Metadata exceptions cannot swallow the original or a native exception.
+
+Callbacks are not restricted to the game thread. The separately saved worker path can synchronously dispatch motion events into BDX; whether a particular retail event uses the STATUS setter depends on its asset. Serialize notifications, use per-thread nested frames, permit exits from different threads in either order, and block field acquisition/restore while any native writer is in flight. Root's bounded ledger now does this.
+
+A typed field transaction must keep native pool validation, revision comparison, exact-value comparison and its write within the same serialization boundary. Direct manual Loot/DamageTuning writers also invalidate their selected fields, including equal-value writes. Rebuild invalidates all five. Bind the pool epoch, slot allocation serial and field revisions to the shared bridge instance and Actor generation.
+
+Root ledger review found one error: pre-entry retirement followed by a native exception previously remained AllocationEnded. Exit(false) now faults confidence before draining the active frame. The six event-family regressions cover that case. The final independent review is in ledger-review.json; its reported 930 checks are Root's run, not a duplicated reviewer build.
+
+Remaining installer work
+------------------------
+The bridge has pointer-CAS hooks and a native-mutex AA callsite patch, but no shared STATUS writer barrier. None of those mechanisms alone proves that changing a multi-byte entry is safe.
+
+The future installer must prepare all five images, immutable originals and observer relays; pin their lifetime; finish RX protection/cache flush/function-table registration; then use a proven writer-admission barrier to publish all entries. It must account for existing PCs inside prefixes, already running original bodies, and threads entering during enumeration. A one-time enumeration and suspension list does not by itself cover new entrants.
+
+Bootstrap starts with no STATUS leases. A thread moved from a copied prefix resumes its old original call without BeforeEntry. Baseline adoption therefore waits for all pre-existing writers to finish at the proven update/join boundary, rather than beginning merely when the fifth patch is written. Hook loss, abnormal return, overflow or uncertain rollback makes retained originals uncertain; it does not authorize cleanup writes or prove native destruction.
+
+No live installer, game test, game write, package change, coverage rewrite or version bump belongs to this checkpoint.
+

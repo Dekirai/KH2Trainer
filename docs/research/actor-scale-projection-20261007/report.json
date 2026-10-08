@@ -1,0 +1,244 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-07",
+  "scope": "Uniform Actor scale: projection predicates, concrete Motion type9 formats and hidden Float32 ABI arguments",
+  "implemented": false,
+  "decision": "Preserve the positive scalar proposal, but do not publish a timed Tiny/Giant reward yet. Complete the bounded root-motion resource contract and per-actor cleanup journal first.",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "freshEvidence": {
+    "functions": 23,
+    "instructions": 2542,
+    "originalFunctionBytes": 10738,
+    "dataSpans": 4,
+    "originalDataBytes": 120
+  },
+  "claims": [
+    {
+      "addr": "0x1403ccb90",
+      "Finding": "Builds scaled Actor+64, then composes root-motion translation/rotation into Actor+2056. Both root-motion calls pass XMM2=-1.0, selecting the current motion frame. Floor alignment and a custom callback are additional branches.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ccb90]",
+        "verification.json"
+      ],
+      "Limitations": "Complete ASM; a readable current matrix alone does not bound a future composed matrix."
+    },
+    {
+      "addr": "0x1403bac10",
+      "Finding": "Actor+2488 bit8 selects the Euler orientation branch.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bac10]",
+        "verification.json"
+      ],
+      "Limitations": "The other branch constructs and normalizes a basis from the direction vector."
+    },
+    {
+      "addr": "0x1401aae60",
+      "Finding": "Builds axis rotations from the three Euler components and composes them using the common Float32 matrix routines.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401aae60]",
+        "verification.json"
+      ],
+      "Limitations": "No added finite-value guard is inferred."
+    },
+    {
+      "addr": "0x1403cd220",
+      "Finding": "Floor alignment derives basis vectors from two resource/contact points and normalizes them before the caller reapplies scale.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cd220]",
+        "verification.json"
+      ],
+      "Limitations": "This branch is excluded from the initial simple projection proposal until its inputs are bounded."
+    },
+    {
+      "addr": "0x1403ba940",
+      "Finding": "Checks Actor+2488 bit1, Actor+288 bit1 clear and absence of attachment for the ordinary floor-alignment branch.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ba940]",
+        "verification.json"
+      ],
+      "Limitations": "One part of the full caller predicate."
+    },
+    {
+      "addr": "0x1403ba9a0",
+      "Finding": "Consults decoded Actor+12 resource flags and Actor flags+396/+288 for floor-alignment exclusions.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ba9a0]",
+        "verification.json"
+      ],
+      "Limitations": "The resource pointer must be bounded before reproducing this predicate."
+    },
+    {
+      "addr": "0x1403c7b20",
+      "Finding": "The ASM establishes a third Float32 argument in XMM2. Negative finite frame selects MotionStruct+68; otherwise the explicit frame is forwarded, including NaN. A nonnull motion dispatches vtable+40 with RCX=motion,RDX=matrix,XMM2=frame unless ordered blend+72>0. COMISS/JA also allows unordered blend through. Return AL!=0 yields zero root displacement; otherwise translation and negative atan2f become the root transform.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c7b20]",
+        "verification.json"
+      ],
+      "Limitations": "The saved decompiler prototype omits XMM2; it must not define a native call wrapper."
+    },
+    {
+      "addr": "0x1403c8a40",
+      "Finding": "Finds BAR type9 and stores decoded entry data at MotionStruct+24. Its virtual frame-count and bounds methods are used during animation binding; type16 supplies a separate record.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c8a40]",
+        "verification.json"
+      ],
+      "Limitations": "The function is not a safe parser or presence probe: required entry rows are used without bounded-span validation."
+    },
+    {
+      "addr": "0x1403a6840",
+      "Finding": "BAR runtime fixup dispatches type9 data to1C5F20, after writing encoded entry pointers.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a6840]",
+        "verification.json"
+      ],
+      "Limitations": "No source-span argument is passed."
+    },
+    {
+      "addr": "0x1401c5f20",
+      "Finding": "Uses type9 data+144 as RDX, reads its DWORD kind, and dispatches kind0 to1D2610 or kind1 to1DAFB0; other kinds return0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401c5f20]",
+        "verification.json"
+      ],
+      "Limitations": "The 144-byte object prefix and payload extent need independent bounds."
+    },
+    {
+      "addr": "0x1401d2610",
+      "Finding": "Initializes the common Motion object, sets vtable5B4958 (MotionPrototype0), then calls1A88F0 on a payload-relative table and count difference.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401d2610]",
+        "verification.json"
+      ],
+      "Limitations": "Root callback+40 resolves to1DA6A0; constructor side effects are not a validator."
+    },
+    {
+      "addr": "0x1401dafb0",
+      "Finding": "Initializes the common Motion object and installs vtable5B4A38 (MotionRAW).",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401dafb0]",
+        "verification.json"
+      ],
+      "Limitations": "Root callback+40 resolves to1DB470."
+    },
+    {
+      "addr": "0x1401c3840",
+      "Finding": "Stores the supplied payload pointer at Motion+8, installs the base vtable and zeros fields+16..+40.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401c3840]",
+        "verification.json"
+      ],
+      "Limitations": "Concrete constructors supply payload=type9+144."
+    },
+    {
+      "addr": "0x1401da6a0",
+      "Finding": "Prototype root callback initializes identity, reads the root descriptor at payload+DWORD44 and returns1 if descriptor+12 is zero. Otherwise it selects time keys and evaluates up to nine channel curves before rotation/translation/scale composition.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401da6a0]",
+        "verification.json"
+      ],
+      "Limitations": "Offsets, key counts, frame-rate division and nested curve tables lack a byte-span parameter; all nested parser branches are not yet semantically proven."
+    },
+    {
+      "addr": "0x1401db470",
+      "Finding": "RAW root callback returns identity/1 when payload DWORD44 is zero. Otherwise it computes Float32(frame*rate88)/60, selects two64-byte matrix frames from payload-relative root data, and passes the fractional frame in XMM3 to1DB700.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401db470]",
+        "verification.json"
+      ],
+      "Limitations": "FrameCount36 must be positive and loop-frame84/92 indices must be bounded. Clamp logic alone does not validate counts, negative next indices or spans."
+    },
+    {
+      "addr": "0x1401db700",
+      "Finding": "Matrix interpolation fast path copies the first64-byte matrix for zero fraction. The general path normalizes basis rows, interpolates translation/scales, and rebuilds basis directions using cross products.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401db700]",
+        "verification.json"
+      ],
+      "Limitations": "The complete body is preserved; this claim does not prove all interpolation branches or every exceptional Float32 input."
+    },
+    {
+      "addr": "0x1401d30c0",
+      "Finding": "Prototype curve evaluation reads payload-relative key/time/value/tangent tables. Wrap branches repeatedly add or subtract the endpoint time span; interpolation divides by the selected time difference.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401d30c0]",
+        "verification.json"
+      ],
+      "Limitations": "Finite inputs alone do not prove progress: equal endpoint times can make a wrap step zero; repeated Float32 additions can also stop changing a large value. Full curve-schema validation remains open."
+    },
+    {
+      "addr": "0x1403c6740",
+      "Finding": "Motion update advances current frame+68, controls blend interval+72, invokes motion callbacks and can bind queued animations while the Actor remains the same.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c6740]",
+        "verification.json"
+      ],
+      "Limitations": "Actor generation alone does not identify a motion resource or projection context."
+    },
+    {
+      "addr": "0x1403c73c0",
+      "Finding": "Motion rebuild can evaluate model motion during blending, save pose buffers and update native motion bookkeeping.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c73c0]",
+        "verification.json"
+      ],
+      "Limitations": "Current Actor matrices do not identify the next animation data to be sampled."
+    },
+    {
+      "addr": "0x1401a4d40",
+      "Finding": "Copies the supplied matrix into model+696, changes two basis signs, dispatches motion vtable+16 when present, and updates model motion/buffer ownership.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401a4d40]",
+        "verification.json"
+      ],
+      "Limitations": "Root transform is shared with model evaluation; not a cosmetic-only parameter."
+    },
+    {
+      "addr": "0x1403c65e0",
+      "Finding": "Selects a tagged animation child and binds it through3C8A40, or clears the motion pointer after cleanup when no child is found.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c65e0]",
+        "verification.json"
+      ],
+      "Limitations": "This can change the active motion resource without replacing Actor identity."
+    },
+    {
+      "addr": "0x1403c7300",
+      "Finding": "Motion cleanup releases its referenced record, clears handles and linked effects, and invokes an optional callback.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c7300]",
+        "verification.json"
+      ],
+      "Limitations": "No independent monotonic motion epoch is provided by this cleanup."
+    },
+    {
+      "addr": "0x1403c63c0",
+      "Finding": "Delegates motion cleanup to3C7300 and tail-calls3C7040.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c63c0]",
+        "verification.json"
+      ],
+      "Limitations": "Only this delegation is claimed; downstream3C7040 was not freshly reviewed in this round."
+    }
+  ],
+  "abi": {
+    "rootExtractor": "pointer __fastcall(MotionStruct* RCX, float4* RDX, float frame XMM2)",
+    "rootCallback": "BYTE __fastcall(Motion* RCX, matrix4x4* RDX, float frame XMM2)",
+    "rawInterpolate": "matrix* __fastcall(matrix* RCX, matrix* RDX, matrix* R8, float fraction XMM3)",
+    "basis": "Observed register use in full ASM, not saved decompiler prototypes."
+  },
+  "next": [
+    "Bound type9 Motion object and payload against an owned, identified resource span; recognize both exact vtables and root callbacks.",
+    "For Prototype, validate channel/key/time/value/tangent ranges and finite arithmetic, including wrap-loop progress, before projecting original/candidate scalars.",
+    "For RAW, validate positive frame count, rate/frame arithmetic, both indices and complete matrix spans; reproduce native interpolation in Float32 order.",
+    "Validate Euler/direction/floor-alignment branches and changed attachment/axis/ramp context at every commit or restore.",
+    "Use actor generation and retained per-owner mutation/cleanup state; finite existing matrices and an acknowledged setter alone are insufficient."
+  ],
+  "limits": {
+    "liveGame": false,
+    "productScaleWrites": false,
+    "exclusiveWriterProof": false,
+    "wholeFunctionSemanticCompleteness": false,
+    "source": "Fresh IDA session3d7cbb23, unchanged retail original."
+  }
+}

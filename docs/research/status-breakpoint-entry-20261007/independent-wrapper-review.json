@@ -1,0 +1,29 @@
+{
+  "reviewer": "root",
+  "scope": "Independent complete source/test review and fresh isolated MSVC execution of the STATUS wrapper component.",
+  "sourceHashes": {
+    "src/KH2Trainer.Bridge/StatusObserverSupport.h": "98277fd5c5df27b3f49b0bf259549d544432a4a70c2e900cebb127c314cee042",
+    "tests/KH2Trainer.Bridge.Tests/StatusObserverTests.cpp": "1bb271118c0d4aca7b599cfa96266aa697042644414845ead83d0250e3ded2ac"
+  },
+  "result": "No blocking finding in the bounded wrapper contract.",
+  "checks": [
+    "Pool offsets agree with the recorded 80 by 632-byte pool and following free-list/count. Init admits free startup slots; reset checks pool identity independently of old free-list contents.",
+    "Every bound original forwards once outside the SRW lock. Native SEH crosses the wrapper unchanged and finally drains the ticket while faulting confidence.",
+    "Cross-thread overlapping originals block metadata transactions; per-thread nesting and independent cross-thread return order are exercised.",
+    "Arguments retain pointer width and signed coefficient values; full integer returns and incoming/outgoing LastError are preserved.",
+    "A transaction can validate pool, compare revisions/bits, invalidate a manual write and mutate inside one lock. The trusted callback must not reenter, wait for a native callback, or invoke originals.",
+    "Invalid pool observations and transaction SEH lose confidence. No claim is made that a destroyed Observer object or arbitrary observer-memory corruption can preserve native forwarding.",
+    "Bootstrap is distinct from Observing; the API does not infer an external barrier from an empty tracked-call count."
+  ],
+  "execution": {
+    "checks": 2740,
+    "failures": 0,
+    "log": "native-StatusObserverTests.txt"
+  },
+  "remaining": [
+    "Actual installer and old-writer drain",
+    "Actor/status binding and typed ownership/transport receipts",
+    "End-to-end in-game validation"
+  ],
+  "liveGame": false
+}

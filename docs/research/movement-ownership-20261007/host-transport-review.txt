@@ -1,0 +1,50 @@
+Movement ownership: independent host review
+2026-10-07
+
+Final result: no open blocking finding in the reviewed frozen delta.
+Read-only review; no product edits, builds, live game or UI actions by reviewer.
+
+Author manifest SHA256: 66ea40a10c1141b54ab4d675b47ce3048d1a00e3746819c96a6566791fcd20f9
+All 23 listed source/document fingerprints and both author log fingerprints
+were independently rechecked against the current repository.
+
+Existing author-run logs: Core 748 passed / 0 failed; Twitch 1755 passed / 0 failed.
+These suites were not rerun by the reviewer.
+
+Resolved review findings:
+HOST-01 - Unknown recovery result must preserve the global mutation barrier
+  MovementClientSession retains AmbiguousOrigin across queries and reconnect. QueryMiss/QueryRejected do not clear Pending. Recovery receipts are checked against the full original request. An uncertain write receipt remains globally blocking. A different bridge requires independent fresh instance proof.
+HOST-02 - An awaited actor transition must not consume the transition interval
+  EffectEngine compares previous, before-maintenance and after-maintenance identities. It also checks established/useful state before maintenance, so a new acknowledgement cannot retroactively charge unavailable time.
+HOST-03 - Repeated uncertain receipts must not accumulate acknowledgements
+  Uncertain is handled before acknowledgement enqueue. Remaining acknowledgements are deduplicated. Uncertain records are not acknowledged as successfully cleaned.
+HOST-04 - Known fault records must permit proven replacement-bridge recovery
+  Fresh coherent MovementSnapshot identity removes inaccessible old-bridge records and clears only the fault belonging to that old bridge. Same-instance uncertainty stays suspended; no old originals are written into the new bridge.
+HOST-05 - QueryLease Uncertain is distinct from an outstanding publication
+  Accept retains result.Handle only when it equals game.PendingMovement. A known uncertain lease without an outstanding publication follows the fault/replacement-bridge path.
+
+Confirmed contract:
+- UInt64 IDs and Float32 values stay binary; all fifteen nonempty field masks are structurally validated.
+- Shared command semaphore spans publication, wait and response copy. No generic command1466 fallback exists.
+- Only an immutable correlated receipt establishes ownership; a later snapshot is not substituted for original values.
+- Lost acknowledgement recovery never republishes Acquire/Reapply/ReleaseIntent blindly. The original intent remains separate from the query handle.
+- Pending state and monotonic client operation identity survive GameSession reconnect.
+- Per-actor leases retain unchanged sibling originals and require fresh current identity/values for reapply; native code remains authoritative for compare-and-write.
+- ReleaseAccepted is durable intent, not proof of completed restoration. Off-current living actors retain cleanup records; retirement is supplied by the native observer.
+- Current active lease has inspection priority; older pending records rotate by inspection order within the bounded maintenance loop.
+- Known Uncertain leases and unknown publications are distinct; both remain unavailable for automatic reuse until their respective proof requirements are met.
+- Initial definite no-write refusals are retryable and bounded by MaxWait. Movement cleanup is not discarded by the scalar cleanup deadline.
+- All three rewards use only the typed cohort path for Sora, Roxas and Mickey, with no independent scalar restore fallback.
+
+Limits:
+- This is a source review plus verification of existing isolated test logs, not a live game validation or a complete application build.
+- The fake host journal does not establish native constructor/destructor coverage, memory lifetime, SEH behavior or actual game-thread serialization; separate native evidence and tests cover those contracts.
+- No frame-exact useful-duration guarantee is made. Long unobserved intervals and identity transitions deliberately charge zero.
+- An external writer that writes exactly the same value within the same actor lifetime is indistinguishable by value comparison.
+- Finite native journal/watch capacity fails closed. A missing acknowledgement, unknown lifetime or old living actor can retain cleanup/group reservations.
+- A fresh bridge invalidates inaccessible old host records; it does not prove that another still-running game process completed its cleanup.
+- Unexpected native read/observer exceptions outside the commit may leave no typed acknowledgement. They remain uncertain and blocked; no no-write conclusion is inferred.
+- Review covers the changed movement paths and their shared integration, not every unrelated pre-existing feature in the repository.
+
+Exact paths, hashes, attribution and validation provenance are in
+host-transport-review.json. All review files are frozen.

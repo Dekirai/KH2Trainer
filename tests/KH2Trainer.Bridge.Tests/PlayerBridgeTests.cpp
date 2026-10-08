@@ -1,4 +1,6 @@
 #define KH2DEV_PAYLOAD_TESTS
+#define KH2_ACTOR_LIFETIME_TESTS
+#define KH2_PLAYER_POSITION_TESTS
 #include "../../src/KH2Trainer.Bridge/TrainerBridge.cpp"
 #include <stdio.h>
 #include <limits>
@@ -38,6 +40,213 @@ void Request(LONG id, double value) {
     ZeroMemory(g_shared->arguments, sizeof(g_shared->arguments));
     g_shared->arguments[0] = value;
     InterlockedIncrement(&g_shared->requestSequence);
+}
+void TypedMovementIntegrationTests() {
+    using movement_tx::Operation; using movement_tx::Outcome; using movement_tx::Reason;
+    SharedState savedShared{}; memcpy(&savedShared,&shared,sizeof(shared));
+    movement_tx::Receipt savedReceipts[movement_tx::ReceiptCount];
+    movement_tx::Lease savedLeases[movement_tx::LeaseCount];
+    memcpy(savedReceipts,movement_tx::receipts,sizeof(savedReceipts));
+    memcpy(savedLeases,movement_tx::leases,sizeof(savedLeases));
+    const auto savedNextLease=movement_tx::nextLease;
+    const LONG savedObserver=actor_lifetime::observerStatus;
+    const uint64_t savedInstance=actor_lifetime::bridgeInstance;
+    const bool savedExpired=g_hostExpired;
+    ZeroMemory(movement_tx::receipts,sizeof(movement_tx::receipts));
+    ZeroMemory(movement_tx::leases,sizeof(movement_tx::leases));
+    movement_tx::nextLease=0;
+    // No real observer, game callback or hook is installed in this fixture.
+    // Only a known fault and an opaque nonce are required to exercise the real
+    // TrainerFrame typed packet dispatch, including immutable receipt replay.
+    actor_lifetime::observerStatus=actor_lifetime::Fault;
+    constexpr uint64_t nonce=0xFEDCBA9876543210ULL;
+    actor_lifetime::bridgeInstance=nonce;
+    const uintptr_t birthSlot=At<uintptr_t>(actor_lifetime::kBirthSlot);
+    const uintptr_t soraSlot=At<uintptr_t>(actor_lifetime::kSoraSlot);
+    const uintptr_t mickeySlot=At<uintptr_t>(actor_lifetime::kMickeySlot);
+    BYTE actorBefore[sizeof(actorData)],statusBefore[sizeof(statusData)];
+    memcpy(actorBefore,actorData,sizeof(actorBefore));memcpy(statusBefore,statusData,sizeof(statusBefore));
+    uint64_t nextOperation=1000;
+    auto acquire=[&]() {
+        movement_tx::Request q{};
+        q.magic=movement_tx::Magic;q.schema=movement_tx::Schema;q.size=sizeof(q);
+        q.clientId=0x1122334455667788ULL;q.opId=++nextOperation;q.bridgeInstance=nonce;
+        q.actorGeneration=123;q.effectOwnerId=77;q.operation=Operation::Acquire;q.mask=3;
+        q.expectedBits[0]=movement_tx::Bits(2.f);q.expectedBits[1]=movement_tx::Bits(8.f);
+        q.desiredBits[0]=movement_tx::Bits(4.f);q.desiredBits[1]=movement_tx::Bits(16.f);
+        return q;
+    };
+    auto queue=[&](const movement_tx::Request& q) {
+        shared.hostHeartbeat=GetTickCount();
+        Request(movement_tx::Command,0);
+        BYTE* wire=reinterpret_cast<BYTE*>(&shared);
+        memcpy(wire+movement_tx::RequestOffset,&q,sizeof(q));
+        memset(wire+movement_tx::ResponseOffset,0xCD,sizeof(movement_tx::Response));
+        memset(wire+movement_tx::ResponseOffset+sizeof(movement_tx::Response),0xD7,
+            offsetof(SharedState,snapshotSequence)-movement_tx::ResponseOffset-sizeof(movement_tx::Response));
+    };
+    auto finish=[&](const movement_tx::Request& q) {
+        const DWORD before=GetTickCount();TrainerFrame();const DWORD after=GetTickCount();
+        movement_tx::Response response{};
+        const BYTE* wire=reinterpret_cast<const BYTE*>(&shared);
+        memcpy(&response,wire+movement_tx::ResponseOffset,sizeof(response));
+        Check(shared.commandId==1466 && shared.responseSequence==shared.requestSequence &&
+            response.requestSequence==static_cast<uint32_t>(shared.responseSequence),
+            "actual typed command1466 publishes correlated response before acknowledgement");
+        Check(response.magic==movement_tx::Magic&&response.schema==1&&response.size==192&&
+            response.clientId==q.clientId&&response.opId==q.opId&&response.bridgeInstance==nonce,
+            "typed response is decoded from binary ResponseOffset with full uint64 identities");
+        Check(static_cast<DWORD>(response.tick-before)<=static_cast<DWORD>(after-before),
+            "typed response contains a tick from this dispatch");
+        Check(!memcmp(wire+movement_tx::RequestOffset,&q,sizeof(q)),
+            "typed dispatch preserves the copied request bytes");
+        bool tail=true;
+        for(size_t i=movement_tx::ResponseOffset+sizeof(response);i<offsetof(SharedState,snapshotSequence);++i)
+            if(wire[i]!=0xD7)tail=false;
+        Check(tail&&!(shared.snapshotSequence&1),
+            "typed response respects its192-byte extent and completed snapshot seqlock");
+        return response;
+    };
+    auto reject=[&](const movement_tx::Response& response,Reason reason,bool receipt=false) {
+        Check(response.outcome==Outcome::Rejected&&response.reason==reason&&shared.resultCode==3,
+            "typed rejection is represented in both binary receipt and common result");
+        Check(((response.flags&movement_tx::HasReceipt)!=0)==receipt &&
+              response.appliedMask==0 && response.restoredMask==0 && response.leaseId==0,
+            "rejection cannot fabricate mutation masks or a committed lease");
+    };
+    auto q=acquire();queue(q);auto first=finish(q);reject(first,Reason::ObserverFault,true);
+    Check(movement_tx::FindReceipt(q.clientId,q.opId)!=nullptr&&first.receiptOpId==q.opId,
+        "valid fresh request reaches native transaction guard and stores its immutable rejection");
+    for(unsigned slot=466;slot<=471;++slot)Check(Supported(slot)&&Valid(slot),
+        "schema1 typed movement snapshot capability and diagnostics are published");
+    Check(shared.values[466]==1&&shared.values[467]==0&&shared.values[468]==0&&shared.values[471]==2,
+        "observer fault publishes schema but no invented Actor generation");
+    Check(shared.values[469]==static_cast<uint32_t>(nonce)&&shared.values[470]==static_cast<uint32_t>(nonce>>32),
+        "nonce low/high halves preserve all64bits without double precision loss");
+
+    // A previously acknowledged sequence must not execute or replace its response.
+    BYTE completed[sizeof(first)];memcpy(completed,reinterpret_cast<BYTE*>(&shared)+movement_tx::ResponseOffset,sizeof(completed));
+    TrainerFrame();
+    Check(!memcmp(completed,reinterpret_cast<BYTE*>(&shared)+movement_tx::ResponseOffset,sizeof(completed)),
+        "already acknowledged typed sequence is not executed again");
+
+    for(unsigned stale=0;stale<3;++stale) {
+        auto request=acquire();queue(request);
+        shared.commandIssuedAt=stale==0?0:stale==1?GetTickCount()-8000:GetTickCount()+60000;
+        reject(finish(request),Reason::Expired);
+        Check(!movement_tx::FindReceipt(request.clientId,request.opId),
+            "new expired or future-dated packet creates no mutation receipt");
+    }
+    for(unsigned index=0;index<8;++index)for(double invalid :
+        {1.0,std::numeric_limits<double>::quiet_NaN(),std::numeric_limits<double>::infinity()}) {
+        auto request=acquire();queue(request);shared.arguments[index]=invalid;
+        reject(finish(request),Reason::InvalidRequest);
+        Check(!movement_tx::FindReceipt(request.clientId,request.opId),
+            "nonzero or nonfinite scalar argument cannot enter a new typed transaction");
+    }
+    for(unsigned heartbeat=0;heartbeat<2;++heartbeat) {
+        auto request=acquire();queue(request);
+        shared.hostHeartbeat=heartbeat?GetTickCount()-5001:0;
+        reject(finish(request),Reason::HostExpired);
+        Check(g_hostExpired&&!movement_tx::FindReceipt(request.clientId,request.opId),
+            "missing or expired heartbeat blocks a new typed transaction");
+    }
+
+    // Replay the real stored ObserverFault rejection under each common pre-gate.
+    const auto* stored=movement_tx::FindReceipt(q.clientId,q.opId);
+    const movement_tx::Response storedFirst=stored->response;
+    for(unsigned blocked=0;blocked<3;++blocked) {
+        queue(q);
+        if(blocked==0)shared.commandIssuedAt=GetTickCount()-9000;
+        if(blocked==1)shared.hostHeartbeat=GetTickCount()-6000;
+        if(blocked==2)shared.arguments[7]=std::numeric_limits<double>::quiet_NaN();
+        auto replay=finish(q);reject(replay,Reason::ObserverFault,true);
+        replay.requestSequence=storedFirst.requestSequence;replay.tick=storedFirst.tick;
+        Check(!memcmp(&replay,&storedFirst,sizeof(replay))&&
+            !memcmp(&stored->response,&storedFirst,sizeof(storedFirst)),
+            "pre-rejected duplicate preserves every immutable receipt field");
+    }
+
+    // Seed ONLY a retained receipt, representing a prior already-committed result.
+    // No fake lease or successful native mutation is claimed by this fixture.
+    auto committedRequest=acquire();
+    auto& committed=movement_tx::receipts[movement_tx::ReceiptCount-1];
+    committed={};committed.used=true;committed.request=committedRequest;
+    auto& prior=committed.response;prior=movement_tx::Envelope(committedRequest,0x1234);
+    prior.outcome=Outcome::Applied;prior.reason=Reason::None;prior.flags=movement_tx::HasReceipt|movement_tx::IdentityKnown;
+    prior.receiptOpId=committedRequest.opId;prior.actorGeneration=committedRequest.actorGeneration;
+    prior.effectOwnerId=committedRequest.effectOwnerId;prior.leaseId=0x123456789ULL;prior.revision=3;
+    prior.mask=prior.appliedMask=3;prior.journalState=movement_tx::State::Active;
+    memcpy(prior.originalBits,committedRequest.expectedBits,sizeof(prior.originalBits));
+    memcpy(prior.appliedBits,committedRequest.desiredBits,sizeof(prior.appliedBits));
+    const auto immutable=prior;
+    for(unsigned blocked=0;blocked<3;++blocked) {
+        queue(committedRequest);
+        if(blocked==0)shared.commandIssuedAt=GetTickCount()-9000;
+        if(blocked==1)shared.hostHeartbeat=GetTickCount()-6000;
+        if(blocked==2)shared.arguments[0]=1;
+        auto replay=finish(committedRequest);
+        Check(replay.outcome==Outcome::Applied&&replay.reason==Reason::None&&shared.resultCode==0,
+            "expired or malformed-scalar replay acknowledges prior result rather than inventing new rejection");
+        replay.requestSequence=immutable.requestSequence;replay.tick=immutable.tick;
+        Check(!memcmp(&replay,&immutable,sizeof(replay))&&!memcmp(&prior,&immutable,sizeof(prior)),
+            "actual frame dispatch preserves original/applied bits and all immutable prior receipt data");
+    }
+    auto conflict=committedRequest;conflict.desiredBits[0]=movement_tx::Bits(5.f);queue(conflict);
+    shared.hostHeartbeat=0;reject(finish(conflict),Reason::RequestIdConflict);
+    Check(!memcmp(&prior,&immutable,sizeof(prior)),"request-id conflict cannot rewrite a retained successful receipt");
+
+    auto wrongSchema=acquire();++wrongSchema.schema;queue(wrongSchema);
+    reject(finish(wrongSchema),Reason::UnsupportedSchema);
+    auto staleBridge=acquire();++staleBridge.bridgeInstance;queue(staleBridge);
+    reject(finish(staleBridge),Reason::StaleBridge);
+    bool emptyLeases=true;for(const auto& lease:movement_tx::leases)if(lease.used)emptyLeases=false;
+    Check(emptyLeases&&!memcmp(actorBefore,actorData,sizeof(actorBefore))&&!memcmp(statusBefore,statusData,sizeof(statusBefore)),
+        "typed rejection/replay fixture executes no new lease or Actor/status write");
+    Check(actor_lifetime::Status()==actor_lifetime::Fault&&
+        At<uintptr_t>(actor_lifetime::kBirthSlot)==birthSlot&&At<uintptr_t>(actor_lifetime::kSoraSlot)==soraSlot&&
+        At<uintptr_t>(actor_lifetime::kMickeySlot)==mickeySlot,
+        "typed IPC checks preserve synthetic observer fault and never install native hooks");
+
+    memcpy(movement_tx::receipts,savedReceipts,sizeof(savedReceipts));
+    memcpy(movement_tx::leases,savedLeases,sizeof(savedLeases));movement_tx::nextLease=savedNextLease;
+    actor_lifetime::observerStatus=savedObserver;actor_lifetime::bridgeInstance=savedInstance;
+    g_hostExpired=savedExpired;memcpy(&shared,&savedShared,sizeof(shared));
+}
+unsigned positionCalls = 0;
+void __fastcall FixturePosition(void* actor,const float* position) {
+    ++positionCalls;
+    Check(reinterpret_cast<uintptr_t>(actor)==At<uintptr_t>(0x2A105D0),"position ABI targets current actor");
+    memcpy(static_cast<BYTE*>(actor)+1648,position,16);
+}
+void __fastcall FixtureBirth(uintptr_t,uintptr_t) {}
+uintptr_t __fastcall FixtureDeath(uintptr_t,uintptr_t) { return 0; }
+void ObservePositionPlayer(const TrainerContext& c) {
+    using namespace actor_lifetime;
+    for(const auto& p:kPins) memcpy(reinterpret_cast<void*>(g_base+p.rva),p.bytes,p.count);
+    At<uintptr_t>(kActionTable)=g_base+kAction; At<uintptr_t>(kAction)=g_base+kActionVtable;
+    At<uintptr_t>(0x750300)=g_base+kSoraSlot; At<uintptr_t>(0x7523B8)=g_base+kMickeySlot;
+    At<uintptr_t>(kBirthSlot)=g_base+kBirth; At<uintptr_t>(kSoraSlot)=g_base+kSoraDeath;
+    At<uintptr_t>(kMickeySlot)=g_base+kMickeyDeath;
+    testBirth=FixtureBirth; testSoraDeath=testMickeyDeath=FixtureDeath;
+    // Actual role helper and allocation pool; only native forwarding is replaced.
+    constexpr uintptr_t objectTable=0x120000;
+    At<uintptr_t>(0x2A25030)=g_base+objectTable; At<int>(objectTable+4)=1;
+    At<WORD>(objectTable+8+76)=1; At<signed char>(objectTable+8+87)=0;
+    PlayerField<uint32_t>(c.player,0)=EncodeFixture(g_base+0x750300);
+    PlayerField<uint32_t>(c.player,8)=EncodeFixture(g_base+objectTable+8);
+    PlayerField<unsigned>(c.player,1736)=0x1000080;
+    PlayerField<int>(c.player,3552)=0; PlayerField<int>(c.status,612)=1;
+    At<int>(0x2A23950)=79;
+    for(int i=0;i<79;++i) At<int>(0x2A23810+i*4)=i+1;
+    At<uintptr_t>(0x2A171C8)=c.player;
+    g_testPlayerPosition=FixturePosition;
+    Check(Install(c)&&ObserveCurrent(c)!=0,"actual lifetime observer installed on synthetic player");
+}
+void ReconstructPositionPlayer(const TrainerContext& c) {
+    actor_lifetime::testReturnOverride=g_base+actor_lifetime::kBirthReturn;
+    actor_lifetime::BirthHook(g_base+actor_lifetime::kAction,c.player);
+    actor_lifetime::testReturnOverride=0;
 }
 void RescueTests(const TrainerContext& c) {
     using namespace rescue_features;
@@ -119,6 +328,7 @@ int main() {
     ZeroMemory(&shared, sizeof(shared));
     g_gameThread = GetCurrentThreadId();
     shared.hostHeartbeat = GetTickCount();
+    TypedMovementIntegrationTests();
     Request(1122, 7); TrainerFrame();
     Check(shared.responseSequence == shared.requestSequence && shared.resultCode == 1 &&
           wcsstr(shared.resultText, L"Choose a Drive Form") != nullptr,
@@ -238,7 +448,7 @@ int main() {
     At<uintptr_t>(0x9BA888) = reinterpret_cast<uintptr_t>(managerData);
     At<uintptr_t>(0x2A25370) = reinterpret_cast<uintptr_t>(itemData);
     const uintptr_t actor = reinterpret_cast<uintptr_t>(actorData);
-    const uintptr_t status = reinterpret_cast<uintptr_t>(statusData);
+    const uintptr_t status = g_base + 0x2A17290;
     At<uintptr_t>(0x2A105D0) = actor;
     PlayerField<uintptr_t>(actor, 1472) = status;
     PlayerField<unsigned>(actor, 1736) = 0x80;
@@ -289,7 +499,23 @@ int main() {
     Check(PlayerField<float>(status, 436) == 5, "infinite gauge maximum is rejected");
     PlayerField<float>(status, 440) = 100; PlayerReset(c);
     Check(!g_playerEffects[2] && !g_playerEffects[4], "reset clears all continuous toggles");
+    PlayerCommand(c,16,0,result); Check(result.code&&!g_bookmarkValid,"bookmark rejects unobserved lifetime");
+    PlayerCommand(c,46,1,result); Check(result.code&&!g_collision.active,"collision rejects unobserved lifetime");
+    ObservePositionPlayer(c);
     PlayerCommand(c, 16, 0, result); Check(!result.code && g_bookmarkValid, "bookmark stores current player instance");
+    auto bookmarkGeneration=g_bookmarkGeneration;
+    Check(actor_lifetime::FindLocked(bookmarkGeneration)->pins==1,"bookmark pins generation");
+    PlayerField<float>(actor,1648)=99;
+    PlayerCommand(c,17,0,result);
+    Check(!result.code&&positionCalls==1&&PlayerField<float>(actor,1648)==10,"bookmark returns through native ABI after generation proof");
+    PlayerCommand(c,16,0,result);
+    Check(actor_lifetime::FindLocked(bookmarkGeneration)->pins==1,"replacing bookmark on same actor balances pin");
+    ReconstructPositionPlayer(c);
+    PlayerCommand(c,17,0,result);
+    Check(result.code&&positionCalls==1,"same-address new actor rejects old bookmark before native call");
+    PlayerTick(c);
+    Check(!g_bookmarkValid&&!g_bookmarkGeneration&&!actor_lifetime::FindLocked(bookmarkGeneration),"retired bookmark drops its pin");
+    PlayerCommand(c,16,0,result);
     At<BYTE>(0x717009) = 1; PlayerCommand(c, 17, 0, result);
     Check(result.code, "bookmark restore rejects changed room before nativecall");
     PlayerTick(c); Check(!g_bookmarkValid, "observed room change discards bookmark");
@@ -331,15 +557,23 @@ int main() {
     Check(!g_collision.active && (PlayerField<uint32_t>(actor, 292) & 0x40), "partial foreign collision edit relinquishes ownership");
     PlayerField<uint32_t>(actor, 292) &= ~0x40u;
     PlayerCommand(c, 46, 1, result); At<uintptr_t>(0x2A105D0) = 0; PlayerReset(c);
-    Check(!g_collision.active && (PlayerField<uint32_t>(actor, 292) & 0x40), "collision reset never writes a replaced actor");
+    Check(g_collision.active && g_collision.releasePending && (PlayerField<uint32_t>(actor, 292) & 0x40), "collision reset retains off-current lease without writes");
+    PlayerCommand(c,46,1,result);
+    Check(result.code&&g_collision.releasePending,"new collision acquire cannot replace unresolved lease");
     At<uintptr_t>(0x2A105D0) = actor;
+    PlayerMaintainCollision();
+    Check(!g_collision.active&&!(PlayerField<uint32_t>(actor,292)&0x40),"return to same living actor completes pending collision release");
     PlayerField<uint32_t>(actor, 292) &= ~0x40u; PlayerField<uint32_t>(actor, 2248) &= ~0x1000u;
     PlayerCommand(c, 46, 1, result); At<BYTE>(0x9BA8D0) = 0; PlayerTick(MakeTrainerContext());
     Check(!g_collision.active && !(PlayerField<uint32_t>(actor, 292) & 0x40) &&
         !(PlayerField<uint32_t>(actor, 2248) & 0x1000), "unready same-instance scene safely restores owned bits");
     At<BYTE>(0x9BA8D0) = 1;
     PlayerCommand(c, 46, 1, result); At<BYTE>(0x717009) = 2; PlayerTick(c);
-    Check(!g_collision.active && (PlayerField<uint32_t>(actor, 292) & 0x40), "new room drops collision ownership without writing old actor");
+    Check(g_collision.active && g_collision.releasePending && (PlayerField<uint32_t>(actor, 292) & 0x40), "new room retains unresolved collision lease without writes");
+    const auto oldCollisionGeneration=g_collision.generation;
+    ReconstructPositionPlayer(c); PlayerMaintainCollision();
+    Check(!g_collision.active&&!actor_lifetime::FindLocked(oldCollisionGeneration)&&
+        (PlayerField<uint32_t>(actor,292)&0x40),"same-address construction retires collision lease without clearing new actor flags");
     PlayerField<uint32_t>(actor, 292) &= ~0x40u; PlayerField<uint32_t>(actor, 2248) &= ~0x1000u;
     Request(1007, 3); TrainerFrame();
     Check(shared.responseSequence == shared.requestSequence && shared.resultCode == 0, "bridge acknowledges completed request");
@@ -364,6 +598,16 @@ int main() {
     shared.hostHeartbeat = GetTickCount() - 5500; Request(1007, 2); TrainerFrame();
     Check(g_hostExpired && shared.resultCode != 0 && PlayerField<BYTE>(status, 433) == 1, "changed but stale heartbeat cannot revive a queued command after game suspension");
     shared.hostHeartbeat = GetTickCount(); Request(1007, 2); TrainerFrame(); Check(!g_hostExpired && shared.resultCode == 0, "fresh heartbeat permits new serialized request");
+    PlayerCommand(c,46,1,result);
+    const auto pendingGeneration=g_collision.generation;
+    At<uintptr_t>(0x2A105D0)=0;
+    shared.hostHeartbeat=GetTickCount()-6001; TrainerFrame();
+    Check(g_collision.active&&g_collision.releasePending&&actor_lifetime::FindLocked(pendingGeneration)->pins==1,
+        "expired host retains off-current collision lease and pin");
+    At<uintptr_t>(0x2A105D0)=actor; TrainerFrame();
+    Check(g_hostExpired&&!g_collision.active&&!(PlayerField<uint32_t>(actor,292)&0x40),
+        "actual frame finishes pending release while host remains expired");
+    shared.hostHeartbeat=GetTickCount(); TrainerFrame();
     Request(1007, 4); shared.commandIssuedAt = GetTickCount() - 9000; TrainerFrame();
     Check(shared.resultCode == 4 && shared.responseSequence == shared.requestSequence && PlayerField<BYTE>(status, 433) == 2,
         "freshly reconnected host cannot replay an expired command");
@@ -377,6 +621,39 @@ int main() {
     Check(g_disabled && !g_collision.active && !g_playerEffects[0] &&
         !(PlayerField<uint32_t>(actor, 292) & 0x40), "fatal bridge failure releases owned effects on game thread");
     Check(shared.status == Failed && shared.errorCode == GameException, "failure is published after best-effort reset");
+    // Separate synthetic fatal scenario: normal OnFrame must remain stopped even
+    // if the original Actor later returns. Do not claim deferred failure recovery.
+    g_disabled=0; shared.hostHeartbeat=GetTickCount();
+    PlayerCommand(c,46,1,result);
+    const auto fatalGeneration=g_collision.generation;
+    At<uintptr_t>(0x2A105D0)=0;
+    Fail(GameException,L"Synthetic off-current fatal reset.");
+    Check(g_disabled&&g_collision.active&&g_collision.releasePending&&
+        actor_lifetime::FindLocked(fatalGeneration)->pins==1&&(PlayerField<uint32_t>(actor,292)&0x40),
+        "fatal off-current reset retains lease and pin without actor writes");
+    At<uintptr_t>(0x2A105D0)=actor;
+    const LONG stoppedFrameCount=shared.frameCount;
+    OnFrame(nullptr,0);
+    Check(shared.frameCount==stoppedFrameCount&&g_collision.active&&g_collision.releasePending&&
+        (PlayerField<uint32_t>(actor,292)&0x40),"disabled OnFrame does not promise later collision cleanup");
+    // Explicit fixture cleanup only; a real failed bridge cannot resume this way.
+    g_disabled=0; PlayerMaintainCollision();
+    Check(!g_collision.active&&!(PlayerField<uint32_t>(actor,292)&0x40),"fixture-only cleanup after fatal scenario");
+    // A broken observer must not guess that a retained Actor died or is still ours.
+    g_disabled=0; shared.hostHeartbeat=GetTickCount();
+    PlayerCommand(c,16,0,result); PlayerCommand(c,46,1,result);
+    const auto faultGeneration=g_collision.generation;
+    Check(!result.code&&actor_lifetime::FindLocked(faultGeneration)->pins==2,"bookmark and collision own independent pins");
+    At<uintptr_t>(actor_lifetime::kBirthSlot)=g_base+actor_lifetime::kBirth;
+    const auto callsBeforeFault=positionCalls;
+    PlayerCommand(c,17,0,result);
+    Check(result.code&&positionCalls==callsBeforeFault,"observer loss rejects bookmark return without native call");
+    PlayerReset(c);
+    Check(!g_bookmarkValid&&g_collision.active&&g_collision.releasePending&&
+        actor_lifetime::FindLocked(faultGeneration)->pins==1&&(PlayerField<uint32_t>(actor,292)&0x40),
+        "observer fault drops read-only bookmark but retains unresolved collision ownership without writes");
+    PlayerCommand(c,46,1,result);
+    Check(result.code&&g_collision.generation==faultGeneration,"faulted observer cannot acquire a replacement collision lease");
     printf("%u checks, %u failures. Synthetic memory only; no game code executed.\n", checks, failures);
     VirtualFree(reinterpret_cast<void*>(g_base), 0, MEM_RELEASE);
     return failures ? 1 : 0;

@@ -1,0 +1,17 @@
+Actor lifetime observer implementation — 2026-10-07
+
+Implemented only in the new ActorLifetimeSupport.inl and ActorLifetimePins.inl. Shared bridge, protocol and host integration remain owned by the parent task.
+
+The module observes the pinned common Actor constructor through Default ACTION+8 and two supported class destructor slots. It writes no Actor fields. Existing Actors receive a fresh bridge serial on coherent adoption after all hooks are installed. A new constructor at the same address retires the old serial even if every Actor/role/form/movement value is identical. New serial adoption waits until the shared role helper confirms a coherent current Sora, Roxas or rescue Mickey.
+
+The table holds128watched addresses/generations. Pinned receipts prevent eviction, including offcurrent living Sora while Mickey is current. Destruction entry retires a lifetime before forwarding native cleanup. Field-heap absence blocks resolution but does not fabricate a destructor event. Faulted observation returns Ready=false and IsRetired=false; it preserves uncertain originals for the parent journal.
+
+Status0=Uninstalled,1=Observing,2=Fault(sticky). Host expiration does not uninstall observation. Every callback forwards its saved original exactly once. Own metadata exceptions set Fault; native exceptions propagate outside the catch. No private lock is held during the original callback.
+
+Root review found two concrete failure-path defects in the draft: unsafe rollback CAS after uncertain page-protection restore, and possible missing Original forwarding after a Notify exception. Both were fixed. All slot mutations now require exact aligned image cells, correct AllocationBase and committed memory. Rollback re-queries writable protection and uses owned CAS; it preserves foreign pointers and makes protection restoration a best-effort operation even after CAS conflict. An unrecoverable rollback can leave a resident forwarding wrapper while the observer stays faulted.
+
+Validation:6023 synthetic checks,0failures, /W4 clean. Production branch compilation passed. Tests use the actual PlayerRoleSupport with synthetic native memory; only OS metadata/failure outcomes and native callbacks are replaced. They cover same-address recreation, distinct and same roles/forms, constructor-return filtering, offcurrent living Actor, native death, unknown bulk teardown, metadata failures, native exception propagation, full pinned capacity, counter exhaustion, hook loss, all5703individual pinned-byte drifts, and seven page-protection failure outcomes. These tests did not execute game code.
+
+Original evidence remains47complete bodies/2514instructions/11522codebytes+232databytes. The product uses12complete-body pins totaling5703bytes. verify-product.ps1 checks arrays against stored complete original bodies and reruns the original PE verifier.
+
+Remaining limits: exact foreign construction bypass or hook removal/reinstallation between sampled checks is unsupported. A constructor on another thread can begin writes before the observer point; this design assumes the native engine-thread lifecycle and faults any observed violation. Lifetime identity does not by itself detect another writer storing the same movement value; the parent native cohort/journal must enforce that separate ownership policy. No live injection, UI action, version change or full build occurred.

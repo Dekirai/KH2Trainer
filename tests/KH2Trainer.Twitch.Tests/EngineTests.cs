@@ -178,7 +178,7 @@ internal static class EngineTests
             check(h.Sink.IsRefunded("c") && !h.Sink.IsFulfilled("c"), "failure: a command the game keeps refusing refunds the viewer");
             h.Game.Reject = (feature, _) => feature == "movement.walk_speed";
             h.Redeem("d", "super-speed"); await h.TickAsync();
-            check(h.IsWaiting("d") && h.Game.Get("movement.run_speed") == 8, "failure: a half-applied effect restores what it already changed");
+            check(!h.Sink.IsFulfilled("d") && h.Game.MovementWrites == 0 && h.Game.Get("movement.run_speed") == 8, "failure: rejected atomic movement cohort writes neither field");
             h.Game.Reject = null; await h.TickAsync(4);
             check(h.IsActive("super-speed") && h.Sink.IsFulfilled("d") && !h.Sink.IsRefunded("d"), "failure: the retry succeeds once the game allows it");
             await h.TickAsync(46);
@@ -291,7 +291,9 @@ internal static class EngineTests
             h.Game.SceneReady = false; h.Redeem("c", "heal"); await h.TickAsync(1);
             await h.Engine.StopAllAsync("Stopped by the streamer", h.Clock.Now);
             check(h.Engine.ActiveEffects.Count == 0 && h.Engine.PendingEffects.Count == 0, "stop: nothing runs or waits afterwards");
-            check(h.Game.Get("combat.autoheal") == 0 && h.Sink.IsRefunded("c") && h.Sink.IsRefunded("b"), "stop: restores values and refunds unstarted redemptions");
+            check(h.Game.Get("combat.autoheal") == 1 && h.Engine.PendingCleanupCount > 0 && h.Sink.IsRefunded("c") && h.Sink.IsRefunded("b"), "stop: defers writes during loading and refunds unstarted redemptions");
+            h.Game.SceneReady = true; await h.TickAsync(1);
+            check(h.Game.Get("combat.autoheal") == 0 && h.Engine.PendingCleanupCount == 0, "stop: restores values after control returns");
 
             var cancel = Create(features);
             cancel.Game.SceneReady = false; cancel.Redeem("a", "heal"); await cancel.TickAsync(1);
@@ -422,7 +424,7 @@ internal static class EngineTests
             var giveUp = Create(features);
             giveUp.Redeem("a", "glass-cannon"); await giveUp.TickAsync();
             giveUp.Game.Reject = (feature, _) => feature == "damage.player.general";
-            await giveUp.TickAsync(31); await giveUp.TickAsync(181, 10);
+            await giveUp.TickAsync(31); await giveUp.TickAsync(182);
             giveUp.Game.Reject = null;
             giveUp.Redeem("b", "invincible"); await giveUp.TickAsync(1);
             check(giveUp.Game.Get("damage.player.general") == 250 && giveUp.Sink.IsFulfilled("b"), "restore: gives up after a few minutes and stops blocking the group");
@@ -478,7 +480,7 @@ internal static class EngineTests
             await h.TickAsync();
             check(h.IsActive("flashbang") && h.Game.Get("display.brightness_preview") == 50, "test runs start the effect");
             await h.TickAsync(9);
-            check(h.Game.Get("display.brightness_preview") == 0 && h.Game.Count("display.restore_loaded") == 1, "test runs restore the display settings");
+            check(h.Game.Get("display.brightness_preview") == 0 && h.Game.Count("display.restore_loaded") == 0, "test runs restore brightness without changing the color filter");
         }
     }
 }

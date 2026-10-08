@@ -1,0 +1,462 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-07",
+  "title": "Actor scale writers, event ownership and collision/lifetime boundaries",
+  "scope": "Read-only static research for a future Tiny/Giant Crowd Control effect",
+  "implemented": false,
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "decision": "Do not use Actor2732. Actor60 is a narrower positive uniform-transform-factor candidate, but a timed native ownership transaction and verified Actor-generation binding are required before implementation. This is not a proportional collision-size control.",
+  "evidenceCounts": {
+    "completeBodies": 40,
+    "instructions": 4462,
+    "originalFunctionBytes": 20282,
+    "dataSpans": 10,
+    "originalDataBytes": 80
+  },
+  "priorReport": "../actor-scale-20261007/report.json",
+  "novelty": "The event opcode0x28 writer/task/cleanup path, concrete scale-zero playable cleanup dispatch and collision-dimension consumers strengthen the prior report. Re-exported bodies are not counted as newly discovered or fully semantically reviewed functions.",
+  "claims": [
+    {
+      "addr": "0x1403b3200",
+      "Finding": "The common Actor constructor sets XYZ floats at offsets48/52/56 and scalar60 to1, and initializes the value/rate pair2732/2736 to1/0. It separately copies the type17 collision resource's signed WORD+16 into Actor1776 and1784, WORD+18 into1780 and WORD+14 into1852.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b3200]",
+        "verification.json"
+      ],
+      "Limitations": "This is initialization, not evidence that these fields remain exclusively owned or share proportional collision behavior."
+    },
+    {
+      "addr": "0x1402cb5d0",
+      "Finding": "The event fiber dispatches event opcode0x28 to2D1480, establishing an actual scene-command caller of the scale writer.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1402cb5d0]",
+        "verification.json"
+      ],
+      "Limitations": "Only the scale-dispatch case was semantically followed; the other event opcodes are not claimed as fully reviewed."
+    },
+    {
+      "addr": "0x1402d1480",
+      "Finding": "The scale event resolves an event-slot Actor and either calls2D0710 immediately or registers task2D05F0 with cleanup2D0680. The task stores Actor at+24, a12-byte interpolator at+32 and signed axis at+40. Source floats are event+8/+12; duration is signed WORD+16 times2; axis is signed WORD+18.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1402d1480]",
+        "verification.json"
+      ],
+      "Limitations": "The initial Actor membership query's return is ignored. This is an engine-owned event path, not a safe callable trainer API. Allocation failure is not repaired here."
+    },
+    {
+      "addr": "0x1402ce6b0",
+      "Finding": "This event-data helper reconstructs/returns the32-bit float stored at its RCX pointer;2D1480 uses it for start and end scale values.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1402ce6b0]",
+        "verification.json"
+      ],
+      "Limitations": "It does not impose a finite, positive or magnitude policy."
+    },
+    {
+      "addr": "0x1402d0710",
+      "Finding": "The native axis setter has ECX=axis, RDX=Actor and XMM2=value. Axis0 writes Actor+52, axis1 writes+56 and axis2 writes+48. Other axes perform no scale write. Its Actor-list query return is ignored.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1402d0710]",
+        "verification.json"
+      ],
+      "Limitations": "No clamp, generation check or automatic baseline restoration exists in this setter."
+    },
+    {
+      "addr": "0x1402d05f0",
+      "Finding": "The event task checks current Actor-list membership, advances its12-byte interpolator with15EEA0 and writes the result through2D0710. On interpolation completion it frees the buffer, clears task+32 and requests task removal.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1402d05f0]",
+        "verification.json"
+      ],
+      "Limitations": "Membership is pointer identity, not proof of the same allocation generation. An absent Actor does not cause a write in this callback."
+    },
+    {
+      "addr": "0x1402d0680",
+      "Finding": "The event-scale task cleanup frees the interpolator at task+32 when nonnull.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1402d0680]",
+        "verification.json"
+      ],
+      "Limitations": "It does not restore XYZ or scalar60; a completed native scale command leaves its result."
+    },
+    {
+      "addr": "0x14015ef30",
+      "Finding": "The ramp initializer receives RCX=12-byte ramp, XMM1=start, XMM2=end and XMM3=duration. It substitutes duration1 for exact zero, stores start/end and computes rate=(end-start)/duration.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14015ef30]",
+        "verification.json"
+      ],
+      "Limitations": "Negative/large/nonfinite values are not rejected here. This helper is not specific to Actors."
+    },
+    {
+      "addr": "0x14015eea0",
+      "Finding": "The event ramp advances its value by rate times the global tick factor717480; it clamps to the requested end and returns false at the endpoint according to rate direction.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14015eea0]",
+        "verification.json"
+      ],
+      "Limitations": "The endpoint is the event's requested float, not a hardcoded unit scale or the Actor's prior value."
+    },
+    {
+      "addr": "0x1403bfb70",
+      "Finding": "Actor validity in the event-task path is established by traversing the live packed-pointer Actor list at2A171C8 via Actor+2704 and comparing addresses.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bfb70]",
+        "verification.json"
+      ],
+      "Limitations": "No creation serial or allocation generation is compared. A recycled address can satisfy the same membership test."
+    },
+    {
+      "addr": "0x1403cc730",
+      "Finding": "The ordinary Actor updater passes Actor+2732 to3B77C0 alongside several other normalized ramp pairs.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cc730]",
+        "verification.json"
+      ],
+      "Limitations": "It supplies a native writer of2732 when rate2736 is nonzero; this is not a trainer-owned scalar."
+    },
+    {
+      "addr": "0x1403b77c0",
+      "Finding": "For a nonzero rate, the two-float ramp helper computes value+=rate*tick and clamps at0 or1. Reaching an endpoint stores value and zero rate together as a QWORD.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b77c0]",
+        "verification.json"
+      ],
+      "Limitations": "The helper alone does not identify which native producer scheduled a given Actor scale ramp."
+    },
+    {
+      "addr": "0x1403bfd30",
+      "Finding": "After the ordinary update and3CC730, an exact zero at Actor2732 causes a descriptor virtual call at+56; the alpha-zero/flag0x10 path reaches the same call. Playable descriptors resolve it to404BB0 or4151E0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bfd30]",
+        "verification.json"
+      ],
+      "Limitations": "This narrow lifecycle branch is proved; the large function's other descriptor callbacks are not all characterized."
+    },
+    {
+      "addr": "0x140404bb0",
+      "Finding": "The Sora/Roxas descriptor's+56 target clears global2AE9A28 and tailcalls3A8F30 with its Actor argument. The descriptor/vtable links are saved as original data bytes.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140404bb0]",
+        "verification.json"
+      ],
+      "Limitations": "The routine is an end/cleanup path and must not be called to apply a size effect."
+    },
+    {
+      "addr": "0x1404151e0",
+      "Finding": "The Mickey descriptor's+56 target calls3DB100 on its Actor and then tailcalls3A8F30. The descriptor/vtable links are saved as original data bytes.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404151e0]",
+        "verification.json"
+      ],
+      "Limitations": "Its control cleanup has additional assumptions about the active player and controller."
+    },
+    {
+      "addr": "0x1403db100",
+      "Finding": "When Actor292 bit0x800 is set, this helper calls the active player's controller virtual+40, decrements Actor1464 and clears that bit.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403db100]",
+        "verification.json"
+      ],
+      "Limitations": "This confirms stateful cleanup; it is not an idempotent size-restore operation."
+    },
+    {
+      "addr": "0x1403a8f30",
+      "Finding": "The player-end helper clears active Playerglobal2A105D0 when nonnull, resets player/controller associations, cleans Actor3520/3576 resources and tailcalls3D6770.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a8f30]",
+        "verification.json"
+      ],
+      "Limitations": "The global test does not establish a trainer-safe identity check. No live execution was performed."
+    },
+    {
+      "addr": "0x1403d6770",
+      "Finding": "For an Actor not already marked for deletion, this end helper detaches a parent, tears down its3400 resource, dispatches+56 to two child/weapon Actor pointers at3424/3432, saves status through3C2120 and tailcalls3D36D0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d6770]",
+        "verification.json"
+      ],
+      "Limitations": "3C2120 is saveback, not status release; the report deliberately distinguishes those side effects."
+    },
+    {
+      "addr": "0x1403c2120",
+      "Finding": "The status saveback copies live HP/MP/recharge fields into the decoded character save record and copies Drive fields into the decoded Sora/Roxas save structure when those pointers exist.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c2120]",
+        "verification.json"
+      ],
+      "Limitations": "It is part of the scale-zero cleanup chain; no save-memory or file changes were made by this research."
+    },
+    {
+      "addr": "0x1403d36d0",
+      "Finding": "The Actor end chain cleans3088/3380 resources when not already deleting, clears the packed3380 pointer and tailcalls3B4700.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d36d0]",
+        "verification.json"
+      ],
+      "Limitations": "This describes cleanup ordering only, not the complete eventual deallocation."
+    },
+    {
+      "addr": "0x1403b4700",
+      "Finding": "The common Actor end marker performs motion/script-related cleanup on the first call and sets Actor288 bit0x10000000. Repeated calls keep the bit set.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b4700]",
+        "verification.json"
+      ],
+      "Limitations": "The deletion mark is not a unique generation token, and this routine is not itself evidence that storage has already been freed."
+    },
+    {
+      "addr": "0x1403ccb90",
+      "Finding": "Transform rebuild scales the XYZ vector48/52/56 by float2732 times scalar60 and applies it to the orientation basis. It composes parent transforms for attachments, publishes matrices64/2056 and rebuilds a body buffer when present.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ccb90]",
+        "verification.json"
+      ],
+      "Limitations": "The effect is shared by rendering, joints and collision centers. This does not prove a visual-only or uniformly physical size edit."
+    },
+    {
+      "addr": "0x1403cc9c0",
+      "Finding": "Reflection parity is the parity of negative XYZ components48/52/56, recursively combined with the attached parent's parity.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cc9c0]",
+        "verification.json"
+      ],
+      "Limitations": "Negative scalar60 is not included in this explicit parity calculation, providing an additional reason to reject negative size factors."
+    },
+    {
+      "addr": "0x1403cc3d0",
+      "Finding": "The render-state preparation computes XYZ/parent reflection parity and writes render flags1976 bit0x8 accordingly.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cc3d0]",
+        "verification.json"
+      ],
+      "Limitations": "The claim covers reflection only; unrelated material, alpha and rendering branches are not fully reviewed."
+    },
+    {
+      "addr": "0x1403da520",
+      "Finding": "The attachment predicate returns whether Actor1696 decodes to a nonnull parent pointer.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403da520]",
+        "verification.json"
+      ],
+      "Limitations": "It does not validate the parent's live-list membership or rule out parent cycles."
+    },
+    {
+      "addr": "0x1403b50f0",
+      "Finding": "Joint-transform lookup returns selected Actor or composed joint matrices, including the scaled Actor matrices.3C9C00 uses this routine for shape-center conversion.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b50f0]",
+        "verification.json"
+      ],
+      "Limitations": "Special joint selectors and attachments use different branches; the claim does not flatten them into one universal formula."
+    },
+    {
+      "addr": "0x1403c9c00",
+      "Finding": "The enabled collision conversion copies signed resource WORD+16/+18 to output float radius+4/height+8 without multiplying Actor scale. It transforms the signed center via3B50F0 and subtracts resource WORD+14 from Y.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c9c00]",
+        "verification.json"
+      ],
+      "Limitations": "This proves mismatched center/dimension scaling at this stage, not every collision system in the game."
+    },
+    {
+      "addr": "0x14040b140",
+      "Finding": "The body-buffer rebuild enumerates enabled collision resources, produces40-byte records with3C9C00 and increments the count; it adds no Actor-scale factor to the dimensions.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040b140]",
+        "verification.json"
+      ],
+      "Limitations": "Only the buffer entries actually admitted by the native resource/state filters are rebuilt."
+    },
+    {
+      "addr": "0x1403b4f10",
+      "Finding": "Collision-resource enumeration returns null without Actor2744; otherwise it iterates the resource iterator and accepts entries according to3BA550 on the resource's first byte.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b4f10]",
+        "verification.json"
+      ],
+      "Limitations": "The resource-type filter and all resource content are not reinterpreted as a complete hitbox catalog."
+    },
+    {
+      "addr": "0x1403c94c0",
+      "Finding": "The shape-pair overlap dispatcher reads integer types0/1/3. Its type1 pair tests vertical height sum and XZ radius sum; type3 pair tests XYZ distance against radius sum; mixed cases dispatch3C9780/3C9890.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c94c0]",
+        "verification.json"
+      ],
+      "Limitations": "The ASM establishes an integer type field despite misleading floating notation in decompilation. It uses prebuilt record dimensions, not an Actor scale lookup."
+    },
+    {
+      "addr": "0x1403c9780",
+      "Finding": "The mixed-shape test uses the supplied records' vertical extents and radial dimensions, including a curved cross-section calculation where required.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c9780]",
+        "verification.json"
+      ],
+      "Limitations": "No Actor pointer/scale is an argument. Degenerate dimensions are native preconditions, not safe values to probe with trainer calls."
+    },
+    {
+      "addr": "0x1403c9890",
+      "Finding": "The ellipsoid-style test divides center deltas by the summed radial/vertical dimensions of the two records and compares the squared normalized distance with1.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c9890]",
+        "verification.json"
+      ],
+      "Limitations": "The actual ABI consumes both RCX and RDX records, even though decompilation can omit an argument. It does not scale their dimensions from Actor fields."
+    },
+    {
+      "addr": "0x1403c90b0",
+      "Finding": "For admitted type0/3 pairs, the separation-vector helper uses the stored radius/height sums and a radial margin5, then writes a horizontal correction vector.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c90b0]",
+        "verification.json"
+      ],
+      "Limitations": "The margin is a native constant, not a size-dependent replacement. Other shape cases are not claimed to receive this correction."
+    },
+    {
+      "addr": "0x14040ad70",
+      "Finding": "Actor separation traverses40-byte body records, tests overlap through3C94C0 and derives correction through3C90B0, then distributes corrections using Actor flags/weights and shifts record centers.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040ad70]",
+        "verification.json"
+      ],
+      "Limitations": "It does not proportionally rebuild collision radii from render scale. Correction ownership extends to both Actors."
+    },
+    {
+      "addr": "0x1403b89a0",
+      "Finding": "The movement update routes ordinary movable Actors through3B9090; attachment and the existing collision-bypass flag select other paths.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b89a0]",
+        "verification.json"
+      ],
+      "Limitations": "This claim only connects Actor movement to the resolver; it does not reclassify all movement and action branches."
+    },
+    {
+      "addr": "0x1403b9090",
+      "Finding": "The resolver uses body buffers2560 for Actor separation and passes the dedicated collision state at Actor+1744 to16FEC0 for world movement resolution.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b9090]",
+        "verification.json"
+      ],
+      "Limitations": "It does not read scale48/52/56/60 directly in this body. Other callers and native dimension writers still exist."
+    },
+    {
+      "addr": "0x14016fec0",
+      "Finding": "The world movement resolver receives the collision-state pointer, updates result flags and calls moving-world and static-world collision paths, including1752E0 with the same state.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14016fec0]",
+        "verification.json"
+      ],
+      "Limitations": "Its pointer is a collision-state subobject, so identical small offsets must not be mislabelled as Actor scale fields."
+    },
+    {
+      "addr": "0x1401638f0",
+      "Finding": "The moving-world loop passes each admitted moving collision object and the same collision-state pointer to1752E0, then updates the residual movement from that result.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401638f0]",
+        "verification.json"
+      ],
+      "Limitations": "The claim describes this ownership/argument path only, not every moving geometry condition."
+    },
+    {
+      "addr": "0x1401752e0",
+      "Finding": "The world collision worker reads radius at collision-state+32, which is Actor1776 in the3B9090 call chain, and divides travel length by that radius to select substeps. It works from the dedicated state/geometry, without an Actor-scale argument.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401752e0]",
+        "verification.json"
+      ],
+      "Limitations": "This is a concrete separate radius consumer. It does not prove absence of all indirect geometry scaling or all other radius writers."
+    },
+    {
+      "addr": "0x1403bfab0",
+      "Finding": "The ordinary Actor transform/model update rebuilds scaled matrices and body buffers under its native update gate, providing the next-frame consumption path.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bfab0]",
+        "verification.json"
+      ],
+      "Limitations": "A trainer should not call the full update directly: downstream motion/model work has event and other stateful side effects."
+    }
+  ],
+  "fieldContract": {
+    "xyz": {
+      "offsets": [
+        48,
+        52,
+        56
+      ],
+      "type": "float32",
+      "initial": [
+        1,
+        1,
+        1
+      ],
+      "nativeWriter": "2D0710; scene opcode0x28 immediate or2D05F0 task",
+      "restore": "Event cleanup does not restore prior XYZ. A trainer must not overwrite a later native scene result."
+    },
+    "scalar": {
+      "offset": 60,
+      "type": "float32",
+      "initial": 1,
+      "effect": "Additional multiplier of all three transform basis scales",
+      "writerKnowledge": "Constructor confirmed. The current candidate search has not attributed another concrete Actor60 writer; this is not an exhaustive or exclusive-ownership proof.",
+      "allowedValues": "No native safe editor interval established. Finite positive values are necessary for the proposed path; a small policy interval would be a product/testing choice, not native validation."
+    },
+    "lifecycleRamp": {
+      "offsets": [
+        2732,
+        2736
+      ],
+      "type": "float32 value/rate",
+      "initial": [
+        1,
+        0
+      ],
+      "consumer": "3CC730→3B77C0;3BFD30 zero→descriptor+56",
+      "usableForSizeEffect": false
+    },
+    "collision": {
+      "resourceDimensions": "Signed resource WORD+16/+18",
+      "worldFields": [
+        1776,
+        1780,
+        1784
+      ],
+      "meaning": "Matrices move shape centers/joints, while the traced overlap/separation/world consumers retain separately stored radius/height values."
+    }
+  },
+  "proposedContract": {
+    "status": "Research candidate; no mutation API, slots, patches or live validation supplied",
+    "operation": "Bounded positive multiplier of the current Actor60 value, without touching XYZ or2732",
+    "admission": [
+      "Fresh coherent playable Actor/object/status and existing gameplay-control gates",
+      "Same native game thread; no nested full Actor update call",
+      "Reject attached Actor, deletion/update-suppressed state, invalid transform inputs or a nonrestorable original",
+      "Bind ownership to the independently verified native Actor-lifetime generation, not only Actor/Status pointer equality, role, form, room or list membership",
+      "Treat native event/control takeover and scalar conflict as loss of ownership; do not force through the scene writer"
+    ],
+    "apply": "Capture the scalar and compute/apply the float32 result once under the native transaction. Do not claim that changing XYZ is equivalent to this field.",
+    "sustain": "If a later native scalar differs, relinquish rather than reapply an old original. A same-value native write is not detectable by scalar comparison alone.",
+    "release": "Only restore on the same proven Actor lifetime and while current bits still equal the last owned value. Destroyed/recycled Actors must receive no restore. Observer failure must not be interpreted as destruction.",
+    "collisionDisclosure": "Changes visible transform, joints and collision centers. The traced body/world radii and heights do not resize proportionally; it cannot be described as a physically correct Tiny/Giant body.",
+    "remaining": [
+      "Integrate and independently validate ActorLifetimeSupport's final generation contract in a future implementation",
+      "Choose and test finite positive magnitude and compounded-scale limits",
+      "Decide how external scalar writes and native event ownership terminate the timed effect",
+      "Verify in a separately authorized live test normal movement, attachments, action transitions, form changes, room changes and reset behavior"
+    ]
+  },
+  "searchLimitations": [
+    "Literal listing-offset searches are candidates only. Same offsets occur in unrelated matrices, UI structures, buffers and resources.",
+    "The broad insn_query op_any2732 filter returned zero while the listing contains a confirmed0AACh displacement. That result is preserved as a tool limitation and never used as absence proof.",
+    "The direct0AACh listing search completed with six matches; only four were attributed to the Actor scalar ramp. Other byte/word structures share the offset.",
+    "Scalar60 searches include incomplete pages and unresolved candidates; arbitrary VM or borrowed-pointer writes are not excluded.",
+    "Complete ASM export and original-byte equality do not establish semantic completeness, safety for every model, or live gameplay compatibility."
+  ],
+  "validation": {
+    "verifier": "verify.py",
+    "result": "verification.json",
+    "noGameExecution": true,
+    "noProductChanges": true,
+    "noIdbChanges": true
+  }
+}

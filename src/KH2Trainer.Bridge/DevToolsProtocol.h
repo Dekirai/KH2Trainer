@@ -6,7 +6,7 @@
 // Local\\KH2Trainer_<decimal PID>. All integers are little-endian 32-bit.
 namespace kh2dev {
 constexpr LONG kMagic = 0x4B483254;
-constexpr LONG kVersion = 3;
+constexpr LONG kVersion = 4;
 constexpr unsigned kValueCount = 512;
 constexpr unsigned kMaskWordCount = kValueCount / 64;
 constexpr SIZE_T kMappingSize = 16384;

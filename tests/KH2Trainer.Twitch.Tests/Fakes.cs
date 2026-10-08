@@ -9,7 +9,7 @@ using KH2Trainer.Twitch;
 /// In-memory game: commands are validated against the real feature catalog (kind, argument count
 /// and ranges) and simulate their effect on the value slots the engine reads back.
 /// </summary>
-internal sealed class FakeGame : IGameControl
+internal sealed partial class FakeGame : IGameControl
 {
     private readonly Dictionary<int, FeatureDefinition> byCommand;
     private readonly FeatureMap map;
@@ -27,16 +27,36 @@ internal sealed class FakeGame : IGameControl
         Set("loot.retained", 100); Set("targeting.search_scale", 1); Set("display.brightness_preview", 0); Set("audio.music", 80); Set("audio.voice", 90);
         Set("damage.player.general", 100); Set("damage.target.general", 100); Set("render.hide_captions", 0); Set("combat.movementcollision", 0);
         Set("practice.field_pause", 0); Set("time.actor_effect_freeze", 0); Set("player_damage_guard", 0); Set("combat.autoheal", 0);
+        Set("display.color_state", 0);
+        Set("targeting.break_distance", 2000.5); Set("targeting.default_break_distance", 2000.5);
         Set("combat.fullmp", 0); Set("combat.formtimer", 0); Set("drive.result", 0); Set("drive.requested", 0); Set("drive.phase", 0);
     }
 
     public bool IsConnected { get; set; } = true;
     public bool SceneReady { get; set; } = true;
+    private GameplayState gameplay = new(true, PlayerRole.Sora, GameplayBlockers.None);
+    public GameplayState Gameplay
+    {
+        get
+        {
+            var blockers = gameplay.Blockers;
+            if (!SceneReady) blockers |= GameplayBlockers.Loading;
+            if (Get("practice.field_pause") == 1) blockers |= GameplayBlockers.TrainerFieldPause;
+            if (Get("time.actor_effect_freeze") == 1) blockers |= GameplayBlockers.TrainerActorFreeze;
+            if (Get("drive.phase") is > 0) blockers |= GameplayBlockers.Transition;
+            return gameplay with { Blockers = blockers };
+        }
+        set => gameplay = value;
+    }
     public HashSet<int> Unsupported { get; } = [];
     public Dictionary<int, double> Values { get; } = [];
     public Dictionary<int, int> Stock { get; } = [];
     public List<(string Feature, double[] Arguments)> Commands { get; } = [];
     public Func<string, double[], bool>? Reject { get; set; }
+    public Action<string, double[]>? AfterExecute { get; set; }
+    public int ColorWrites { get; private set; }
+    // Optional separate native pair to model a stale/missing host snapshot at dispatch.
+    public int? NativeColorOverride { get; set; }
     /// <summary>Drive Form transformations complete only when this is true (simulates loading).</summary>
     public bool FormsComplete { get; set; } = true;
     /// <summary>Simulated failure result for drive.trigger.</summary>
@@ -74,12 +94,14 @@ internal sealed class FakeGame : IGameControl
         var args = arguments.ToArray();
         Commands.Add((feature.Id, args));
         Validate(feature, args);
+        if (command == 1472) { await ExecuteGuardAsync(args); return; }
         if (Hold is { } hold) await hold.Task;
         if (!IsConnected) throw new InvalidOperationException("Connect to a running game first.");
         if (Reject?.Invoke(feature.Id, args) == true) throw new InvalidOperationException("Rejected by the bridge.");
         if (feature.Id is "drive.trigger" or "drive.revert" && Get("drive.phase") is > 0)
             throw new InvalidOperationException("A Drive switch is already queued. Cancel its pending steps before another request.");
         Simulate(feature, args);
+        AfterExecute?.Invoke(feature.Id, args);
     }
 
     private static void Validate(FeatureDefinition feature, double[] args)
@@ -106,6 +128,7 @@ internal sealed class FakeGame : IGameControl
         if (feature.Kind is FeatureKind.Number or FeatureKind.Toggle or FeatureKind.Choice && feature.ValueSlot >= 0) Values[feature.ValueSlot] = args[0];
         switch (feature.Id)
         {
+            case "player_damage_guard": SetManualGuard(args[0] == 1); break;
             case "drive.trigger" when DriveSteps > 0:
                 Set("drive.requested", args[0]); Set("drive.result", 1);
                 Set("drive.phase", Get("player.form.id") is > 0 ? 3 : 2); // An active form reverts first.
@@ -131,7 +154,20 @@ internal sealed class FakeGame : IGameControl
                 break;
             case "camera.fov": Set("camera.fov_enabled", 1); break;
             case "targeting.reset": Set("targeting.search_scale", 1); break;
-            case "display.restore_loaded": Set("display.brightness_preview", 0); break;
+            case "targeting.pair_compare_apply": DispatchLockOnPair(args); break;
+            case "display.restore_loaded": Set("display.brightness_preview", 0); Set("display.color_state", 0); ColorWrites++; break;
+            case "display.color_vision_preview": Set("display.color_state", args[0] == 0 ? 0 : args[0] * 16 + args[1]); ColorWrites++; break;
+            case "display.color_compare_apply":
+                double? nativePair = NativeColorOverride ?? Get("display.color_state");
+                if (nativePair is null) throw new InvalidOperationException("Native color pair unavailable.");
+                if (nativePair != args[1] * 16 + args[2])
+                {
+                    if (args[0] == 0) throw new InvalidOperationException("Color pair changed before application.");
+                    break; // Restore mismatch acknowledges loss of ownership without writing.
+                }
+                Set("display.color_state", args[3] * 16 + args[4]); ColorWrites++;
+                if (NativeColorOverride.HasValue) NativeColorOverride = (int)(args[3] * 16 + args[4]);
+                break;
             case "camera.free" when args[0] == 0: Set("camera.roll", 0); break;
         }
     }
@@ -222,8 +258,8 @@ internal sealed class FakeTransport : IEventSubTransport
 
 internal sealed class PlainProtector : ISecretProtector
 {
-    public byte[] Protect(byte[] data) => data.Reverse().ToArray();
-    public byte[] Unprotect(byte[] data) => data.Reverse().ToArray();
+    public byte[] Protect(byte[] data) => Enumerable.Reverse(data).ToArray();
+    public byte[] Unprotect(byte[] data) => Enumerable.Reverse(data).ToArray();
 }
 
 internal static class Wait

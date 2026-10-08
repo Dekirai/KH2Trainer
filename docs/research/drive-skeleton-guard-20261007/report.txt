@@ -1,0 +1,72 @@
+Drive skeleton attachment guard — 2026-10-07
+
+Change
+Drive preflight now validates the attachment table used by the native weapon
+constructor. A missing skeleton row is rejected before the native transition
+and before any fallback weapon is written. Target resources are checked before
+the first Revert and again against the fresh base actor before the next step.
+Begin repeats this check itself. The existing 1..6 selection, Antiform, zero
+Drive, locked-form support, native Revert and queue ownership rules remain.
+
+Native contract
+3F4C30 finds the first type2/tag sklt (0x746C6B73) in the loaded system BAR at
+RVA2AE5E50; 3EAB20 publishes the payload at RVA2AE5798. SystemTableSpan checks
+the existing allocation header, packed self pointer, BAR entry table, exact
+first-match installed pointer and full payload containment. A later valid
+duplicate cannot repair a bad first entry; link flags do not change selection.
+The helper also serves the existing went/wmst span checks without changing
+their native precedence.
+
+3EAAE0 reads signed count+4, header8 and stride8. 3EAAD0 compares the scalar
+key by DWORD subtraction. The guard requires positive count fitting the entry,
+strictly ordered unique DWORD keys, and comparison signs consistent with the
+selected key (distance to a greater key may be at most 0x80000000 inclusive).
+It searches for the exact form object BYTE+7, proven by 3B5C10. This differs
+from the weapon mapping group WORD+78. 3D7620 reads signed joints row+4/+6
+without checking for a null search result. Both joint fields must fit the row;
+their signed values are preserved. No unsupported negative-joint rule is added.
+
+Scope includes Revert and non-dual forms
+3A7A40 can construct hand0 for every target0..6 and hand1 for forms1..6.
+3E0CC0/3EF8B0 skip absent group, item, mapping base or model. 3EF750 skips the
+attachment lookup when that hand's wmst name is empty. The new preflight mirrors
+these branches so an unused skeleton is not demanded. Nonempty names must be
+bounded within their owning 32-byte entry. The dual-form fallback is planned
+read-only first, so the newly prepared offhand is included in the requirement.
+No additional unlock, party, gauge or negative-joint restriction is introduced.
+
+Code identity
+Five complete runtime pins cover the key getter, row lookup, comparator,
+unguarded joint reader and table installer: 3B5C10/3D7620/3EAAD0/3EAAE0/3EAB20.
+These are 117 bytes. They do not pin every asset parser, loader or allocator.
+All pin bytes are checked independently against the SHA-bound original EXE.
+
+Evidence and validation
+Existing complete IDA exports were revalidated against original EXE SHA256
+9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed.
+The retained 45 functions are supplemented by two complete archived BAR-owner
+bodies, 3E6010/3A6840, with fresh original-file bytes: 47 functions, 4,187 ASM
+instructions and 16,541 bytes. The separately labelled callback has 6 additional
+instructions/19 bytes. No new IDA body is claimed: the existing session reported
+auto_analysis_ready=false on this pass. All prior complete page counts and
+original-byte checks passed. verify-source-pins.ps1 repeats the PE and pin check.
+
+The isolated Drive suite passed 1,599 checks, zero failures, with /W4 and no
+compiler warnings. It retains the 49 transition matrix, all six forms, zero
+gauge, locked forms, player-role and fallback regressions. New tests cover
+BYTE7 versus WORD78, both hands, Revert, first-match precedence, counts/spans,
+duplicates, comparator boundaries, signed joint preservation, every pin byte,
+no-save-write/no-call rejection, direct Begin revalidation and changed resources
+after Revert. Native functions are replaced by synthetic callbacks; no game
+process, injection, UI, save file or live gameplay is used.
+
+Limits
+This closes the observed static null-row dereference path. It does not prove
+that a row's joint indexes match a future loaded model, that MDLX/MSET content
+is valid, that recursive mod resources resolve, or that later allocations
+succeed. Foreign asynchronous writes after NativeBegin remain outside this
+preflight's ownership. A valid row is not a guarantee against all Final Form
+crashes. The reported live crash has not been reproduced in this work.
+No new hook, forced fiber cancellation, rollback, runtime code patch or bone
+rewrite is introduced. The existing equipment fallback remains a possible
+persistent two-byte form-record change only when a native transition starts.

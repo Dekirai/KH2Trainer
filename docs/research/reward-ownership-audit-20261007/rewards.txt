@@ -1,0 +1,298 @@
+59-reward ownership and role audit (static baseline, 2026-10-07)
+59 total = 3 generation-journaled movement rewards + 56 other rewards. No game execution.
+Detailed machine-readable schema, native sources and source hashes: rewards.json.
+
+heal [P3; current_actor_status_one_shot; roles=Sora,Roxas,Mickey]
+  Restore: No timed inverse. HP/MP call validation occurs again on the game thread.
+  Role: Already FieldPlayers, with native coherent Sora/Roxas/rescue-Mickey checks and HP/HUD/MP prerequisites.
+  Limit: HP+MP and the one-hp autoheal-disable command are separate effects, not an atomic host transaction. No old HP/MP is restored.
+
+restore-mp [P3; current_actor_status_one_shot; roles=Sora,Roxas,Mickey]
+  Restore: No timed inverse. HP/MP call validation occurs again on the game thread.
+  Role: Already FieldPlayers, with native coherent Sora/Roxas/rescue-Mickey checks and HP/HUD/MP prerequisites.
+  Limit: HP+MP and the one-hp autoheal-disable command are separate effects, not an atomic host transaction. No old HP/MP is restored.
+
+full-restore [P3; current_actor_status_one_shot; roles=Sora,Roxas,Mickey]
+  Restore: No timed inverse. HP/MP call validation occurs again on the game thread.
+  Role: Already FieldPlayers, with native coherent Sora/Roxas/rescue-Mickey checks and HP/HUD/MP prerequisites.
+  Limit: HP+MP and the one-hp autoheal-disable command are separate effects, not an atomic host transaction. No old HP/MP is restored.
+
+refill-drive [P2; current_actor_status_one_shot; roles=Sora]
+  Restore: No inverse; gauge mode and limits checked natively.
+  Role: Keep Sora: exposing a Drive gauge on another role is not proved by common STATUS layout.
+  Limit: Drain bars and fraction are separate awaited writes; role or gauge can change between commands. Native per-command guards remain.
+
+care-package [P2; save_inventory_one_shot; roles=Sora]
+  Restore: Persistent stock mutation; no timed original/restore.
+  Role: Sora-only host policy is stricter than native SaveReady. Roxas is a plausible shared-save candidate; Mickey and native item side effects need their own call-path proof.
+  Limit: Host reads selected stock then sets a quantity; concurrent inventory/selected-item changes can race. Multi-item gift deliberately keeps partial success.
+
+megalixir [P2; save_inventory_one_shot; roles=Sora]
+  Restore: Persistent stock mutation; no timed original/restore.
+  Role: Sora-only host policy is stricter than native SaveReady. Roxas is a plausible shared-save candidate; Mickey and native item side effects need their own call-path proof.
+  Limit: Host reads selected stock then sets a quantity; concurrent inventory/selected-item changes can race. Multi-item gift deliberately keeps partial success.
+
+mystery-gift [P2; save_inventory_one_shot; roles=Sora]
+  Restore: Persistent stock mutation; no timed original/restore.
+  Role: Sora-only host policy is stricter than native SaveReady. Roxas is a plausible shared-save candidate; Mickey and native item side effects need their own call-path proof.
+  Limit: Host reads selected stock then sets a quantity; concurrent inventory/selected-item changes can race. Multi-item gift deliberately keeps partial success.
+
+munny-gift [P2; save_scalar_one_shot; roles=Sora]
+  Restore: Persistent int32 Save+9280 write; no inverse.
+  Role: Native slot80 checks SaveReady, not character1. FieldPlayers extension is structurally plausible for the shared save; clarify persistent-save meaning before admission.
+  Limit: Host read-modify-set is not atomic with gameplay munny changes.
+
+exp-gift [P3; save_progression_one_shot; roles=Sora]
+  Restore: Native3ECF30 adds global EXP and level rewards; no inverse.
+  Role: Keep current policy pending complete reward/HUD/resource proof for all roles. CanRefresh rejects unsupported form-save rebuilds.
+  Limit: Generic save arithmetic does not prove every character-specific reward callback is safe.
+
+power-boost [P3; character_save_one_shot; roles=Sora]
+  Restore: Native3C09D0 increments the freshly resolved character Strength boost; no timed inverse.
+  Role: Potential Roxas shares CharacterIndex14→1, but current save/backlink/type guards must be proved for the intended role. No blanket Mickey expansion.
+  Limit: Persistent boost ownership differs from temporary runtime modifier ownership.
+
+regen [P2; bridge_policy_current_actor; roles=Sora,Roxas,Mickey]
+  Restore: OwnedValue restores the bridge boolean; the native policy resolves the current actor each tick.
+  Role: Already FieldPlayers. Infinite MP has dynamic MP-gauge ActiveCheck; no usable gauge pauses duration.
+  Limit: Boolean ownership remains value-based against other manual writers; this is not an old STATUS-pointer restore. HP already healed is intentionally retained.
+
+infinite-mp [P2; bridge_policy_current_actor; roles=Sora,Roxas,Mickey]
+  Restore: OwnedValue restores the bridge boolean; the native policy resolves the current actor each tick.
+  Role: Already FieldPlayers. Infinite MP has dynamic MP-gauge ActiveCheck; no usable gauge pauses duration.
+  Limit: Boolean ownership remains value-based against other manual writers; this is not an old STATUS-pointer restore. HP already healed is intentionally retained.
+
+invincible [P1; native_damage_callback_policy; roles=Sora]
+  Restore: Native GuardLease captures player/status/scene pointers and patches one callback slot.
+  Role: Confirmed blocker: guard requires descriptor74A518 while Sora/Roxas750300 and Mickey7523B8 use different callback slots.
+  Limit: Current supported roles cannot satisfy StartGuard. A repaired guard also needs ActorGeneration; pointer equality alone cannot detect same-address reconstruction.
+
+lucky-streak [P1; actor_status_scalar_restore; roles=Sora]
+  Restore: OwnedValue with approximate value comparison; no ActorGeneration or STATUS-rebuild receipt.
+  Role: Native path already lacks character1 restriction, with pool/list/backlink checks. Candidate for FieldPlayers only after atomic generation-bound STATUS transaction.
+  Limit: Same-value new actor can receive an old original. Same actor STATUS rebuild resets these values (3C1D90→4016B0). Lucky pair uses separate awaits; missing starting values default to0.
+
+magnet [P1; actor_status_scalar_restore; roles=Sora]
+  Restore: OwnedValue with approximate value comparison; no ActorGeneration or STATUS-rebuild receipt.
+  Role: Native path already lacks character1 restriction, with pool/list/backlink checks. Candidate for FieldPlayers only after atomic generation-bound STATUS transaction.
+  Limit: Same-value new actor can receive an old original. Same actor STATUS rebuild resets these values (3C1D90→4016B0). Lucky pair uses separate awaits; missing starting values default to0.
+
+super-speed [P3; actor_generation_transaction; roles=Sora,Roxas,Mickey]
+  Restore: Protocol4 MOV1 native journal: atomic mask, exact Float32, pinned ActorGeneration, receipts and deferred release.
+  Role: Already FieldPlayers. These three are the solved reference rows, not remaining scalar-restoration findings.
+  Limit: Observer loss or ambiguous acknowledgement freezes ownership/ordinary mutations until a provable resolution. Inherited external same-value writes are not inferred as ownership.
+
+eagle-eye [P1; global_coupled_scalar_restore; roles=Sora]
+  Restore: OwnedValue observes only scale; native setter also rewrites the independent break-distance global.
+  Role: Current native TargetingReady deliberately uses legacy Sora-only Ready. Role-independent storage alone does not remove player lock-on prerequisites.
+  Limit: Scale2A1141C and break distance2A11420 form a coupled pair. End can overwrite a manual break-distance change while scale stayed unchanged. Needs native atomic pair compare/apply.
+
+enemy-glass-cannon [P2; fresh_manual_target_one_shot; roles=Sora]
+  Restore: No retained target or inverse. Each command validates bounded live list, target/current backlinks and live HP.
+  Role: Sora-only host policy; native GetTarget is not char1-specific. Roxas/Mickey potential requires proving their LockRva owner/input path, not merely a common actor.
+  Limit: The enemy under lock when the command executes can differ from host snapshot. HP/revenge/coeff edits intentionally remain.
+
+valor [P2; sora_transition_and_bridge_policy; roles=Sora]
+  Restore: Native queued Revert→Form lifecycle plus OwnedValue for formtimer. End conditionally requests Revert.
+  Role: Sora only by native transition contract; do not expand Roxas/Mickey.
+  Limit: Host completion observes form/phase/result/requested, without a per-redemption transition receipt. Another same-form transition may be indistinguishable. Native context/source/task binding protects queued steps; formtimer is a shared bridge policy.
+
+wisdom [P2; sora_transition_and_bridge_policy; roles=Sora]
+  Restore: Native queued Revert→Form lifecycle plus OwnedValue for formtimer. End conditionally requests Revert.
+  Role: Sora only by native transition contract; do not expand Roxas/Mickey.
+  Limit: Host completion observes form/phase/result/requested, without a per-redemption transition receipt. Another same-form transition may be indistinguishable. Native context/source/task binding protects queued steps; formtimer is a shared bridge policy.
+
+limit [P2; sora_transition_and_bridge_policy; roles=Sora]
+  Restore: Native queued Revert→Form lifecycle plus OwnedValue for formtimer. End conditionally requests Revert.
+  Role: Sora only by native transition contract; do not expand Roxas/Mickey.
+  Limit: Host completion observes form/phase/result/requested, without a per-redemption transition receipt. Another same-form transition may be indistinguishable. Native context/source/task binding protects queued steps; formtimer is a shared bridge policy.
+
+master [P2; sora_transition_and_bridge_policy; roles=Sora]
+  Restore: Native queued Revert→Form lifecycle plus OwnedValue for formtimer. End conditionally requests Revert.
+  Role: Sora only by native transition contract; do not expand Roxas/Mickey.
+  Limit: Host completion observes form/phase/result/requested, without a per-redemption transition receipt. Another same-form transition may be indistinguishable. Native context/source/task binding protects queued steps; formtimer is a shared bridge policy.
+
+final [P2; sora_transition_and_bridge_policy; roles=Sora]
+  Restore: Native queued Revert→Form lifecycle plus OwnedValue for formtimer. End conditionally requests Revert.
+  Role: Sora only by native transition contract; do not expand Roxas/Mickey.
+  Limit: Host completion observes form/phase/result/requested, without a per-redemption transition receipt. Another same-form transition may be indistinguishable. Native context/source/task binding protects queued steps; formtimer is a shared bridge policy.
+
+gummi-repair [P3; gummi_current_lifetime_one_shot; roles=Sora]
+  Restore: Native command with freshly compared ship/module or pool/task owner; no inverse.
+  Role: Field role admission deliberately disabled; Gummi module/mission readiness governs.
+  Limit: Clear removes hostile projectiles, not an undoable effect. Current guards exclude destroying pool members and stale cleanup owners.
+
+gummi-clear [P3; gummi_current_lifetime_one_shot; roles=Sora]
+  Restore: Native command with freshly compared ship/module or pool/task owner; no inverse.
+  Role: Field role admission deliberately disabled; Gummi module/mission readiness governs.
+  Limit: Clear removes hostile projectiles, not an undoable effect. Current guards exclude destroying pool members and stale cleanup owners.
+
+one-hp [P3; current_actor_status_one_shot; roles=Sora,Roxas,Mickey]
+  Restore: No timed inverse. HP/MP call validation occurs again on the game thread.
+  Role: Already FieldPlayers, with native coherent Sora/Roxas/rescue-Mickey checks and HP/HUD/MP prerequisites.
+  Limit: HP+MP and the one-hp autoheal-disable command are separate effects, not an atomic host transaction. No old HP/MP is restored.
+
+drain-drive [P2; current_actor_status_one_shot; roles=Sora]
+  Restore: No inverse; gauge mode and limits checked natively.
+  Role: Keep Sora: exposing a Drive gauge on another role is not proved by common STATUS layout.
+  Limit: Drain bars and fraction are separate awaited writes; role or gauge can change between commands. Native per-command guards remain.
+
+pickpocket [P2; save_scalar_one_shot; roles=Sora]
+  Restore: Persistent int32 Save+9280 write; no inverse.
+  Role: Native slot80 checks SaveReady, not character1. FieldPlayers extension is structurally plausible for the shared save; clarify persistent-save meaning before admission.
+  Limit: Host read-modify-set is not atomic with gameplay munny changes.
+
+potion-thief [P2; save_inventory_one_shot; roles=Sora]
+  Restore: Persistent stock mutation; no timed original/restore.
+  Role: Sora-only host policy is stricter than native SaveReady. Roxas is a plausible shared-save candidate; Mickey and native item side effects need their own call-path proof.
+  Limit: Host reads selected stock then sets a quantity; concurrent inventory/selected-item changes can race. Multi-item gift deliberately keeps partial success.
+
+reload-room [P3; scene_transition_one_shot; roles=Sora]
+  Restore: Native434CF0 with current full10-byte MapTarget; no inverse.
+  Role: No native char1 prerequisite in handler. Possible controlled FieldPlayers extension after auditing scene/mission consequences.
+  Limit: Room transition intentionally replaces actors/resources and may affect scripts/checkpoints.
+
+revert [P3; sora_transition_one_shot; roles=Sora]
+  Restore: Native Revert lifecycle; no timed inverse.
+  Role: Sora only. Other roles explicitly rejected natively.
+  Limit: Queued acceptance is not immediate completion; cancellation stops trainer follow-up, not an already running native fiber.
+
+heal-enemy [P2; fresh_manual_target_one_shot; roles=Sora]
+  Restore: No retained target or inverse. Each command validates bounded live list, target/current backlinks and live HP.
+  Role: Sora-only host policy; native GetTarget is not char1-specific. Roxas/Mickey potential requires proving their LockRva owner/input path, not merely a common actor.
+  Limit: The enemy under lock when the command executes can differ from host snapshot. HP/revenge/coeff edits intentionally remain.
+
+enrage-enemy [P2; fresh_manual_target_one_shot; roles=Sora]
+  Restore: No retained target or inverse. Each command validates bounded live list, target/current backlinks and live HP.
+  Role: Sora-only host policy; native GetTarget is not char1-specific. Roxas/Mickey potential requires proving their LockRva owner/input path, not merely a common actor.
+  Limit: The enemy under lock when the command executes can differ from host snapshot. HP/revenge/coeff edits intentionally remain.
+
+glass-cannon [P1; actor_status_scalar_restore; roles=Sora]
+  Restore: OwnedValue saves/restores BYTE STATUS+430 using the current actor at each generic command.
+  Role: Generic allocated STATUS path is a plausible FieldPlayers candidate after typed ownership, not a safe policy-only change.
+  Limit: 250 is a received-hit coefficient, not a final-HP multiplier. Same-value actor/rebuild replacement can receive stale original; host read→write is non-atomic.
+
+tax-collector [P1; actor_status_scalar_restore; roles=Sora]
+  Restore: OwnedValue with approximate value comparison; no ActorGeneration or STATUS-rebuild receipt.
+  Role: Native path already lacks character1 restriction, with pool/list/backlink checks. Candidate for FieldPlayers only after atomic generation-bound STATUS transaction.
+  Limit: Same-value new actor can receive an old original. Same actor STATUS rebuild resets these values (3C1D90→4016B0). Lucky pair uses separate awaits; missing starting values default to0.
+
+snail [P3; actor_generation_transaction; roles=Sora,Roxas,Mickey]
+  Restore: Protocol4 MOV1 native journal: atomic mask, exact Float32, pinned ActorGeneration, receipts and deferred release.
+  Role: Already FieldPlayers. These three are the solved reference rows, not remaining scalar-restoration findings.
+  Limit: Observer loss or ambiguous acknowledgement freezes ownership/ordinary mutations until a provable resolution. Inherited external same-value writes are not inferred as ownership.
+
+fast-forward [P2; bridge_timing_policy; roles=Sora]
+  Restore: OwnedValue restores shared multiplier; task hook keeps native timing/step semantics.
+  Role: No character-specific native timing path; strongest low-complexity FieldPlayers admission candidates.
+  Limit: Not actor memory. Value-only ownership can overwrite a same-valued manual policy; no owner token. Gameplay and mission effects of time scaling still apply.
+
+short-sighted [P1; global_coupled_scalar_restore; roles=Sora]
+  Restore: OwnedValue observes only scale; native setter also rewrites the independent break-distance global.
+  Role: Current native TargetingReady deliberately uses legacy Sora-only Ready. Role-independent storage alone does not remove player lock-on prerequisites.
+  Limit: Scale2A1141C and break distance2A11420 form a coupled pair. End can overwrite a manual break-distance change while scale stayed unchanged. Needs native atomic pair compare/apply.
+
+antiform [P2; sora_transition_and_bridge_policy; roles=Sora]
+  Restore: Native queued Revert→Form lifecycle plus OwnedValue for formtimer. End conditionally requests Revert.
+  Role: Sora only by native transition contract; do not expand Roxas/Mickey.
+  Limit: Host completion observes form/phase/result/requested, without a per-redemption transition receipt. Another same-form transition may be indistinguishable. Native context/source/task binding protects queued steps; formtimer is a shared bridge policy.
+
+roulette [P2; sora_transition_and_bridge_policy; roles=Sora]
+  Restore: Native queued Revert→Form lifecycle plus OwnedValue for formtimer. End conditionally requests Revert.
+  Role: Sora only by native transition contract; do not expand Roxas/Mickey.
+  Limit: Host completion observes form/phase/result/requested, without a per-redemption transition receipt. Another same-form transition may be indistinguishable. Native context/source/task binding protects queued steps; formtimer is a shared bridge policy.
+
+moon-jump [P3; actor_generation_transaction; roles=Sora,Roxas,Mickey]
+  Restore: Protocol4 MOV1 native journal: atomic mask, exact Float32, pinned ActorGeneration, receipts and deferred release.
+  Role: Already FieldPlayers. These three are the solved reference rows, not remaining scalar-restoration findings.
+  Limit: Observer loss or ambiguous acknowledgement freezes ownership/ordinary mutations until a provable resolution. Inherited external same-value writes are not inferred as ownership.
+
+slow-mo [P2; bridge_timing_policy; roles=Sora]
+  Restore: OwnedValue restores shared multiplier; task hook keeps native timing/step semantics.
+  Role: No character-specific native timing path; strongest low-complexity FieldPlayers admission candidates.
+  Limit: Not actor memory. Value-only ownership can overwrite a same-valued manual policy; no owner token. Gameplay and mission effects of time scaling still apply.
+
+fisheye [P2; scene_camera_policy; roles=Sora]
+  Restore: Captures FOV/enabled, native camera scene lease; customEnd requires enabled+matching FOV before restore.
+  Role: Normal owner0/submode0 follow camera required, without char1 gate. FieldPlayers plausible after role camera fixture checks.
+  Limit: Host restore is read→command, not atomic pair compare. Native scene loss clears the override, but a new same-valued override is not a host ownership receipt.
+
+tunnel-vision [P2; scene_camera_policy; roles=Sora]
+  Restore: Captures FOV/enabled, native camera scene lease; customEnd requires enabled+matching FOV before restore.
+  Role: Normal owner0/submode0 follow camera required, without char1 gate. FieldPlayers plausible after role camera fixture checks.
+  Limit: Host restore is read→command, not atomic pair compare. Native scene loss clears the override, but a new same-valued override is not a host ownership receipt.
+
+camera-glitch [P2; scene_camera_policy; roles=Sora]
+  Restore: OwnedValue for free-camera and roll; native renderer owns eye/target/up held state under scene lease.
+  Role: No direct char1 requirement for held camera. Role camera availability still gates.
+  Limit: Restoring a free-camera boolean may recapture pose rather than restore the original held pose. Roll and free-camera are separate commands; shared manual camera state has no reward owner.
+
+slowpoke [P1; actor_motion_native_lease; roles=Sora]
+  Restore: Bridge desired speed plus pointer/scene/model-bound native override; VM42FCE0 observer revokes even same-float script writes.
+  Role: Native ActorReady explicitly Sora-only. Common constructor/storage alone does not prove alternate-role motion resources/ABI.
+  Limit: Native lease has no ActorGeneration. Host sustain re-enables override after script/native revocation, so one-shot native ownership policy can be overridden by CC. Desired value restoration is global and separate from actor baseline.
+
+hyper [P1; actor_motion_native_lease; roles=Sora]
+  Restore: Bridge desired speed plus pointer/scene/model-bound native override; VM42FCE0 observer revokes even same-float script writes.
+  Role: Native ActorReady explicitly Sora-only. Common constructor/storage alone does not prove alternate-role motion resources/ABI.
+  Limit: Native lease has no ActorGeneration. Host sustain re-enables override after script/native revocation, so one-shot native ownership policy can be overridden by CC. Desired value restoration is global and separate from actor baseline.
+
+color-chaos [P3; global_color_atomic_compare; roles=Sora,Roxas,Mickey]
+  Restore: Native464 atomically compares complete mode/severity pair under validated GX mutex and applies only color.
+  Role: Already FieldPlayers, renderer-driven independent of actor.
+  Limit: Changed pair yields successful no-op. Same-value ABA/manual rewrite cannot be distinguished without a writer token; this limit is explicit.
+
+silence [P2; global_audio_scalar_restore; roles=Sora,Roxas,Mickey]
+  Restore: OwnedValue scalar target-gain restore; each native command locks and revalidates the current audio graph.
+  Role: Already FieldPlayers; audio graph and thread/lifetime gates independent of character.
+  Limit: Host compare and setter occur separately. Graph replacement or same-value other writer can receive old target; voice logical bus routing can change.
+
+ghost-walk [P1; actor_position_and_collision_lease; roles=Sora]
+  Restore: Bookmark plus collision pointer lease; host tries native return then raw XYZ fallback, then room reload.
+  Role: Keep role policy until native ActorGeneration ownership and callback path are complete. Sora-only does not prevent Sora→Sora.
+  Limit: Confirmed unsafe bypass: same world/room is weaker than rejected native bookmark identity. Both XYZ and reload fallback must be removed. Bookmark is globally shared and can be replaced manually.
+
+hacker-mode [P2; global_debug_desktop; roles=Sora]
+  Restore: Custom show then unconditional hide; no original visibility capture or owner receipt.
+  Role: Native menu dependencies are global, but developer actions can be Sora-specific. Do not broadly extend merely because desktop can draw.
+  Limit: End may hide a preexisting/manual desktop; hidden desktop task guard still prevents unsafe update while unavailable.
+
+time-stop [P2; native_scene_pause_policy; roles=Sora]
+  Restore: OwnedValue restores bridge-owned pause bit/phase; native lease compares scene and preserves known foreign ownership.
+  Role: Field/global scheduling, no char1 gate. FieldPlayers is plausible with matching controlled-role readiness and own-pause exception tests.
+  Limit: Scene witness consists of pointer/map values, not a full scene generation. Same-value manual takeover has no owner token. Actor freeze and field pause have different timing scope.
+
+freeze-frame [P2; native_scene_pause_policy; roles=Sora]
+  Restore: OwnedValue restores bridge-owned pause bit/phase; native lease compares scene and preserves known foreign ownership.
+  Role: Field/global scheduling, no char1 gate. FieldPlayers is plausible with matching controlled-role readiness and own-pause exception tests.
+  Limit: Scene witness consists of pointer/map values, not a full scene generation. Same-value manual takeover has no owner token. Actor freeze and field pause have different timing scope.
+
+pause-menu [P3; global_menu_action; roles=Sora]
+  Restore: Native context/menu request; no inverse.
+  Role: Native pause prerequisites are global, not character1. Candidate after targeted alternate-role scene/menu tests.
+  Limit: Player-control snapshot can change before command; native guards are the final admission.
+
+lights-out [P2; global_brightness_scalar_restore; roles=Sora,Roxas,Mickey]
+  Restore: OwnedValue saves original brightness; native brightness-only setter under GX mutex.
+  Role: Already FieldPlayers.
+  Limit: Unlike color compare/apply, native setter is unconditional after host value check; same-value writer and check→write race remain. Does not restore loaded color settings.
+
+flashbang [P2; global_brightness_scalar_restore; roles=Sora,Roxas,Mickey]
+  Restore: OwnedValue saves original brightness; native brightness-only setter under GX mutex.
+  Role: Already FieldPlayers.
+  Limit: Unlike color compare/apply, native setter is unconditional after host value check; same-value writer and check→write race remain. Does not restore loaded color settings.
+
+deja-vu [P1; actor_position_bookmark_lease; roles=Sora]
+  Restore: Only native bookmark/return, charged after successful cleanup.
+  Role: Same actor/scene identity required. Potential all supported roles after generation-bound bookmark and native position-call proof.
+  Limit: Current bookmark pointer/status/room lease has no generation and no reward owner ID; a same-actor manual bookmark can replace the reward origin.
+
+mute-voices [P2; global_audio_scalar_restore; roles=Sora,Roxas,Mickey]
+  Restore: OwnedValue scalar target-gain restore; each native command locks and revalidates the current audio graph.
+  Role: Already FieldPlayers; audio graph and thread/lifetime gates independent of character.
+  Limit: Host compare and setter occur separately. Graph replacement or same-value other writer can receive old target; voice logical bus routing can change.
+
+no-subtitles [P3; global_flag_bit_restore; roles=Sora,Roxas,Mickey]
+  Restore: OwnedValue for shared bit; native SetBit preserves unrelated flag bits and records bridge ownership.
+  Role: Already FieldPlayers; no actor pointer is restored.
+  Limit: Cannot attribute same-valued changes by another owner to a particular reward.

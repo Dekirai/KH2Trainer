@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-07",
+  "title": "Position bookmarks and collision ownership",
+  "implementation": "PlayerFeatures.inl and TrainerBridge.cpp; native lifetime journal reused unchanged.",
+  "claims": [
+    {
+      "addr": "0x1403b6100",
+      "Finding": "The position setter marks Actor+288 bit0x200000, calls3BFB70, copies the supplied vector toActor+1648, forcesW at1660 to1, calls3CCB90 and clears two movement-vector QWORD pairs for actors with category bit2.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b6100]",
+        "verification.json"
+      ],
+      "Limitations": "The setter itself does not prove player generation, scene ownership, destination collision safety or the complete validity of its callees. It is called only after trainer guards."
+    },
+    {
+      "addr": "0x1403cbfc0",
+      "Finding": "Enable sets Actor+292 mask0x40 and Actor+2248 mask0x1000, then assigns the override pointer at2312 from argument2.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cbfc0]",
+        "verification.json"
+      ],
+      "Limitations": "The trainer requires a null existing pointer and clear bits before its own null-pointer override."
+    },
+    {
+      "addr": "0x1403cc3b0",
+      "Finding": "Release clears Actor+292 mask0x40 and Actor+2248 mask0x1000 and zeroesActor+2312. The trainer mirrors only the two masked clears after proving that the pointer remains zero and both bits remain set.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cc3b0]",
+        "verification.json"
+      ],
+      "Limitations": "Matching final values cannot detect another writer that changes these fields and later reproduces the same profile."
+    }
+  ],
+  "contracts": [
+    "Bookmarks pin the verified Actor generation. Capture rejects an unavailable observer. Return revalidates generation, current actor/status, scheduler and all10room bytes before the native setter. Observed identity/scene loss and Reset discard the bookmark and balance its pin.",
+    "Collision leases pin the Actor generation before their first write. The original two bits must be clear and override pointer zero. Disable/reset records release intent.",
+    "A release completes only on the same verified current Actor and saved scene. Both bits are cleared only if the entire owned profile remains present; divergent profiles are relinquished without writes. Retired generations drop their bookkeeping without touching a replacement.",
+    "Off-current, absent, scene-mismatched or observer-faulted leases remain pinned and pending. A new collision lease cannot replace them. TrainerFrame services pending release even while the host heartbeat remains expired.",
+    "Ghost Walk uses only the native Return operation. It no longer falls back to axis writes or a room reload after the guard refuses the saved bookmark."
+  ],
+  "limits": [
+    "The one native bookmark is still shared by manual use, Ghost Walk and other position features. A manual capture on the same live Actor can replace its destination; no owner token or operation receipt exists for this older command family.",
+    "A fatal bridge failure disables normal frame servicing. Best-effort immediate release can succeed for a verifiable current actor; already unresolved collision state cannot be promised to restore later in that failed bridge.",
+    "An observer fault cannot establish destruction or safely restore collision flags; pending state may remain until game restart.",
+    "These older scalar commands do not have the movement protocol's retained ACK receipts. A transport timeout can still leave an ambiguous command outcome.",
+    "No live gameplay test, game process injection, save write or Twitch API operation was performed."
+  ]
+}

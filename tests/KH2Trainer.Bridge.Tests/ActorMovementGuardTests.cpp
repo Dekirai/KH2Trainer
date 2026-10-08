@@ -8,6 +8,9 @@
 #include <string.h>
 #include <initializer_list>
 #include <limits>
+#include <limits.h>
+#include <intrin.h>
+#include <limits.h>
 namespace {
 uintptr_t g_base=0; DWORD g_gameThread=0; volatile LONG g_disabled=0;
 struct TrainerContext { uintptr_t base,player,status; bool sceneReady; } context{};
@@ -26,10 +29,15 @@ uintptr_t DecodePacked(uint32_t p){return p?g_base+p:0;}
 bool IsInteger(double v,double lo,double hi){return isfinite(v)&&floor(v)==v&&v>=lo&&v<=hi;}
 void SnapshotValue(unsigned s,double v){shared.values[s]=v;shared.valid[s/64]|=uint64_t(1)<<(s%64);}
 void SupportCapability(unsigned s){shared.supported[s/64]|=uint64_t(1)<<(s%64);}
+#include "../../src/KH2Trainer.Bridge/PlayerRoleSupport.inl"
+#include "../../src/KH2Trainer.Bridge/ActorLifetimeSupport.inl"
+// This isolated target/movement/loot fixture never admits damage protection.
+// CombatGuardTests exercises its actual controller, lifetime and native dispatch.
+bool PlayerHealthControlReady(const TrainerContext&) { return false; }
 #include "../../src/KH2Trainer.Bridge/CombatFeatures.inl"
 #include "../../src/KH2Trainer.Bridge/DamageTuningFeatures.inl"
 #include "../../src/KH2Trainer.Bridge/ActorMovementFeatures.inl"
-constexpr uintptr_t Player=0x50000,Other=0x70000,Status=0x2A17290;
+constexpr uintptr_t Player=0x50000,Other=0x70000,Status=0x2A17290,ObjectTable=0xC0000,Object=ObjectTable+8;
 unsigned checks=0,failures=0;
 void Check(bool yes,const char* name){++checks;if(!yes){++failures;printf("FAIL %s\n",name);}}
 bool Valid(unsigned s){return (shared.valid[s/64]&(uint64_t(1)<<(s%64)))!=0;}
@@ -43,6 +51,14 @@ void Setup(int form=0) {
     At<uintptr_t>(Player+1472)=context.status;At<unsigned>(Player+1736)=0x1000084;
     At<uint32_t>(Player)=0x750300;At<uintptr_t>(0x750300)=g_base+0x5CBA28;
     At<uintptr_t>(0x5CBA28+296)=g_base+0x404FB0;At<uintptr_t>(Player+360)=context.player;
+    const BYTE normalCode[]={0x48,0x8B,0xCA,0xE9,0xE8,0x3F,0xFA,0xFF};
+    const BYTE mickeyCode[]={0x48,0x8B,0xCA,0xE9,0xB8,0x3A,0xF9,0xFF};
+    memcpy(reinterpret_cast<void*>(g_base+0x404FB0),normalCode,sizeof(normalCode));
+    memcpy(reinterpret_cast<void*>(g_base+0x4154E0),mickeyCode,sizeof(mickeyCode));
+    At<uintptr_t>(0x7523B8)=g_base+0x5D15A0;At<uintptr_t>(0x5D15A0+296)=g_base+0x4154E0;
+    At<uintptr_t>(0x2A25030)=g_base+ObjectTable;At<int>(ObjectTable+4)=1;
+    At<uint32_t>(Player+8)=static_cast<uint32_t>(Object);
+    At<uint16_t>(Object+76)=1;At<signed char>(Object+87)=static_cast<signed char>(form);
     At<int>(Player+3552)=form;At<BYTE>(0x9ACDD4)=static_cast<BYTE>(form);
     At<int>(Status)=50;At<int>(Status+4)=100;At<int>(Status+608)=1;At<int>(Status+612)=1;
     At<uint32_t>(Status+616)=static_cast<uint32_t>(Player);
@@ -50,6 +66,16 @@ void Setup(int form=0) {
     At<float>(Player+296)=2;At<float>(Player+300)=8;At<float>(Player+304)=160;
     At<float>(Player+308)=.2f;At<float>(Player+312)=20;At<float>(Player+316)=3;
     At<float>(Player+680)=1;At<float>(Other+296)=5;
+}
+void SetupRole(player_role::Role role,int form) {
+    Setup(form);
+    if(role==player_role::Roxas) {
+        At<int>(Status+608)=14;At<uint16_t>(Object+76)=14;
+    } else if(role==player_role::Mickey) {
+        At<int>(Status+608)=4;At<uint16_t>(Object+76)=4;
+        At<uint32_t>(Player)=0x7523B8;At<unsigned>(Player+1736)=0x2000084;
+    }
+    if(role!=player_role::Sora)At<BYTE>(0x9ACDD4)=5; // Sora's saved Form can differ.
 }
 TrainerResult Run(unsigned slot,double value) {
     const double args[8]={value};TrainerResult r{};Check(ActorMovementHandle(context,slot,args,r),"allocated slot handled");return r;
@@ -123,6 +149,58 @@ int main() {
     Setup();At<BYTE>(0x9ACDD4)=1;Reject("Actor and current form disagree");
     Setup();At<uintptr_t>(0x2A171C8)=g_base+Other;Reject("actor no longer listed");
     Setup();At<uint32_t>(Other+2704)=Player;Reject("cyclic live list");
+    // Use the actual role inspector, not a stub. Both newly admitted roles
+    // keep the original Ready contract false for Collision and Targeting.
+    for(auto role:{player_role::Roxas,player_role::Mickey})for(int form:{0,10,11}) {
+        if((role==player_role::Roxas && form==11)||(role==player_role::Mickey && form!=11))continue;
+        for(unsigned i=0;i<4;++i)for(double value:{minima[i],4.125,maxima[i]}) {
+            SetupRole(role,form);
+            Check(player_role::Inspect(context).role==role,"coherent actual player role fixture");
+            Check(!actor_movement::Ready(context)&&!actor_movement::Ready(context,true),"dependent Collision/Targeting Ready remains Sora-only");
+            BYTE expected[3608],statusBefore[632];memcpy(expected,reinterpret_cast<void*>(g_base+Player),sizeof(expected));
+            memcpy(statusBefore,reinterpret_cast<void*>(context.status),sizeof(statusBefore));
+            const float scalar=static_cast<float>(value);memcpy(expected+offsets[i],&scalar,4);
+            Check(Run(344+i,value).code==0,"verified Roxas and rescue Mickey accept movement value");
+            Check(!memcmp(expected,reinterpret_cast<void*>(context.player),sizeof(expected)),"new-role write changes only selected float");
+            Check(!memcmp(statusBefore,reinterpret_cast<void*>(context.status),sizeof(statusBefore))&&At<BYTE>(0x9ACDD4)==5,"movement does not alter status or Sora saved Form");
+            ActorMovementSnapshot(context);Check(Valid(344+i)&&shared.values[344+i]==scalar,"new-role snapshot reports float32");
+        }
+        SetupRole(role,form);At<int>(0x716884)=2;ActorMovementSnapshot(context);
+        Check(Valid(344)&&Valid(347),"new-role pause allows diagnostics");Reject("new-role pause rejects writes");
+        SetupRole(role,form);At<unsigned>(Player+288)=0x100;Reject("new-role rescue/departure or incompatible state");
+        SetupRole(role,form);At<uint32_t>(Player+1696)=Other;Reject("new-role attachment");
+        SetupRole(role,form);At<uintptr_t>(Player+360)=g_base+Other;Reject("new-role motion backlink");
+        SetupRole(role,form);At<uintptr_t>(0x2AE9FA8)=1;Reject("new-role pending transition");
+        SetupRole(role,form);At<unsigned>(0x2A10504)|=2;Reject("new-role native transition lock");
+        SetupRole(role,form);At<uintptr_t>(0x2A105D0)=g_base+Other;Reject("new-role replaced current actor");
+        SetupRole(role,form);At<uint16_t>(Object+76)=1;Reject("new-role object/status mismatch");
+        SetupRole(role,form);At<signed char>(Object+87)=6;Reject("new-role object/actor form mismatch");
+        SetupRole(role,form);At<uintptr_t>(0x2A25030)=0;Reject("new-role missing owner object table");
+        SetupRole(role,form);At<int>(Status+612)=INT_MAX;Reject("new-role invalid saturated status reference count");
+        SetupRole(role,form);At<int>(0x2A23810)=0;Reject("new-role status on free list");
+        SetupRole(role,form);At<uint32_t>(Other+2704)=Player;Reject("new-role cyclic Actor list");
+        SetupRole(role,form);++g_gameThread;Reject("new-role wrong thread");
+        SetupRole(role,form);shared.hostHeartbeat=GetTickCount()-5001;Reject("new-role stale host");
+        SetupRole(role,form);g_disabled=1;Reject("new-role disabled bridge");
+        SetupRole(role,form);const uintptr_t vt=role==player_role::Mickey?0x5D15A0:0x5CBA28;
+        At<uintptr_t>(vt+296)=g_base+0x404FB0+(role==player_role::Mickey?0:16);Reject("new-role wrong input callback");
+        const uintptr_t callback=role==player_role::Mickey?0x4154E0:0x404FB0;
+        for(unsigned byte=0;byte<8;++byte){SetupRole(role,form);At<BYTE>(callback+byte)^=1;Reject("each byte of native movement wrapper is pinned");}
+        SetupRole(role,form);DWORD oldRole=0,unusedRole=0;void* rolePage=reinterpret_cast<void*>(context.player);
+        Check(VirtualProtect(rolePage,4096,PAGE_READONLY,&oldRole)!=FALSE,"new-role real read-only Actor page");
+        Reject("new-role nonwritable movement field");VirtualProtect(rolePage,4096,oldRole,&unusedRole);
+    }
+    SetupRole(player_role::Roxas,11);Reject("Roxas cannot borrow rescue Mickey form");
+    SetupRole(player_role::Mickey,0);Reject("Mickey cannot borrow a normal Sora form");
+    SetupRole(player_role::Mickey,11);At<uint32_t>(Player)=0x750300;Reject("Mickey cannot borrow Sora descriptor");
+    SetupRole(player_role::Roxas,0);At<uint32_t>(Player)=0x7523B8;Reject("Roxas cannot borrow Mickey descriptor");
+    Setup();At<uint16_t>(Object+76)=4;At<int>(Status+608)=4;Reject("coherent character ID alone is insufficient");
+    Setup();At<uint32_t>(Player+8)=static_cast<uint32_t>(Object+1);Reject("misaligned object table entry");
+    Setup();At<int>(ObjectTable+4)=0;Reject("empty object table");
+    Setup();At<BYTE>(0x404FB0)^=1;Reject("Sora wrapper byte mismatch");
+    // One-shot commands retain no prior role's pointer and perform no restore.
+    SetupRole(player_role::Roxas,0);Check(Run(344,7).code==0,"initial Roxas one-shot succeeds");
+    At<uintptr_t>(0x2A105D0)=g_base+Other;Reject("role replacement rejects stale command context");
     Setup();DWORD old=0,unused=0;void* page=reinterpret_cast<void*>(g_base+Player);
     Check(VirtualProtect(page,4096,PAGE_READONLY,&old)!=FALSE,"real read-only actor page");Reject("non-writable scalar");VirtualProtect(page,4096,old,&unused);
     Setup();context.player=1;At<uintptr_t>(0x2A105D0)=1;Reject("unreadable current actor pointer");

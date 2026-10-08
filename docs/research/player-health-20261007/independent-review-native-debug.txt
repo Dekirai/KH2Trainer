@@ -1,0 +1,48 @@
+Independent HP/MP review — 2026-10-07
+
+No blocking finding in the reviewed synchronous dispatch paths.
+
+HP: PlayerLiving excludes Actor+2488 bit4, so the special heal conversion at
+3D2EB0→3C3C30 cannot run. stat=0 selects the HP triple and effects=0 excludes
+3D37F0. Current/max/target are bounded to1..255; the minimum is nonnegative and
+no greater than current/max. Therefore3C0860 returns positive HP even for a
+requested reduction to1, and the death vcall cannot be reached. The HUD gate
+uses the actual floor-clamped value while retaining the negative-delta branch.
+
+HUD: 3DCBB0/3DCC10 dereference global2A24E90 before their optional-widget checks;
+the guard correctly requires that global even if no selected widget is active.
+For the selected actor/stat0, widget maximum agrees with status and previous HP
+is bounded0..maximum. Native183220/1832A0 then execute at most one upper segment.
+The checked member offsets2072/3584 and clips41/44/46 match those branches.
+16B270 and193280 preserve EDX into192050. The latter reads the selected36-byte
+row and only reads144-byte track rows when count is nonzero. Early-out and
+zero-track cases are preserved; synchronous destination writes are covered.
+
+MP: 3C2040 clears the positive recharge pair444/448 before calling3C0CD0.
+Current/max MP are bounded0..255, so addition cannot overflow or select the
+negative/depletion branch. effects=0 prevents recovery animation. The actual
+status backlink/role identity makes3D3CF0 use the same validated status. No HP
+HUD dependency is imposed on MP.
+
+Integration: every mutating HP/MP helper repeats Common and native readiness.
+Common checks host/game thread, PlayerLiving, the actual role classifier and
+the actual GameplayState controllability result. Manual requests and active
+ticks therefore stop during external menu/event/input/transition blockers.
+Full restore preflights both paths before HP and checks again for each setter.
+An intervening loss of eligibility can leave completed HP in place while MP is
+rejected; no atomic restore transaction or rollback is claimed.
+
+Independent byte review: all19 evidence bodies (608 instructions/2302 bytes)
+match the original EXE SHA9002b2de...49ed. All17 source runtime pin arrays match
+the entire corresponding bodies:2183 bytes. Source/test/evidence SHA256 values
+are recorded in independent-review-native-debug.json.
+
+Tests were inspected, not rebuilt by this reviewer. The265 checks/0 failures
+and clean/W4 result are the author's supplied run. The fixture includes the
+actual role and gameplay classifiers, synthetic HP/MP native callbacks, HUD
+branch cases, readonly preflight, pin failures and pause/resume behavior.
+
+Limits: no live game execution. Readable animation extents do not prove all
+future frame processing under arbitrary corrupt/modded resource contents.
+Foreign asynchronous mutation is not synchronized by these preflight guards.
+No product source was changed during this review.

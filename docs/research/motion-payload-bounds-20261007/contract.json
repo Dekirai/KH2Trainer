@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "binding": "OfflineMotionProjection",
+  "runtimeBound": false,
+  "nativeDriveGuard": false,
+  "input": "One copied, bounded BAR type9 entry including the 144-byte runtime prefix, or an explicitly selected payload excluding that prefix.",
+  "formats": {
+    "prototype0": {
+      "kind": 0,
+      "rootDescriptorOffset": 44,
+      "descriptorActiveDword": 12,
+      "initialChannels": "Scale at +0/+4/+8, Euler rotation at +16/+20/+24, translation at +32/+36/+40.",
+      "curveIndices": "Nine signed Int32 indices at +48 through +80. -1 retains the initial channel; other negative values are rejected.",
+      "timeCount": "Signed Int32 at payload+32; positive and bounded.",
+      "curveTables": "Unsigned payload offsets +48/+56 with nonnegative signed counts +52/+60, proved by the two stride6 loops in1DAD10. Both full declared spans and the combined root-reference index are bounded.",
+      "curveRecord": "Flags byte+2: low nibble channel; bits4..5 pre-mode; bits6..7 post-mode. Byte+3 positive key count; UInt16+4 first key.",
+      "tables": "UInt32 offsets at +64 keys, +68 times, +72 values, +76 tangents. Key stride8: UInt16 packed timeIndex<<2|mode, valueIndex, inTangentIndex, outTangentIndex.",
+      "ordering": "Global finite times may be equal but cannot decrease. Referenced keys require strictly increasing indices and strictly increasing finite times. This intentionally excludes zero-span root segments, including segments that might only use constant output.",
+      "evaluation": "Frame + ((payload.float144 * 60) / payload.float152), checked after each Float32 operation. Constant/linear/Hermite modes, mode3 zero, native pre/post branches and repeated wrapping; native short rotation-span discontinuity guard.",
+      "composition": "Identity, row-vector X then Y then Z rotations, add XYZ translation, multiply every component of basis rows0..2 by channel scale. Native angle normalization is bounded and checked for progress. MathF sin/cos are not promised bit-identical to the game CRT."
+    },
+    "raw1": {
+      "kind": 1,
+      "rootMatrixOffset": "UInt32 payload+44; zero means no root/identity.",
+      "frameCount": "Positive bounded signed Int32 payload+36; each matrix has16 finite Float32 values/64 bytes.",
+      "frameFields": "Loop-end float+84, rate float+88, loop-next float+92.",
+      "evaluation": "scaled=(frame*rate)/60 in Float32; signed truncation, first-frame clamps, and matching changes to scaled. Native fractions in(-1,0) remain negative. Loop-next truncates and clamps above to last frame; negative or invalid conversion is rejected.",
+      "interpolation": "Fraction0 copies left. Otherwise native XYZ normalization/length tolerance, dot-product branch selection, four-component translation lerp, exact scale-bit fast path, six ordered normalize/cross branches, four-component scale application. Zero-length normalization retains the vector; a finite result does not establish an invertible basis."
+    }
+  },
+  "limits": {
+    "defaultPayloadBytes": 67108864,
+    "defaultTimes": 16384,
+    "defaultCurveRecords": 65536,
+    "defaultRawFrames": 65536,
+    "defaultDecodedElements": 2000000,
+    "defaultEvaluationSteps": 100000,
+    "failure": "Typed MotionPayloadException before an out-of-span access or unbounded iteration. Invalid caller limits use ArgumentOutOfRangeException."
+  },
+  "ownership": "Private copied arrays; public matrices expose only read-only collections. Parsing/evaluation performs no process-pointer access, native calls or file writes.",
+  "numericOperations": "Multiply(left,right) checks the native row-vector matrix product including every intermediate. ScaleBasis(matrix,positiveScale) scales all four components of the first three rows and preserves translation. Neither operation selects an Actor branch or proves live attachment/resource ownership.",
+  "excluded": [
+    "Skeletal/IK/extra channels, constructor fixups, whole BAR validity and complete native motion safety",
+    "Provider selection, disk-to-runtime binding, resource generation, actors, attachments and native writer ownership",
+    "Automatic Tiny/Giant reward, native Drive guard, process reads/writes and live game tests",
+    "Bit-identical CRT transcendental behavior, every possible SSE floating-point environment, invertibility and all future frame values"
+  ]
+}

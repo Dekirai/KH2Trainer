@@ -1,0 +1,363 @@
+{
+  "schema": 1,
+  "date": "2026-10-07",
+  "status": "research_complete_no_product_change",
+  "summary": "A bounded independent byte reader is feasible for explicit verified provider manifests. Exact-build retail and Panacea primary-byte precedence is now documented. A disk reader alone is not an authoritative preconstructor guard: live provider inventory/cache/hook state, higher-priority appearance and asynchronous asset handoff remain unbound.",
+  "modules": [
+    {
+      "id": "retail",
+      "imageBase": "0x140000000",
+      "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed"
+    },
+    {
+      "id": "panacea",
+      "imageBase": "0x180000000",
+      "originalSha256": "055d5032324eab2ed8f03f2a1b3ff3381642f82b3239a17164c25bef8815e68d"
+    }
+  ],
+  "counts": {
+    "functions": 31,
+    "instructions": 6348,
+    "originalCodeBytes": 26813,
+    "originalDataBytes": 4057
+  },
+  "claims": [
+    {
+      "addr": "0x140104100",
+      "module": "Retail",
+      "Finding": "Package roots are derived from GetModuleFileNameA(NULL) and truncated at the last backslash, independently of process current directory.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140104100]"
+      ],
+      "Limitations": "The return value is the last separator pointer, not an owned canonical path; GetModuleFileName truncation is not checked here.",
+      "Domain": "native"
+    },
+    {
+      "addr": "0x140106000",
+      "module": "Retail",
+      "Finding": "OpenPair takes package object RCX and base path RDX (RDX omitted by the old inferred prototype), appends .hed/.pkg, reads HED into an aligned buffer and stores count=floor(signed truncated file length/32). Object+8/+16/+20/+24 hold HED pointer, package fd, count and current record offset.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140106000]"
+      ],
+      "Limitations": "Open/seek/read/allocation results are incompletely checked; an opened HED does not prove a valid PKG descriptor or complete table.",
+      "Domain": "native"
+    },
+    {
+      "addr": "0x1401065c0",
+      "module": "Retail",
+      "Finding": "Registration skips names containing ChunkCheck, prepends the executable directory, constructs a 608-byte PackageFile, appends it at array79CFE0[count79CFD8], and copies configuration byte260 to object+292 decode enable.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401065c0]"
+      ],
+      "Limitations": "No count-capacity check is present in this body; this is a mutating startup function, not a reader API.",
+      "Domain": "native"
+    },
+    {
+      "addr": "0x14014f1e0",
+      "module": "Retail",
+      "Finding": "Startup registers seven ordered package rows: kh2_first through kh2_sixth, then SettingMenu. The six game rows enable decoding; SettingMenu disables it. Two language branches select distinct seven-row data spans whose path/flag content is identical in this EXE.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14014f1e0]"
+      ],
+      "Limitations": "This proves built-in order only. A live mod may extend or replace providers. Data-table bytes are separately verified.",
+      "Domain": "native"
+    },
+    {
+      "addr": "0x1401023c0",
+      "module": "Retail",
+      "Finding": "Resource prefix setup formats a global prefix at142BD4340 and the app-specific copy; lookup hashes suffixes relative to this mutable prefix.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401023c0]"
+      ],
+      "Limitations": "Do not use the original disk placeholder dummy_string as a live resource root.",
+      "Domain": "native"
+    },
+    {
+      "addr": "0x140102840",
+      "module": "Retail",
+      "Finding": "SetReplacePath formats the separate replacement-path global; its call during startup is Panacea's installation point.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140102840]"
+      ],
+      "Limitations": "The tiny retail setter does not itself establish loose-file precedence.",
+      "Domain": "native"
+    },
+    {
+      "addr": "0x140106940",
+      "module": "Retail",
+      "Finding": "Normal lookup waits for package count then tries providers in array order, updating selected index79CFD4 and returning the first vtable[0] success. A nonnull custom prefix takes the SettingMenu-specific path.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140106940]"
+      ],
+      "Limitations": "Neither lookup nor a returned PackageFile is independent state. A host reader should reproduce a validated order without calling this function.",
+      "Domain": "native"
+    },
+    {
+      "addr": "0x140107240",
+      "module": "Retail",
+      "Finding": "FindAndPrepare accepts RCX package, RDX request, R8 optional prefix. An equal cached name immediately succeeds. Otherwise it hashes request bytes after prefix length+1, scans 32-byte HED rows for first matching16-byte digest, seeks offset+16 field and reads a16-byte PKG header plus48*n remaster rows. On a miss it retries within the same package after lowercasing the final slash component.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140107240]"
+      ],
+      "Limitations": "No destination/source capacity or read-success proof. tolower follows native CRT locale; slashless fallback is unsafe. The cache means current disk content need not match previously prepared metadata.",
+      "Domain": "native"
+    },
+    {
+      "addr": "0x140107010",
+      "module": "Retail",
+      "Finding": "The second PackageFile virtual frees old remaster metadata and clears the cached name only when a metadata allocation exists.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140107010]"
+      ],
+      "Limitations": "This creates subtle cache state during FindAndPrepare; no caller should use it as read-only cleanup.",
+      "Domain": "native"
+    },
+    {
+      "addr": "0x140107620",
+      "module": "Retail",
+      "Finding": "Base read starts at recordOffset+16+48*remasterCount. Only rawSize>16 and object+292 enable mode decoding: positive mode is encoded length with transform+inflate; -1 transforms raw bytes; other nonpositive modes read raw bytes. It returns declared rawSize.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140107620]"
+      ],
+      "Limitations": "The body ignores _read and inflate status, so the declared return cannot validate delivery.",
+      "Domain": "native"
+    },
+    {
+      "addr": "0x1401062b0",
+      "module": "Retail",
+      "Finding": "Prefix transform is disabled when79CFCC is nonzero. Otherwise a16-byte header copy replaces zero bytes with byte positions and feeds key expansion; complete16-byte blocks are transformed up to256bytes.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401062b0]"
+      ],
+      "Limitations": "This report reuses the earlier established XOR key-expansion semantics/Core codec. It does not reinterpret the transform as AES or validate every key primitive anew.",
+      "Domain": "native"
+    },
+    {
+      "addr": "0x1404696f0",
+      "module": "Retail",
+      "Finding": "The inflater wrapper propagates initialization failure, uses finish mode4, updates output length only on stream-end, calls cleanup, and maps need-dictionary or exhausted-input buffer error to -3.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404696f0]"
+      ],
+      "Limitations": "The caller107620 ignores this return and updated actual length. A host decoder must check stream completion, exact length and integrity independently.",
+      "Domain": "native"
+    },
+    {
+      "addr": "0x140106700",
+      "module": "Retail",
+      "Finding": "LoadFile resolves the stateful package, invokes107620, compares its return to the same declared rawSize, and optionally calls12F070 to register resources.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140106700]"
+      ],
+      "Limitations": "No loose-file branch is present; the apparent size comparison is not an independent read check.",
+      "Domain": "native"
+    },
+    {
+      "addr": "0x140106790",
+      "module": "Retail",
+      "Finding": "LoadFileWithSize adds a declared rawSize versus supplied capacity check and returns -6 if it does not fit, then follows the same native read/registration path.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140106790]"
+      ],
+      "Limitations": "This improves destination sizing but still inherits ignored read/inflate failures and stateful lookup.",
+      "Domain": "native"
+    },
+    {
+      "addr": "0x140106870",
+      "module": "Retail",
+      "Finding": "LoadFileWithMalloc writes the declared length to the caller, supports input length -1 as a size-only query, otherwise allocates then reads and optionally registers the result.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140106870]"
+      ],
+      "Limitations": "The size-only mode still calls mutating package lookup; the allocating mode is not an independent byte probe.",
+      "Domain": "native"
+    },
+    {
+      "addr": "0x1800010c0",
+      "module": "Panacea",
+      "Finding": "Static initialization creates game suffix strings, including literal /kh2 at0545B0 for the KH2 entry.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1800010c0]"
+      ],
+      "Limitations": "Suffix bytes and complete initializer are verified; current configured roots are not read from a process.",
+      "Domain": "panacea"
+    },
+    {
+      "addr": "0x18000ac10",
+      "module": "Panacea",
+      "Finding": "Settings load maps mod_path to5FEC0, dev_path to5FEE0 and extract_path to5FEA0; values are converted from UTF-8 to UTF-16. The settings file is opened relative to current directory.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x18000ac10]"
+      ],
+      "Limitations": "A host reader must use supplied resolved roots or a proven settings snapshot; treating them as relative to the EXE directory without evidence can select different files.",
+      "Domain": "panacea"
+    },
+    {
+      "addr": "0x18000a230",
+      "module": "Panacea",
+      "Finding": "For executable name KINGDOM HEARTS II FINAL MIX.exe, game index1 is selected and /kh2 is appended to mod_path and each nonempty optional dev/extract root before hooks are installed.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x18000a230]"
+      ],
+      "Limitations": "This is exact-build startup behavior. A settings file edited afterward is not evidence that in-memory roots changed.",
+      "Domain": "panacea"
+    },
+    {
+      "addr": "0x180009810",
+      "module": "Panacea",
+      "Finding": "Initializer supplies signature locators for the native LoadFile, package lookup, registration, FindAndPrepare, transform and inflate functions, and derives package globals/resource prefix from their instructions.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x180009810]"
+      ],
+      "Limitations": "The six locators were independently matched uniquely in the original retail PE by verify.py; live code/hook ownership was not inspected.",
+      "Domain": "panacea"
+    },
+    {
+      "addr": "0x18000c180",
+      "module": "Panacea",
+      "Finding": "Hook installation redirects native LoadFile to mod+FEB0 and FindAndPrepare to mod+FE20, as well as separate size/remaster paths. It installs absolute14-byte detours with saved original bytes.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x18000c180]"
+      ],
+      "Limitations": "This body installs hooks and changes page protection; it is evidence only and must never be invoked as validation.",
+      "Domain": "panacea"
+    },
+    {
+      "addr": "0x18000d380",
+      "module": "Panacea",
+      "Finding": "SetReplacePath hook creates a FakePackageFile, indexes extract root, mod root, dev root and mod/raw in that order (optional roots only when nonempty), appends it after native providers, then calls the original setter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x18000d380]"
+      ],
+      "Limitations": "This appended metadata provider order is distinct from loose-file content priority. No runtime provider identity is claimed.",
+      "Domain": "panacea"
+    },
+    {
+      "addr": "0x18000b810",
+      "module": "Panacea",
+      "Finding": "Fake-package inventory recursively enumerates roots, converts relative names through Windows code page0, normalizes backslashes to slashes, hashes names and records low32 file size/creation metadata in map entries. Later root scans write metadata to the matching map node.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x18000b810]"
+      ],
+      "Limitations": "Enumeration happens during initialization and is not a fresh disk existence/readability proof. New files and changed lengths can diverge from the inventory.",
+      "Domain": "panacea"
+    },
+    {
+      "addr": "0x180011fc0",
+      "module": "Panacea",
+      "Finding": "The map-key normalization helper replaces backslash bytes with forward slash, including a SIMD path backed by separately verified constants.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x180011fc0]"
+      ],
+      "Limitations": "It does not lowercase names. Windows file lookup may be case-insensitive while this map's key comparison remains byte-sensitive.",
+      "Domain": "panacea"
+    },
+    {
+      "addr": "0x18000b5c0",
+      "module": "Panacea",
+      "Finding": "FakePackageFile lookup strips the prefix and performs exact ordered-map key comparison. On success it copies map metadata into package+300/+328 and stores the request; on miss it clears those fields and returns false.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x18000b5c0]"
+      ],
+      "Limitations": "A fresh loose file can exist while no native/fake provider resolves it. The hook subsequently assumes a usable package object for registered reads.",
+      "Domain": "panacea"
+    },
+    {
+      "addr": "0x18000d660",
+      "module": "Panacea",
+      "Finding": "Loose-path selection takes a wide output buffer in RCX and the original prefixed narrow request in R8. It strips resource-prefix length+1 and tests dev_path first, then mod_path, then extract_path, accepting existing nondirectories.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x18000d660]"
+      ],
+      "Limitations": "It checks attributes only. It does not open/read bytes or prove permissions, length stability, safe path encoding or native metadata-provider success.",
+      "Domain": "panacea"
+    },
+    {
+      "addr": "0x18000feb0",
+      "module": "Panacea",
+      "Finding": "LoadFile hook first checks mod_path/raw/suffix, interpreted as a complete standalone PKG record. If absent it callsD660 for plain loose bytes; if no loose file is found it invokes original retail LoadFile. Present raw/loose files remain selected even when subsequent open/read/decode operations fail.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x18000feb0]"
+      ],
+      "Limitations": "No native call is a safe probe. fread/seek/decode results are not used as an integrity proof. The host must reject a selected invalid higher-priority source rather than validate a lower-priority vanilla file.",
+      "Domain": "panacea"
+    },
+    {
+      "addr": "0x18000fe20",
+      "module": "Panacea",
+      "Finding": "FindAndPrepare hook temporarily restores the original function, invokes it, reinstalls the detour and on success overwrites package+344 with the original requested spelling.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x18000fe20]"
+      ],
+      "Limitations": "This changes observable caching around retail lowercase fallback. A host should not pretend its stateless lookup reproduces all existing live cache state.",
+      "Domain": "panacea"
+    },
+    {
+      "addr": "0x180010e60",
+      "module": "Panacea",
+      "Finding": "GetFileSize hook tries raw-record header size, then loose-file measured size, then prepared package rawSize or a FindFirstFile fallback.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x180010e60]"
+      ],
+      "Limitations": "Length lookup has its own ordering and stateful package lookup, so it is not an independent validation of which complete bytes LoadFile will deliver.",
+      "Domain": "panacea"
+    },
+    {
+      "addr": "0x18000fa50",
+      "module": "Panacea",
+      "Finding": "Registered loose reads run FA50 before12F070. It accesses package+344/+320/+304, uses an optional remaster cache, and may scan a remastered directory before updating mod metadata.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x18000fa50]"
+      ],
+      "Limitations": "The package pointer returned by native lookup is not null-checked at FEB0 before this call; missing inventory plus a newly added loose file is a concrete unguarded dependency. No observed crash is claimed.",
+      "Domain": "panacea"
+    },
+    {
+      "addr": "0x18000f070",
+      "module": "Panacea",
+      "Finding": "The remaster metadata builder treats KH2 .mdlx as a BAR-family input and callsE460 over the newly loaded primary bytes; it also enumerates/sorts remaster entries and builds replacement metadata.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x18000f070]"
+      ],
+      "Limitations": "This occurs before native ResourceEntry registration. This report does not claim every nested texture/effect parser is bounded or byte-preserving.",
+      "Domain": "panacea"
+    },
+    {
+      "addr": "0x18000e460",
+      "module": "Panacea",
+      "Finding": "The MDLX/BAR remaster scan checks the BAR signature, trusts the entry count and signed offsets, branches on type and recursively processes type46 without an enclosing byte-length parameter or depth bound.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x18000e460]"
+      ],
+      "Limitations": "Independent prevalidation must bound BAR tables and nested spans before any native/mod scanner is allowed to consume them; texture/effect/model semantics remain a separate dependency.",
+      "Domain": "panacea"
+    }
+  ],
+  "dataEvidence": [
+    "evidence.json#data",
+    "verification.json"
+  ],
+  "existingBasis": [
+    "../drive-raw-staging-20261007/report.json",
+    "../drive-raw-staging-20261007/evidence.json"
+  ],
+  "concreteNewRisks": [
+    "Panacea mod/raw is encoded PKG-record content, not plain MDLX/MSET; treating it as loose bytes validates the wrong layer.",
+    "A present unreadable/truncated/corrupt override is still the chosen provider; falling back to retail during host validation would validate different bytes.",
+    "Fake-package inventory is built at startup. A later-created loose file may pass file-attribute selection while106940 returns null, then registered FEB0 callsFA50 which dereferences that package.",
+    "Plain .mdlx overrides may enter Panacea's recursive BAR/remaster scan before12F070; it lacks an enclosing input-length/depth parameter.",
+    "Retail name caching and Panacea original-spelling restoration can retain old prepared metadata even after disk content changes."
+  ],
+  "decision": "Propose a Core reader with explicit provider snapshot/provenance and strict integrity errors. Do not add a native guard based only on disk success or invoke native loaders with registration disabled as a probe.",
+  "verification": {
+    "script": "verify.py",
+    "result": "verification.json",
+    "command": "C:/Users/shinz/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe docs/research/drive-effective-bytes-20261007/verify.py"
+  },
+  "limits": [
+    "No process memory, injection, GUI, game writes or native loader execution.",
+    "No IDB modifications. Original code and data bytes verified on disk.",
+    "Not a diagnosis of a reproduced current Final Form crash. The existing keyblade fallback and sklt guard do not establish these later content/lifetime conditions.",
+    "The report contains specific claims supported by complete bodies, not full semantic coverage of every function or all asset types."
+  ]
+}

@@ -1,0 +1,64 @@
+MP availability and movement reward prerequisites — 2026-10-07
+==============================================================
+
+Unlimited MP previously used its MP maximum only for startup admission. An
+established effect could therefore consume paid duration and attempt sustain
+after the current character lost its MP gauge. ActiveCheck now expresses this
+ongoing usefulness condition independently of player control and cleanup.
+
+A usable MP maximum is an integer in 1..255, matching PlayerLiving's native
+STATUS+388 bounds. Missing, nonfinite, fractional, negative, out-of-byte-range
+and zero observations wait while running, as does lost capability. Both timer
+endpoints must be usable. Recovery does not charge a preceding unavailable
+interval. Gaps longer than one second are unobserved. This requirement applies
+even when the streamer has disabled general control-based timer pausing.
+Sustain and established monitors wait; extra redemptions remain queued/unpaid.
+
+Cleanup deliberately uses the existing control/role/toggle-readback/ownership
+rules without requiring an MP gauge. It can disable the owned global toggle
+with zero, missing or malformed MP maximum. Refused restores stay queued.
+Zero maximum rejects a new MP-only reward; malformed data waits instead of
+being mistaken for a proven absent gauge.
+
+Movement rewards remain Sora-only. The test-only permissive definition proves
+why a simple role-allowlist expansion is unsafe: an equal-value replacement
+actor is invisible to OwnedValue sustain, so the old Sora original would be
+restored into Roxas or Mickey. An actor-lifetime token is not currently present.
+The same identity limitation exists across two Sora actor lifetimes.
+
+Useful independent corrections were made to movement startup: every original
+must be present, finite and accepted by the current FeatureDefinition bounds.
+The bounds come from FeatureMap through ReadRestorableValue, not copied numeric
+constants. Native snapshots may contain finite values outside edit policy; a
+new timed reward now waits before overwriting such a non-restorable original.
+The second original is checked again after the first awaited write. If missing
+or outside policy, existing partial-failure cleanup unwinds the first change.
+Moon Jump's text now describes increased base jump height and a falling-speed
+cap. It does not alter gravity; High Jump and special actions may use other values.
+
+The same MovementReadiness is now an ActiveCheck during runtime. Script-set
+out-of-policy values pause the clock and sustain. SustainAsync additionally
+checks each restoring OwnedValue against its own feature policy immediately
+before a write. If a script changes the second value while an earlier command
+is awaited, the non-restorable value is left intact and never captured as an
+original. A valid returning value permits sustain again; ending with an external
+different value preserves it. Non-restoring sustain behavior is unchanged.
+
+Validation: 1,687 passed, 0 failed in the complete fake Twitch suite. New cases
+cover three audited roles; every invalid maximum; capability loss; pause/resume;
+extensions; useful-time endpoints; deferred cleanup; failed/missing readbacks;
+control pause opt-out; long gaps/backward clocks; exact movement policy bounds;
+walk100, run100, jump1200 and fall0; and second-readback loss during a command.
+Those out-of-policy values are also tested at runtime, including a second-value
+race between awaited sustain commands, recovery and exact external preservation.
+Command and log path, final file hashes, review references and remaining limits
+are in receipt.json. No live game, Twitch/network action or full build was run.
+
+Limits: these are sampled observations, not a cumulative native useful-time
+counter. Dispatch may still reject deeper native resource conditions. No atomic
+actor-bound multi-field operation or actor-lifetime token was introduced.
+Deferred cleanup needs later ticks and does not survive shutdown.
+
+Final status: source, tests and reports frozen after independent review.
+Review: docs/research/mp-active-readiness-20261007/independent-review.json
+(revision 3). No blocking finding; final 1,687/0 author log independently read.

@@ -24,6 +24,7 @@ public sealed class GameSession : IDisposable
 {
     private Process? process;
     private BridgeConnection? connection;
+    private readonly MovementClientSession movementClient = new();
     public bool Connected => connection != null && process is { HasExited: false };
     public int? ProcessId => process?.Id;
     public static void ValidatePayload(ReadOnlySpan<byte> data)
@@ -105,7 +106,7 @@ public sealed class GameSession : IDisposable
             var loadedBridge = game.Modules.Cast<ProcessModule>().FirstOrDefault(m => m.ModuleName.StartsWith("KH2Trainer.Bridge", StringComparison.OrdinalIgnoreCase));
             if (loadedBridge != null && TargetGame.HashFile(loadedBridge.FileName) != Convert.ToHexString(SHA256.HashData(payload)).ToLowerInvariant())
                 throw new InvalidOperationException("An older or different trainer bridge is still loaded. Restart the game before connecting this build.");
-            try { bridge = new BridgeConnection(pid); } catch (FileNotFoundException) { }
+            try { bridge = new BridgeConnection(pid, movementClient); } catch (FileNotFoundException) { }
             if (bridge == null)
             {
                 if (game.Modules.Cast<ProcessModule>().Any(m => m.ModuleName.StartsWith("KH2Trainer.Bridge", StringComparison.OrdinalIgnoreCase)))
@@ -118,7 +119,7 @@ public sealed class GameSession : IDisposable
             {
                 cancellation.ThrowIfCancellationRequested();
                 if (game.HasExited) throw new IOException("The game exited while connecting.");
-                if (bridge == null) { try { bridge = new BridgeConnection(pid); } catch (FileNotFoundException) { } }
+                if (bridge == null) { try { bridge = new BridgeConnection(pid, movementClient); } catch (FileNotFoundException) { } }
                 if (bridge != null)
                 {
                     var snapshot = bridge.ReadSnapshot();
@@ -134,6 +135,11 @@ public sealed class GameSession : IDisposable
     public TrainerSnapshot ReadSnapshot() => Connected ? connection!.ReadSnapshot() : TrainerSnapshot.Disconnected;
     public Task<BridgeResult> ExecuteAsync(int command, IReadOnlyList<double> values, CancellationToken cancellation = default) =>
         Connected ? connection!.ExecuteAsync(command, values, cancellation) : throw new InvalidOperationException("Connect to a running game first.");
+    public MovementOperationHandle? PendingMovement => connection?.PendingMovement ?? movementClient.Pending;
+    public Task<MovementCommandResult> ExecuteMovementAsync(MovementCommand command, CancellationToken cancellation = default) =>
+        Connected ? connection!.ExecuteMovementAsync(command, cancellation) : throw new InvalidOperationException("Connect to a running game first.");
+    public Task<MovementCommandResult> ResolveMovementAsync(MovementOperationHandle handle, CancellationToken cancellation = default) =>
+        Connected ? connection!.ResolveMovementAsync(handle, cancellation) : throw new InvalidOperationException("Connect to a running game first.");
     public async Task DisconnectAsync()
     {
         try { if (Connected) await ExecuteAsync(1114, []); }

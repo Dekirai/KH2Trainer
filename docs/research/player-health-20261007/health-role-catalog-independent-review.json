@@ -1,0 +1,44 @@
+{
+  "Date": "2026-10-07",
+  "Reviewer": "native_debug",
+  "Scope": "Final read-only health-role catalog and HealthRoleTests review. Existing native review unchanged.",
+  "Conclusion": "No blocking finding in the requested role/admission/refund changes.",
+  "Checks": [
+    "Six health effects explicitly allow only Sora/Roxas/Mickey via FieldPlayers; unsupported roles wait.",
+    "Other combat/Drive/progression effects retain their Sora role gate.",
+    "Infinite MP declares player.mp.max, waits when missing/nonfinite, and refunds with no command when <=0.",
+    "Restore MP similarly distinguishes absent maximum from a present zero gauge.",
+    "Full Restore refunds when HP is full and a known MP maximum is zero; damaged HP can still be restored with zero MP.",
+    "Tests exercise all PlayerRole values for six effects, each supported role during menu, missing/zero MP, full HP, regeneration conflict, role transition, pause/sustain and deferred cleanup.",
+    "Readiness.Reject reaches pending Drop/refund before Start; Wait retains pending without native command."
+  ],
+  "Findings": [],
+  "Fingerprints": [
+    {
+      "Path": "src/KH2Trainer.Twitch/Effects/EffectCatalog.cs",
+      "SHA256": "EB2EED5F34D3EB9B46D63287AA6EB02FC8C3CC4F7D7EADA6A487A3F76A14929F"
+    },
+    {
+      "Path": "src/KH2Trainer.Twitch/Effects/EffectEngine.cs",
+      "SHA256": "F48CA5F83D2EE9751CDDC93D7E6E78031EE7BEE6D06FA126FADA2951D6A2B857"
+    },
+    {
+      "Path": "src/KH2Trainer.Twitch/Effects/EffectModel.cs",
+      "SHA256": "334936967803ECCD4BA31313369A7A8AD644D77CDBA09CC29AD043F776904C39"
+    },
+    {
+      "Path": "tests/KH2Trainer.Twitch.Tests/HealthRoleTests.cs",
+      "SHA256": "1F99CD885C8FAD1732F942445F6024C3AF120611B19E84F8D6A7C7C7A28E6592"
+    }
+  ],
+  "AuthorReportedTwitchSuite": {
+    "Checks": 1238,
+    "ReviewerBuilt": false,
+    "Failures": 0
+  },
+  "Limitations": [
+    "No independent suite execution or game/UI actions.",
+    "This review is limited to the requested role and initial admission/refund changes, not a new audit of every active-effect resource change.",
+    "Catalog Full Restore does not explicitly wait for missing HP/MP observations; native guards remain authoritative. Missing-observation behavior outside the requested InfiniteMP/RestoreMP cases is not certified here."
+  ]
+}

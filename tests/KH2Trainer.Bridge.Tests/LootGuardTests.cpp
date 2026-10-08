@@ -8,6 +8,8 @@
 #include <string.h>
 #include <initializer_list>
 #include <limits>
+#include <limits.h>
+#include <intrin.h>
 namespace {
 uintptr_t g_base=0; DWORD g_gameThread=0; volatile LONG g_disabled=0;
 struct TrainerContext { uintptr_t base,player,status; bool sceneReady; } context{};
@@ -26,6 +28,11 @@ uintptr_t DecodePacked(uint32_t p){return p?g_base+p:0;}
 bool IsInteger(double v,double lo,double hi){return isfinite(v)&&floor(v)==v&&v>=lo&&v<=hi;}
 void SnapshotValue(unsigned s,double v){shared.values[s]=v;shared.valid[s/64]|=uint64_t(1)<<(s%64);}
 void SupportCapability(unsigned s){shared.supported[s/64]|=uint64_t(1)<<(s%64);}
+#include "../../src/KH2Trainer.Bridge/PlayerRoleSupport.inl"
+#include "../../src/KH2Trainer.Bridge/ActorLifetimeSupport.inl"
+// This isolated target/movement/loot fixture never admits damage protection.
+// CombatGuardTests exercises its actual controller, lifetime and native dispatch.
+bool PlayerHealthControlReady(const TrainerContext&) { return false; }
 #include "../../src/KH2Trainer.Bridge/CombatFeatures.inl"
 #include "../../src/KH2Trainer.Bridge/DamageTuningFeatures.inl"
 #include "../../src/KH2Trainer.Bridge/LootFeatures.inl"

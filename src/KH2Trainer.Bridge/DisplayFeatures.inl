@@ -88,8 +88,21 @@ bool Same(const Lease& a,const Lease& b) {
         a.appThread==b.appThread && a.timingThread==b.timingThread &&
         a.lock==b.lock && a.unlock==b.unlock;
 }
-struct Plan { bool brightness=false,color=false; int16_t level=0,type=0,severity=0; };
+bool ColorPair(int type,int severity) {
+    return type>=0 && type<=3 && (type==0?severity==0:(severity>=1&&severity<=10));
+}
+bool CurrentColor(uintptr_t object,int& type,int& severity) {
+    type=Field<int32_t>(object,23364); severity=Field<int32_t>(object,23368);
+    return ColorPair(type,severity);
+}
+struct Plan {
+    bool brightness=false,color=false;
+    int16_t level=0,type=0,severity=0;
+    bool compare=false,restoring=false;
+    int16_t expectedType=0,expectedSeverity=0;
+};
 bool Arguments(unsigned slot,const double* args,Plan& p) {
+    if(slot!=305 && !args) return false;
     if(slot==304) {
         if(!IsInteger(args[0],-50,50)) return false;
         p.brightness=true; p.level=static_cast<int16_t>(args[0]);
@@ -97,6 +110,13 @@ bool Arguments(unsigned slot,const double* args,Plan& p) {
         if(!IsInteger(args[0],0,3) || !IsInteger(args[1],1,10)) return false;
         p.color=true; p.type=static_cast<int16_t>(args[0]);
         p.severity=p.type?static_cast<int16_t>(args[1]):0;
+    } else if(slot==464) {
+        if(!IsInteger(args[0],0,1) || !IsInteger(args[1],0,3) || !IsInteger(args[2],0,10) ||
+            !IsInteger(args[3],0,3) || !IsInteger(args[4],0,10)) return false;
+        p.expectedType=static_cast<int16_t>(args[1]); p.expectedSeverity=static_cast<int16_t>(args[2]);
+        p.type=static_cast<int16_t>(args[3]); p.severity=static_cast<int16_t>(args[4]);
+        if(!ColorPair(p.expectedType,p.expectedSeverity) || !ColorPair(p.type,p.severity)) return false;
+        p.compare=p.color=true; p.restoring=args[0]==1;
     }
     return true;
 }
@@ -129,10 +149,10 @@ void Color(int16_t type,int16_t severity) {
 }
 bool DisplayHandle(const TrainerContext& c,unsigned slot,const double args[8],TrainerResult& result) {
     using namespace display_preview;
-    if(slot<304 || slot>306) return false;
+    if((slot<304 || slot>306) && slot!=464) return false;
     Plan plan{};
     if(!Arguments(slot,args,plan)) {
-        result={1,L"Choose integer brightness -50 to 50, or color mode 0 to 3 and severity 1 to 10."}; return true;
+        result={1,L"Use integer display arguments. Color pairs must be Off (0,0), or mode 1 to 3 with severity 1 to 10."}; return true;
     }
     Lease before{};
     if(!Ready(c,before)) { result={1,L"Display preview needs a live renderer and its normal application update."}; return true; }
@@ -145,7 +165,21 @@ bool DisplayHandle(const TrainerContext& c,unsigned slot,const double args[8],Tr
             result={1,L"The display lifetime changed while waiting; no preview was applied."};
         else if(slot==305 && !Loaded(plan))
             result={1,L"The loaded display settings are invalid; no preview was applied."};
-        else {
+        else if(plan.compare) {
+            int type=0,severity=0;
+            if(!CurrentColor(current.object,type,severity))
+                result={1,L"The current native color pair is invalid; no color change was applied."};
+            else if(type!=plan.expectedType || severity!=plan.expectedSeverity)
+                result={plan.restoring?0:1,plan.restoring?
+                    L"The color filter changed after the effect. It was preserved; no restore was applied.":
+                    L"The color filter changed before application. Read the current pair and retry."};
+            else {
+                // Compare and call on the application thread under the same presentation
+                // mutex. Never reset brightness or loaded settings as a side effect.
+                Color(plan.type,plan.severity);
+                result={0,L"The matching color pair was replaced. Brightness and loaded settings were not changed."};
+            }
+        } else {
             // Both setters are pinned leaf-like native previews: no script,
             // scene replacement, save or resource-creation path is entered.
             if(plan.brightness) Brightness(plan.level);
@@ -163,14 +197,17 @@ bool DisplayHandle(const TrainerContext& c,unsigned slot,const double args[8],Tr
     }
     return true;
 }
-void DisplayCapabilities() { for(unsigned slot=304;slot<=306;++slot) SupportCapability(slot); }
+void DisplayCapabilities() {
+    for(unsigned slot=304;slot<=306;++slot) SupportCapability(slot);
+    SupportCapability(464); SupportCapability(465);
+}
 void DisplaySnapshot(const TrainerContext& c) {
     using namespace display_preview;
     Lease before{};
     if(!Ready(c,before)) return;
     void* const mutex=reinterpret_cast<void*>(before.object+MutexOffset);
     if(before.lock(mutex)!=0) return;
-    bool valid=false; double value=0; int unlockResult=0;
+    bool valid=false,colorValid=false; double value=0,colorValue=0; int unlockResult=0;
     __try {
         Lease current{};
         if(Ready(c,current) && Same(before,current)) {
@@ -178,10 +215,16 @@ void DisplaySnapshot(const TrainerContext& c) {
             if(isfinite(adjustment) && adjustment>=-1.0f && adjustment<=1.0f) {
                 value=static_cast<double>(adjustment)*50.0; valid=true;
             }
+            int type=0,severity=0;
+            colorValid=CurrentColor(current.object,type,severity);
+            if(colorValid) colorValue=type*16+severity;
         }
     } __finally { unlockResult=before.unlock(mutex); }
     if(unlockResult!=0) faulted=true;
-    else if(valid) SnapshotValue(304,value);
+    else {
+        if(valid) SnapshotValue(304,value);
+        if(colorValid) SnapshotValue(465,colorValue);
+    }
 }
 void DisplayTick(const TrainerContext&) {} // one-time actions; no persistent override
 void DisplayReset(const TrainerContext&) {} // deliberately does not undo completed previews

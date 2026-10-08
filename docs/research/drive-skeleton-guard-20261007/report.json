@@ -1,0 +1,161 @@
+{
+  "Date": "2026-10-07",
+  "Status": "Implementation and own suite complete; review-stable",
+  "OriginalSHA256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "Scope": "Bounded skeleton attachment preflight; no new IPC/action, live game or package build",
+  "Claims": [
+    {
+      "Evidence": [
+        "evidence.json#functions[rva=3F4C30]"
+      ],
+      "Address": "0x1403F4C30",
+      "Finding": "Selects first system BAR type2/sklt payload and calls installer3EAB20.",
+      "Limitations": "Does not validate arbitrary later mod file contents.",
+      "Rva": "3F4C30"
+    },
+    {
+      "Evidence": [
+        "evidence.json#functions[rva=3EAB20]"
+      ],
+      "Address": "0x1403EAB20",
+      "Finding": "Publishes sklt payload at RVA2AE5798; full eight-byte body is runtime pinned.",
+      "Limitations": "Installed pointer is checked against owning BAR each preflight.",
+      "Rva": "3EAB20"
+    },
+    {
+      "Evidence": [
+        "evidence.json#functions[rva=3A6480]"
+      ],
+      "Address": "0x1403A6480",
+      "Finding": "First matching type/tag entry wins; link flags are not filtered by this search.",
+      "Limitations": "Guard rejects malformed first payload even if a later duplicate looks valid.",
+      "Rva": "3A6480"
+    },
+    {
+      "Evidence": [
+        "evidence.json#functions[rva=3E6010]"
+      ],
+      "Address": "0x1403E6010",
+      "Finding": "Preceding allocation header uses rounded payload length, magic0x23234141 and kind1.",
+      "Limitations": "An allocation header is structural ownership evidence, not an allocation-success prediction.",
+      "Rva": "3E6010"
+    },
+    {
+      "Evidence": [
+        "evidence.json#functions[rva=3A6840]"
+      ],
+      "Address": "0x1403A6840",
+      "Finding": "Loaded BAR fixup stores encoded container self at header+8.",
+      "Limitations": "Guard accepts currently loaded/fixed-up system BAR only.",
+      "Rva": "3A6840"
+    },
+    {
+      "Evidence": [
+        "evidence.json#functions[rva=3B5C10]"
+      ],
+      "Address": "0x1403B5C10",
+      "Finding": "Decodes parent actor object+8 and returns object BYTE+7 as skeleton key.",
+      "Limitations": "This is distinct from weapon group WORD+78; no semantic name invented for the key.",
+      "Rva": "3B5C10"
+    },
+    {
+      "Evidence": [
+        "evidence.json#functions[rva=3EAAE0]"
+      ],
+      "Address": "0x1403EAAE0",
+      "Finding": "Uses signed count+4, rows at+8, stride8 and bsearch against scalar key.",
+      "Limitations": "Guard demands complete bounded rows and sorted unique keys.",
+      "Rva": "3EAAE0"
+    },
+    {
+      "Evidence": [
+        "evidence.json#functions[rva=3EAAD0]"
+      ],
+      "Address": "0x1403EAAD0",
+      "Finding": "Comparator returns the DWORD subtraction key minus row key; signed return interpretation permits greater-key distance0x80000000 inclusive.",
+      "Limitations": "Larger distances invert comparison sign and are rejected.",
+      "Rva": "3EAAD0"
+    },
+    {
+      "Evidence": [
+        "evidence.json#functions[rva=3D7620]"
+      ],
+      "Address": "0x1403D7620",
+      "Finding": "Reads signed row+4+2*hand without checking search-result null; missing row faults at3D7635.",
+      "Limitations": "No negative-joint restriction or later model bone-count claim.",
+      "Rva": "3D7620"
+    },
+    {
+      "Evidence": [
+        "evidence.json#functions[rva=3A7A40]"
+      ],
+      "Address": "0x1403A7A40",
+      "Finding": "Constructs resolved hand0 for all targets and resolved hand1 for forms1..6 or10.",
+      "Limitations": "Trainer exposes only targets0..6; this evidence does not expand forms.",
+      "Rva": "3A7A40"
+    },
+    {
+      "Evidence": [
+        "evidence.json#functions[rva=3E0CC0]"
+      ],
+      "Address": "0x1403E0CC0",
+      "Finding": "Zero weapon group/item skips model resolution; offhand reads form record chosen by signed object+87.",
+      "Limitations": "Target character/form identity and planned replacement must agree with that record.",
+      "Rva": "3E0CC0"
+    },
+    {
+      "Evidence": [
+        "evidence.json#functions[rva=3EF8B0]"
+      ],
+      "Address": "0x1403EF8B0",
+      "Finding": "went[group] plus Item WORD+4 indexes a model DWORD; zero offset returns zero.",
+      "Limitations": "Bounded mapping is not model-file content validation.",
+      "Rva": "3EF8B0"
+    },
+    {
+      "Evidence": [
+        "evidence.json#functions[rva=3EF750]"
+      ],
+      "Address": "0x1403EF750",
+      "Finding": "Nonempty wmst[(2*group+hand)*32] enters motion load/link and skeleton lookup; empty name skips attachment lookup.",
+      "Limitations": "Empty name does not skip weapon allocation or other constructor paths.",
+      "Rva": "3EF750"
+    }
+  ],
+  "Validation": {
+    "RuntimePinBytes": 117,
+    "PEAndPins": "verification.json",
+    "CallbackRangeBytes": 19,
+    "WarningLevel": "W4, zero compiler warnings",
+    "Suite": "DriveGuardTests",
+    "OriginalBytes": 16541,
+    "Log": "native-DriveGuardTests.txt",
+    "FullFunctions": 47,
+    "Failures": 0,
+    "Checks": 1599,
+    "Instructions": 4187,
+    "CallbackRangeInstructions": 6,
+    "RuntimePins": 5
+  },
+  "Tests": [
+    "All49current-targettransitions",
+    "Forms1..6/Anti and zero-gauge/locked forms",
+    "BYTE7vsWORD78",
+    "Revert plus main/offhand branching",
+    "first-match owner/type/tag/link flags",
+    "count/span/duplicate/sort/comparator boundaries",
+    "preserve signed joints",
+    "all117pinbytes",
+    "zero writes/calls on rejection",
+    "direct Begin revalidation",
+    "after-Revert revalidation and no automatic retry"
+  ],
+  "Limitations": [
+    "No arbitrary negative-joint rule.",
+    "No proof of effective mod-resolved MDLX/MSET content or actual model joint bounds.",
+    "Later native allocations can still fail.",
+    "Foreign asynchronous writes after Begin are outside preflight ownership.",
+    "Reported current Final Form crash was not reproduced.",
+    "Static evidence reused and original-byte verified; no fresh IDA-body claim while analysis readiness was false."
+  ]
+}

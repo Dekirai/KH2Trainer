@@ -1,0 +1,131 @@
+{
+  "status": "IMPLEMENTED_AUTHOR_TESTED_INDEPENDENT_REVIEW_COMPLETE",
+  "independent_review": "../drive-color-independent-review-20261007.json",
+  "date": "2026-10-07",
+  "target_sha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "scope": "Native color pair compare/apply plus Twitch ColorChaos conditional restoration. No live actions, full build, version bump, EffectEngine or EffectModel changes.",
+  "claims": [
+    {
+      "addr": "0x140125D00",
+      "Domain": "native",
+      "Finding": "Writes exactly current color-mode DWORD GX+23364 from ECX and strength DWORD GX+23368 from EDX after obtaining the GX singleton; does not write brightness or loaded Settings. Its own body has no mutex acquisition.",
+      "Limitations": "No writer-generation counter; caller must serialize the pair.",
+      "Evidence": [
+        "native_evidence.json",
+        "native_full_pseudocode.json",
+        "original_verification.json"
+      ]
+    },
+    {
+      "addr": "0x1405061F0",
+      "Domain": "native",
+      "Finding": "Color preview wrapper uses signed CX/DX; disabled mode normalizes to (0,0), enabled strength is clamped1..10 before tailcalling125D00. New bridge conditional operation validates mode0..3 and canonical pairs before this call.",
+      "Limitations": "Wrapper itself does not bound the mode; bridge argument validation is required.",
+      "Evidence": [
+        "native_evidence.json",
+        "native_full_pseudocode.json",
+        "original_verification.json"
+      ]
+    },
+    {
+      "addr": "0x140506240",
+      "Domain": "native",
+      "Finding": "Loaded-color restoration reads Settings fields+16/+18 and normalizes disabled/enabled strength before125D00. It is a loaded-configuration source, not a snapshot of the current preview.",
+      "Limitations": "Not called by ColorChaos start or end.",
+      "Evidence": [
+        "native_evidence.json",
+        "native_full_pseudocode.json",
+        "original_verification.json"
+      ]
+    },
+    {
+      "addr": "0x140505D00",
+      "Domain": "native",
+      "Finding": "ApplyAll invokes brightness and color separately and also applies window, framerate, controller and audio configuration. The conditional operation avoids this broad path entirely.",
+      "Limitations": "The claim is about concrete side effects in this complete body; no new exhaustive settings subsystem claim.",
+      "Evidence": [
+        "native_evidence.json",
+        "native_full_pseudocode.json",
+        "original_verification.json"
+      ]
+    },
+    {
+      "addr": "0x140111AE0",
+      "Domain": "native",
+      "Finding": "Final pixel constant upload compares/copies80bytes at GX+23300 including color mode/strength at +64/+68. Changing that pair is detected by the existing memcmp; no explicit dirty write or refresh call is needed.",
+      "Limitations": "Other constant/resource paths in this body are retained native behavior, not called by the trainer.",
+      "Evidence": [
+        "native_evidence.json",
+        "native_full_pseudocode.json",
+        "original_verification.json"
+      ]
+    },
+    {
+      "addr": "0x14011C150",
+      "Domain": "native",
+      "Finding": "GX_GetDeviceSingleton uses a CRT/TLS initialization guard and returns fixed object1408A0970; its initializing path invokes the constructor. Existing bridge readiness avoids initialization as an action side effect.",
+      "Limitations": "The CRT guard is not a renderer-generation token.",
+      "Evidence": [
+        "native_evidence.json",
+        "native_full_pseudocode.json",
+        "original_verification.json"
+      ]
+    }
+  ],
+  "contract": {
+    "command": {
+      "slot": 464,
+      "id": "display.color_compare_apply",
+      "command_id": 1464,
+      "args": [
+        "Operation0Apply/1Restore",
+        "ExpectedMode0..3",
+        "ExpectedSeverity0..10",
+        "NewMode0..3",
+        "NewSeverity0..10"
+      ],
+      "canonical": "(0,0) or mode1..3/strength1..10",
+      "mismatch": {
+        "apply": "reject/no writes",
+        "restore": "success/no writes"
+      },
+      "match": "one Color call under current revalidated captured display lease/mutex; no Brightness/Loaded call"
+    },
+    "snapshot": {
+      "slot": 465,
+      "id": "display.color_state",
+      "encoding": "mode*16+severity",
+      "valid_values": "0;17..26;33..42;49..58",
+      "published": "after successful unlock only"
+    },
+    "integration": "Existing DisplayHandle/Capabilities/Snapshot; shared catalog/UI integrated by root."
+  },
+  "tests": {
+    "native": {
+      "checks": 21140,
+      "failures": 0,
+      "production_compile": true,
+      "warnings": 0,
+      "log": "native-DisplayGuardTests.txt"
+    },
+    "twitch": {
+      "checks": 1096,
+      "failures": 0,
+      "log": "twitch-tests.txt"
+    }
+  },
+  "fingerprints": {
+    "src/KH2Trainer.Bridge/DisplayFeatures.inl": "A2BA863EFE2555A35C959C3AF196674CB261936F29EE332114ED56C4742F8008",
+    "tests/KH2Trainer.Bridge.Tests/DisplayGuardTests.cpp": "DA62DF115870F49724D20F2A2B24AB5DC7236F595C1104C78B15376C0A21EC7D",
+    "src/KH2Trainer.Twitch/Effects/EffectCatalog.cs": "0DEF8DD88983903A68FB306FBB4FA8C001B0A84B6EABA2AE2F887DA3837D3B7A",
+    "tests/KH2Trainer.Twitch.Tests/ColorOwnershipTests.cs": "4261CBD18A8866C3CA4CDBFB0DCE8D693F7CDC573CAB0B1503701956733EEBC8",
+    "tests/KH2Trainer.Twitch.Tests/Fakes.cs": "41683BAB018A85D256EF153A5A17DC62B41966E766FA42A3E355B4A8EB410084"
+  },
+  "limitations": [
+    "Value comparison cannot identify identical external rewrites or ABA.",
+    "Per-operation display lease validity is not a cross-renderer generation token.",
+    "Supported native thread/mutex paths assumed; arbitrary mod memory writers are not synchronized.",
+    "No live visual validation; synthetic tests and original PE evidence."
+  ],
+  "correction": "Old GameplayReadiness wording said color readbacks were absent. Existing193/194 are separate unlocked diagnostics; new465 provides a coherent pair. The old blanket loaded-restore behavior is removed for ColorChaos."
+}

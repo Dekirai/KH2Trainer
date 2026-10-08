@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "date": "2026-10-07",
+  "author": "native_debug",
+  "status": "tests_and_read_only_support_review_frozen",
+  "scope": {
+    "edits": [
+      "tests/KH2Trainer.Bridge.Tests/CombatGuardTests.cpp",
+      "tests/KH2Trainer.Bridge.Tests/run-tests.ps1: CombatGuardTests User32 library entry"
+    ],
+    "productReview": [
+      "src/KH2Trainer.Bridge/CombatGuardSupport.inl",
+      "src/KH2Trainer.Bridge/CombatFeatures.inl"
+    ],
+    "notPerformed": [
+      "live game access",
+      "UI control",
+      "process injection",
+      "overall release build",
+      "edits to Root-owned support or integration"
+    ]
+  },
+  "execution": {
+    "command": "tests/KH2Trainer.Bridge.Tests/run-tests.ps1 -Suite CombatGuardTests -LogDirectory artifacts/agent-validation/combat-guard-20261007",
+    "checks": 1870,
+    "failures": 0,
+    "compiler": "MSVC x64 /std:c++17 /O2 /W4 /MT /EHsc",
+    "warnings": 0,
+    "log": "artifacts/agent-validation/combat-guard-20261007/native-CombatGuardTests.txt",
+    "logSha256": "882FA33FCD0F48218AE07B1C4E5EE3A46EF676E26F4B24EB642934ADAB82B0A1"
+  },
+  "fingerprints": [
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/CombatGuardTests.cpp",
+      "sha256": "4F5BD05C22578C0EC52CCF9B5915D7C4826722F4565774668411C80049DBBA82"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/run-tests.ps1",
+      "sha256": "DF6F33A2663A137A222F053036300033E07F7780F5575701D70A7FA9601E8AFB"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/CombatGuardSupport.inl",
+      "sha256": "E691B0E46F2A441BAE43967032D6A33A019971617A706FED0FAF761AE698B836"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/CombatFeatures.inl",
+      "sha256": "DB4C57D52B2CF5EF598FECC7F075713E2F40BECC51F17F4F9AA951E92FC9E85E"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/CombatGuardPins.inl",
+      "sha256": "F1E8DF67625C319B7333F485C9E1285F89FD8AE43158998CEE8F21075B5B2C3E"
+    }
+  ],
+  "coverage": [
+    "Actual TrainerBridge.cpp included with production PlayerRole, GameplayState and ActorLifetime helpers. Native originals are replaced only by deterministic test callbacks; no function from the retail executable is executed.",
+    "All ten audited combinations: Sora forms0..6, Roxas0/10 and rescue Mickey11. Negative bar0 calls through the actually installed derived-class vtable slot return current HP without original dispatch or HP mutation.",
+    "Positive/zero deltas, secondary/UINT_MAX bars, enemy actors, wrong class wrappers and disabled/faulted contexts forward exact five-argument Win64 values and preserve the full original return. INT_MIN diagnostics and hit-counter saturation checked.",
+    "Native exceptions propagate. Separate metadata SEH causes exactly one original call; an original exception still escapes after the validation exception was caught.",
+    "Actor construction at the same address, destructor retirement, role/form identity changes, field pause, menu/event/transition, scene heap/scheduler/room change, dead/unknown player, stale/zero/future heartbeat, disabled bridge and foreign-thread callback tested.",
+    "Input lock blocks new admission but does not remove already active damage protection during a hit reaction.",
+    "Exact owner/bridge/generation command472 fields, uint64 halves, idempotent ensure, competing owner, manual takeover, stale owner/generation release, malformed scalar fields and correct pin balance tested.",
+    "Actual TrainerFrame command1472 executes owned acquire/release, publishes responseSequence and completed snapshot, preserves manual takeover and drops the lease on host expiry.",
+    "All1255 runtime pin bytes individually changed and rejected. Both descriptor tables and slots, module-pin/null-original failure, MEM_IMAGE/allocation identity/query/commit/alignment constraints, eight protection failure/foreign-CAS/recovery cases tested.",
+    "Retained target tests cover readouts during pause, manual lock ownership, full bounded actor list, stale/cyclic/corrupt targets, nonlethal HP/floor and revenge value bounds."
+  ],
+  "review": {
+    "finding": "No remaining blocking finding in the fingerprinted support/integration.",
+    "points": [
+      "Original callback targets are immutable and assigned before either wrapper is published. The module is pinned and wrappers remain transparent after policy disable.",
+      "Early callback thread check precedes reads of mutable guard lease state. Original forwarding occurs outside validation exception handling.",
+      "Generation pin is acquired before replacing the old policy; StopGuard releases only the policy pin and never restores HP or overwrites foreign hook slots.",
+      "Release matches activation owner and bridge nonce, plus supplied nonzero generation. A delayed CC release cannot remove a manual owner0 takeover.",
+      "Protection rollback re-queries actual page state and uses owned CAS. A permanently inaccessible rollback leaves a transparent resident wrapper and sticky hook fault rather than attempting a write through a read-only page."
+    ]
+  },
+  "limits": [
+    "Tests use synthetic memory and test seams for original calls, module pin result and slot-region type. They establish implementation contracts, not live gameplay outcomes or compatibility with every mod.",
+    "Blocking skips the entire native HP callback and its damage-dependent Drive/MP gains, HUD and zeroHP branches. Upstream hit reactions and direct lower-level HP writes remain outside its scope.",
+    "Release with generation0 is explicitly an owner-scoped wildcard for an unknown-acquire cleanup; it still requires a nonzero exact owner and matching bridge nonce. Host owner IDs must identify distinct effect activations.",
+    "Actual constructor observation coverage and its documented hook-loss/bulk-teardown limits remain those of ActorLifetimeSupport.",
+    "Other native test suite updates and any full release build are Root-owned and are not included in this author-run count."
+  ]
+}

@@ -1,0 +1,268 @@
+{
+  "schemaVersion": 1,
+  "status": "implemented_offline_root_only",
+  "binding": "OfflineMotionProjection",
+  "fullSemanticReview": "not_established",
+  "nativeDriveGuard": false,
+  "liveGame": false,
+  "claims": [
+    {
+      "addr": "0x1401d30c0",
+      "Finding": "Evaluates six-byte channel records over eight-byte keys; uses global time brackets, constant/linear/Hermite interpolation, three explicit extrapolation behaviors plus mode3 zero, repeated Float32 wrap, and the short rotation discontinuity guard.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401d30c0]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401db700",
+      "Finding": "RAW general interpolation normalizes XYZ rows with returned lengths, preserves W during normalize, selects six ordered cross-product paths by dot comparisons, and interpolates translation and length vectors separately. Fraction zero and same-scale/first-two-dot fast paths have distinct copy behavior.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401db700]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401da6a0",
+      "Finding": "Prototype root callback receives frame in XMM2; reads nine signed root references across two six-byte curve tables, applies frame offset, rotates XYZ, adds translation, and scales basis rows. Initial scale/rotation/translation groups occupy descriptor offsets0/16/32.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401da6a0]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401db470",
+      "Finding": "RAW root callback selects64-byte matrices with CVTTSS2SI and asymmetric index clamping. Negative truncated indices zero scaled frame and upper clamp replaces it; negative fractions that truncate to zero remain. Fraction is passed in XMM3 to1DB700.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401db470]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401d3570",
+      "Finding": "Seven-float Hermite evaluator: frame,t0,v0,out0,t1,v1,in1. Preserves scalar multiplication/addition order using reciprocal span, squared/cubed delta and four basis terms; zero span is not natively checked.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401d3570]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x140142080",
+      "Finding": "Normalizes XYZ in place, returns the original XYZ length in XMM0, and leaves W untouched. Zero length skips reciprocal/multiplication. The exported void prototype omits the return value.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x140142080]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x140140200",
+      "Finding": "Computes XYZ dot product in scalar Float32 order: y product plus x product, then z product; W is excluded.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x140140200]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x140141ae0",
+      "Finding": "Four-component interpolation uses left*(1-fraction)+right*fraction with fraction in XMM3. Includes W and does not normalize.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x140141ae0]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x140142120",
+      "Finding": "Computes ordered XYZ cross product and explicitly zeros W.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x140142120]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x14013fcc0",
+      "Finding": "Broadcasts Float32 XMM1 and multiplies all four vector components. The decompiler double annotation is not the actual scalar ABI.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x14013fcc0]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401aac80",
+      "Finding": "For a nonzero angle in XMM1, wraps angle, constructs X rotation and right-multiplies the current row-vector matrix.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401aac80]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401aad20",
+      "Finding": "For a nonzero angle in XMM1, wraps angle, constructs Y rotation and right-multiplies the current row-vector matrix.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401aad20]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401aadc0",
+      "Finding": "For a nonzero angle in XMM1, wraps angle, constructs Z rotation and right-multiplies the current row-vector matrix.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401aadc0]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401ab220",
+      "Finding": "Adds input XYZ to matrix translation row offsets48/52/56; retains translation W.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401ab220]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401aa7d0",
+      "Finding": "Applies three input scale components to the corresponding first three matrix rows via13FCC0; all four components per basis row are scaled.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401aa7d0]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401a94c0",
+      "Finding": "Copies all64 matrix bytes if source and destination differ; no normalization or projection check.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401a94c0]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x140142280",
+      "Finding": "Writes identity rows from four fixed constants.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x140142280]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401a90c0",
+      "Finding": "Normalizes radians with repeated Float32 additions/subtractions of2pi until within[-pi,pi]. It has no finite, iteration-budget or numerical-progress check.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401a90c0]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401411b0",
+      "Finding": "Builds row-vector X rotation from CRT sinf/cosf, retaining the identity X row and affine translation row.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401411b0]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x140141270",
+      "Finding": "Builds row-vector Y rotation from CRT sinf/cosf; sign orientation is consistent with the root callback composition.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x140141270]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x140141320",
+      "Finding": "Builds row-vector Z rotation from CRT sinf/cosf; sign orientation is consistent with the root callback composition.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x140141320]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x14013f850",
+      "Finding": "Constructs output matrix by transforming each row of the third argument with the first matrix; result is thirdMatrix*firstMatrix in row-vector notation.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x14013f850]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401abf00",
+      "Finding": "Copies a64-byte matrix object into temporary output without numerical transformation.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401abf00]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401ac0a0",
+      "Finding": "Empty destructor leaf in the temporary matrix path; no additional lifetime or numerical work.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401ac0a0]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401c5f20",
+      "Finding": "Dispatches payload kind at type9+144: kind0 toPrototype constructor, kind1 toRAW constructor, other kinds return null. Passes the payload address as the second argument.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401c5f20]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401d2610",
+      "Finding": "Installs Prototype vtable after common initialization and also runs a separate extra-joint initialization from payload+24 and counts+16/+18. The offline root-only reader does not claim this additional path is validated.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401d2610]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401dafb0",
+      "Finding": "Runs common motion initialization and installs the RAW vtable.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401dafb0]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401c3840",
+      "Finding": "Stores the supplied payload pointer at Motion+8 and clears four runtime fields after the base vtable.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401c3840]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x14013f900",
+      "Finding": "Transforms all four vector components through four matrix rows using sequential Float32 multiply/add steps; no fused or double evaluation appears in the body.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x14013f900]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401a8e60",
+      "Finding": "Copies all four vector components, including W, unless source and destination are identical.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401a8e60]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    },
+    {
+      "addr": "0x1401dad10",
+      "Finding": "General channel evaluation iterates two declared six-byte tables: offsets48/56 and signed counts52/60. This confirms the second declared count that the root callback itself does not check; the offline root references are bounded by the combined declared membership.",
+      "Evidence": [
+        "docs/research/motion-payload-bounds-20261007/evidence.json#functions[addr=0x1401dad10]"
+      ],
+      "Limitations": "Static original-byte-verified body. Claim scope is the stated root/numerical path; no whole-motion, runtime-resource or live-game safety claim."
+    }
+  ],
+  "verification": "verification.json",
+  "contract": "contract.json",
+  "implementation": "implementation.json",
+  "retailSamples": "retail-sampling.json",
+  "limitations": [
+    "Skeletal/IK/extra channels, constructor fixups, whole BAR validity and complete native motion safety",
+    "Provider selection, disk-to-runtime binding, resource generation, actors, attachments and native writer ownership",
+    "Automatic Tiny/Giant reward, native Drive guard, process reads/writes and live game tests",
+    "Bit-identical CRT transcendental behavior, every possible SSE floating-point environment, invertibility and all future frame values"
+  ]
+}

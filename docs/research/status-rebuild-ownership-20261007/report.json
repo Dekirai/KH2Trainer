@@ -1,0 +1,572 @@
+{
+  "date": "2026-10-07",
+  "scope": "F03: five timed STATUS fields; static research only. Immutable release0.12.6 and all product files untouched.",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "evidence": "docs/research/status-rebuild-ownership-20261007/evidence.json",
+  "verification": "docs/research/status-rebuild-ownership-20261007/verification.json",
+  "claims": [
+    {
+      "addr": "0x1403C1D90",
+      "Finding": "Rebuilds the same STATUS from character/form save pointers. It calls4016B0, resets coefficients424..430 to100, applies equipment through3C1190, then enabled abilities through4014A0. Actor backlink616 and allocation/refcount612 are not rebuilt here; identical output bits are possible.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c1d90]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1404016B0",
+      "Finding": "Initializes the ability subobject at STATUS+464. Owner pointer+40 becomes STATUS; Draw+56, Jackpot+104, Lucky+108 become0 and retention+116 becomes1. Known code callers are3C0010 and3C1D90.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1404016b0]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C0010",
+      "Finding": "Initializes a632-byte STATUS allocation: character608=-1, refcount612=1, backlink616=null and coefficient430=100; calls4016B0. It is also used by startup and every observed pool-allocation family, independently of3C1D90.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c0010]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C02E0",
+      "Finding": "Gets or allocates a character STATUS via3C04E0 and calls3C1D90 on both paths. Reusing an existing STATUS is explicit; acquiring a status can cause a same-address rebuild.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c02e0]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C03F0",
+      "Finding": "Allocates a fresh STATUS from the80-entry free list, initializes it, binds character save and optional Sora/Roxas form save, then rebuilds it. Its UI-preview callers show allocation is not restricted to current field actors.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c03f0]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C0620",
+      "Finding": "Obtains a character STATUS via3C04E0, updates form/save bindings for character1 or14, and always invokes3C1D90 when status exists. Mickey character4 still reaches the common rebuild without Sora-specific form binding.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c0620]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C2100",
+      "Finding": "Saves selected volatile values through3C2120, then tail-jumps to3C1D90 on the identical STATUS address. This is the central refresh helper but not the only incoming route to rebuild/init.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c2100]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C1190",
+      "Finding": "Applies equipment parameters to the STATUS, including rounded multiplicative coefficient430, then401730 for the equipment ability. All known code callers are inside3C1D90.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c1190]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1404014A0",
+      "Finding": "Walks80 character ability words and24 form ability words; enabled entries invoke401730. The sole known code caller is3C1D90. Later growth-level byte updates do not write the five selected fields.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1404014a0]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C2240",
+      "Finding": "Enemy-parameter STATUS initialization directly writes coefficient430 from parameter+84. Both known code callers (3C0280/3C06B0) first invoke3C0010; it is an alternative STATUS writer family and must not be described as absent.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c2240]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C2650",
+      "Finding": "Writes BYTE(status+424+signed index) from saved enemy parameter and percentage. Index6 targets430. It neither increments a status revision nor excludes identical writes; the native function has no index bound. The sole known code caller is431200.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c2650]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x140401730",
+      "Finding": "Ability405 adds Params+300 to Draw,406 adds Params+348 to Jackpot,407 adds Params+352 to Lucky,540 multiplies retention by Params+368. Other IDs affect other ability fields; the final item-defined bitset OR is unchecked for a corrupted item index. Known code callers are3C1190 and4014A0.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x140401730]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C04E0",
+      "Finding": "Searches the allocated80-slot STATUS pool by character ID, excluding free indices. Existing matches increment refcount612 and save back volatile values; absent matches allocate and call3C0010. Refcount is not a monotonic generation identifier.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c04e0]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C06B0",
+      "Finding": "Finds an existing enemy STATUS by decoded parameter pointer or allocates through3C0010 then3C2240. Reused entries increment reference count. This is distinct from character rebuild.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c06b0]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C0280",
+      "Finding": "Allocates an enemy STATUS through3C0010 and populates it through3C2240. It cannot be excluded when describing all pool-entry reuse.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c0280]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403A7A40",
+      "Finding": "Common playable constructor obtains character ID from the object, calls3C0620, assigns Actor+1472 and writes STATUS+616 back to the Actor. Sora/Roxas and rescue Mickey construction call this shared path.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403a7a40]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403D7470",
+      "Finding": "Returns Actor+1472 plus464, establishing the absolute Draw520/Jackpot568/Lucky572/retention580 offsets.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403d7470]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x140431200",
+      "Finding": "Synchronous VM adapter decodes operand0 as STATUS, reads signed index atoperand+8 and percentage at+16, then tail-jumps3C2650. Static VM record7566E0 points here with argument metadata3. It offers only the scripted coefficient route, not rebuild interception.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x140431200]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x140401680",
+      "Finding": "Reads a growth-level byte from ability+32+index, optionally returning5 under a game-mode predicate; it performs no selected-cohort write.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x140401680]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C07E0",
+      "Finding": "Saves volatile values, decrements STATUS refcount and appends the slot to the free list when the result is<=0. Fields and backlink are not zeroed on release, so surviving bytes do not prove live allocation.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c07e0]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C2120",
+      "Finding": "Writes HP/MP/charge and Drive/summon volatile values to save records. It does not export430/520/568/572/580, so rebuilding from save may replace these runtime edits without persisting their old scalar values.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c2120]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C0390",
+      "Finding": "Resolves a current-world party character then selects3C0620 for index0 or3C02E0 otherwise; both paths reach the rebuild family.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c0390]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C04C0",
+      "Finding": "Dispatches character1/14 to3C0620 and other nonzero character IDs to3C02E0. Both rebuild; this dispatcher is not an exclusive Sora gate.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c04c0]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403A5790",
+      "Finding": "Resets a save gauge word, refreshes character1 through3C0620, fills Drive through3C2020, then releases the STATUS reference. A rebuild can occur from system repair/recovery code rather than an Actor virtual refresh.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403a5790]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C2DB0",
+      "Finding": "Party Actor construction calls3C02E0, stores its STATUS and backlink, then loads both weapon positions. Shared STATUS semantics also serve allies.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c2db0]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403D57F0",
+      "Finding": "Descriptor callback takes Actor in RDX and refreshes its nonnull STATUS through3C2100. Hooking only this base callback would miss derived-player callbacks and direct refresh callers.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403d57f0]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403D6850",
+      "Finding": "Actor helper refreshes nonnull Actor+1472 through3C2100. Direct level/reward code does not have to call this Actor helper.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403d6850]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x140025310",
+      "Finding": "Startup initializes all80 STATUS slots with3C0010 and creates the0..79 free list with count80.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x140025310]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1402FC760",
+      "Finding": "UI/cache path iterates four records and refreshes selected present STATUS pointers via3C2100, showing rebuild is not exclusive to a field update virtual call.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1402fc760]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403A7890",
+      "Finding": "Base playable descriptor refresh first updates the form save pointer through3C26C0, then calls3D6850 on Actor RDX.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403a7890]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403A9220",
+      "Finding": "Playable Actor refresh updates form save pointer through3C26C0 then calls3D6850. Derived Sora/Roxas and Mickey+280 adapters delegate here.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403a9220]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C2CD0",
+      "Finding": "Party descriptor adapter moves Actor RDX toRCX and tail-jumps3D6850.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c2cd0]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403DDC30",
+      "Finding": "Additional descriptor adapter tail-jumps3D6850 on Actor RDX; it adds another caller without introducing a new writer.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403ddc30]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403ECF30",
+      "Finding": "Ordinary EXP level-up refreshes each present leveled Actor STATUS directly through3C2100. It bypasses the player's+280 vtable callback.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403ecf30]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403ED190",
+      "Finding": "Alternate level-up helper refreshes the supplied Actor STATUS directly through3C2100 after each level reward.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403ed190]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403E8380",
+      "Finding": "Form EXP/level reward processing changes form abilities then directly rebuilds Actor.status through3C2100. Same Actor and status may remain live.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403e8380]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403E8AA0",
+      "Finding": "Alternate form-level reward helper adjusts ability records and directly calls3C2100 on the existing Actor.status.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403e8aa0]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x14040D530",
+      "Finding": "Positive summon-EXP level-up path refreshes the current player's STATUS directly through3C2100 after level rewards.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x14040d530]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x14040D6E0",
+      "Finding": "Alternate summon-level reward helper directly refreshes current-player STATUS through3C2100.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x14040d6e0]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x140405030",
+      "Finding": "Sora/Roxas constructor delegates to3A7A40 before installing descriptor750300; it does not define a separate Loot-STATUS layout.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x140405030]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x140415670",
+      "Finding": "Rescue-Mickey constructor delegates to3A7A40 with form11, then installs descriptor7523B8 and changes gauge/HP state. It retains the same STATUS layout.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x140415670]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1404158C0",
+      "Finding": "Alternate rescue-Mickey spawn calls3A7A40 with form11, likewise using common STATUS initialization/rebuild. Allocation failures and gameplay use are outside this observation study.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1404158c0]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C26C0",
+      "Finding": "Updates only packed STATUS+596 form-save binding. The observed playable refresh callers then rebuild; it is not itself a write to any of the five reward fields.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c26c0]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C0840",
+      "Finding": "Calls3C1880 on the global STATUS pool then zeros the adjacent HP-floor global. The pool reset is a separate invalidation event from per-slot field initialization.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c0840]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403ABA40",
+      "Finding": "Orb quantity adds Jackpot from each valid party entry, starting with the current player through3D5C50; no Sora character-ID test excludes coherent Roxas/Mickey STATUS.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403aba40]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403DC170",
+      "Finding": "Prize generation computes retention product and Lucky sum over party STATUS. Rescue-Mickey mode remaps orb kinds to7/8 and skips the normal item-roll path: its current Lucky and retention fields can be structurally valid but those ordinary effects are bypassed.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403dc170]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403DC500",
+      "Finding": "Pickup radius adds Draw when Actor1736bit4 is present; the common playable base constructor sets that bit. Native defeat, explicit-radius, vertical-distance and model rules still apply.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403dc500]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x140415840",
+      "Finding": "Identifies special rescue-Mickey prize mode from current listed Actor1736bit0x02000000, rather than character save identity.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x140415840]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403D5C50",
+      "Finding": "Party index0 returns current player; other indices delegate to ally array getter with index-1.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403d5c50]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C3270",
+      "Finding": "Returns an ally-array pointer for the supplied index without bounds checking; trainer consumer inspection must keep the native0..2 party scope bounded.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c3270]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C12F0",
+      "Finding": "Received damage calculation consumes target STATUS430 and selected424+element coefficient; category/attack-type branches can bypass normal scaling. This is not an unconditional final-HP multiplier and is not restricted to Sora.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c12f0]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x140404F70",
+      "Finding": "Sora/Roxas descriptor+280 adapter moves Actor RDX toRCX and tail-jumps3A9220. Vtable5CBA28+280 points here.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x140404f70]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1404154A0",
+      "Finding": "Rescue-Mickey descriptor+280 adapter has the same ABI and tail-jumps3A9220; vtable5D15A0+280 points here.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1404154a0]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C1880",
+      "Finding": "Resets only the80-entry free list and count80 at pool+50560/+50880. It does not rewrite the selected status fields; old bytes can remain after allocation invalidation.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c1880]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403D5840",
+      "Finding": "Common controllable-character base constructor sets Actor1736bit4. Via3A7A40 this supplies the Draw-consumer category bit for Sora/Roxas/rescue Mickey.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403d5840]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    },
+    {
+      "addr": "0x1403C3150",
+      "Finding": "Periodic off-field party recovery may acquire/rebuild a saved party STATUS through3C04C0 and release it afterward. Observing only the currently controlled Actor would miss shared-pool activity.",
+      "Evidence": [
+        "docs/research/status-rebuild-ownership-20261007/evidence.json#functions[addr=0x1403c3150]"
+      ],
+      "Limitations": "Static body/caller evidence for this build; arbitrary computed writes, mod code and runtime hooking correctness are not proven by these captures."
+    }
+  ],
+  "fields": [
+    {
+      "name": "General received-hit coefficient",
+      "offset": 430,
+      "type": "BYTE",
+      "default": 100
+    },
+    {
+      "name": "Draw",
+      "offset": 520,
+      "type": "Float32",
+      "default": 0
+    },
+    {
+      "name": "Jackpot",
+      "offset": 568,
+      "type": "Float32",
+      "default": 0
+    },
+    {
+      "name": "Lucky",
+      "offset": 572,
+      "type": "Float32",
+      "default": 0
+    },
+    {
+      "name": "Munny retained factor",
+      "offset": 580,
+      "type": "Float32",
+      "default": 1
+    }
+  ],
+  "conclusion": "ActorGeneration, STATUS pointer, refcount/backlink and bit equality do not identify a same-actor rebuild or same-value writer. No native revision counter was found in the observed STATUS layout. A conditional, explicit revision observer is required for a stronger guarantee.",
+  "observerContract": {
+    "identity": [
+      "BridgeInstance",
+      "ActorGeneration from the existing verified observer",
+      "poolResetEpoch",
+      "statusSlotIndex0..79",
+      "statusAllocationSerial minted on3C0010",
+      "cohortRebuildRevision",
+      "selected-field writer revisions",
+      "owner nonce and immutable typed receipt"
+    ],
+    "minimumForProvenRetailPaths": [
+      {
+        "addr": "0x1403C0010",
+        "when": "before any original writes",
+        "abi": "RCX=STATUS; return same pointer RAX",
+        "effect": "new slot-allocation serial; invalidate prior status leases even at same address"
+      },
+      {
+        "addr": "0x1403C1D90",
+        "when": "entry, before original",
+        "abi": "RCX=STATUS,RDX=nullable CharSave; native RAX preserved",
+        "effect": "increment whole-cohort rebuild revision even when final bits equal; a conservative revision on no-op early return is acceptable"
+      },
+      {
+        "addr": "0x1403C2650",
+        "when": "before original store",
+        "abi": "RCX=STATUS,EDX=signed index,R8D=signed percent; native RAX preserved",
+        "effect": "General revision for index6; reject observation confidence on unsupported/corrupt index instead of assuming a bound. Native original still forwards unchanged."
+      },
+      {
+        "addr": "0x1403C1880",
+        "when": "before reset",
+        "abi": "RCX=pool base; native return preserved",
+        "effect": "increment pool epoch and invalidate old slot allocations"
+      },
+      {
+        "addr": "0x1403C07E0",
+        "when": "before reference release",
+        "abi": "RCX=STATUS; preserve original return",
+        "effect": "retire a slot if valid pre-refcount==1; malformed counts lose confidence. Do not label Actor dead."
+      }
+    ],
+    "closure": "Known4016B0/401730/3C1190 code callers are contained within3C0010/3C1D90. Known3C2240 callers first initialize a newly allocated slot. A broader boundary contract may also observe3C2240,4016B0 and401730 to tolerate externally initiated calls to these public helpers. The bounded candidate scan is supporting evidence, not a whole-program no-other-writes proof.",
+    "implementationBlocker": "The minimum entry set is direct code, not one replaceable vtable. Derived+280 hooks miss level/reward direct calls; VM record7566E0 covers only the coefficient script adapter. An approved, complete interception mechanism with relocation/unwind/concurrency proof is still required. No hook is implemented or authorized by this report.",
+    "runtimeRules": [
+      "Observe while off-current, menus, host expiry and temporarily unready; do not dereference a remembered Actor merely to increment a pool-slot revision.",
+      "Before acquire/reapply/release, require intact observers, fresh game-thread context, current ActorGeneration, exact allocated STATUS/backlinks/role and matching revisions; re-read all selected original/applied bits atomically in that command.",
+      "Any observed same-value native or manual write supersedes ownership. Manual Loot/DamageTuning handlers must notify the same revision layer before their direct stores.",
+      "A cohort-wide revision may conservatively supersede all five fields. Per-field revisions allow non-overlapping timed rewards to coexist; whole rebuild invalidates every field.",
+      "Unknown callback thread, hook/bank/code loss, counter overflow, metadata exception or unsupported writer invalidates confidence and blocks restorative writes. It is uncertainty, not proof of Actor death.",
+      "Metadata faults must not suppress native calls; immutable originals forward exactly once, outside metadata exception handling. Native exceptions propagate.",
+      "Poolreset/allocation/rebuild receipts are immutable; do not silently remint ownership after native takeover. Host unknown acknowledgements remain unresolved until an authoritative native receipt is obtained.",
+      "Existing ActorGeneration still matters because status fields and pointer equality alone cannot distinguish actor ABA; status identity additionally distinguishes same-actor slot reuse/rebuild."
+    ]
+  },
+  "roles": {
+    "Sora": "Shared STATUS layout and all five consumer paths; normal native form/mission rules remain.",
+    "Roxas": "Shared constructor/rebuild/Draw/party-quantity/damage paths. Match character14 and forms0/10 through existing role classifier; do not infer role from the shared Sora save.",
+    "Mickey": "Shared structural layout and rebuild; Draw, quantity and damage-coefficient consumers remain applicable. Normal prize3DC170 remaps toDrive orbs and suppresses ordinary Lucky item rolls; retention is bypassed for the remapped7/8 kinds. Do not market Lucky/Tax effects as effective in ordinary rescue-Mickey mode.",
+    "admission": "Structural role compatibility is not a release-ready timed reward. Ownership observer/receipt implementation and role-specific tests are still required."
+  },
+  "testPlan": [
+    "same Actor/status and identical output across3C2100 rebuild -> old release performs no write",
+    "EXP, form-level, summon-level, menu/cache and virtual-refresh routes -> same invalidation",
+    "slot released/reused between snapshots, same pointer/refcount/backlink -> different allocation identity",
+    "pool free-list reset with unchanged scalar bytes -> old status receipt invalid",
+    "401730 zero-add and retention-times1, general coefficient identical setter -> takeover observed",
+    "Sora0..6,Roxas0/10,rescueMickey11 structural matrix; Mickey Lucky/retention semantics explicit",
+    "off-current living Sora while Mickey current -> keep receipt without stale dereference; native rebuild supersedes it",
+    "manual same-value write vs old timed cleanup; overlapping masks and non-overlapping rewards",
+    "host expiry, callback offthread, code/slot change, metadata exception, original exception, overflow -> fail closed and exact native forwarding",
+    "partial native rebuild failure before completion -> old baseline never restored",
+    "actual typed IPC duplicate receipt, unknown acknowledgement and owner takeover, without a generic scalar fallback"
+  ],
+  "limits": [
+    "No live game or hooks executed; no product/test/build changes.",
+    "No universal proof excludes arbitrary external memory writes, corrupted resource-derived indices or unexamined computed-address/bulk writes. Exact retail path pinning is a conditional contract.",
+    "The candidate scan covers0x1403A0000..0x140435000;185796 decoded instructions,188 skipped data bytes. It intentionally records offset collisions and does not turn all matches into STATUS writers.",
+    "The47-byte allocator tail at3C0250 is not defined as an IDA function; its original bytes are captured as a code fragment, excluded from full-function and claim totals.",
+    "No artificial native revision field should be invented from STATUS612(refcount),616(backlink),504(selfpointer) or unused padding."
+  ]
+}

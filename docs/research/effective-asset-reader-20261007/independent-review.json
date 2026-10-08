@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "date": "2026-10-07",
+  "reviewer": "managed_tools",
+  "status": "independent_static_review_complete_no_open_blocker",
+  "scope": "Read manifest factory, explicit offline provider selection, shared record parser and decoder, source identities/provenance, path policy and focused regression tests. Read AssetSliceStream leaveOpen delta and existing AssetFileStamp/limits helpers. No new native interpretation, live access or independent build/test run.",
+  "fileHashes": {
+    "src/KH2Trainer.Core/EffectiveAssetModels.cs": "bca842914510e2657d85cf469dc472470bfb4bbbc32983f02cf5de9a089f59c0",
+    "src/KH2Trainer.Core/AssetEffectiveByteReader.cs": "ee37ce950d3a026d06975be2bfa22d636ab94a14fe37b1e3c3ea181bc36831fe",
+    "src/KH2Trainer.Core/AssetPackageCodec.cs": "52ff3801cf4e6bd296f969adbbf3c60cd1ba96e17b1016a92ace187ea0334723",
+    "src/KH2Trainer.Core/AssetArchiveReader.cs": "3c869a4ed76e152913c6efca0dac615dfb70010cf927a89cbb9ad42449a79d0e",
+    "tests/KH2Trainer.Core.Tests/EffectiveAssetReaderTests.cs": "ebf0a2b172c8aa59fdb921a1747e333681b50d005a4fb348888812860eeea074"
+  },
+  "findings": [
+    {
+      "id": "canonical-unc-path",
+      "status": "fixed_and_delta_reviewed",
+      "problem": "The initial path policy rejected only raw leading backslashes. Windows accepts //server/share/kh2 and mixed leading slash spellings as fully qualified UNC paths. Path.GetFullPath normalized these before RejectReparsePath, allowing a network filesystem probe despite the explicit local-only contract.",
+      "reproduction": "Reviewer used only System.IO.Path.IsPathFullyQualified/GetPathRoot/GetFullPath on //server/share/kh2; no filesystem or network operation was performed.",
+      "resolution": "Reject any two leading path separators before filesystem access, then recheck canonical device and UNC syntax before RejectReparsePath. Seven direct path rejection tests added, covering forward/mixed slash and device forms.",
+      "finalSource": "src/KH2Trainer.Core/EffectiveAssetModels.cs"
+    }
+  ],
+  "confirmed": [
+    "Only private factory-created manifests expose known retail/Panacea fingerprints; caller collections are bounded and copied before await, with read-only publication.",
+    "Manifest identity includes ordered package providers, decode/transform flags, limits, roots and evidence stamps/hashes; unsupported binaries do not silently become vanilla.",
+    "Raw/dev/mod/extract then retail selection follows the declared contract; exact and basename-only lowercase search happens within each package. Existing corrupt/empty/unreadable sources do not fall through.",
+    "Record parser uses wide arithmetic and bounded spans; selected HED/header raw lengths must agree; remaster placement is checked without claiming semantic resource safety.",
+    "Decoder streams bounded encoded input, separates transform from decode gating, and validates exact decoded size, zlib checksum and supported tail padding.",
+    "Read handles and directory handles remain captured until result identity/absence rechecks; leaveOpen slices preserve outer file ownership.",
+    "Result is always OfflineManifestBinding. No live loader safety flag, native call or gameplay authorization is introduced."
+  ],
+  "validation": {
+    "authorLog": "core-tests.txt",
+    "sha256": "e8cb63ae8fac6cebaaebb2a1295e535e42c06b76a8ef8fe6f2ea5f2feadcfa3d",
+    "passed": 867,
+    "failed": 0,
+    "newEffectiveReaderChecks": 119,
+    "existingChecks": 748,
+    "execution": "peer author run; log read independently, no reviewer build"
+  },
+  "limits": [
+    "Final absence checks are not an atomic namespace snapshot or runtime loader handoff.",
+    "PKG identity/timestamps and selected metadata/content digest do not hash every package byte; cooperative file sharing does not exclude every mapped writer.",
+    "The reviewed result is a decoded owned copy. BAR/model/motion/remaster semantic validation and safe native loading remain separate work.",
+    "Strict ASCII asset names and local absolute resolved roots are intentional supported-subset restrictions."
+  ],
+  "references": [
+    "contract.json",
+    "docs/research/drive-effective-bytes-20261007/contract.json"
+  ]
+}

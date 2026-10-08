@@ -1,0 +1,59 @@
+Drive raw-file staging and resource-reader side effects — 2026-10-07
+
+Result
+The native file-read entry point is not an isolated validation API. Calling it
+before a Drive transition would mutate resource bookkeeping and can run registered
+resource handlers. Its positive return value also does not prove that every raw
+byte was read or decompressed successfully. No call to this reader was added.
+
+Observed flow
+3F9850 first asks 12EF30 to remove ResourceEntry records overlapping the first
+16 bytes of the destination. That range cleanup repeatedly finds an overlap with
+12E100 and passes the record to 12E460. The latter can call a registered release
+callback, unlinks the entry and invokes its deleting virtual destructor even when
+the optional dependent-object reset argument is zero. An owned fresh destination
+reduces accidental overlap, but does not make the rest of this call pure.
+
+3F9850 locks the package manager around 106700. 106940 selects a package by a
+virtual lookup and changes the global selected-package index. It waits while no
+packages are registered. 107620 seeks and reads through shared package state.
+It reads raw_size from package+300 and compression information from package+308;
+the function has no destination-capacity argument. Its compressed branch allocates
+a temporary input buffer, optionally transforms it and invokes the inflater.
+
+The return values from _read and the inflater are not used as success conditions.
+The reader returns the package's expected raw size. Thus 106700's comparison of
+that return value with the same package raw-size field does not independently
+validate a complete read. A positive count from 3F9850 is insufficient evidence
+that a BAR can safely be parsed. This does not claim a retail short read occurred.
+
+106700 can call 12F070 when its final argument is nonzero. That helper normalizes
+the name and calls 12E5C0, which allocates a ResourceEntry, appends successful
+entries to global bookkeeping, updates the current entry and may dispatch a
+registered handler. 3F9850 may call 12F070 again after the read, depending on the
+global mode. A handler can therefore run before the later worker BAR preparation
+covered by the preceding preconstructor report. Actual arbitrary mod hooks are
+outside this static retail proof.
+
+3F9850 also modifies BAR header byte+3 and DWORD+12 to encode a ResourceEntry
+pointer. Even successful output is consequently a runtime-mutated resource image,
+not necessarily the raw package bytes a standalone BAR validator expects.
+The 1063D0 length fallback performs package lookup first; its filesystem fallback
+returns the low file-size DWORD from FindFirstFileA. No FindClose appears in its
+complete body, so repeatedly calling it as a staging probe is not justified.
+
+Required implementation direction
+Use an independently owned, bounded byte read that preserves the effective file
+selection and replacement identity. Validate actual delivered length, decoding,
+raw BAR ranges and required typed entries before any registered resource handler
+or worker parser. Then establish the separately documented safe transition failure
+path and verify that the eventual native graph is the same graph. The existing
+Core package reader can provide retail byte inspection; that alone does not prove
+the effective graph seen by an arbitrary modded native loader.
+
+Scope and validation
+Ten complete IDA bodies, 733 ASM instructions and original PE comparison are
+retained in evidence.json. verify.py checks full-page counts and all body bytes.
+report.json lists the address-specific claims. No source, game, save or loaded
+process was changed. These findings refine the staging contract; they do not
+claim to close every resource-validation or Final Form crash path.

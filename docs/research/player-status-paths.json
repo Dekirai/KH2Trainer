@@ -1,0 +1,1285 @@
+{
+  "date": "2026-10-07",
+  "inputSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "imageBase": "0x140000000",
+  "scope": "Read-only IDA reinspection of shared player HP/MP paths. Actor/resource prerequisites still apply. Not a live-game verification.",
+  "entry": {
+    "result": [
+      {
+        "target": "0x1403D2EB0",
+        "addr": "0x1403d2eb0",
+        "name": "sub_1403D2EB0",
+        "analysis": {
+          "size": "0x118",
+          "prototype": "__int64 __fastcall(__int64, __int64, unsigned int, char)",
+          "decompile": "__int64 __fastcall sub_1403D2EB0(__int64 a1, __int64 a2, unsigned int a3, char a4)\n{\n  __int64 v6; // rcx\n  int v7; // ebp\n  unsigned int v8; // eax\n  unsigned int v9; // edi\n  void *v10; // rax\n\n  v6 = *(_QWORD *)(a1 + 1472); /*0x1403d2ec5*/\n  v7 = a2; /*0x1403d2ecc*/\n  if ( !v6 || !*(_DWORD *)(v6 + 12LL * (int)a3 + 4) ) /*0x1403d2edb*/\n    return 0; /*0x1403d2edb*/\n  if ( (*(_DWORD *)(a1 + 1736) & 0x4000) != 0 && (int)a2 > 0 ) /*0x1403d2ef6*/\n  {\n    if ( (*(_DWORD *)(a1 + 2488) & 4) != 0 ) /*0x1403d2f03*/\n    {\n      v7 = sub_1403C3C30(a1, a2); /*0x1403d2f0d*/\n    }\n    else if ( a4 ) /*0x1403d2f14*/\n    {\n      sub_1403D37F0(a1, 20, 0); /*0x1403d2f20*/\n    }\n  }\n  if ( (*(_DWORD *)(a1 + 2488) & 4) != 0 ) /*0x1403d2f30*/\n    return 0; /*0x1403d2fbb*/\n  v8 = sub_1403C0860(*(_QWORD *)(a1 + 1472), (unsigned int)v7, a3); /*0x1403d2f47*/\n  v9 = v8; /*0x1403d2f4c*/\n  if ( v7 <= 0 ) /*0x1403d2f53*/\n  {\n    sub_1403DCC10(a1, a3, v8); /*0x1403d2f6e*/\n  }\n  else\n  {\n    sub_140168870(a1); /*0x1403d2f55*/\n    sub_1403DCBB0(a1, a3, v9); /*0x1403d2f62*/\n  }\n  if ( !v9 && !a3 && (*(_DWORD *)(a1 + 2488) & 4) == 0 ) /*0x1403d2f86*/\n  {\n    v10 = kh2_Ptr32_DecodeNullable(*(_DWORD *)a1); /*0x1403d2f8a*/\n    (*(void (__fastcall **)(void *, __int64))(*(_QWORD *)v10 + 176LL))(v10, a1); /*0x1403d2f98*/\n  }\n  return v9; /*0x1403d2fa6*/\n}",
+          "decompile_error": null,
+          "disasm": {
+            "lines": [
+              "1403d2eb0  mov [rsp+arg_8], rbx",
+              "1403d2eb5  mov [rsp+arg_10], rbp",
+              "1403d2eba  push rsi",
+              "1403d2ebb  sub rsp, 20h",
+              "1403d2ebf  mov rbx, rcx",
+              "1403d2ec2  movsxd rsi, r8d",
+              "1403d2ec5  mov rcx, [rcx+5C0h]",
+              "1403d2ecc  mov ebp, edx",
+              "1403d2ece  test rcx, rcx",
+              "1403d2ed1  jz loc_1403D2FB6",
+              "1403d2ed7  lea r10, [rsi+rsi*2]",
+              "1403d2edb  cmp dword ptr [rcx+r10*4+4], 0",
+              "1403d2ee1  jz loc_1403D2FB6",
+              "1403d2ee7  mov eax, [rbx+6C8h]",
+              "1403d2eed  shr eax, 0Eh",
+              "1403d2ef0  test al, 1",
+              "1403d2ef2  jz short loc_1403D2F25",
+              "1403d2ef4  test edx, edx",
+              "1403d2ef6  jle short loc_1403D2F25",
+              "1403d2ef8  mov eax, [rbx+9B8h]",
+              "1403d2efe  shr eax, 2",
+              "1403d2f01  test al, 1",
+              "1403d2f03  jz short loc_1403D2F11",
+              "1403d2f05  mov rcx, rbx",
+              "1403d2f08  call sub_1403C3C30",
+              "1403d2f0d  mov ebp, eax",
+              "1403d2f0f  jmp short loc_1403D2F25",
+              "1403d2f11  test r9b, r9b",
+              "1403d2f14  jz short loc_1403D2F25",
+              "1403d2f16  xor r8d, r8d",
+              "1403d2f19  mov rcx, rbx",
+              "1403d2f1c  lea edx, [r8+14h]",
+              "1403d2f20  call sub_1403D37F0",
+              "1403d2f25  mov eax, [rbx+9B8h]",
+              "1403d2f2b  shr eax, 2",
+              "1403d2f2e  test al, 1",
+              "1403d2f30  jnz loc_1403D2FB6",
+              "1403d2f36  mov rcx, [rbx+5C0h]",
+              "1403d2f3d  mov r8d, esi",
+              "1403d2f40  mov edx, ebp",
+              "1403d2f42  mov [rsp+28h+arg_0], rdi",
+              "1403d2f47  call sub_1403C0860",
+              "1403d2f4c  mov edi, eax",
+              "1403d2f4e  mov rcx, rbx",
+              "1403d2f51  test ebp, ebp",
+              "1403d2f53  jle short loc_1403D2F69",
+              "1403d2f55  call sub_140168870",
+              "1403d2f5a  mov r8d, edi",
+              "1403d2f5d  mov edx, esi",
+              "1403d2f5f  mov rcx, rbx",
+              "1403d2f62  call sub_1403DCBB0",
+              "1403d2f67  jmp short loc_1403D2F73",
+              "1403d2f69  mov r8d, edi",
+              "1403d2f6c  mov edx, esi",
+              "1403d2f6e  call sub_1403DCC10",
+              "1403d2f73  test edi, edi",
+              "1403d2f75  jnz short loc_1403D2F9F",
+              "1403d2f77  test esi, esi",
+              "1403d2f79  jnz short loc_1403D2F9F",
+              "1403d2f7b  mov eax, [rbx+9B8h]",
+              "1403d2f81  shr eax, 2",
+              "1403d2f84  test al, 1",
+              "1403d2f86  jnz short loc_1403D2F9F",
+              "1403d2f88  mov ecx, [rbx]; encoded",
+              "1403d2f8a  call kh2_Ptr32_DecodeNullable",
+              "1403d2f8f  mov rdx, rbx",
+              "1403d2f92  mov rcx, rax",
+              "1403d2f95  mov r8, [rax]",
+              "1403d2f98  call qword ptr [r8+0B0h]",
+              "1403d2f9f  mov eax, edi",
+              "1403d2fa1  mov rdi, [rsp+28h+arg_0]",
+              "1403d2fa6  mov rbx, [rsp+28h+arg_8]",
+              "1403d2fab  mov rbp, [rsp+28h+arg_10]",
+              "1403d2fb0  add rsp, 20h",
+              "1403d2fb4  pop rsi",
+              "1403d2fb5  retn",
+              "1403d2fb6  mov rbx, [rsp+28h+arg_8]",
+              "1403d2fbb  xor eax, eax",
+              "1403d2fbd  mov rbp, [rsp+28h+arg_10]",
+              "1403d2fc2  add rsp, 20h",
+              "1403d2fc6  pop rsi",
+              "1403d2fc7  retn"
+            ],
+            "instruction_count": 82,
+            "truncated": false
+          },
+          "xrefs": {
+            "to": [
+              {
+                "addr": "0x140390065",
+                "type": "code"
+              },
+              {
+                "addr": "0x140393df5",
+                "type": "code"
+              },
+              {
+                "addr": "0x1403971d5",
+                "type": "code"
+              },
+              {
+                "addr": "0x1403d569b",
+                "type": "code"
+              },
+              {
+                "addr": "0x1403d5ef7",
+                "type": "code"
+              },
+              {
+                "addr": "0x1403db805",
+                "type": "code"
+              },
+              {
+                "addr": "0x1403f8d65",
+                "type": "code"
+              },
+              {
+                "addr": "0x140406905",
+                "type": "code"
+              },
+              {
+                "addr": "0x140410905",
+                "type": "code"
+              },
+              {
+                "addr": "0x1404116c5",
+                "type": "code"
+              },
+              {
+                "addr": "0x140419605",
+                "type": "code"
+              },
+              {
+                "addr": "0x1404199b5",
+                "type": "code"
+              },
+              {
+                "addr": "0x140419df5",
+                "type": "code"
+              },
+              {
+                "addr": "0x14041a1d5",
+                "type": "code"
+              },
+              {
+                "addr": "0x14041a7c5",
+                "type": "code"
+              },
+              {
+                "addr": "0x14041ab15",
+                "type": "code"
+              },
+              {
+                "addr": "0x140551b95",
+                "type": "code"
+              },
+              {
+                "addr": "0x140559525",
+                "type": "code"
+              },
+              {
+                "addr": "0x1405598d5",
+                "type": "code"
+              },
+              {
+                "addr": "0x14055c905",
+                "type": "code"
+              },
+              {
+                "addr": "0x14055e7e5",
+                "type": "code"
+              },
+              {
+                "addr": "0x14055ebb5",
+                "type": "code"
+              },
+              {
+                "addr": "0x14055fe55",
+                "type": "code"
+              },
+              {
+                "addr": "0x140560555",
+                "type": "code"
+              },
+              {
+                "addr": "0x1405608d5",
+                "type": "code"
+              },
+              {
+                "addr": "0x140560ce5",
+                "type": "code"
+              },
+              {
+                "addr": "0x140561b95",
+                "type": "code"
+              },
+              {
+                "addr": "0x140561f95",
+                "type": "code"
+              },
+              {
+                "addr": "0x1406e7a28",
+                "type": "data"
+              },
+              {
+                "addr": "0x1406e7a38",
+                "type": "data"
+              },
+              {
+                "addr": "0x142bb8c28",
+                "type": "data"
+              }
+            ],
+            "from": [
+              {
+                "addr": "0x1403d2eb5",
+                "type": "code"
+              }
+            ],
+            "to_truncated": false,
+            "from_truncated": false,
+            "to_count": 31,
+            "from_count": 1
+          },
+          "callers": [],
+          "caller_count": 0,
+          "callers_truncated": false,
+          "callees": [
+            {
+              "addr": "0x140168870",
+              "name": "sub_140168870",
+              "type": "internal"
+            },
+            {
+              "addr": "0x1403d37f0",
+              "name": "sub_1403D37F0",
+              "type": "internal"
+            },
+            {
+              "addr": "0x1403dcc10",
+              "name": "sub_1403DCC10",
+              "type": "internal"
+            },
+            {
+              "addr": "0x1403c0860",
+              "name": "sub_1403C0860",
+              "type": "internal"
+            },
+            {
+              "addr": "0x1403c3c30",
+              "name": "sub_1403C3C30",
+              "type": "internal"
+            },
+            {
+              "addr": "0x1404ad270",
+              "name": "kh2_Ptr32_DecodeNullable",
+              "type": "internal"
+            },
+            {
+              "addr": "0x1403dcbb0",
+              "name": "sub_1403DCBB0",
+              "type": "internal"
+            }
+          ],
+          "callee_count": 7,
+          "callees_truncated": false,
+          "strings": [],
+          "string_ref_count": 0,
+          "strings_truncated": false,
+          "constants": [
+            {
+              "addr": "0x1403d2ebb",
+              "value": "0x20",
+              "decimal": 32
+            },
+            {
+              "addr": "0x1403d2edb",
+              "value": "0x0",
+              "decimal": 0
+            },
+            {
+              "addr": "0x1403d2eed",
+              "value": "0xe",
+              "decimal": 14
+            },
+            {
+              "addr": "0x1403d2ef0",
+              "value": "0x1",
+              "decimal": 1
+            },
+            {
+              "addr": "0x1403d2efe",
+              "value": "0x2",
+              "decimal": 2
+            },
+            {
+              "addr": "0x1403d2f01",
+              "value": "0x1",
+              "decimal": 1
+            },
+            {
+              "addr": "0x1403d2f2b",
+              "value": "0x2",
+              "decimal": 2
+            },
+            {
+              "addr": "0x1403d2f2e",
+              "value": "0x1",
+              "decimal": 1
+            },
+            {
+              "addr": "0x1403d2f81",
+              "value": "0x2",
+              "decimal": 2
+            },
+            {
+              "addr": "0x1403d2f84",
+              "value": "0x1",
+              "decimal": 1
+            },
+            {
+              "addr": "0x1403d2fb0",
+              "value": "0x20",
+              "decimal": 32
+            },
+            {
+              "addr": "0x1403d2fc2",
+              "value": "0x20",
+              "decimal": 32
+            }
+          ],
+          "constant_count": 12,
+          "constants_truncated": false,
+          "basic_blocks": [
+            {
+              "start": "0x1403d2eb0",
+              "end": "0x1403d2ed7",
+              "size": 39,
+              "type": 0,
+              "successors": [
+                "0x1403d2ed7",
+                "0x1403d2fb6"
+              ],
+              "predecessors": []
+            },
+            {
+              "start": "0x1403d2ed7",
+              "end": "0x1403d2ee7",
+              "size": 16,
+              "type": 0,
+              "successors": [
+                "0x1403d2ee7",
+                "0x1403d2fb6"
+              ],
+              "predecessors": [
+                "0x1403d2eb0"
+              ]
+            },
+            {
+              "start": "0x1403d2ee7",
+              "end": "0x1403d2ef4",
+              "size": 13,
+              "type": 0,
+              "successors": [
+                "0x1403d2ef4",
+                "0x1403d2f25"
+              ],
+              "predecessors": [
+                "0x1403d2ed7"
+              ]
+            },
+            {
+              "start": "0x1403d2ef4",
+              "end": "0x1403d2ef8",
+              "size": 4,
+              "type": 0,
+              "successors": [
+                "0x1403d2ef8",
+                "0x1403d2f25"
+              ],
+              "predecessors": [
+                "0x1403d2ee7"
+              ]
+            },
+            {
+              "start": "0x1403d2ef8",
+              "end": "0x1403d2f05",
+              "size": 13,
+              "type": 0,
+              "successors": [
+                "0x1403d2f05",
+                "0x1403d2f11"
+              ],
+              "predecessors": [
+                "0x1403d2ef4"
+              ]
+            },
+            {
+              "start": "0x1403d2f05",
+              "end": "0x1403d2f11",
+              "size": 12,
+              "type": 0,
+              "successors": [
+                "0x1403d2f25"
+              ],
+              "predecessors": [
+                "0x1403d2ef8"
+              ]
+            },
+            {
+              "start": "0x1403d2f11",
+              "end": "0x1403d2f16",
+              "size": 5,
+              "type": 0,
+              "successors": [
+                "0x1403d2f16",
+                "0x1403d2f25"
+              ],
+              "predecessors": [
+                "0x1403d2ef8"
+              ]
+            },
+            {
+              "start": "0x1403d2f16",
+              "end": "0x1403d2f25",
+              "size": 15,
+              "type": 0,
+              "successors": [
+                "0x1403d2f25"
+              ],
+              "predecessors": [
+                "0x1403d2f11"
+              ]
+            },
+            {
+              "start": "0x1403d2f25",
+              "end": "0x1403d2f36",
+              "size": 17,
+              "type": 0,
+              "successors": [
+                "0x1403d2f36",
+                "0x1403d2fb6"
+              ],
+              "predecessors": [
+                "0x1403d2ee7",
+                "0x1403d2ef4",
+                "0x1403d2f05",
+                "0x1403d2f11",
+                "0x1403d2f16"
+              ]
+            },
+            {
+              "start": "0x1403d2f36",
+              "end": "0x1403d2f42",
+              "size": 12,
+              "type": 0,
+              "successors": [
+                "0x1403d2f42"
+              ],
+              "predecessors": [
+                "0x1403d2f25"
+              ]
+            },
+            {
+              "start": "0x1403d2f42",
+              "end": "0x1403d2f55",
+              "size": 19,
+              "type": 0,
+              "successors": [
+                "0x1403d2f55",
+                "0x1403d2f69"
+              ],
+              "predecessors": [
+                "0x1403d2f36"
+              ]
+            },
+            {
+              "start": "0x1403d2f55",
+              "end": "0x1403d2f69",
+              "size": 20,
+              "type": 0,
+              "successors": [
+                "0x1403d2f73"
+              ],
+              "predecessors": [
+                "0x1403d2f42"
+              ]
+            },
+            {
+              "start": "0x1403d2f69",
+              "end": "0x1403d2f73",
+              "size": 10,
+              "type": 0,
+              "successors": [
+                "0x1403d2f73"
+              ],
+              "predecessors": [
+                "0x1403d2f42"
+              ]
+            },
+            {
+              "start": "0x1403d2f73",
+              "end": "0x1403d2f77",
+              "size": 4,
+              "type": 0,
+              "successors": [
+                "0x1403d2f77",
+                "0x1403d2f9f"
+              ],
+              "predecessors": [
+                "0x1403d2f55",
+                "0x1403d2f69"
+              ]
+            },
+            {
+              "start": "0x1403d2f77",
+              "end": "0x1403d2f7b",
+              "size": 4,
+              "type": 0,
+              "successors": [
+                "0x1403d2f7b",
+                "0x1403d2f9f"
+              ],
+              "predecessors": [
+                "0x1403d2f73"
+              ]
+            },
+            {
+              "start": "0x1403d2f7b",
+              "end": "0x1403d2f88",
+              "size": 13,
+              "type": 0,
+              "successors": [
+                "0x1403d2f88",
+                "0x1403d2f9f"
+              ],
+              "predecessors": [
+                "0x1403d2f77"
+              ]
+            },
+            {
+              "start": "0x1403d2f88",
+              "end": "0x1403d2f9f",
+              "size": 23,
+              "type": 0,
+              "successors": [
+                "0x1403d2f9f"
+              ],
+              "predecessors": [
+                "0x1403d2f7b"
+              ]
+            },
+            {
+              "start": "0x1403d2f9f",
+              "end": "0x1403d2fb6",
+              "size": 23,
+              "type": 2,
+              "successors": [],
+              "predecessors": [
+                "0x1403d2f73",
+                "0x1403d2f77",
+                "0x1403d2f7b",
+                "0x1403d2f88"
+              ]
+            },
+            {
+              "start": "0x1403d2fb6",
+              "end": "0x1403d2fc8",
+              "size": 18,
+              "type": 2,
+              "successors": [],
+              "predecessors": [
+                "0x1403d2eb0",
+                "0x1403d2ed7",
+                "0x1403d2f25"
+              ]
+            }
+          ],
+          "basic_block_count": 19,
+          "basic_blocks_truncated": false
+        },
+        "error": null
+      },
+      {
+        "target": "0x1403C2040",
+        "addr": "0x1403c2040",
+        "name": "sub_1403C2040",
+        "analysis": {
+          "size": "0x53",
+          "prototype": "__int64 __fastcall(__int64, unsigned __int8)",
+          "decompile": "__int64 __fastcall sub_1403C2040(__int64 a1, unsigned __int8 a2)\n{\n  int v4; // edx\n\n  if ( *(float *)(a1 + 448) > 0.0 ) /*0x1403c205e*/\n  {\n    v4 = *(_DWORD *)(a1 + 388); /*0x1403c2060*/\n    *(_QWORD *)(a1 + 444) = 0; /*0x1403c206b*/\n    sub_1403C0CD0(a1, v4, 0); /*0x1403c2072*/\n  }\n  return sub_1403C0CD0(a1, *(_DWORD *)(a1 + 388), a2); /*0x1403c2084*/\n}",
+          "decompile_error": null,
+          "disasm": {
+            "lines": [
+              "1403c2040  mov [rsp+arg_0], rbx",
+              "1403c2045  push rdi",
+              "1403c2046  sub rsp, 20h",
+              "1403c204a  movss xmm1, dword ptr [rcx+1C0h]",
+              "1403c2052  xorps xmm0, xmm0",
+              "1403c2055  comiss xmm1, xmm0",
+              "1403c2058  movzx edi, dl",
+              "1403c205b  mov rbx, rcx",
+              "1403c205e  jbe short loc_1403C2077",
+              "1403c2060  mov edx, [rcx+184h]",
+              "1403c2066  xor eax, eax",
+              "1403c2068  xor r8d, r8d",
+              "1403c206b  mov [rcx+1BCh], rax",
+              "1403c2072  call sub_1403C0CD0",
+              "1403c2077  mov edx, [rbx+184h]",
+              "1403c207d  movzx r8d, dil",
+              "1403c2081  mov rcx, rbx",
+              "1403c2084  mov rbx, [rsp+28h+arg_0]",
+              "1403c2089  add rsp, 20h",
+              "1403c208d  pop rdi",
+              "1403c208e  jmp sub_1403C0CD0"
+            ],
+            "instruction_count": 21,
+            "truncated": false
+          },
+          "xrefs": {
+            "to": [
+              {
+                "addr": "0x1401c8285",
+                "type": "code"
+              },
+              {
+                "addr": "0x1403a56b8",
+                "type": "code"
+              },
+              {
+                "addr": "0x1403a576e",
+                "type": "code"
+              },
+              {
+                "addr": "0x140415735",
+                "type": "code"
+              },
+              {
+                "addr": "0x140415a53",
+                "type": "code"
+              },
+              {
+                "addr": "0x14041902b",
+                "type": "code"
+              },
+              {
+                "addr": "0x142bb77d0",
+                "type": "data"
+              }
+            ],
+            "from": [
+              {
+                "addr": "0x1403c2045",
+                "type": "code"
+              }
+            ],
+            "to_truncated": false,
+            "from_truncated": false,
+            "to_count": 7,
+            "from_count": 1
+          },
+          "callers": [
+            {
+              "addr": "0x1401c8100",
+              "name": "sub_1401C8100",
+              "size": "0x33c"
+            },
+            {
+              "addr": "0x1403a5650",
+              "name": "sub_1403A5650",
+              "size": "0x10c"
+            },
+            {
+              "addr": "0x1403a5760",
+              "name": "sub_1403A5760",
+              "size": "0x26"
+            },
+            {
+              "addr": "0x140415670",
+              "name": "sub_140415670",
+              "size": "0x150"
+            },
+            {
+              "addr": "0x1404158c0",
+              "name": "sub_1404158C0",
+              "size": "0x272"
+            },
+            {
+              "addr": "0x140418f30",
+              "name": "sub_140418F30",
+              "size": "0x16b"
+            }
+          ],
+          "caller_count": 6,
+          "callers_truncated": false,
+          "callees": [
+            {
+              "addr": "0x1403c0cd0",
+              "name": "sub_1403C0CD0",
+              "type": "internal"
+            }
+          ],
+          "callee_count": 1,
+          "callees_truncated": false,
+          "strings": [],
+          "string_ref_count": 0,
+          "strings_truncated": false,
+          "constants": [
+            {
+              "addr": "0x1403c2046",
+              "value": "0x20",
+              "decimal": 32
+            },
+            {
+              "addr": "0x1403c2089",
+              "value": "0x20",
+              "decimal": 32
+            }
+          ],
+          "constant_count": 2,
+          "constants_truncated": false,
+          "basic_blocks": [
+            {
+              "start": "0x1403c2040",
+              "end": "0x1403c2060",
+              "size": 32,
+              "type": 0,
+              "successors": [
+                "0x1403c2060",
+                "0x1403c2077"
+              ],
+              "predecessors": []
+            },
+            {
+              "start": "0x1403c2060",
+              "end": "0x1403c2077",
+              "size": 23,
+              "type": 0,
+              "successors": [
+                "0x1403c2077"
+              ],
+              "predecessors": [
+                "0x1403c2040"
+              ]
+            },
+            {
+              "start": "0x1403c2077",
+              "end": "0x1403c2093",
+              "size": 28,
+              "type": 0,
+              "successors": [
+                "0x1403c0cd0"
+              ],
+              "predecessors": [
+                "0x1403c2040",
+                "0x1403c2060"
+              ]
+            },
+            {
+              "start": "0x1403c0cd0",
+              "end": "0x1403c0cd0",
+              "size": 0,
+              "type": 6,
+              "successors": [],
+              "predecessors": [
+                "0x1403c2077"
+              ]
+            }
+          ],
+          "basic_block_count": 4,
+          "basic_blocks_truncated": false
+        },
+        "error": null
+      }
+    ]
+  },
+  "downstream": {
+    "result": [
+      {
+        "target": "0x1403C0860",
+        "addr": "0x1403c0860",
+        "name": "sub_1403C0860",
+        "analysis": {
+          "size": "0x29",
+          "prototype": "__int64 __fastcall(__int64, int, int)",
+          "decompile": "__int64 __fastcall sub_1403C0860(__int64 a1, int a2, int a3)\n{\n  __int64 v3; // r8\n  __int64 result; // rax\n  int v5; // r9d\n\n  v3 = 3LL * a3; /*0x1403c0863*/\n  result = *(unsigned int *)(a1 + 4 * v3 + 8); /*0x1403c086b*/\n  v5 = a2 + *(_DWORD *)(a1 + 4 * v3); /*0x1403c0870*/\n  if ( v5 >= (int)result ) /*0x1403c0876*/\n  {\n    result = *(unsigned int *)(a1 + 4 * v3 + 4); /*0x1403c0878*/\n    if ( v5 <= (int)result ) /*0x1403c0880*/\n      result = (unsigned int)v5; /*0x1403c0880*/\n  }\n  *(_DWORD *)(a1 + 4 * v3) = result; /*0x1403c0884*/\n  return result; /*0x1403c0888*/\n}",
+          "decompile_error": null,
+          "disasm": {
+            "lines": [
+              "1403c0860  movsxd rax, r8d",
+              "1403c0863  lea r8, [rax+rax*2]",
+              "1403c0867  mov r9d, [rcx+r8*4]",
+              "1403c086b  mov eax, [rcx+r8*4+8]",
+              "1403c0870  add r9d, edx",
+              "1403c0873  cmp r9d, eax",
+              "1403c0876  jl short loc_1403C0884",
+              "1403c0878  mov eax, [rcx+r8*4+4]",
+              "1403c087d  cmp r9d, eax",
+              "1403c0880  cmovle eax, r9d",
+              "1403c0884  mov [rcx+r8*4], eax",
+              "1403c0888  retn"
+            ],
+            "instruction_count": 12,
+            "truncated": false
+          },
+          "xrefs": null,
+          "callers": [
+            {
+              "addr": "0x1403a5650",
+              "name": "sub_1403A5650",
+              "size": "0x10c"
+            },
+            {
+              "addr": "0x1403d2c50",
+              "name": "sub_1403D2C50",
+              "size": "0x11f"
+            },
+            {
+              "addr": "0x1403d2eb0",
+              "name": "sub_1403D2EB0",
+              "size": "0x118"
+            },
+            {
+              "addr": "0x140418f30",
+              "name": "sub_140418F30",
+              "size": "0x16b"
+            }
+          ],
+          "caller_count": 4,
+          "callers_truncated": false,
+          "callees": [],
+          "callee_count": 0,
+          "callees_truncated": false,
+          "strings": null,
+          "string_ref_count": 0,
+          "strings_truncated": false,
+          "constants": null,
+          "constant_count": 0,
+          "constants_truncated": false,
+          "basic_blocks": null,
+          "basic_block_count": 0,
+          "basic_blocks_truncated": false
+        },
+        "error": null
+      },
+      {
+        "target": "0x1403C0CD0",
+        "addr": "0x1403c0cd0",
+        "name": "sub_1403C0CD0",
+        "analysis": {
+          "size": "0x107",
+          "prototype": "__int64 __fastcall(__int64, int, unsigned __int8)",
+          "decompile": "__int64 __fastcall sub_1403C0CD0(__int64 a1, int a2, unsigned __int8 a3)\n{\n  void *v6; // rax\n  __int64 result; // rax\n  float v8; // xmm0_4\n  float v9; // xmm2_4\n  float v10; // xmm0_4\n  __int64 v11; // rdx\n  int v12; // ecx\n\n  if ( kh2_Ptr32_DecodeNullable(*(_DWORD *)(a1 + 616)) ) /*0x1403c0cee*/\n  {\n    v6 = kh2_Ptr32_DecodeNullable(*(_DWORD *)(a1 + 616)); /*0x1403c0cfe*/\n    return sub_1403D3CF0(v6, (unsigned int)a2, a3); /*0x1403c0d1b*/\n  }\n  else\n  {\n    v8 = *(float *)(a1 + 448); /*0x1403c0d20*/\n    if ( v8 <= 0.0 ) /*0x1403c0d2e*/\n    {\n      v12 = a2 + *(_DWORD *)(a1 + 384); /*0x1403c0dae*/\n      if ( v12 >= 0 ) /*0x1403c0db0*/\n      {\n        result = *(unsigned int *)(a1 + 388); /*0x1403c0db6*/\n        if ( v12 <= (int)result ) /*0x1403c0dbe*/\n          result = (unsigned int)v12; /*0x1403c0dbe*/\n      }\n      else\n      {\n        result = 0; /*0x1403c0db2*/\n      }\n      *(_DWORD *)(a1 + 384) = result; /*0x1403c0dc6*/\n    }\n    else\n    {\n      if ( a2 > 0 && v8 > 0.0 ) /*0x1403c0d37*/\n      {\n        v9 = *(float *)(a1 + 444) - (float)((float)a2 * *(float *)(qword_142AE5760 + 124)); /*0x1403c0d53*/\n        if ( v9 >= 0.0 ) /*0x1403c0d5e*/\n          v10 = fminf(v8, v9); /*0x1403c0d65*/\n        else\n          v10 = 0.0; /*0x1403c0d60*/\n        *(float *)(a1 + 444) = v10; /*0x1403c0d6c*/\n        if ( v10 == 0.0 ) /*0x1403c0d76*/\n        {\n          v11 = *(unsigned int *)(a1 + 388); /*0x1403c0d78*/\n          *(_QWORD *)(a1 + 444) = 0; /*0x1403c0d83*/\n          sub_1403C0CD0(a1, v11, 0); /*0x1403c0d8d*/\n        }\n      }\n      return *(unsigned int *)(a1 + 384); /*0x1403c0d92*/\n    }\n  }\n  return result; /*0x1403c0d0c*/\n}",
+          "decompile_error": null,
+          "disasm": {
+            "lines": [
+              "1403c0cd0  mov [rsp+arg_0], rbx",
+              "1403c0cd5  mov [rsp+arg_8], rsi",
+              "1403c0cda  push rdi",
+              "1403c0cdb  sub rsp, 20h",
+              "1403c0cdf  mov rbx, rcx",
+              "1403c0ce2  movzx esi, r8b",
+              "1403c0ce6  mov ecx, [rcx+268h]; encoded",
+              "1403c0cec  mov edi, edx",
+              "1403c0cee  call kh2_Ptr32_DecodeNullable",
+              "1403c0cf3  test rax, rax",
+              "1403c0cf6  jz short loc_1403C0D20",
+              "1403c0cf8  mov ecx, [rbx+268h]; encoded",
+              "1403c0cfe  call kh2_Ptr32_DecodeNullable",
+              "1403c0d03  movzx r8d, sil",
+              "1403c0d07  mov edx, edi",
+              "1403c0d09  mov rcx, rax",
+              "1403c0d0c  mov rbx, [rsp+28h+arg_0]",
+              "1403c0d11  mov rsi, [rsp+28h+arg_8]",
+              "1403c0d16  add rsp, 20h",
+              "1403c0d1a  pop rdi",
+              "1403c0d1b  jmp sub_1403D3CF0",
+              "1403c0d20  movss xmm0, dword ptr [rbx+1C0h]",
+              "1403c0d28  xorps xmm1, xmm1",
+              "1403c0d2b  comiss xmm0, xmm1",
+              "1403c0d2e  jbe short loc_1403C0DA8",
+              "1403c0d30  test edi, edi",
+              "1403c0d32  jle short loc_1403C0D92",
+              "1403c0d34  comiss xmm0, xmm1",
+              "1403c0d37  jbe short loc_1403C0D92",
+              "1403c0d39  mov rax, cs:qword_142AE5760",
+              "1403c0d40  movd xmm2, edi",
+              "1403c0d44  cvtdq2ps xmm2, xmm2",
+              "1403c0d47  mulss xmm2, dword ptr [rax+7Ch]",
+              "1403c0d4c  xorps xmm2, cs:xmmword_140623EB0",
+              "1403c0d53  addss xmm2, dword ptr [rbx+1BCh]",
+              "1403c0d5b  comiss xmm1, xmm2",
+              "1403c0d5e  jbe short loc_1403C0D65",
+              "1403c0d60  xorps xmm0, xmm0",
+              "1403c0d63  jmp short loc_1403C0D69",
+              "1403c0d65  minss xmm0, xmm2",
+              "1403c0d69  ucomiss xmm0, xmm1",
+              "1403c0d6c  movss dword ptr [rbx+1BCh], xmm0",
+              "1403c0d74  jp short loc_1403C0D92",
+              "1403c0d76  jnz short loc_1403C0D92",
+              "1403c0d78  mov edx, [rbx+184h]",
+              "1403c0d7e  xor eax, eax",
+              "1403c0d80  xor r8d, r8d",
+              "1403c0d83  mov [rbx+1BCh], rax",
+              "1403c0d8a  mov rcx, rbx",
+              "1403c0d8d  call sub_1403C0CD0",
+              "1403c0d92  mov eax, [rbx+180h]",
+              "1403c0d98  mov rbx, [rsp+28h+arg_0]",
+              "1403c0d9d  mov rsi, [rsp+28h+arg_8]",
+              "1403c0da2  add rsp, 20h",
+              "1403c0da6  pop rdi",
+              "1403c0da7  retn",
+              "1403c0da8  mov ecx, [rbx+180h]",
+              "1403c0dae  add ecx, edi",
+              "1403c0db0  jns short loc_1403C0DB6",
+              "1403c0db2  xor eax, eax",
+              "1403c0db4  jmp short loc_1403C0DC1",
+              "1403c0db6  mov eax, [rbx+184h]",
+              "1403c0dbc  cmp ecx, eax",
+              "1403c0dbe  cmovle eax, ecx",
+              "1403c0dc1  mov rsi, [rsp+28h+arg_8]",
+              "1403c0dc6  mov [rbx+180h], eax",
+              "1403c0dcc  mov rbx, [rsp+28h+arg_0]",
+              "1403c0dd1  add rsp, 20h",
+              "1403c0dd5  pop rdi",
+              "1403c0dd6  retn"
+            ],
+            "instruction_count": 70,
+            "truncated": false
+          },
+          "xrefs": null,
+          "callers": [
+            {
+              "addr": "0x1403c0890",
+              "name": "sub_1403C0890",
+              "size": "0xb3"
+            },
+            {
+              "addr": "0x1403c0cd0",
+              "name": "sub_1403C0CD0",
+              "size": "0x107"
+            },
+            {
+              "addr": "0x1403c17c0",
+              "name": "sub_1403C17C0",
+              "size": "0xb8"
+            },
+            {
+              "addr": "0x1403c2040",
+              "name": "sub_1403C2040",
+              "size": "0x53"
+            },
+            {
+              "addr": "0x1403c4b80",
+              "name": "sub_1403C4B80",
+              "size": "0x1d0"
+            },
+            {
+              "addr": "0x1403edf90",
+              "name": "kh2_BonusLevelApplyRewards",
+              "size": "0x231"
+            },
+            {
+              "addr": "0x140418f30",
+              "name": "sub_140418F30",
+              "size": "0x16b"
+            }
+          ],
+          "caller_count": 7,
+          "callers_truncated": false,
+          "callees": [
+            {
+              "addr": "0x1403c0cd0",
+              "name": "sub_1403C0CD0",
+              "type": "internal"
+            },
+            {
+              "addr": "0x1404ad270",
+              "name": "kh2_Ptr32_DecodeNullable",
+              "type": "internal"
+            }
+          ],
+          "callee_count": 2,
+          "callees_truncated": false,
+          "strings": null,
+          "string_ref_count": 0,
+          "strings_truncated": false,
+          "constants": null,
+          "constant_count": 0,
+          "constants_truncated": false,
+          "basic_blocks": null,
+          "basic_block_count": 0,
+          "basic_blocks_truncated": false
+        },
+        "error": null
+      },
+      {
+        "target": "0x140168870",
+        "addr": "0x140168870",
+        "name": "sub_140168870",
+        "analysis": {
+          "size": "0x32",
+          "prototype": "__int64 __fastcall(_QWORD)",
+          "decompile": "_QWORD *__fastcall sub_140168870(__int64 a1)\n{\n  int v1; // edx\n  _QWORD *result; // rax\n\n  v1 = 0; /*0x140168877*/\n  result = &unk_140ABCFE8; /*0x140168879*/\n  while ( *result != a1 ) /*0x140168886*/\n  {\n    ++v1; /*0x140168888*/\n    if ( (__int64)++result >= (__int64)qword_140ABD000 ) /*0x140168891*/\n      return result; /*0x140168891*/\n  }\n  if ( v1 >= 0 ) /*0x140168896*/\n  {\n    *((_DWORD *)&unk_140ABCFE8 + v1 + 6) |= 0x10u; /*0x14016889b*/\n    return (_QWORD *)v1; /*0x140168898*/\n  }\n  return result; /*0x140168893*/\n}",
+          "decompile_error": null,
+          "disasm": {
+            "lines": [
+              "140168870  lea r9, unk_140ABCFE8",
+              "140168877  xor edx, edx",
+              "140168879  mov rax, r9",
+              "14016887c  lea r8, qword_140ABD000",
+              "140168883  cmp [rax], rcx",
+              "140168886  jz short loc_140168894",
+              "140168888  inc edx",
+              "14016888a  add rax, 8",
+              "14016888e  cmp rax, r8",
+              "140168891  jl short loc_140168883",
+              "140168893  retn",
+              "140168894  test edx, edx",
+              "140168896  js short locret_1401688A1",
+              "140168898  movsxd rax, edx",
+              "14016889b  or dword ptr [r9+rax*4+18h], 10h",
+              "1401688a1  retn"
+            ],
+            "instruction_count": 16,
+            "truncated": false
+          },
+          "xrefs": null,
+          "callers": [
+            {
+              "addr": "0x1403d2c50",
+              "name": "sub_1403D2C50",
+              "size": "0x11f"
+            },
+            {
+              "addr": "0x1403d2eb0",
+              "name": "sub_1403D2EB0",
+              "size": "0x118"
+            }
+          ],
+          "caller_count": 2,
+          "callers_truncated": false,
+          "callees": [],
+          "callee_count": 0,
+          "callees_truncated": false,
+          "strings": null,
+          "string_ref_count": 0,
+          "strings_truncated": false,
+          "constants": null,
+          "constant_count": 0,
+          "constants_truncated": false,
+          "basic_blocks": null,
+          "basic_block_count": 0,
+          "basic_blocks_truncated": false
+        },
+        "error": null
+      },
+      {
+        "target": "0x1403DCBB0",
+        "addr": "0x1403dcbb0",
+        "name": "sub_1403DCBB0",
+        "analysis": {
+          "size": "0x5e",
+          "prototype": "void *__fastcall(void *, int, unsigned int)",
+          "decompile": "void *__fastcall sub_1403DCBB0(void *a1, int a2, unsigned int a3)\n{\n  void *result; // rax\n  __int64 v7; // rcx\n\n  result = (void *)qword_142A24E90; /*0x1403dcbbf*/\n  if ( *(_QWORD *)(qword_142A24E90 + 40) ) /*0x1403dcbce*/\n  {\n    result = kh2_Ptr32_DecodeNullable(*(_DWORD *)(qword_142A24E90 + 4)); /*0x1403dcbd8*/\n    if ( result == a1 ) /*0x1403dcbe0*/\n    {\n      result = (void *)qword_142A24E90; /*0x1403dcbe2*/\n      if ( *(_DWORD *)(qword_142A24E90 + 48) == a2 ) /*0x1403dcbec*/\n      {\n        v7 = *(_QWORD *)(qword_142A24E90 + 40); /*0x1403dcbee*/\n        if ( v7 ) /*0x1403dcbf5*/\n          return (void *)sub_140183220(v7, a3); /*0x1403dcbf9*/\n      }\n    }\n  }\n  return result; /*0x1403dcbfe*/\n}",
+          "decompile_error": null,
+          "disasm": {
+            "lines": [
+              "1403dcbb0  mov [rsp+arg_0], rbx",
+              "1403dcbb5  mov [rsp+arg_8], rsi",
+              "1403dcbba  push rdi",
+              "1403dcbbb  sub rsp, 20h",
+              "1403dcbbf  mov rax, cs:qword_142A24E90",
+              "1403dcbc6  mov edi, r8d",
+              "1403dcbc9  mov ebx, edx",
+              "1403dcbcb  mov rsi, rcx",
+              "1403dcbce  cmp qword ptr [rax+28h], 0",
+              "1403dcbd3  jz short loc_1403DCBFE",
+              "1403dcbd5  mov ecx, [rax+4]; encoded",
+              "1403dcbd8  call kh2_Ptr32_DecodeNullable",
+              "1403dcbdd  cmp rax, rsi",
+              "1403dcbe0  jnz short loc_1403DCBFE",
+              "1403dcbe2  mov rax, cs:qword_142A24E90",
+              "1403dcbe9  cmp [rax+30h], ebx",
+              "1403dcbec  jnz short loc_1403DCBFE",
+              "1403dcbee  mov rcx, [rax+28h]",
+              "1403dcbf2  test rcx, rcx",
+              "1403dcbf5  jz short loc_1403DCBFE",
+              "1403dcbf7  mov edx, edi",
+              "1403dcbf9  call sub_140183220",
+              "1403dcbfe  mov rbx, [rsp+28h+arg_0]",
+              "1403dcc03  mov rsi, [rsp+28h+arg_8]",
+              "1403dcc08  add rsp, 20h",
+              "1403dcc0c  pop rdi",
+              "1403dcc0d  retn"
+            ],
+            "instruction_count": 27,
+            "truncated": false
+          },
+          "xrefs": null,
+          "callers": [
+            {
+              "addr": "0x1403d2c50",
+              "name": "sub_1403D2C50",
+              "size": "0x11f"
+            },
+            {
+              "addr": "0x1403d2eb0",
+              "name": "sub_1403D2EB0",
+              "size": "0x118"
+            }
+          ],
+          "caller_count": 2,
+          "callers_truncated": false,
+          "callees": [
+            {
+              "addr": "0x1404ad270",
+              "name": "kh2_Ptr32_DecodeNullable",
+              "type": "internal"
+            },
+            {
+              "addr": "0x140183220",
+              "name": "sub_140183220",
+              "type": "internal"
+            }
+          ],
+          "callee_count": 2,
+          "callees_truncated": false,
+          "strings": null,
+          "string_ref_count": 0,
+          "strings_truncated": false,
+          "constants": null,
+          "constant_count": 0,
+          "constants_truncated": false,
+          "basic_blocks": null,
+          "basic_block_count": 0,
+          "basic_blocks_truncated": false
+        },
+        "error": null
+      }
+    ]
+  },
+  "mpActor": {
+    "addr": "0x1403D3CF0",
+    "code": "__int64 __fastcall sub_1403D3CF0(__int64 a1, int a2, char a3)\n{\n  __int64 v5; // rcx\n  __int64 v6; // rdx\n\n  if ( !*(_QWORD *)(a1 + 1472) || (*(_DWORD *)(a1 + 2488) & 4) != 0 ) /*0x1403d3d21*/\n    return 0; /*0x1403d3dad*/\n  v5 = *(_QWORD *)(a1 + 1472); /*0x1403d3d2d*/\n  if ( (*(_DWORD *)(a1 + 1736) & 0x4000) != 0 && a2 > 0 && a3 && (*(_DWORD *)(a1 + 396) & 0x4000) == 0 ) /*0x1403d3d4b*/\n  {\n    sub_1403D37F0(a1, 20, 0); /*0x1403d3d56*/\n    v5 = *(_QWORD *)(a1 + 1472); /*0x1403d3d5b*/\n  }\n  v6 = (unsigned int)(a2 + *(_DWORD *)(v5 + 384)); /*0x1403d3d68*/\n  if ( (int)v6 >= 0 ) /*0x1403d3d6a*/\n    return sub_1403C0890(v5, (unsigned int)a2); /*0x1403d3d91*/\n  sub_1403C20A0(v5, v6); /*0x1403d3d78*/\n  return 0; /*0x1403d3d7f*/\n}",
+    "line_count": 19,
+    "total_lines": 19,
+    "truncated": false,
+    "cursor": {
+      "done": true
+    },
+    "refs": [
+      {
+        "addr": "0x1403d37f0",
+        "name": "sub_1403D37F0"
+      },
+      {
+        "addr": "0x1403c0890",
+        "name": "sub_1403C0890"
+      },
+      {
+        "addr": "0x1403c20a0",
+        "name": "sub_1403C20A0"
+      }
+    ]
+  },
+  "mpClamp": {
+    "result": [
+      {
+        "target": "0x1403C0890",
+        "addr": "0x1403c0890",
+        "name": "sub_1403C0890",
+        "analysis": {
+          "size": "0xb3",
+          "prototype": "__int64 __fastcall(__int64, int)",
+          "decompile": "__int64 __fastcall sub_1403C0890(__int64 a1, int a2)\n{\n  float v2; // xmm0_4\n  float v4; // xmm2_4\n  float v5; // xmm0_4\n  int v6; // edx\n  __int64 result; // rax\n  int v8; // ecx\n\n  v2 = *(float *)(a1 + 448); /*0x1403c0896*/\n  if ( v2 <= 0.0 ) /*0x1403c08a7*/\n  {\n    v8 = a2 + *(_DWORD *)(a1 + 384); /*0x1403c091a*/\n    if ( v8 >= 0 ) /*0x1403c091c*/\n    {\n      result = *(unsigned int *)(a1 + 388); /*0x1403c092c*/\n      if ( v8 <= (int)result ) /*0x1403c0934*/\n        result = (unsigned int)v8; /*0x1403c0934*/\n      *(_DWORD *)(a1 + 384) = result; /*0x1403c0937*/\n    }\n    else\n    {\n      *(_DWORD *)(a1 + 384) = 0; /*0x1403c0920*/\n      return 0; /*0x1403c091e*/\n    }\n  }\n  else\n  {\n    if ( a2 > 0 && v2 > 0.0 ) /*0x1403c08b0*/\n    {\n      v4 = *(float *)(a1 + 444) - (float)((float)a2 * *(float *)(qword_142AE5760 + 124)); /*0x1403c08cc*/\n      if ( v4 >= 0.0 ) /*0x1403c08d7*/\n        v5 = fminf(v2, v4); /*0x1403c08de*/\n      else\n        v5 = 0.0; /*0x1403c08d9*/\n      *(float *)(a1 + 444) = v5; /*0x1403c08e5*/\n      if ( v5 == 0.0 ) /*0x1403c08ef*/\n      {\n        v6 = *(_DWORD *)(a1 + 388); /*0x1403c08f1*/\n        *(_QWORD *)(a1 + 444) = 0; /*0x1403c08fc*/\n        sub_1403C0CD0(a1, v6, 0); /*0x1403c0903*/\n      }\n    }\n    return *(unsigned int *)(a1 + 384); /*0x1403c0908*/\n  }\n  return result; /*0x1403c090e*/\n}",
+          "decompile_error": null,
+          "disasm": {
+            "lines": [
+              "1403c0890  push rbx",
+              "1403c0892  sub rsp, 20h",
+              "1403c0896  movss xmm0, dword ptr [rcx+1C0h]",
+              "1403c089e  xorps xmm1, xmm1",
+              "1403c08a1  comiss xmm0, xmm1",
+              "1403c08a4  mov rbx, rcx",
+              "1403c08a7  jbe short loc_1403C0914",
+              "1403c08a9  test edx, edx",
+              "1403c08ab  jle short loc_1403C0908",
+              "1403c08ad  comiss xmm0, xmm1",
+              "1403c08b0  jbe short loc_1403C0908",
+              "1403c08b2  mov rax, cs:qword_142AE5760",
+              "1403c08b9  movd xmm2, edx",
+              "1403c08bd  cvtdq2ps xmm2, xmm2",
+              "1403c08c0  mulss xmm2, dword ptr [rax+7Ch]",
+              "1403c08c5  xorps xmm2, cs:xmmword_140623EB0",
+              "1403c08cc  addss xmm2, dword ptr [rcx+1BCh]",
+              "1403c08d4  comiss xmm1, xmm2",
+              "1403c08d7  jbe short loc_1403C08DE",
+              "1403c08d9  xorps xmm0, xmm0",
+              "1403c08dc  jmp short loc_1403C08E2",
+              "1403c08de  minss xmm0, xmm2",
+              "1403c08e2  ucomiss xmm0, xmm1",
+              "1403c08e5  movss dword ptr [rcx+1BCh], xmm0",
+              "1403c08ed  jp short loc_1403C0908",
+              "1403c08ef  jnz short loc_1403C0908",
+              "1403c08f1  mov edx, [rcx+184h]",
+              "1403c08f7  xor eax, eax",
+              "1403c08f9  xor r8d, r8d",
+              "1403c08fc  mov [rcx+1BCh], rax",
+              "1403c0903  call sub_1403C0CD0",
+              "1403c0908  mov eax, [rbx+180h]",
+              "1403c090e  add rsp, 20h",
+              "1403c0912  pop rbx",
+              "1403c0913  retn",
+              "1403c0914  mov ecx, [rcx+180h]",
+              "1403c091a  add ecx, edx",
+              "1403c091c  jns short loc_1403C092C",
+              "1403c091e  xor eax, eax",
+              "1403c0920  mov [rbx+180h], eax",
+              "1403c0926  add rsp, 20h",
+              "1403c092a  pop rbx",
+              "1403c092b  retn",
+              "1403c092c  mov eax, [rbx+184h]",
+              "1403c0932  cmp ecx, eax",
+              "1403c0934  cmovle eax, ecx",
+              "1403c0937  mov [rbx+180h], eax",
+              "1403c093d  add rsp, 20h",
+              "1403c0941  pop rbx",
+              "1403c0942  retn"
+            ],
+            "instruction_count": 50,
+            "truncated": false
+          },
+          "xrefs": null,
+          "callers": [
+            {
+              "addr": "0x1403d3cf0",
+              "name": "sub_1403D3CF0",
+              "size": "0xca"
+            }
+          ],
+          "caller_count": 1,
+          "callers_truncated": false,
+          "callees": [
+            {
+              "addr": "0x1403c0cd0",
+              "name": "sub_1403C0CD0",
+              "type": "internal"
+            }
+          ],
+          "callee_count": 1,
+          "callees_truncated": false,
+          "strings": null,
+          "string_ref_count": 0,
+          "strings_truncated": false,
+          "constants": null,
+          "constant_count": 0,
+          "constants_truncated": false,
+          "basic_blocks": null,
+          "basic_block_count": 0,
+          "basic_blocks_truncated": false
+        },
+        "error": null
+      }
+    ]
+  }
+}

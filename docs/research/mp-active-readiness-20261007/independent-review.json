@@ -1,0 +1,106 @@
+{
+  "status": "No blocking finding in the reviewed MP ActiveCheck, movement-start and per-value sustain-policy changes. Actor-lifetime ownership remains separately unresolved.",
+  "scope": "Read-only source/test review against the packaged v0.12.2 source. No build, game access or source edit. Line endings were normalized only for the review diff; fingerprints bind original bytes.",
+  "baseline": {
+    "path": "artifacts/packages/KH2_Trainer_v0.12.2/Source.zip",
+    "sha256": "32950936bbdb3150130d864b6a16bed44926dfcfb3336d02fb23835ffe5ed3e5"
+  },
+  "files": {
+    "src/KH2Trainer.Twitch/Effects/EffectEngine.cs": "ca814bd713298d1c26025ff47f32073362a72de6ff1a67d2c11f5eb3d1bf9a5e",
+    "src/KH2Trainer.Twitch/Effects/EffectModel.cs": "f2caf56f27b5702fa306ec5c5eb5570388903eb37136f6ecbcb2a286855ae44c",
+    "src/KH2Trainer.Twitch/Effects/EffectCatalog.cs": "57b371a70bc104e4e149d8aff90945c46c0bf94f2981831080abfede251683a1",
+    "src/KH2Trainer.Twitch/Effects/GameplayReadiness.md": "7604a7c27b94809b8e54087bf258d81d98fdb899ef5cf390a78ea6394e23286f",
+    "tests/KH2Trainer.Twitch.Tests/MpAvailabilityTests.cs": "8b804537d4f2f44ce21232d05fc09adea4d1549549e8aef5549fe68b7df924f6",
+    "tests/KH2Trainer.Twitch.Tests/MovementRewardTests.cs": "70607d19f01f29f7fd9a115fad3c32ed914f489419eee68051d6b71683e8949d",
+    "tests/KH2Trainer.Twitch.Tests/Program.cs": "e783f18c705a4283811789ce1cc11bb5417a912e483dd433db176683a11688a1",
+    "src/KH2Trainer.Core/Models.cs": "3afb31e84677413c6997a5e8c8e0983d1670254b20eca9442a9aea625012fd9b",
+    "src/KH2Trainer/Data/features.json": "06e6f30cc0a22c255b8fb3de62af4324fe8d7b47d93bfb46614758529ef3d256"
+  },
+  "tests": {
+    "source": "tests/KH2Trainer.Twitch.Tests/mp-movement-readiness-test.log",
+    "sha256": "660023ca6973b56ddcc596603a521cedd3725c7feed0966f82729adcf8b0f13a",
+    "reportedChecks": 1687,
+    "reportedFailures": 0,
+    "verification": "Read the existing author-run log and test source; did not execute another run.",
+    "copiedLog": "validation/twitch-tests.txt"
+  },
+  "checks": [
+    {
+      "topic": "Gauge validation",
+      "result": "MpGauge requires supported maximum, finite readback, integer0..255. Zero explicitly rejects a new MP-only reward but pauses an existing reward; missing/malformed data waits."
+    },
+    {
+      "topic": "Time and reapplication",
+      "result": "WasUsable stores the prior resource observation. Both interval endpoints must be usable, and intervals longer than one second are not charged for ActiveCheck effects. Return from missing/zero gauge triggers immediate sustain; it does not retroactively charge the unavailable interval."
+    },
+    {
+      "topic": "User timer preference",
+      "result": "General control-timer opt-out remains effective, while resource unusability still pauses MP time. Definitions without ActiveCheck retain previous accounting."
+    },
+    {
+      "topic": "Monitor and extension",
+      "result": "Established monitor/sustain and same-effect Extend require current usability. Extensions remain queued and unpaid until useful. Unestablished native acknowledgements retain the prior exception."
+    },
+    {
+      "topic": "Cleanup",
+      "result": "Stop/restore/deferred-end/deferred-restore still use existing control, role, ownership and toggle-readback gates, not ActiveCheck. Losing MP maximum cannot alone block disabling the owned toggle. Retry and settlement code is unchanged."
+    },
+    {
+      "topic": "Visible status",
+      "result": "ActiveEffects reports resource pause reason independently of the general control-timer preference."
+    },
+    {
+      "topic": "Movement rewards",
+      "result": "The three timed movement rewards remain Sora-only. ReadRestorableValue requires finite readback accepted by the current FeatureDefinition.IsValidValue range/choice contract. Both originals are checked before the first write; the second is rechecked after the awaited first write. Missing or out-of-policy second values enter existing partial cleanup without a second command. This closes the previously noted out-of-policy startup gap. Moon Jump correctly describes height/fall limits."
+    },
+    {
+      "topic": "Regression coverage",
+      "result": "Read the actual supported-role/zero/missing/NaN/fraction/out-of-range/capability cases, both sample endpoints, recovery and extension, timer opt-out, backward clock, long gaps, cleanup retries and external ownership changes. Program registers both new suites."
+    },
+    {
+      "topic": "Restorable-start regression delta",
+      "result": "Read the new minimum-minus1/maximum-plus1 and concrete walk100/run100/jump1200/fall0 cases, exact inclusive policy endpoints with successful restoration, and second-original out-of-range after first awaited command. The existing author-run log now reports1643/0; this reviewer did not build."
+    },
+    {
+      "topic": "Per-value sustain policy and ongoing movement usability",
+      "result": "All three movement rewards now use MovementReadiness as ActiveCheck. Missing/out-of-policy values pause sampled time, whole-effect sustain and extensions. Each restoring OwnedValue additionally checks its freshly read live value with FeatureDefinition.IsValidValue immediately before dispatch and before adopting it as Original. This catches a second scalar changed during an earlier awaited sustain command. Restore=false behavior remains unchanged; cleanup is not gated on current usability."
+    },
+    {
+      "topic": "Final sustain regression delta",
+      "result": "Read tests for runtime walk100/run100/jump1200/fall0, missing readbacks, paused duration, valid-range recovery without retroactive charge, valid post-script Original restoration, external-value preservation, second-command await race, and unchanged non-restoring sustain. The current author-run log reports1687/0; no reviewer build."
+    }
+  ],
+  "limitations": [
+    "Host observations and native command execution are separate; this does not prove atomic resource availability for every native write.",
+    "No live MP gameplay or Twitch service was tested by this reviewer.",
+    "Timed movement ownership still cannot distinguish equal-valued replacement Actors, including Sora-to-Sora. Native manual support is separate.",
+    "An arbitrary future ActiveCheck delegate must itself remain read-only and exception-safe; this review checks the supplied MpGauge implementation.",
+    "Existing value-based ownership uses a tolerance and cannot identify an external writer that restores the same or sufficiently close value. These gates do not introduce an Actor generation token or an atomic host/native compare-and-write."
+  ],
+  "findings": [],
+  "revision": 3,
+  "resolved": [
+    {
+      "issue": "Out-of-policy originals accepted when starting timed movement effects",
+      "status": "Resolved for the startup and second-command revalidation paths",
+      "evidence": [
+        "EffectModel.ReadRestorableValue -> FeatureDefinition.IsValidValue",
+        "EffectCatalog.MovementReadiness / RequireMovementReadback",
+        "MovementRewardTests exact endpoints and invalid originals before/after await"
+      ]
+    },
+    {
+      "issue": "Out-of-policy runtime observation captured as a new sustain Original",
+      "status": "Resolved for restoring owned values by per-value IsValidValue gating before the command and Original assignment, plus ongoing MovementReadiness pausing.",
+      "evidence": [
+        "EffectContext.SustainAsync restore-policy gate",
+        "EffectCatalog three movement ActiveCheck delegates",
+        "MovementRewardTests runtime reset/recovery and second-command await cases"
+      ]
+    }
+  ],
+  "nativeMovementUnchanged": {
+    "src/KH2Trainer.Bridge/ActorMovementFeatures.inl": "566dca39577184740c9a7a96c7929b4e4b96d05d0afe7bdb71edaae3b2957735",
+    "tests/KH2Trainer.Bridge.Tests/ActorMovementGuardTests.cpp": "f45fe17d68609d47d49dc9630a95288c34a8ca7f9e14093d855004526b04861a"
+  }
+}

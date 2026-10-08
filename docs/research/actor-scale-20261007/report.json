@@ -1,0 +1,95 @@
+{
+  "date": "2026-10-07",
+  "scope": "Static analysis for a future shrink/grow Crowd Control effect",
+  "implemented": false,
+  "decision": "Do not expose an actor-size write from this evidence alone. Establish native scale writers, actor-lifetime restoration and collision behavior first.",
+  "claims": [
+    {
+      "addr": "0x1403b3200",
+      "Finding": "The common Actor constructor initializes scale XYZ at byte offsets48/52/56 and the scalar at60 to float1; offset2732 is also initialized to1.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b3200]",
+        "verification.json"
+      ],
+      "Limitations": "These initial values alone do not establish a safe editor range or lifetime ownership."
+    },
+    {
+      "addr": "0x1403ccb90",
+      "Finding": "The transform rebuild reads Actor float2732, multiplies it by float60, scales the Actor48/52/56 vector by that product, then applies the three factors to the orientation basis through1AA7D0. It publishes matrices at64 and2056 and calls the body buffer rebuild when present.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ccb90]",
+        "verification.json"
+      ],
+      "Limitations": "Scale affects a shared transform; it is not proved to be a visual-only edit. Attached actors, native scripts and other transform writers need separate handling."
+    },
+    {
+      "addr": "0x14013fcc0",
+      "Finding": "The helper broadcasts the low float in XMM1 and multiplies all four packed float lanes at RCX in place.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14013fcc0]",
+        "verification.json"
+      ],
+      "Limitations": "Hex-Rays represents the register argument as double and some callers omit it; the assembly supplies the actual float-bit argument."
+    },
+    {
+      "addr": "0x1401aa7d0",
+      "Finding": "The matrix helper multiplies the first three 16-byte basis vectors by the three separate float factors at RDX+0,+4,+8 and leaves the fourth vector untouched.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401aa7d0]",
+        "verification.json"
+      ],
+      "Limitations": "No validation or size clamping is performed here."
+    },
+    {
+      "addr": "0x1403b50f0",
+      "Finding": "Joint-transform lookup can return Actor64 or2056, or compose a model joint matrix with Actor2056. Collision-shape conversion calls this same routine.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b50f0]",
+        "verification.json"
+      ],
+      "Limitations": "The special joint selectors have distinct branches; this finding does not assert uniform behavior for every selector or attachment."
+    },
+    {
+      "addr": "0x1403c9c00",
+      "Finding": "When resource WORD+6 bit0x4000 or Actor DWORD2488 bit0x400 is set, shape conversion copies signed resource WORD dimensions at+16/+18 into output floats+4/+8 without applying actor scale, transforms the shape center via3B50F0 and13F900, then subtracts resource+14. Otherwise it zeroes the dimensions and center.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c9c00]",
+        "verification.json"
+      ],
+      "Limitations": "Thus scaling the shared matrix changes centers without this routine proportionally scaling radii. Other collision stages may add rules and are not all reviewed here."
+    },
+    {
+      "addr": "0x1403bfab0",
+      "Finding": "The actor update gate3BA7C0 suppresses transform/model work; otherwise it rebuilds the Actor transform, passes Actor2056 into the motion/model path3C6AA0, and rebuilds the other shape buffer when present.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bfab0]",
+        "verification.json"
+      ],
+      "Limitations": "Ordinary update supplies a potential next-frame consumer; a trainer should not call this full update blindly."
+    },
+    {
+      "addr": "0x1403ba7c0",
+      "Finding": "The update gate is the test of Actor DWORD288 bit0x400.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ba7c0]",
+        "verification.json"
+      ],
+      "Limitations": "This bit is one gate, not a complete player-control or stable-scene predicate."
+    },
+    {
+      "addr": "0x1403c6aa0",
+      "Finding": "The motion/model update reads the owning Actor at motion+16, gets Actor1968, and forwards its incoming matrix argument to1A4D40 or1A4CD0 depending on blend state; it also dispatches animation events.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c6aa0]",
+        "verification.json"
+      ],
+      "Limitations": "The function has stateful animation and event side effects. A standalone transform change does not justify directly invoking it."
+    }
+  ],
+  "next": [
+    "Find script/animation/native writers of scale vector and scalar, including foreign edits.",
+    "Choose visual-only or whole-body semantics and validate body/world/hit shape behavior.",
+    "Prove conditional restoration on the same actor lifetime; never restore an old value into a new actor.",
+    "Only then add a bounded size effect and synthetic/live validation."
+  ]
+}

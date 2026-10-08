@@ -1,0 +1,18 @@
+Actor movement role extension
+=============================
+
+Manual slots344..347 now accept verified Roxas (character14, form0/10) and rescue Mickey (character4, form11), as well as existing Sora forms0..6. Each successful command writes one float32: walking speed+296, running speed+300, maximum falling speed+312, or base jump height+304. Bounds and one-time profile behavior are unchanged.
+
+Native proof: both role constructors use the same base chain3A7A40 ->3D5840 ->3D2DA0 ->3DA940 ->3B3200. The last constructor initializes Actor+296. Group-specific initialization40A480 can then replace walk/run/jump defaults. Sora/Roxas callback404FB0 and Mickey4154E0 both pass RDX Actor into3A8FA0, which consumes the same walk/run fields at analog threshold0.8. Mickey update4150E0 reaches the common player update3A89A0 and its vtable+296 dispatch. Shared jump selectors and Action callbacks consume+304/+312 without a character-specific layout.
+
+The actual actor/object/status role is checked through PlayerRoleSupport, including full current-Actor list, allocated status pool and object-table membership. The selected vtable entry and complete8-byte wrapper are pinned. Existing stable scene, game thread, live host, living Actor, motion backlink, attachment/deletion/event/transition and writable-memory checks remain. Rescue departure marks+288 bit0x100 and stays rejected. Sora alone additionally matches its saved active Form byte; Roxas/Mickey use their verified actual Actor/object forms.
+
+Dependency isolation: actor_movement::Ready is unchanged and remains Sora-only for CollisionFeatures and TargetingFeatures. Only ActorMovementHandle/Snapshot use the new MovementReady. No shared bridge/catalog/version/coverage changes were made.
+
+Limits: this is not a universal speed or gravity multiplier. Special Actions can use other movement rules. High Jump can override the base jump height, and an active jump is not restarted. Character-group initialization can differ from2/8/160; the fall preset20 is not an asserted native default. Scripts or a new Actor can replace completed edits. No retained pointer, native call, hook, auto-restore, save edit or automatic reapplication was added.
+
+Crowd-Control: super-speed, snail and moon-jump are potential future cross-role rewards, but their role admission remains Sora-only in this change. The managed timed-effect restore state needs its own Actor-lifetime binding before it can be safely reused after role changes. Manual one-shot native support does not establish timed restore ownership.
+
+Evidence:22 fresh complete functions,1863 instructions,8984 original body bytes and656 static data bytes. verify.py checks the original EXE SHA, all saved byte spans, disassembly count/cursor/address consistency, both wrapper destinations and current runtime pins. Existing role identity evidence is linked in report.json. Complete exports are not a claim of full semantic understanding of all22 functions.
+
+Tests: ActorMovementGuardTests.cpp has real-role fixtures and added exact-write/lifetime/negative-legacy-Ready cases. This agent performed no native build. Root executed the central isolated suites: ActorMovement2044/0, Collision595/0, Targeting614/0. Their logs are copied under validation and recorded by SHA256. The independent managed_tools source review found no concrete blocker. No live-game test was performed.

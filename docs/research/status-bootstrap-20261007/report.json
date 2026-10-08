@@ -1,0 +1,238 @@
+{
+  "date": "2026-10-07",
+  "scope": "Read-only static STATUS bootstrap research. No live game operation, observer installation, product change or release claimed by this report.",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "evidence": "docs/research/status-bootstrap-20261007/evidence.json",
+  "verification": "docs/research/status-bootstrap-20261007/verification.json",
+  "claims": [
+    {
+      "addr": "0x14014eb70",
+      "Finding": "The hooked native App update calls14FC20, then updates a frame counter and returns; it contains no general join of all process threads.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x14014eb70]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x14014fc20",
+      "Finding": "Delegates to14FD60 with both scheduler masks zero, so the post-update point follows the scheduler traversal, not a process-wide writer barrier.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x14014fc20]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x14014fd60",
+      "Finding": "Runs callbacks directly or switches to stored task fibers via135470; a scheduler return alone does not prove other OS threads ended.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x14014fd60]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x140135470",
+      "Finding": "Uses ConvertThreadToFiber/SwitchToFiber/ConvertFiberToThread; this establishes actual cooperative fiber scheduling distinct from the motion job pool.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x140135470]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x140130130",
+      "Finding": "Waits on and returns one completion token for each of six worker slots. This is a scoped job-pool barrier, not a join of the independent resource worker.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x140130130]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x140130030",
+      "Finding": "Executes queued callbacks outside its queue mutex, then releases its completion semaphore after the queue becomes empty.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x140130030]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x1403beec0",
+      "Finding": "On its ordinary return path, the motion dispatcher invokes130130 before clearing its job-pool activity marker.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x1403beec0]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x140411b90",
+      "Finding": "Its parallel branch submits batches to12FDB0 and invokes130130 for each completed batch before returning.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x140411b90]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x140411f30",
+      "Finding": "Its parallel branch submits its gathered records to12FDB0 and invokes130130 before continuing and returning.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x140411f30]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x1403a0790",
+      "Finding": "The scheduler completion task acts only on request phase2 and skips phase0/1; it does not wait for the resource worker to finish an outstanding request.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x1403a0790]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x1403a0c60",
+      "Finding": "The resource thread loops over requests, publishes phase1 before loading/preparation and phase2 after preparation, and waits only when it finds no pending request.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x1403a0c60]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x14015ed20",
+      "Finding": "The independent worker-slot loop invokes its registered callback and waits on its own semaphore; it is not joined by130130.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x14015ed20]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x1403c0010",
+      "Finding": "Each of the five calls to EncodeNullable uses RCX=0, so Init cannot reach that helper's nonnull initialization path. None of the five STATUS root functions tail-jumps out of its own frame.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x1403c0010]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x1404ad270",
+      "Finding": "The nonnull decoder tail-jumps4AD3F0, which calls4AD2C0. A call-only graph omits this dependency and incorrectly excludes CRT initialization waits.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x1404ad270]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x1404ad3f0",
+      "Finding": "Calls4AD2C0 before decoding the pointer. This brings CRT synchronization into Rebuild/General/Release native descendants.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x1404ad3f0]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x1404ad2c0",
+      "Finding": "Lazy pointer-table initialization can invoke439F50 and439EF0; it has no direct engine fiber-switch call.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x1404ad2c0]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x140439f50",
+      "Finding": "The CRT initialization guard may wait via43A028 while another thread owns initialization; elapsed frame count does not bound this wait.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x140439f50]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x14043a028",
+      "Finding": "Its fallback WaitForSingleObjectEx call has alertable=false; the other branch dispatches a decoded condition-variable API pointer. These are explicit external contracts, not unexamined direct retail callees.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x14043a028]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x140439b8c",
+      "Finding": "The CRT setup obtains SleepConditionVariableCS and WakeAllConditionVariable and encodes their pointers into2AF9B58/2AF9B60; these support identifying the two indirect dispatch sites.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x140439b8c]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x140439d5c",
+      "Finding": "The alternate CRT setup uses the same condition-variable API names and encoded slots, or creates the event fallback.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x140439d5c]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x1403e3ef0",
+      "Finding": "Equipment lookup tail-jumps41E8F0. Ignoring tail jumps would miss the bsearch external callback boundary.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x1403e3ef0]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x14041e8f0",
+      "Finding": "Calls imported bsearch with the constant comparator41E8E0 stored as the fifth argument. Normal bsearch semantics are an explicit external dependency.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x14041e8f0]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x14041e8e0",
+      "Finding": "The fixed comparator reads a WORD, subtracts it from the key value and returns; it makes no calls or fiber switch.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x14041e8e0]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    },
+    {
+      "addr": "0x140401730",
+      "Finding": "The indirect jump is a bounded local switch with27 original DWORD targets and152 selector bytes; every target is an instruction inside the same function.",
+      "Evidence": [
+        "docs/research/status-bootstrap-20261007/evidence.json#functions[addr=0x140401730]"
+      ],
+      "Limitations": "Specific static claim for the pinned retail binary. See report.md and contract.json for runtime, external API, exception and mod limits."
+    }
+  ],
+  "decision": "Do not promote STATUS ownership from HookedUpdate return or Resident entry gates alone. Prefer a post-publication drain of the pre-existing OS-thread set using conservative complete native stack unwinding, with the conditional no-engine-fiber-yield closure below. Every unknown stack or unresolved older writer keeps bootstrap unavailable.",
+  "verifiedCounts": {
+    "functions": 46,
+    "instructions": 2731,
+    "bodyBytes": 11889,
+    "dataBytes": 78,
+    "closureFunctions": 25
+  },
+  "threadConclusions": {
+    "motionPool": "Six OS worker slots; motion can reach BDX script execution per earlier verified worker evidence. Native job dispatchers join their own batches normally.",
+    "resourceWorker": "Separate worker continues independently of update return. No specific STATUS-writing resource callback was identified here. Its mere existence does not prove it writes STATUS; lack of a join prevents treating App return as global quiescence.",
+    "schedulerFibers": "Real cooperative engine fibers exist. The examined five-writer normal call closure does not invoke their switch paths; caller code outside a writer can yield safely with respect to this narrowly scoped writer-frame test.",
+    "otherThreads": "This report does not enumerate every retail/library/mod thread or prove all possible STATUS writers. A drain must inspect all pre-existing process threads, not only six known motion workers."
+  },
+  "normalClosure": "25 native functions, including direct calls and tail jumps. Init EncodeNullable is specialized to its five proven null arguments. Remaining external operations are bsearch with fixed leaf comparator, CRT/Win32 synchronization, and two CFG dispatches whose pointers are initialized to condition-variable APIs.",
+  "caveats": [
+    "No root STATUS function tail-jumps out of its own frame; a descendant call therefore leaves a root return address for a complete unwind under valid unwind metadata.",
+    "Normal external API behavior does not call the engine's fiber switch. Imported function identity, dynamic condition-variable pointer identity, relevant native bytes, and fixed comparator must remain intact at runtime.",
+    "Arbitrary exception handlers, invalid-parameter handlers, corrupted parameters, externally replaced functions and suspended/resumed foreign contexts are outside the normal closure proof; the stack audit must not declare these safe by inference.",
+    "The source entry gate and dynamic trampoline lifetime/unwind behavior require separate implementation and tests. None of the proposed bootstrap algorithm executes in this report.",
+    "The known five-entry writer contract remains conditional on the existing STATUS write-family analysis; these captures do not prove no computed or external writer exists."
+  ],
+  "priorEvidence": [
+    {
+      "path": "docs/research/status-worker-observation-20261007/evidence.json",
+      "sha256": "cc8d07a615d8d0a7ea18613c634df43f98c347a446bd57f59484a2618b3faef5",
+      "use": "worker-to-BDX path, not proof of a shipped event27 STATUS setter"
+    },
+    {
+      "path": "docs/research/status-rebuild-ownership-20261007/report.json",
+      "use": "Known five-field writer families and release/reset semantics"
+    },
+    {
+      "path": "docs/research/drive-provider-binding-20261007/report.json",
+      "use": "Resource-worker thread creation chain and registration callback limitations"
+    }
+  ]
+}

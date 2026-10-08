@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "date": "2026-10-07",
+  "targetSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "claims": [
+    {
+      "addr": "0x1403f9850",
+      "Finding": "The read wrapper removes overlapping resource records at destination[0..16), calls a locked package read, may create another ResourceEntry, and packs a resource pointer into BAR byte+3 and DWORD+12 before returning. This output is not a pure raw-byte staging result.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403f9850]"
+      ],
+      "Scope": "Specific static finding only; no live behavior claim."
+    },
+    {
+      "addr": "0x14012ef30",
+      "Finding": "Range cleanup repeatedly searches for an overlapping ResourceEntry and releases it until none remains; this is a mutating pre-read operation.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012ef30]"
+      ],
+      "Scope": "Specific static finding only; no live behavior claim."
+    },
+    {
+      "addr": "0x14012e100",
+      "Finding": "Overlap lookup traverses ResourceEntry+8 links, compares each payload start+1624 and unsigned length+1600 with the requested range, and returns the first matching record.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012e100]"
+      ],
+      "Scope": "Specific static finding only; no live behavior claim."
+    },
+    {
+      "addr": "0x14012e460",
+      "Finding": "Resource release can invoke the selected handler release callback, unlinks the entry, updates list count/tail and invokes its deleting virtual destructor. Argument zero skips dependent-object resets but does not suppress entry deletion.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012e460]"
+      ],
+      "Scope": "Specific static finding only; no live behavior claim."
+    },
+    {
+      "addr": "0x140106940",
+      "Finding": "Package resolution waits for nonzero package count, invokes each package lookup and modifies global selected index; it does not create an independent immutable file handle.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140106940]"
+      ],
+      "Scope": "Specific static finding only; no live behavior claim."
+    },
+    {
+      "addr": "0x140107620",
+      "Finding": "Primary payload read receives no destination capacity and returns declared raw size without branching on _read or inflater success. Conditional transform/decompression depends on raw_size>16 and package+292.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140107620]"
+      ],
+      "Scope": "Specific static finding only; no live behavior claim."
+    },
+    {
+      "addr": "0x140106700",
+      "Finding": "Read wrapper compares ReadBase's return with the package's same expected size and can create a ResourceEntry via12F070; this does not independently prove delivered length.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140106700]"
+      ],
+      "Scope": "Specific static finding only; no live behavior claim."
+    },
+    {
+      "addr": "0x14012f070",
+      "Finding": "Name normalization dispatches12E5C0 to create/register a resource entry; it is not a read-only name lookup.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012f070]"
+      ],
+      "Scope": "Specific static finding only; no live behavior claim."
+    },
+    {
+      "addr": "0x14012e5c0",
+      "Finding": "Successful ResourceEntry construction updates current entry, list head/tail/count and can call a registered resource handler before returning; failed construction status deletes the new entry and returns -1.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012e5c0]"
+      ],
+      "Scope": "Specific static finding only; no live behavior claim."
+    },
+    {
+      "addr": "0x1401063d0",
+      "Finding": "Length query uses stateful package lookup then FindFirstFileA fallback and returns only low file size; no FindClose is present in this complete function.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401063d0]"
+      ],
+      "Scope": "Specific static finding only; no live behavior claim."
+    }
+  ],
+  "implementation": "No native staging call added; independently bounded effective-byte staging and a safe transition failure path remain required."
+}

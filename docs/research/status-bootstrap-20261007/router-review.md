@@ -1,0 +1,13 @@
+# Independent review: permanent breakpoint entry prerequisite
+
+Reviewed `StatusBreakpointRouter.h`, the `BuildBreakpoint` delta in `StatusEntryPlan.h`, and `StatusBreakpointTests.cpp` as a resident entry-interception prerequisite. No blocking defect was found within that declared scope. This review does not approve STATUS ownership acquisition or claim a completed bootstrap.
+
+The router prepares exact complete body copies and image-backed wrapper addresses, pins the handler and wrapper modules, publishes its immutable routing table, then registers the VEH before installing any entry. Each patch uses a single-byte CAS and a cache flush; original instruction tails remain unchanged. A partial publication leaves the handler resident, faults confidence and continues forwarding already patched entries. Production has no teardown. This requires the Router object, wrapper bindings, generated originals and their unwind data to remain alive until process exit; pinning the containing module does not itself retain an arbitrary heap/stack Router object.
+
+The VEH checks the breakpoint record, exact owned address and actual Windows x64 RIP convention, then modifies RIP only. It performs no allocation or metadata locking. Wrapper execution, not the VEH, must provide exact native forwarding and entry/exit bookkeeping. `Resident` and `Verify()` mean the configured entry bytes are intact; neither establishes older-call quiescence.
+
+The initial test ran concurrent callers only after publication. I requested a test with callers already running during Commit. The revised `LivePublication` starts four threads before installation, counts actual original-body executions with a native atomic increment, and accepts only unchanged original or wrapper results. After joining, each native execution count equals its total calls and every instruction tail remains intact. The saved root-run log reports **428 checks, 0 failures**. I inspected that log and the revised source; I did not rerun the same suite. The root also reported the existing 2,573 planner checks passed; that number is not an independent rerun in this review.
+
+Remaining integration requirements are concrete: process-lifetime storage, correct production typed wrappers and unwind registration, completed old-thread drain, full STATUS writer contract validation, ledger synchronization, manual-write notifications and typed ownership receipts. Runtime debugger attachment, arbitrary foreign code writes and external exception behavior are outside the current normal execution contract.
+
+Exact reviewed hashes and the root-run log hash are in [router-review.json](router-review.json).

@@ -1,0 +1,38 @@
+Position bookmark and collision ownership, 2026-10-07
+
+The previous implementation used actor/status pointers, scheduler and room bytes.
+Those values can all recur after an Actor is destroyed and reconstructed. The new
+implementation also requires the generation recorded by ActorLifetimeSupport.
+
+Bookmarks pin their generation until overwritten, invalidated or reset. Return
+checks the same current generation before calling native3B6100. Capturing a new
+bookmark pins first and then releases the previous pin, including on the same Actor.
+
+Collision bypass now retains a pinned lease and explicit release intent. While its
+Actor is off-current or unresolved, no fields are written and another acquisition
+is refused. When the same current generation and saved scene can be verified, only
+the complete still-owned profile is restored. A divergent native profile is kept.
+A proven destructor or replacement construction retires the lease without writes.
+Pending cleanup is serviced by TrainerFrame even after host-heartbeat expiry.
+
+Ghost Walk no longer follows a refused native Return with three separate position
+writes or a room reload. Its activity record explains when Return was skipped.
+Collision cleanup still runs or remains pending through the normal ownership path.
+
+Evidence:3 complete native bodies,32 instructions,157 original bytes, matching the
+supported retail EXE. verify.py reuses the existing bounded PE/ASM verifier. The
+Actor lifetime contract and all original callback pins are unchanged.
+
+Synthetic PlayerBridgeTests exercise the actual observer and command handlers,
+including same-address construction, independent bookmark/collision pins, foreign
+profile changes, scene loss, heartbeat expiry, observer loss and fatal reset.
+The native position callback is a fixture; no game code is executed. Package logs
+contain the final test counts and hashes for the shipped source.
+
+Limits: the single bookmark is shared with manual controls and other position
+rewards. A same-generation manual capture can replace the destination. This older
+command family has no immutable operation receipt. Matching field values cannot
+identify a native writer that later recreates the identical collision profile.
+Observer loss retains unresolved collision state. A fatal bridge failure stops
+future normal frame servicing, so pending cleanup cannot be promised after failure.
+No live game, Twitch, save or mod-file operation was performed.

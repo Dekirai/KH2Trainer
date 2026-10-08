@@ -1,0 +1,137 @@
+{
+  "date": "2026-10-07",
+  "scope": "Build-specific STATUS entry planner and static observation contract. No installer, hook publication, game access, save writes, runtime feature or package change.",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "claims": [
+    {
+      "addr": "0x1403c0010",
+      "Finding": "Init has a 5-byte relocation-free MOV [RSP+8],RBX prefix. Synthetic unwind must describe RBX at current RSP+8, rather than copying retail's offset48 recorded after its later PUSH/SUB. It returns STATUS in RAX; BeforeEntry precedes all selected-field initialization.",
+      "Evidence": [
+        "docs/research/status-entry-observation-20261007/evidence.json#functions[addr=0x1403c0010]",
+        "docs/research/status-entry-observation-20261007/pe-unwind.json",
+        "docs/research/status-entry-observation-20261007/verification.json"
+      ],
+      "Limitations": "Exact retail bodies and declared Win64 ABI. Safe publication/quiescence and arbitrary foreign code writes are not established by a planner.",
+      "abi": "uintptr_t (__fastcall*)(uintptr_t status)",
+      "prefixSize": 5
+    },
+    {
+      "addr": "0x1403c1d90",
+      "Finding": "Rebuild has a 7-byte prefix PUSH RBX; PUSH RDI; SUB RSP,40. Native RDX is an optional CharSave pointer; a null fallback can early-return. The native body is split across five PE runtime-function records with chained later saves; only the early complete prolog is copied.",
+      "Evidence": [
+        "docs/research/status-entry-observation-20261007/evidence.json#functions[addr=0x1403c1d90]",
+        "docs/research/status-entry-observation-20261007/pe-unwind.json",
+        "docs/research/status-entry-observation-20261007/verification.json"
+      ],
+      "Limitations": "Exact retail bodies and declared Win64 ABI. Safe publication/quiescence and arbitrary foreign code writes are not established by a planner.",
+      "abi": "uintptr_t (__fastcall*)(uintptr_t status, uintptr_t optionalCharSave)",
+      "prefixSize": 7
+    },
+    {
+      "addr": "0x1403c2650",
+      "Finding": "Coefficient writer has the same 5-byte MOV prefix as Init, integer EDX=index and R8D=percent. It sign-extends the index and finally stores to STATUS+424+index. Entry observation of index6 must precede the store even if bits are unchanged. Preserve its integer RAX result without assigning semantic pointer meaning.",
+      "Evidence": [
+        "docs/research/status-entry-observation-20261007/evidence.json#functions[addr=0x1403c2650]",
+        "docs/research/status-entry-observation-20261007/pe-unwind.json",
+        "docs/research/status-entry-observation-20261007/verification.json"
+      ],
+      "Limitations": "Exact retail bodies and declared Win64 ABI. Safe publication/quiescence and arbitrary foreign code writes are not established by a planner.",
+      "abi": "uintptr_t (__fastcall*)(uintptr_t status, int32_t index, int32_t percent)",
+      "prefixSize": 5
+    },
+    {
+      "addr": "0x1403c1880",
+      "Finding": "Pool reset begins with a 10-byte MOV DWORD[RCX+50560],0. It does not change stack/nonvolatile registers and has no retail runtime-function row. Entry observation must occur before this first free-list mutation. No meaningful native return is established.",
+      "Evidence": [
+        "docs/research/status-entry-observation-20261007/evidence.json#functions[addr=0x1403c1880]",
+        "docs/research/status-entry-observation-20261007/pe-unwind.json",
+        "docs/research/status-entry-observation-20261007/verification.json"
+      ],
+      "Limitations": "Exact retail bodies and declared Win64 ABI. Safe publication/quiescence and arbitrary foreign code writes are not established by a planner.",
+      "abi": "void (__fastcall*)(uintptr_t pool)",
+      "prefixSize": 10
+    },
+    {
+      "addr": "0x1403c07e0",
+      "Finding": "Release has a 6-byte PUSH RBX; SUB RSP,32 prefix, then saves back before decrementing STATUS+612. A pre-release count1 invalidates the allocation, but an abnormal original return must fault confidence instead of proving that native release completed. Preserve native RAX.",
+      "Evidence": [
+        "docs/research/status-entry-observation-20261007/evidence.json#functions[addr=0x1403c07e0]",
+        "docs/research/status-entry-observation-20261007/pe-unwind.json",
+        "docs/research/status-entry-observation-20261007/verification.json"
+      ],
+      "Limitations": "Exact retail bodies and declared Win64 ABI. Safe publication/quiescence and arbitrary foreign code writes are not established by a planner.",
+      "abi": "uintptr_t (__fastcall*)(uintptr_t status)",
+      "prefixSize": 6
+    }
+  ],
+  "implementation": {
+    "source": "src/KH2Trainer.Bridge/StatusEntryPlan.h",
+    "tests": "tests/KH2Trainer.Bridge.Tests/StatusEntryPlanTests.cpp",
+    "api": "status_entry_plan::Build(Kind, moduleBase, readableOriginalBody, readableSize, trampolineAddress, distinctEntryRelayAddress, Plan&); failure leaves output unchanged. MapSuspendedInstruction maps only exact instruction starts inside stolen bytes; continuation and outside addresses remain original.",
+    "layout": {
+      "imageBytes": 80,
+      "alignment": 16,
+      "unwindOffset": 32,
+      "runtimeOffset": 64,
+      "sourcePatch": "E9 rel32 to the distinct observer relay, with NOP padding to the complete stolen prefix",
+      "originalTrampoline": "Exact copied prefix; MOV R11,continuation (49 BB imm64); JMP R11 (41 FF E3). R11 is volatile and has no operand use anywhere in these five bodies. Flags, argument and nonvolatile registers are preserved by the tail.",
+      "runtime": "Begin0, End=prefix+13, UnwindData32. SizeOfProlog equals actual prefix. Every image can register one stable RUNTIME_FUNCTION at image+64 using image base.",
+      "boundaries": "Init/Coefficient 0,5; Rebuild 0,2,3,7; PoolReset 0,10; Release 0,2,6. Tail PCs are prefix and prefix+10."
+    },
+    "validation": "Every byte of all five full bodies is fingerprinted. Prefixes have no relative control-flow or RIP-relative operands. Checked module/source/image arithmetic, relative32 signed endpoints, source/relay/trampoline alias, input/output alias, image alignment and input span. Caller owns real readability and destination mapping; planner performs no probing/SEH/platform operations.",
+    "unwind": {
+      "initAndCoefficient": "01 05 02 00 05 34 01 00",
+      "rebuild": "01 07 03 00 07 42 03 70 02 30 00 00",
+      "poolReset": "01 0A 00 00",
+      "release": "01 06 02 00 06 32 02 30",
+      "retail": "Both MOV prefixes have native SAVE_NONVOL codeOffset15/RBX offset48 after full prolog; copying those values to a prefix-only trampoline is incorrect."
+    },
+    "counterexample": "The first experiment used FF25 [RIP+0] absolute tails. Real RtlVirtualUnwind classified the JMP as epilog and skipped copied saves/allocation: Init/Coefficient RBX and Rebuild/Release caller stack were wrong (6 failed assertions). Extending SizeOfProlog through the JMP did not fix it. The final register-indirect mod11 tail passes every tested instruction boundary. The final test suite would regress if changed back to FF25.",
+    "testResult": {
+      "checks": 2573,
+      "failures": 0,
+      "compiler": "MSVC x64 /O2 /W4 /MT /EHsc; no warnings",
+      "log": "artifacts/status-entry-observation-tests/native-StatusEntryPlanTests.txt",
+      "method": "Actual RtlAddFunctionTable, RtlLookupFunctionEntry and RtlVirtualUnwind on private RX pages; independent synthetic stack states at every copied boundary and both tail boundaries, saved registers poisoned to prove their exact recovery slots. Source payload is read-only. Each of2222 original bytes is separately drifted. No generated code is executed; no game function is called."
+    }
+  },
+  "wrapperContract": {
+    "entry": "Obtain actual current thread ID. Under one caller-owned metadata lock, validate/pin the exact pool slot or pool pointer, then Enter before any original mutation. Unknown/failing metadata marks sticky uncertainty but cannot suppress original forwarding.",
+    "forward": "Call immutable original trampoline exactly once, outside metadata exception catches and outside the serialization lock. Use compiler-generated Win64 wrappers with the listed integer ABI; no XMM arguments or fifth stack arguments are present.",
+    "exit": "Use __try/__finally solely for balanced completion. In finally, serialized Ledger.Exit(frame,!AbnormalTermination()). Native exceptions are not caught or converted. This closes the Release/PoolReset case where Begin retired metadata but the native body faults before changing memory.",
+    "workers": "Do not equate observer callback with game-thread admission. Root's worker evidence has a synchronous motion-event/BDX path. Notifications are serialized across workers; keep per-thread nested frames and permit cross-thread exit ordering. Capture/Compare or writes cannot overlap any in-flight original writer. Actual retail event27 containing STATUS setter remains asset-dependent.",
+    "transaction": "Native field validation/Compare/exact-bit check/typed scalar write and stamp capture must share the metadata critical section. Drop it before every original call; otherwise nested synchronous script entries can deadlock. Manual Loot/DamageTuning writers also raise revisions, including same-value writes.",
+    "epoch": "80 slot allocation serials plus pool epoch and per-field revisions, shared bridge nonce and independent ActorGeneration. Rebuild invalidates all5 selected fields; index6 invalidates General. Allocation and field takeover are distinct. Off-current actors remain referenced; hook loss/overflow/failure is uncertainty, never proof of native death.",
+    "references": [
+      "docs/research/status-rebuild-ownership-20261007/report.json",
+      "docs/research/status-worker-observation-20261007/evidence.json",
+      "src/KH2Trainer.Bridge/StatusRevisionLedger.h"
+    ]
+  },
+  "installerPlan": {
+    "availableInfrastructure": "ActorLifetime/CombatGuard provide protected aligned pointer CAS with ownership/protection recovery; RendererAa provides a near RX relay and native-mutex callsite publication. Neither is a generic entry transaction and AA's mutex does not protect STATUS.",
+    "prepare": "Pin bridge, validate loaded-image ownership and full original code plus captured pdata/xdata, validate dynamic-code/CFG policy. Allocate writable private code/metadata, build all five plans and distinct nearby observer relays, finish RX protections, flush, register dynamic tables and publish immutable original pointers before any source redirect. Keep all exposed storage/table memory resident; no mid-process unhook planned.",
+    "quiescence": "A source E9 replacement covers multiple bytes; a pointer CAS or a 5-byte memcpy is not sufficient publication. The installer still needs a proved writer admission barrier. A paused known thread inside copied bytes must be remapped at an exact boundary; an interior byte is failure. A thread already in the original body must finish before bootstrap. Threads that begin during enumeration also need gating; enumerating/suspending existing threads once is not that proof.",
+    "bootstrap": "Start with zero existing STATUS leases. Copied-prefix remapping resumes pre-existing original execution without BeforeEntry and cannot mint an authoritative generation. Baseline adoption starts only after all such writer invocations have drained at the established post-update/join boundary, all hooks are intact, no callback is active, and current native pool ownership is freshly checked. Existing noncurrent valid allocations start Unknown and are adopted only by an actual validated later capture.",
+    "publicationFailure": "Keep hooks inactive for reward admission until all five redirects, protections, cache flushes and tables pass. Roll back only exact owned patches with actual page-protection re-query; preserve foreign changes. On uncertain rollback retain original trampolines/tables/bridge. Never free possibly published code.",
+    "status": "Planner and real Windows unwind tests are implemented. Live installer/thread quiescence is deliberately not implemented in this task; root owns that continuation."
+  },
+  "references": [
+    {
+      "url": "https://learn.microsoft.com/en-us/cpp/build/prolog-and-epilog?view=msvc-170",
+      "use": "Win64 epilog recognition explains why a memory-indirect tail JMP is unsuitable after a copied allocated-stack prolog."
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/cpp/build/exception-handling-x64?view=msvc-170",
+      "use": "RUNTIME_FUNCTION and UNWIND_INFO layout; offsets describe the current stack state, not a later unexecuted full prolog."
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-rtladdfunctiontable",
+      "use": "Dynamic function-table registration API used by the isolated tests."
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-rtlvirtualunwind",
+      "use": "Actual OS unwind operation tested on private memory."
+    }
+  ]
+}

@@ -6,7 +6,7 @@ namespace KH2Trainer.Core;
 public static class BridgeProtocol
 {
     public const int Magic = 0x4B483254;
-    public const int Version = 3;
+    public const int Version = 4;
     public const int MappingSize = 16384;
     public const int ValueCount = 512;
     public const int MaskWordCount = ValueCount / 64;
@@ -20,21 +20,26 @@ public static class BridgeProtocol
     public const int Values = SupportedBits + MaskWordCount * sizeof(ulong);
 }
 
-public sealed class BridgeConnection : IDisposable
+public sealed partial class BridgeConnection : IDisposable
 {
     private readonly MemoryMappedFile map;
     private readonly MemoryMappedViewAccessor view;
-    private readonly SemaphoreSlim commands = new(1, 1);
+    private readonly SemaphoreSlim commands;
+    private readonly MovementClientSession movementClient;
+    private readonly int protocolVersion;
     private bool disposed;
 
-    public BridgeConnection(int pid)
+    public BridgeConnection(int pid, MovementClientSession? movementClient = null)
     {
+        this.movementClient = movementClient ?? new MovementClientSession();
+        commands = this.movementClient.Commands;
         map = MemoryMappedFile.OpenExisting(BridgeProtocol.MappingPrefix + pid, MemoryMappedFileRights.ReadWrite);
         try
         {
             view = map.CreateViewAccessor(0, BridgeProtocol.MappingSize, MemoryMappedFileAccess.ReadWrite);
             if (view.ReadInt32(0) == 0) throw new FileNotFoundException("The trainer bridge is starting.");
-            if (view.ReadInt32(0) != BridgeProtocol.Magic || view.ReadInt32(4) != BridgeProtocol.Version)
+            protocolVersion = view.ReadInt32(4);
+            if (view.ReadInt32(0) != BridgeProtocol.Magic || protocolVersion != BridgeProtocol.Version)
                 throw new InvalidDataException("A different trainer bridge is already loaded. Restart the game before reconnecting.");
         }
         catch { view?.Dispose(); map.Dispose(); throw; }
@@ -74,7 +79,7 @@ public sealed class BridgeConnection : IDisposable
             }
             return new TrainerSnapshot
             {
-                Connected = true, SceneReady = ready, Status = view.ReadInt32(12), ErrorCode = view.ReadInt32(16),
+                Connected = true, ProtocolVersion = protocolVersion, SceneReady = ready, Status = view.ReadInt32(12), ErrorCode = view.ReadInt32(16),
                 FrameCount = view.ReadUInt32(20), Flags = view.ReadUInt32(24), Message = message,
                 Values = values, Valid = valid, Supported = supported
             };
@@ -83,12 +88,13 @@ public sealed class BridgeConnection : IDisposable
     }
     public async Task<BridgeResult> ExecuteAsync(int command, IReadOnlyList<double> arguments, CancellationToken cancellation = default)
     {
-        if (command <= 0 || arguments.Count > 8 || arguments.Any(v => !double.IsFinite(v)))
+        if (command <= 0 || command == MovementProtocol.Command || arguments.Count > 8 || arguments.Any(v => !double.IsFinite(v)))
             throw new ArgumentException("Invalid trainer command.");
         await commands.WaitAsync(cancellation);
         try
         {
             ObjectDisposedException.ThrowIf(disposed, this);
+            RequireNoPendingMovement();
             if (view.ReadInt32(BridgeProtocol.RequestSequence) != view.ReadInt32(BridgeProtocol.ResponseSequence))
                 throw new InvalidOperationException("The previous command is still pending. Resume the game and wait for its acknowledgement.");
             int sequence = unchecked(view.ReadInt32(BridgeProtocol.RequestSequence) + 1);

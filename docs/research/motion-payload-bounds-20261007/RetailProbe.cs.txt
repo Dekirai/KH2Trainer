@@ -1,0 +1,45 @@
+using KH2Trainer.Core;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Buffers.Binary;
+var names=new[]{"obj/P_EX100.mset","obj/P_EX110.mset","obj/P_EX100_BTLF.mset","obj/P_EX020.mset"};
+var candidates=names.Concat(names.Select(n=>n.ToLowerInvariant())).ToDictionary(n=>Convert.ToHexString(MD5.HashData(Encoding.ASCII.GetBytes(n))).ToLowerInvariant());
+var reader=new AssetArchiveReader();var rows=new List<object>();int remaining=20000;
+foreach(string hed in Directory.GetFiles(args[0],"kh2_*.hed")) {
+ var index=reader.OpenPackageIndex(hed);
+ foreach(var entry in index.Entries.Where(e=>candidates.ContainsKey(e.NameHash)&&e.IsAvailable)) {
+  var info=reader.InspectPackageEntry(index,entry.Ordinal);await using var stream=await reader.OpenReadAsync(info.Original);
+  if(stream.Length>64*1024*1024)throw new Exception("probe asset budget");
+  byte[] bytes=new byte[checked((int)stream.Length)];await stream.ReadExactlyAsync(bytes);
+  string name=candidates[entry.NameHash],sha=Convert.ToHexString(SHA256.HashData(bytes));
+  Walk(bytes,0,$"{name}",hed,entry.Ordinal,sha);
+ }
+}
+Console.WriteLine(JsonSerializer.Serialize(new{scope="Read-only retail disk sampling; not provider/runtime binding",rows},new JsonSerializerOptions{WriteIndented=true}));
+void Walk(ReadOnlySpan<byte> b,int depth,string path,string hed,int ordinal,string sha) {
+ if(depth>5||b.Length<16||BinaryPrimitives.ReadUInt32LittleEndian(b)!=0x01524142)return;
+ int count=BinaryPrimitives.ReadInt32LittleEndian(b[4..]);if(count<0||16L+16L*count>b.Length)throw new Exception("probe BAR table");
+ for(int i=0;i<count;i++) {
+  if(--remaining<0)throw new Exception("probe node budget");
+  var row=b.Slice(16+16*i,16);int type=BinaryPrimitives.ReadUInt16LittleEndian(row);
+  uint start=BinaryPrimitives.ReadUInt32LittleEndian(row[8..]),size=BinaryPrimitives.ReadUInt32LittleEndian(row[12..]);
+  if(size==0)continue;if(start>b.Length||size>b.Length-start)throw new Exception("probe BAR span");
+  var part=b.Slice((int)start,(int)size);string next=path+"/"+i;
+  if(type!=9){Walk(part,depth+1,next,hed,ordinal,sha);continue;}
+  var evaluations=new List<object>();string? parseError=null;MotionPayload? motion=null;
+  try{motion=MotionPayloadReader.ReadType9Entry(part);foreach(float frame in new[]{0f,.5f,1f,10f,30f}){
+   try{var s=motion.Evaluate(frame);evaluations.Add(new{frame,ok=true,s.HasRoot,s.EffectiveFrame,matrix=s.Matrix.Values});}
+   catch(MotionPayloadException e){evaluations.Add(new{frame,ok=false,error=e.Message});}
+  }}catch(MotionPayloadException e){parseError=e.Message;}
+  var violations=new List<object>();
+  if(parseError!=null&&part.Length>224){var payload=part[144..];int tc=BinaryPrimitives.ReadInt32LittleEndian(payload[32..]),to=BinaryPrimitives.ReadInt32LittleEndian(payload[68..]);
+   if(tc>0&&tc<16385&&to>=0&&(long)to+tc*4<=payload.Length)for(int k=1;k<tc;k++) {
+    float previous=BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(payload[(to+(k-1)*4)..]));
+    float current=BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(payload[(to+k*4)..]));
+    if(!(current>previous))violations.Add(new{k,previous,current});
+   }
+  }
+  rows.Add(new{hed,ordinal,assetSha256=sha,path=next,length=part.Length,entrySha256=Convert.ToHexString(SHA256.HashData(part)),kind=motion?.Kind.ToString(),parseError,violations,evaluations});
+ }
+}

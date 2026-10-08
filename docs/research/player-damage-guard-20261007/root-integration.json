@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "date": "2026-10-07",
+  "status": "integrated_pending_central_release_build",
+  "files": {
+    "src/KH2Trainer.Bridge/CombatFeatures.inl": "db4c57d52b2cf5ef598fecc7f075713e2f40becc51f17f4f9aa951e92fc9e85e",
+    "src/KH2Trainer.Bridge/CombatGuardSupport.inl": "e691b0e46f2a441bae43967032d6a33a019971617a706fed0faf761ae698b836",
+    "src/KH2Trainer/Data/features.json": "e2ef5f241c3f726d87eae944f62af51345583f722a088ac68c57587a0c3e7dc7",
+    "src/KH2Trainer/ViewModels/Navigation.cs": "9537fcf82c0d7539cad0d849f6c0449d22d0c284a6ea6523cceba6b55a3cd186",
+    "tests/KH2Trainer.UiTests/GameplayAdapterChecks.cs": "22d29a807e5a41e2e52fdde4170b9fe4cba31de57ecc52c0f2ee04717d37bf63",
+    "tests/KH2Trainer.Bridge.Tests/ActorMovementGuardTests.cpp": "cdeffee20971f84eb85bb716147f78cc1d8bc364515df65e8135cf0209ad2855",
+    "tests/KH2Trainer.Bridge.Tests/LootGuardTests.cpp": "5b0ac2d9e8cb552dee626ecb7d5f0019a2eec7c5143844dca9f92a05cfcc66ab",
+    "tests/KH2Trainer.Bridge.Tests/TargetingGuardTests.cpp": "15c5b71f2146c223c5d80e0e8e8c6dfa671cadea576ac495e0f4679804b845d3",
+    "tests/KH2Trainer.Bridge.Tests/CollisionGuardTests.cpp": "917be1a46791bb66fa4a335bc44f9ee447f686e30a80e907f17af6977b003c06",
+    "tests/KH2Trainer.Bridge.Tests/DamageTuningTests.cpp": "91959b9e037b7d35c2c585cf7f179b79a871641d0ded6ebd258e303de380ec93"
+  },
+  "review": "Root reviewed native guard support/integration, full-bridge tests, host lease/decoder/timer integration and effective asset reader. No outstanding blocking code finding; validation is synthetic.",
+  "integration": [
+    "Guard callbacks remain module-pinned and forward to immutable original targets even after disable/fault. The early thread check precedes reading mutable guard lease state.",
+    "Exact native command1472/capability472 and owner473/474 share the frame publication with actor lifetime467..471. Manual owner0 activation is distinct from Crowd Control activation IDs.",
+    "The five isolated target/movement/loot/collision/damage-tuning suites compile actual PlayerRole/Lifetime dependencies but explicitly reject unused guard admission; the dedicated CombatGuard suite uses actual full bridge/controller/lifetime fixtures.",
+    "Six new actual-adapter checks cover a single coherent guard snapshot, split UInt64 values, ordinary-command cache invalidation, lost acknowledgements/observer faults, freshness and disconnect.",
+    "Core effective reader reviewed for bounded shared record decoding, provider order, independent decode/transform flags, immutable manifest and source evidence; it remains an offline API."
+  ],
+  "dedicatedNativeResult": {
+    "checks": 1870,
+    "failures": 0,
+    "receipt": "native-validation.json"
+  },
+  "dependentNativeSuites": {
+    "ActorMovementGuardTests": 2044,
+    "LootGuardTests": 220,
+    "TargetingGuardTests": 614,
+    "failures": 0,
+    "CollisionGuardTests": 595,
+    "DamageTuningTests": 868
+  },
+  "hostResult": {
+    "checks": 1915,
+    "failures": 0,
+    "receipt": "host-implementation.json"
+  },
+  "notValidated": [
+    "Live game and Twitch",
+    "Frame-exact protection time and between-snapshot same-generation changes",
+    "Direct script HP writes and all native death conditions",
+    "Runtime binding of effective bytes to loader caches and Drive constructor dispatch"
+  ],
+  "buildFollowup": "Initial central native run exposed missing new shared dependency includes in two more standalone fixtures (CollisionGuardTests and DamageTuningTests). Their fixtures now compile the same actual dependencies with guard admission disabled; targeted suites pass595/0 and868/0. Product sources were unchanged. The final release requires the complete central build. The first offscreen UI compilation also caught checked constant truncation in the new synthetic UInt64 fixture; its inputs now use runtime ulong variables. The corrected UI preflight passed2816 feature checks,25 actual-adapter checks,0 bindings/0 windows. Root inspected the practice/advanced screenshots and shortened only three automation argument labels so their low/high distinction is readable."
+}

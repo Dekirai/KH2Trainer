@@ -1,0 +1,81 @@
+Native movement journal — implementation notes, 7 October 2026
+
+Shipping code: MovementProtocol.h, MovementTransactionSupport.inl and the
+TrainerFrame integration in TrainerBridge.cpp. Protocol version4 is required.
+The separately tested ActorLifetimeSupport supplies observed actor generations.
+This implementation was tested with synthetic memory; no live game was run.
+
+Wire and publication
+
+Command1466 uses the existing reserved IPC area: request128 bytes at offset1024,
+response192 bytes at1152. Both headers use MOV1/schema1. Compile-time assertions
+check the native extents and relevant member offsets. IDs are binary UInt64 and
+movement values are exact Float32 bits. The request is copied before validation;
+the response is written before the common responseSequence acknowledgement.
+Scalar command arguments must be zero. All nonempty masks1..15 are accepted;
+the current reward recipes use walk/run3 or fall/jump12.
+
+Snapshot slots466..471 publish schema, actor generation low/high, bridge nonce
+low/high and observer status. They share the movement/control snapshot seqlock.
+A capability is not proof of readiness: absent or faulted observation publishes
+an unavailable generation and must stop host admission.
+
+Apply and reapply
+
+Every new mutation first reserves one of64 retained receipts. Acquire requires
+a current supported controllable actor, matching generation, writable fields,
+valid original/desired values and an exact match of every selected expected bit
+pattern. It rejects overlap with unresolved leases on that generation. It pins
+the generation and stores the original vector before committing scalar stores.
+There are32 lease slots. Active/pending/uncertain ownership is never evicted.
+
+Reapply requires the same client, effect owner, generation, lease and revision.
+An unchanged field retains its first original. Only a field that differs from
+the previous applied bits captures a new valid baseline. The entire expected
+cohort is checked before either field is changed. No native callback or yield
+occurs between that preflight and the stores. This is game-thread serialization,
+not a CPU-atomic vector operation against unrelated external writers.
+
+Receipt and uncertainty
+
+Until explicit acknowledgement, exact client/operation replays return their
+immutable result. Reusing an ID with different request bytes is rejected. A
+previous result wins even if the replay has expired or the host heartbeat is
+stale; those conditions prevent new writes, not recovery of a committed result.
+QueryOperation returns the saved result under the query's sequence/operation,
+with ReceiptOperationId identifying the original mutation.
+
+Commit catches only the trainer's scalar-write exceptions. A partial write
+marks its actual lease Uncertain and preserves originals and identity in the
+fault receipt. Tick, release and terminal collection cannot silently erase or
+write through it. Unexpected read/observer exceptions outside Commit still
+follow the existing engine fault path; they can leave no typed acknowledgement.
+The host must retain that uncertainty rather than classify a timeout as no write.
+
+Release and collection
+
+ReleaseIntent records native cleanup responsibility even while gameplay is
+unavailable. Actual restoration requires that same generation to be the current
+supported controllable actor. Still-applied fields restore their originals;
+different script values are preserved and marked superseded. Nonwritable fields
+can remain pending. An off-current living Sora is not treated as destroyed while
+Mickey is current. A proven retired generation can finish without actor writes.
+Observer loss produces Uncertain, not a fabricated destruction result.
+
+TrainerFrame drains pending cleanup before dispatch and after the normal feature
+ticks. Host expiry and global reset mark active leases for release. Terminal
+collection requires matching client/owner/revision and no other retained receipt
+references. Only Released/Superseded/Destroyed can be collected. Acknowledgements
+are idempotent. Missing acknowledgements can fill the bounded journal; the bridge
+then rejects new work rather than discarding originals.
+
+Known limits
+
+Lifetime proof depends on continuous observation of the verified constructor
+and destructor paths. The observer's own report defines its exact code/thread
+assumptions. An external writer storing the same Float32 bits is indistinguishable
+from the effect retaining them. The journal covers the four movement fields only;
+it does not extend lifetime guarantees to unrelated existing scalar effects.
+Live gameplay, modded asset graphs and Twitch network behavior were not validated
+by these tests. The accompanying review and validation receipts identify the
+actual source revisions and checks.

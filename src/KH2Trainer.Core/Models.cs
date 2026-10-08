@@ -79,11 +79,13 @@ public sealed record TrainerSnapshot
 {
     public static readonly TrainerSnapshot Disconnected = new();
     public bool Connected { get; init; }
+    public int ProtocolVersion { get; init; }
     public bool SceneReady { get; init; }
     public int Status { get; init; }
     public int ErrorCode { get; init; }
     public uint FrameCount { get; init; }
     public uint Flags { get; init; }
+    public GameplayState Gameplay => GameplayState.FromSnapshot(this, unchecked((uint)Environment.TickCount));
     public string Message { get; init; } = "Start KINGDOM HEARTS II FINAL MIX to connect.";
     public double[] Values { get; init; } = new double[BridgeProtocol.ValueCount];
     public ulong[] Valid { get; init; } = new ulong[BridgeProtocol.MaskWordCount];

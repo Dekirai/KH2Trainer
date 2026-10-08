@@ -26,6 +26,14 @@ public interface ITwitchHost
     void Notify(string message, bool isError);
 }
 
+/// <summary>Optional typed channel; no UInt64 identity or receipt is converted into feature arguments.</summary>
+public interface ITwitchMovementHost
+{
+    MovementOperationHandle? PendingMovement { get; }
+    Task<MovementCommandResult> ExecuteMovementAsync(MovementCommand command, CancellationToken cancellation = default);
+    Task<MovementCommandResult> ResolveMovementAsync(MovementOperationHandle handle, CancellationToken cancellation = default);
+}
+
 /// <summary>
 /// Lets Twitch effects use the trainer's game connection. Reads go to a fresh snapshot after each
 /// command, because an effect often checks the value it just changed.
@@ -38,12 +46,21 @@ internal sealed class TrainerGameControl(ITwitchHost shell) : IGameControl
 
     public bool IsConnected => shell.IsConnected && Current is { Connected: true, Status: >= 1 };
     public bool SceneReady => Current.SceneReady;
+    public GameplayState Gameplay => shell.IsConnected ? Current.Gameplay : GameplayState.Unavailable;
+    public MovementSnapshot Movement => shell.IsConnected && shell is ITwitchMovementHost
+        ? MovementSnapshot.FromSnapshot(Current, unchecked((uint)Environment.TickCount)) : MovementSnapshot.Unavailable;
+    public DamageGuardSnapshot DamageGuard => shell.IsConnected
+        ? DamageGuardSnapshot.FromSnapshot(Current, unchecked((uint)Environment.TickCount)) : DamageGuardSnapshot.Unavailable;
+    public LockOnPairSnapshot LockOnPair => shell.IsConnected
+        ? LockOnPairSnapshot.FromSnapshot(Current, unchecked((uint)Environment.TickCount)) : LockOnPairSnapshot.Unavailable;
+    public MovementOperationHandle? PendingMovement => (shell as ITwitchMovementHost)?.PendingMovement;
     public bool Supports(int capabilitySlot) => Current.Supports(capabilitySlot);
 
     public bool TryRead(int valueSlot, out double value)
     {
         var current = Current;
-        if (current.Connected && current.HasValue(valueSlot)) { value = current.Values[valueSlot]; return true; }
+        if (shell.IsConnected && GameplayState.HasFreshPublication(current, unchecked((uint)Environment.TickCount)) && current.HasValue(valueSlot))
+        { value = current.Values[valueSlot]; return true; }
         value = 0;
         return false;
     }
@@ -54,6 +71,20 @@ internal sealed class TrainerGameControl(ITwitchHost shell) : IGameControl
         finally { dirty = true; }
     }
 
+    public async Task<MovementCommandResult> ExecuteMovementAsync(MovementCommand command, CancellationToken cancellation = default)
+    {
+        if (shell is not ITwitchMovementHost host) throw new NotSupportedException("Typed movement ownership is unavailable.");
+        try { return await host.ExecuteMovementAsync(command, cancellation); }
+        finally { dirty = true; }
+    }
+
+    public async Task<MovementCommandResult> ResolveMovementAsync(MovementOperationHandle handle, CancellationToken cancellation = default)
+    {
+        if (shell is not ITwitchMovementHost host) throw new NotSupportedException("Typed movement ownership is unavailable.");
+        try { return await host.ResolveMovementAsync(handle, cancellation); }
+        finally { dirty = true; }
+    }
+
     private TrainerSnapshot Current
     {
         get
@@ -61,7 +92,8 @@ internal sealed class TrainerGameControl(ITwitchHost shell) : IGameControl
             long now = Environment.TickCount64;
             if (!dirty && now - readAt < 50) return snapshot;
             try { snapshot = shell.ReadGameSnapshot(); readAt = now; dirty = false; }
-            catch (Exception error) when (error is IOException or InvalidOperationException or ObjectDisposedException) { }
+            catch (Exception error) when (error is IOException or InvalidOperationException or ObjectDisposedException)
+            { snapshot = TrainerSnapshot.Disconnected; dirty = true; }
             return snapshot;
         }
     }
@@ -346,8 +378,8 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
     public bool HasActive => ActiveEffects.Count > 0;
     public bool HasPending => PendingEffects.Count > 0;
     public bool HasEvents => Events.Count > 0;
-    public string GameText => Engine.IsGameReady ? "The game is ready. Redemptions run right away."
-        : shell.IsConnected ? "Waiting for gameplay. Redemptions wait and timers pause during loading, menus and cutscenes."
+    public string GameText => Engine.IsGameReady ? "Player control is available. Compatible rewards can run."
+        : shell.IsConnected ? "Waiting for player control. Rewards follow their character and scene requirements."
         : "The trainer is not connected to the game. Redemptions wait until it is.";
     public bool GameReady => Engine.IsGameReady;
 
@@ -952,8 +984,10 @@ public sealed class ActiveEffectVm : Observable
     public bool HasDetail => !string.IsNullOrEmpty(info.Detail);
     public bool IsTimed { get; }
     public bool Starting => !info.Established;
+    public string? PauseReason => info.PauseReason;
     public double Fraction => info.DurationSeconds > 0 ? Math.Clamp(info.RemainingSeconds / info.DurationSeconds, 0, 1) : 0;
-    public string RemainingText => Starting ? "starting…" : IsTimed ? $"{Math.Ceiling(info.RemainingSeconds):0} s left" : "";
+    public string RemainingText => info.Paused ? IsTimed ? $"paused · {Math.Ceiling(info.RemainingSeconds):0} s left" : "paused"
+        : Starting ? "starting…" : IsTimed ? $"{Math.Ceiling(info.RemainingSeconds):0} s left" : "";
     public Brush Brush { get; }
     public ImageSource? Image { get; }
     public bool HasImage => Image != null;
@@ -963,7 +997,7 @@ public sealed class ActiveEffectVm : Observable
     public void Update(ActiveEffectInfo next)
     {
         info = next;
-        Changed(nameof(Title), nameof(Viewers), nameof(Detail), nameof(HasDetail), nameof(Starting), nameof(Fraction), nameof(RemainingText));
+        Changed(nameof(Title), nameof(Viewers), nameof(Detail), nameof(HasDetail), nameof(Starting), nameof(Fraction), nameof(RemainingText), nameof(PauseReason));
     }
 }
 

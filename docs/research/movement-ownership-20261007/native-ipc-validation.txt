@@ -1,0 +1,20 @@
+Typed movement IPC integration validation — 2026-10-07
+
+Status: frozen. PlayerBridgeTests passes 620 checks with 0 failures (318 new checks above the previous 302). MSVC /W4 produced no warnings.
+
+Changed source:
+tests/KH2Trainer.Bridge.Tests/PlayerBridgeTests.cpp
+SHA256: F61434E36F383FC870C3394DEB7C32B53EEAEBD42C0E634038C047522BCA0F9F
+
+Run from C:/Users/shinz/source/repos/KH2Trainer:
+& 'tests/KH2Trainer.Bridge.Tests/run-tests.ps1' -Suite PlayerBridgeTests -LogDirectory 'artifacts/agent-validation/native-ipc-20261007'
+Log: artifacts/agent-validation/native-ipc-20261007/native-PlayerBridgeTests.txt
+Log SHA256: D9553C204747AF77C6C668BA810A2421D9970C3B89BE5FFB11E741BBEC295210
+
+The new fixture includes the production TrainerBridge.cpp and sends packets through actual TrainerFrame. It verifies command 1466, RequestOffset 1024, ResponseOffset 1152, correlated responseSequence, packet preservation, response bounds and the completed snapshot seqlock.
+
+New requests cover zero, expired and future command timestamps; all eight scalar argument positions with nonzero, NaN and infinity values; zero/expired heartbeat; stale nonce and unsupported schema. A faulted synthetic lifetime observer produces an immutable ObserverFault receipt. Repeated requests retain that receipt despite common pre-rejections. A separately seeded prior Applied receipt tests the same replay rule without claiming that a new native mutation succeeded. Conflicting reuse of an operation ID cannot replace the retained receipt.
+
+Slots 466..471 expose schema 1, zero generation, exact nonce halves and Fault status. The fixture checks that no lease, Actor/status write or observer hook installation occurs, then restores its private/shared test state.
+
+Limits: synthetic memory only; no injection, game functions, UI or real hooks. Successful mutation and observer lifecycle behavior remain the responsibility of their dedicated suites. The completed-frame sequence assertion is not a concurrent interprocess memory-ordering proof. No production source, runner or protocol file changed, and no other suite or full build ran.

@@ -1,0 +1,223 @@
+{
+  "schema": 1,
+  "title": "Read-only gameplay state for timed Crowd Control rewards",
+  "date": "2026-10-07",
+  "repo": "C:/Users/shinz/source/repos/KH2Trainer",
+  "source": "src/KH2Trainer.Bridge/GameplayStateSupport.inl",
+  "source_sha256": "6a0aa352826d17c21a555b2f003a45fb81c9c01d59d55b70e7dfc9bf9b391083",
+  "test": "tests/KH2Trainer.Bridge.Tests/GameplayStateGuardTests.cpp",
+  "test_sha256": "714438e009b799a619ca3c754242a8866b354cb1ca89f49da5b79f08c719f6c8",
+  "validation": {
+    "synthetic_checks": 215,
+    "failures": 0,
+    "compiler": "MSVC x64 /std:c++17 /O2 /W4 /MT /EHsc",
+    "warnings": 0,
+    "live_tested": false,
+    "functions": 41,
+    "instructions": 1610,
+    "evidence_bytes": 6584,
+    "pinned_bodies": 29,
+    "pinned_bytes": 3796,
+    "independent_original_comparison": "gameplay_state_verification.json"
+  },
+  "api": [
+    "GameplayStateSnapshot(const TrainerContext&)",
+    "GameplayStateCapabilities()"
+  ],
+  "slots": {
+    "456": "Known",
+    "457": "Role0Unknown/1Sora/2Roxas/3Mickey/4Other",
+    "458": "Blockers",
+    "459": "IsControllable",
+    "460": "Native field state(-1unknown,0inactive,1running,2suspended,3closing)",
+    "461": "Character ID",
+    "462": "Form ID(-1unknown)",
+    "463": "Root-owned freshness timestamp; module does not publish it"
+  },
+  "blockers": {
+    "Unknown": 1,
+    "Loading": 2,
+    "Menu": 4,
+    "Cutscene": 8,
+    "Transition": 16,
+    "NoPlayer": 32,
+    "Dead": 64,
+    "InputBlocked": 128,
+    "TrainerFieldPause": 256,
+    "TrainerActorFreeze": 512
+  },
+  "integration": {
+    "position": "Include after WorldFeatures.inl and PlayerRoleSupport.inl. Call once per post-update snapshot on the engine thread with fresh TrainerContext.",
+    "publication": "Root publishes463 within the same seqlock. Core rejects missing/inconsistent values or age>1000ms.",
+    "semantics": "Known means the observer recognized the current native state; IsControllable means the supported current role passed all documented control gates and no blocker remains.",
+    "self_pause": "Trainer-owned field pause requires Held+globalsOwned+same scene+field2+capture1+own timer bit. Trainer actor freeze requires World ownership+same scene+global freezebit. Simultaneous external blockers are never removed.",
+    "ownership": "Observation does not modify native memory, World ownership, gameplay settings or save data."
+  },
+  "claims": [
+    {
+      "id": "menu.flag",
+      "addr": "0x1401515C0",
+      "Finding": "Native pause-menu flag is BYTE RVA9006B0. The menu entry task1515E0 changes the field module state to2 and acquires timer owner1.",
+      "Evidence": [
+        "docs/research/gameplay_state_evidence.json#functions[rva=1515C0]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=1515E0]"
+      ],
+      "Limitations": "Menu flag is distinct from cutscene/event presence."
+    },
+    {
+      "id": "menu.window",
+      "addr": "0x14019B780",
+      "Finding": "AC0F48 is the menu::Window task. Constructor19B780 starts it and19B9F0 clears it after the window list becomes empty;19BA60 reports presence.",
+      "Evidence": [
+        "docs/research/gameplay_state_evidence.json#functions[rva=19B780]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=19B9F0]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=19BA60]"
+      ],
+      "Limitations": "Classifies native windows as Menu; it is not an event/cutscene pointer."
+    },
+    {
+      "id": "transition.pointer",
+      "addr": "0x140152940",
+      "Finding": "Native transition predicate is QWORD RVA9BA928!=0.",
+      "Evidence": [
+        "docs/research/gameplay_state_evidence.json#functions[rva=152940]"
+      ],
+      "Limitations": "Loading flags and Drive transitions are additional independently observed blockers."
+    },
+    {
+      "id": "loading.reset",
+      "addr": "0x140154B50",
+      "Finding": "The reset/close sequence raises ABAC59 then ABAC58, clears input, changes modules and later clears both.",
+      "Evidence": [
+        "docs/research/gameplay_state_evidence.json#functions[rva=154B50]"
+      ],
+      "Limitations": "Not interpreted as a cutscene; module0/3 and scene-ready false are also conservative Loading states."
+    },
+    {
+      "id": "event.lifecycle",
+      "addr": "0x1403AC350",
+      "Finding": "Creates a192-byte event context, publishes2A11478, starts the event resource path and obtains timer owner4.3AC0E0 frees/clears it and releases timer ownership.",
+      "Evidence": [
+        "docs/research/gameplay_state_evidence.json#functions[rva=3AC350]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=3AC0E0]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=3AC220]"
+      ],
+      "Limitations": "Any live native event context pauses timed reward admission even if an event mode permits limited input; no arbitrary event resource dereference."
+    },
+    {
+      "id": "input.shared",
+      "addr": "0x1403B2340",
+      "Finding": "Controller input is suppressed and movement zeroed when descriptor vcall+120 returnsfalse, controller+36 bit1 is set or2A10500 is nonzero.",
+      "Evidence": [
+        "docs/research/gameplay_state_evidence.json#functions[rva=3B2340]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=3A57F0]"
+      ],
+      "Limitations": "Controller must be the native attached main player controller; unknown replacements fail closed."
+    },
+    {
+      "id": "input.roles",
+      "addr": "0x140404C50",
+      "Finding": "Sora/Roxas vcall+120 wrapper404C50 and rescue Mickey415280 both call3A8E90.",
+      "Evidence": [
+        "docs/research/gameplay_state_evidence.json#functions[rva=404C50]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=415280]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=3A8E90]"
+      ],
+      "Limitations": "Runtime verifies the vtable+120 pointer and complete wrapper bytes. Role identity itself is delegated to PlayerRoleSupport."
+    },
+    {
+      "id": "input.predicate",
+      "addr": "0x1403D6560",
+      "Finding": "3A8E90 checks mission+4 bit0x10 clear, then3D6560/3BFA40 check category-disable bit, actor+292 bit0x200000 clear, no transition, actor+2488 bit0x80, tutorial flag2A16328 clear, global2A11400 bit0x100000 clear.",
+      "Evidence": [
+        "docs/research/gameplay_state_evidence.json#functions[rva=3A8E90]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=3A3A70]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=3D6560]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=3BFA40]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=3B5DC0]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=3BBEA0]"
+      ],
+      "Limitations": "Category0 specialization is only used after the independently validated native player bitactor1736&0x80. Passing this is not a guarantee that every particular action can be executed."
+    },
+    {
+      "id": "input.owner",
+      "addr": "0x1403A7A40",
+      "Finding": "Shared player construction binds actor3520/3536 to2A10620.3FD830 binds controller2784/3128 to the player;3B26B0 stores its pad at2792.",
+      "Evidence": [
+        "docs/research/gameplay_state_evidence.json#functions[rva=3A7A40]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=3AA850]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=3FD830]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=3B26B0]"
+      ],
+      "Limitations": "Unknown/script-replaced controllers are rejected instead of treated as controllable. The observer never calls the native attach functions."
+    },
+    {
+      "id": "input.pad",
+      "addr": "0x14039C6A0",
+      "Finding": "Pad+80 bit1 causes input fields to be zeroed.39B640 acquires this lock for both input slots;39B6D0 clears it.",
+      "Evidence": [
+        "docs/research/gameplay_state_evidence.json#functions[rva=39C6A0]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=39B640]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=39B6D0]"
+      ],
+      "Limitations": "Pad identity is checked against both actor3512 and controller2792; input values being zero is not by itself a blocker."
+    },
+    {
+      "id": "actor.stop",
+      "addr": "0x1403BFD30",
+      "Finding": "Actor core updates are bypassed for10080000flags, native actor stop, global2A11400 bit20 and menu popup stop38EE40.3BAAD0 additionally considers actor+1612 bit1, certain summon states and flag0x400.",
+      "Evidence": [
+        "docs/research/gameplay_state_evidence.json#functions[rva=3BFD30]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=3BAAD0]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=40A910]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=38EE40]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=3BAA80]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=3DE250]"
+      ],
+      "Limitations": "Global bit20 is reported separately as TrainerActorFreeze only when WorldFeatures still owns it in the same scene. Identical concurrent native writes have no generation token."
+    },
+    {
+      "id": "tutorial",
+      "addr": "0x1403BB600",
+      "Finding": "System tutorial window construction sets2A16328 and acquires timer owner8.",
+      "Evidence": [
+        "docs/research/gameplay_state_evidence.json#functions[rva=3BB600]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=3D6560]"
+      ],
+      "Limitations": "Observer reports both Menu and InputBlocked for the tutorial lock."
+    },
+    {
+      "id": "timer.ambiguity",
+      "addr": "0x140157130",
+      "Finding": "Timer ownership is an opaque OR-mask.157110 releases bits;4335D0 can request owner2 without proving a player-control lock.",
+      "Evidence": [
+        "docs/research/gameplay_state_evidence.json#functions[rva=157130]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=157110]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=4335D0]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=19BE10]"
+      ],
+      "Limitations": "Unexplained foreign timer ownership is conservatively Unknown. This may pause rewards in a script-paused-timer situation where some controls remain usable."
+    },
+    {
+      "id": "loading.scene_lifecycle",
+      "addr": "0x140152680",
+      "Finding": "152680 raises 9BA8D1 only during the temporary event/preload phase, then clears it before final scene initialization. 152A90 clears ready9BA8D0 during room teardown. 152990 installs pending transition9BA928 and acquires the input lock.",
+      "Evidence": [
+        "docs/research/gameplay_state_evidence.json#functions[rva=152680]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=152A90]",
+        "docs/research/gameplay_state_evidence.json#functions[rva=152990]"
+      ],
+      "Limitations": "9BA8D1 is a temporary scene/event loading phase, not a generic menu or cutscene flag. It contributes Loading; the local variable named closing does not assert a narrower native name."
+    }
+  ],
+  "limitations": [
+    "Static analysis and synthetic tests only; no live injection/UI/gameplay tests were performed.",
+    "The role dependency is tested in the separate PlayerRole/Drive suite. The dedicated gameplay matrix stubs only that dependency and World ownership.",
+    "Recognized native event presence is conservatively considered a Cutscene blocker, including interactive event modes.",
+    "Arbitrary modded code/vtables or unrecognized controller replacements return Unknown. The current build and original executable hash are the support boundary.",
+    "Concurrent third-party writes can occur between observations. Fresh on-engine-thread reads and SEH fail-closed handling do not claim a lock against arbitrary foreign threads.",
+    "No blanket assertion that AC183C camera bank or2A0D628 background resource request means cutscene/loading; neither is used for that classification.",
+    "Native timer-owner values alone do not prove player control availability; foreign owners conservatively keep Unknown.",
+    "Trainer bit ownership inherits the existing WorldFeatures scene binding and has no native generation token for undetectable same-value ownership replacement."
+  ]
+}
