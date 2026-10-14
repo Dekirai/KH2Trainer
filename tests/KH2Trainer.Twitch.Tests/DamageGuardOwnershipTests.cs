@@ -11,11 +11,12 @@ internal static class DamageGuardOwnershipTests
         public DateTimeOffset Now = new(2026, 10, 7, 12, 0, 0, TimeSpan.Zero);
         public bool PauseTimers = true;
         public double MaxWaitSeconds = 600;
+        public ConflictBehavior Conflict = ConflictBehavior.Queue;
         public Harness(IReadOnlyList<FeatureDefinition> features, PlayerRole role = PlayerRole.Sora)
         {
             Game = new(features) { Gameplay = new(true, role, GameplayBlockers.None) };
             Engine = new(Game, new(features), EffectCatalog.All,
-                key => { var d = EffectCatalog.Find(key)!; return new(d.Title, d.DurationSeconds, d.Amount, SameEffectBehavior.Extend, ConflictBehavior.Queue); },
+                key => { var d = EffectCatalog.Find(key)!; return new(d.Title, d.DurationSeconds, d.Amount, SameEffectBehavior.Extend, Conflict); },
                 () => new(TimeSpan.FromSeconds(MaxWaitSeconds), 600, PauseTimers), Sink, _ => { }, _ => Task.CompletedTask);
         }
         public void Redeem(string id = "a", string key = "invincible") => Engine.Submit(new(id, key, "Viewer", "", Now));
@@ -188,7 +189,11 @@ internal static class DamageGuardOwnershipTests
             h.Redeem("b", "guardian-angel"); await h.Tick();
             check(!h.Sink.IsFulfilled("b") && h.Engine.PendingEffects.Count == 1 && h.Game.DamageGuard.Mode == DamageGuardMode.Full,
                 "lethal guard: the shared defense group queues Guardian Angel behind Invincibility");
+            await h.End(); await h.Tick();
+            check(h.Sink.IsFulfilled("b") && !h.Sink.IsRefunded("b") && h.Game.DamageGuard.Mode == DamageGuardMode.LethalOnly,
+                "lethal guard: the queued Guardian Angel starts once Invincibility released its guard");
         }
+        await ReplaceAsync(features, check);
         foreach (var (key, manual) in new[] { ("guardian-angel", DamageGuardMode.Full), ("guardian-angel", DamageGuardMode.LethalOnly), ("invincible", DamageGuardMode.LethalOnly) })
         {
             var h = new Harness(features); h.Game.SetManualGuard(true, mode: manual); h.Redeem("a", key); await h.Tick();
@@ -213,6 +218,51 @@ internal static class DamageGuardOwnershipTests
         check(guardian.AllowedRoles == EffectPlayerRoles.FieldPlayers && guardian.Group == "defense" && guardian.Category == RewardCategory.Help &&
             guardian.Prompt.Contains("falls", StringComparison.Ordinal) && guardian.Prompt.Contains("HP stays", StringComparison.Ordinal),
             "lethal guard: Guardian Angel is a field-player defense Help reward that states what still counts");
+    }
+
+    // Conflict = Replace: the two defense rewards take over from each other. Only the replaced reward's own
+    // owner is ignored by the start check; the new owner is ensured only after that owner was released.
+    private static async Task ReplaceAsync(IReadOnlyList<FeatureDefinition> features, Action<bool, string> check)
+    {
+        static ulong OwnerOf(double[] a) => (uint)a[1] | ((ulong)(uint)a[2] << 32);
+        foreach (var (first, second, mode) in new[] { ("invincible", "guardian-angel", DamageGuardMode.LethalOnly), ("guardian-angel", "invincible", DamageGuardMode.Full) })
+        {
+            var h = new Harness(features) { Conflict = ConflictBehavior.Replace }; h.Redeem("a", first); await h.Tick();
+            ulong previous = h.Game.GuardOwner;
+            h.Redeem("b", second); await h.Tick();
+            check(h.Sink.IsFulfilled("a") && h.Sink.IsFulfilled("b") && h.Sink.Refunded.Count == 0 && h.Engine.ActiveEffects.Single().Key == second &&
+                h.Game.DamageGuard.Mode == mode && h.Game.GuardOwner is not 0 && h.Game.GuardOwner != previous && h.Engine.PendingCleanupCount == 0,
+                $"guard replace: {second} replaces a running {first} instead of refunding");
+            var calls = h.Game.Calls("combat.damage_guard_owned").ToArray();
+            check(calls.Length == 3 && calls[1][0] == 0 && OwnerOf(calls[1]) == previous && calls[2][0] == 1 && OwnerOf(calls[2]) == h.Game.GuardOwner,
+                $"guard replace: {first}'s owner is released before {second}'s owner is ensured");
+        }
+        foreach (var (first, second, mode) in new[] { ("invincible", "guardian-angel", DamageGuardMode.LethalOnly), ("guardian-angel", "invincible", DamageGuardMode.Full) })
+        {
+            var h = new Harness(features) { Conflict = ConflictBehavior.Replace }; h.Redeem("a", first); await h.Tick();
+            ulong previous = h.Game.GuardOwner;
+            h.Game.Reject = (id, a) => id == "combat.damage_guard_owned" && a[0] == 0;
+            h.Redeem("b", second); await h.Tick(); await h.Tick(1); await h.Tick(1);
+            check(h.Game.GuardOwner == previous && h.Engine.ActiveEffects.Count == 0 && h.Engine.PendingEffects.Single().Status == "Waiting until the previous effect is undone" &&
+                h.Engine.PendingCleanupCount == 1 && !h.Sink.IsRefunded("b") && h.Game.Calls("combat.damage_guard_owned").Count(a => a[0] == 1) == 1,
+                $"guard replace: {second} waits without an ensure while {first}'s owner still holds protection");
+            h.Game.Reject = null; await h.Tick(1);
+            check(h.Sink.IsFulfilled("b") && h.Engine.ActiveEffects.Single().Key == second && h.Game.DamageGuard.Mode == mode &&
+                h.Game.GuardOwner is not 0 && h.Game.GuardOwner != previous && h.Engine.PendingCleanupCount == 0,
+                $"guard replace: {second} starts once {first}'s owner was released");
+        }
+        foreach (ulong manual in new ulong[] { 0, 0xFEDCBA9876543210 })
+        {
+            // The running reward lost its guard to manual or foreign protection; replacing it would not release that.
+            var h = new Harness(features) { Conflict = ConflictBehavior.Replace }; h.Redeem("a", "invincible"); await h.Tick();
+            h.Game.SetManualGuard(true, manual); await h.Tick();
+            int ensures = h.Game.Calls("combat.damage_guard_owned").Count(a => a[0] == 1);
+            h.Redeem("b", "guardian-angel"); await h.Tick();
+            check(h.Sink.Refunded.SingleOrDefault(r => r.Redemption.Id == "b").Reason == "Damage protection is already active outside this reward." &&
+                h.Engine.ActiveEffects.Single().Key == "invincible" && h.Game.GuardOwner == manual && h.Game.DamageGuard.Mode == DamageGuardMode.Full &&
+                h.Game.Calls("combat.damage_guard_owned").Count(a => a[0] == 1) == ensures && h.Game.Calls("combat.damage_guard_owned").All(a => a[0] == 1),
+                $"guard replace: protection held by owner {manual:X} is not the replaced reward's and still refunds without takeover");
+        }
     }
 
     private static void DecoderChecks(Action<bool, string> check)

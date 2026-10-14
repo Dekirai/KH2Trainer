@@ -10,6 +10,8 @@ internal sealed class DamageGuardEffectLease(IGameControl game, DamageGuardMode 
     private ulong intentBridge;
     private bool stopping;
     private ActorMovementIdentity confirmed;
+    /// <summary>The native owner this lease publishes; never zero.</summary>
+    public ulong Owner => owner;
     public bool EverApplied { get; private set; }
     public bool PendingCleanup => intentBridge != 0;
     public string? Detail { get; private set; }
@@ -24,11 +26,14 @@ internal sealed class DamageGuardEffectLease(IGameControl game, DamageGuardMode 
         }
     }
 
-    public static Readiness StartReadiness(IGameControl game)
+    /// <param name="releasing">The lease a replacing reward ends first. Only its own published owner is not foreign
+    /// protection; the new lease still ensures only once that owner's guard is off (<see cref="MaintainAsync"/>).</param>
+    public static Readiness StartReadiness(IGameControl game, DamageGuardEffectLease? releasing = null)
     {
         var sample = game.DamageGuard;
         if (!game.Supports(472) || !sample.CanEnsure) return Readiness.Wait("Waiting for fresh damage-guard ownership and character information");
-        return sample.Effective ? Readiness.Reject("Damage protection is already active outside this reward.") : Readiness.Ready;
+        bool foreign = sample.Effective && (releasing == null || sample.Owner != releasing.Owner);
+        return foreign ? Readiness.Reject("Damage protection is already active outside this reward.") : Readiness.Ready;
     }
 
     public async Task MaintainAsync(bool mayEnsure, bool release = false)

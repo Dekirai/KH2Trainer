@@ -202,6 +202,9 @@ public sealed class EffectContext
     // Only an admission preview: commands still use ControlReadiness with their own ownership.
     internal Readiness ControlAfterRelease(EffectContext releasing) => ControlReadinessCore(false, releasing);
 
+    /// <summary>The running effect a Replace admission ends before this one starts. Only the start check reads it.</summary>
+    internal EffectContext? Releasing { get; set; }
+
     private GameplayBlockers OwnedPauseBlocker => Definition.SelfPauseFeature is { } id &&
         owned.Any(o => o.Feature.Id == id && o.Written && Near(o.Applied, 1)) && Read(id) == 1
             ? Definition.SelfPauseBlocker : GameplayBlockers.None;
@@ -248,7 +251,7 @@ public sealed class EffectContext
         await lockOnPairLease.ApplyAsync(this);
     }
     internal ActorMovementIdentity ActorLeaseIdentity => movementLease != null ? game.Movement.Identity : damageGuardLease?.Identity ?? default;
-    internal Readiness DamageGuardStartReadiness => DamageGuardEffectLease.StartReadiness(game);
+    internal Readiness DamageGuardStartReadiness => DamageGuardEffectLease.StartReadiness(game, Releasing?.damageGuardLease);
     internal Readiness DamageGuardActiveReadiness => damageGuardLease?.Readiness ?? Readiness.Wait("Waiting for damage protection");
     internal async Task StartDamageGuardAsync(DamageGuardMode mode)
     {

@@ -485,6 +485,8 @@ public sealed class EffectEngine
     private Readiness Check(EffectContext context, bool includeEffectCheck, EffectContext? releasing = null)
     {
         var definition = context.Definition;
+        // A Replace admission previews the game after the replaced effect let go of what it owns.
+        context.Releasing = releasing;
         var control = releasing == null ? context.ControlReadiness(allowOwnPause: false) : context.ControlAfterRelease(releasing);
         if (control.Kind != ReadinessKind.Ready)
         {
