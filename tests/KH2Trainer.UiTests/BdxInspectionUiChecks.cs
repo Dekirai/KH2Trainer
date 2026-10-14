@@ -135,12 +135,13 @@ internal static class BdxInspectionUiChecks
             CheckNativeCatalog(output,app);
             CheckExpandedCatalog(output,app);
             CheckBankInventory(output,app);
+            CheckEventRolesAndText(output,app);
             Settle(panel);Check(log.ToString().Length==0,"BDX WPF binding errors: "+log);
             Check(app.Windows.Count==0&&app.MainWindow==null,"offscreen checks create no windows");
             Check(File.ReadAllBytes(loose).SequenceEqual(script)&&File.ReadAllBytes(unknown).SequenceEqual(script),"inspection preserves source bytes");
-            var report=new {success=true,checks,renders=8,width=780,bindingErrors=0,windowCount=app.Windows.Count,
-                renderFiles=new[]{"script-780.png","script-event-780.png","script-error-780.png","script-native-catalog-780.png","script-native-context-780.png","script-native-equipment-780.png","script-native-banks-780.png","script-native-query-780.png"},
-                scope="Actual BDX view and viewmodel, synthetic loose/BAR/unknown payloads, native catalog labels/details/search, null and context-dependent metadata, long-name wrapping, event scrolling, virtualization, cancellation, replaced selection, failures and dark offscreen rendering. No window, script execution, game, input or process attachment."};
+            var report=new {success=true,checks,renders=9,width=780,bindingErrors=0,windowCount=app.Windows.Count,
+                renderFiles=new[]{"script-780.png","script-event-780.png","script-error-780.png","script-native-catalog-780.png","script-native-context-780.png","script-native-equipment-780.png","script-native-banks-780.png","script-native-query-780.png","script-events-780.png"},
+                scope="Actual BDX view and viewmodel, synthetic loose/BAR/unknown payloads, native catalog labels/details/search, null and context-dependent metadata, conditional event roles, stored text operands, long-name wrapping, event scrolling, virtualization, cancellation, replaced selection, failures and dark offscreen rendering. No window, script execution, game, input or process attachment."};
             File.WriteAllText(Path.Combine(output,"report.json"),JsonSerializer.Serialize(report,new JsonSerializerOptions {WriteIndented=true}));return report;
         }
         finally {
@@ -242,6 +243,48 @@ internal static class BdxInspectionUiChecks
         Check(vm.ScriptInstructionDetails.Contains("success byte")&&vm.ScriptInstructionDetails.Contains("does not guarantee a fresh result"),"query details expose discarded status and shared-output limitations");
         Render(panel,output,"script-native-query-780.png");
         Check(File.ReadAllBytes(path).SequenceEqual(bytes),"expanded bank inspection preserves source bytes");
+    }
+    private static void CheckEventRolesAndText(string output,Application app)
+    {
+        // Events 0, 10, 27, an unknown ID and a shadowed duplicate; event 0 pushes the stored name at PC 41.
+        (int Id,int Pc)[] events=[(0,30),(10,33),(27,36),(99,39),(10,40)];
+        ushort[] words=[0x00E0,41,0x0049,0x004A,15,0x0049,0x004A,87,0x0049,0x0049,0x0049,0x656C,0x7661,0x0065];
+        byte[] bytes=new byte[16+2*(30+words.Length)];"Event roles"u8.CopyTo(bytes);
+        BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(16),128);BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(20),512);
+        for(int i=0;i<events.Length;i++) {
+            BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(28+8*i),events[i].Id);BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(32+8*i),events[i].Pc);
+        }
+        for(int n=0;n<words.Length;n++)BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(76+n*2),words[n]);
+        string path=Path.Combine(output,"event-roles.bdx");File.WriteAllBytes(path,bytes);
+        using var vm=new AssetExplorerViewModel(_=>{});Await(vm.OpenFileAsync(path));
+        Check(vm.ScriptRows.Count==7&&vm.ScriptEvents.Count==5,"event-role fixture decodes every first entry and keeps the shadowed row");
+        string[] labels=vm.ScriptEvents.Select(e=>e.Label).ToArray();
+        Check(labels[0]=="Event 0 → PC 30 · Actor setup, if Actor-bound"&&labels[1]=="Event 10 → PC 33 · Native message, if delivered"&&
+            labels[2]=="Event 27 → PC 36 · Contact hit, if delivered","known event IDs carry conditional role labels");
+        Check(labels[3]=="Event 99 → PC 39"&&labels[4]=="Event 10 → PC 40 (shadowed by first entry)","unknown and shadowed entries get no invented role");
+        var view=new AssetExplorerView {DataContext=vm};var panel=Panel(view,app);Settle(panel);
+        var details=(TextBlock)view.FindName("ScriptEventDetails");
+        Check(vm.SelectedScriptEvent==vm.ScriptEvents[0]&&details.Text==vm.ScriptEventDetails&&details.Text.Contains("@ADR")&&
+            details.Text.Contains("native call convention, not proof this handler runs"),"first event details reach the bound text with the scope wording");
+        ((ComboBox)view.FindName("ScriptEventPicker")).SelectedItem=vm.ScriptEvents[2];Settle(panel);
+        Check(details.Text.Contains("record, ID, Actor")&&details.Text.Contains("motion-event27-20261008")&&vm.SelectedScriptInstruction?.Instruction.Pc==36,
+            "event picker shows the selected role details and jumps to its entry");
+        vm.SelectedScriptEvent=vm.ScriptEvents[3];
+        Check(vm.ScriptEventDetails.Contains("no catalogued native caller")&&vm.ScriptEventDetails.Contains("not proof this handler runs"),"unknown event details admit the unknown caller");
+        vm.SelectedScriptEvent=vm.ScriptEvents[4];
+        Check(vm.ScriptEventDetails.Contains("shadowed")&&vm.SelectedScriptInstruction==null,"shadowed event details explain native lookup");
+        vm.ScriptFilter="LEAVE";
+        Check(vm.ScriptRows.Count==1&&vm.ScriptRows[0].Operands=="script PC 41 · stored bytes as text: \"leave\""&&vm.ScriptRows[0].Instruction.StoredText=="leave",
+            "stored string operand is shown and searchable without case sensitivity");
+        vm.SelectedScriptInstruction=vm.ScriptRows[0];
+        Check(vm.ScriptInstructionDetails.Contains("stored bytes as text")&&vm.ScriptInstructionDetails.Contains("decides how they are used"),"stored text details keep their limitation");
+        vm.ScriptFilter="3B6670";vm.SelectedScriptInstruction=vm.ScriptRows.Single();Settle(panel);
+        Check(vm.SelectedScriptInstruction.NativeCall=="1:87 · Call Actor helper RVA 0x3B6670"&&vm.ScriptInstructionDetails.Contains("unresolved")&&
+            vm.ScriptInstructionDetails.Contains("Declared operands: 4"),"Event27 helper names only its operand ABI");
+        vm.ScriptFilter="logical motion";
+        Check(vm.ScriptRows.Count==1&&vm.ScriptRows[0].NativeCall=="1:15 · Read DWORD at decoded operand +384","inferred +384 meaning is searchable but not the call name");
+        vm.ScriptFilter="";Render(panel,output,"script-events-780.png");
+        Check(File.ReadAllBytes(path).SequenceEqual(bytes),"event-role inspection preserves source bytes");
     }
     private static Border Panel(AssetExplorerView view,Application app)
     {

@@ -117,14 +117,16 @@
      </StackPanel>
      <Grid Grid.Row="1" Margin="0,0,0,12">
       <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
       <TextBlock Text="EVENT" Style="{StaticResource Text.Overline}" VerticalAlignment="Center" Margin="0,0,12,0"/>
       <ComboBox x:Name="ScriptEventPicker" Grid.Column="1" ItemsSource="{Binding ScriptEvents}" SelectedItem="{Binding SelectedScriptEvent,Mode=TwoWay}"
                 DisplayMemberPath="Label" IsEnabled="{Binding HasScript}" SelectionChanged="ScriptEvent_SelectionChanged" AutomationProperties.Name="BDX event"
-                ToolTip="Jump to a declared event entry. Later duplicates of an event ID are shadowed by its first entry."/>
+                ToolTip="Jump to a declared event entry. Later duplicates of an event ID are shadowed by its first entry. Known IDs show a native call convention, not proof this handler runs."/>
+      <TextBlock x:Name="ScriptEventDetails" Grid.Row="1" Grid.Column="1" Text="{Binding ScriptEventDetails}" Style="{StaticResource Text.Small}" TextWrapping="Wrap" Margin="0,6,0,0"/>
      </Grid>
      <DockPanel Grid.Row="2" Margin="0,0,0,10">
       <TextBlock DockPanel.Dock="Right" Text="{Binding ScriptCountText}" Style="{StaticResource Text.Small}" VerticalAlignment="Center" Margin="12,0,0,0"/>
-      <TextBox x:Name="ScriptSearch" Text="{Binding ScriptFilter,UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBox.Search}" Tag="Find PC, operation, native name or bank:index"
+      <TextBox x:Name="ScriptSearch" Text="{Binding ScriptFilter,UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBox.Search}" Tag="Find PC, operation, stored text, native name or bank:index"
                IsEnabled="{Binding HasScript}" AutomationProperties.Name="Filter BDX instructions"/>
      </DockPanel>
      <Grid Grid.Row="3">

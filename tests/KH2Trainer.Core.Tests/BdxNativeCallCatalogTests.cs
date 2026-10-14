@@ -11,7 +11,7 @@ internal static class BdxNativeCallCatalogTests
             try { call(); Check(false, text); }
             catch (ArgumentOutOfRangeException) { Check(true, text); }
         }
-        Check(catalog.DescriptorCount == 1063 && catalog.AnnotatedCount == 256, "embedded snapshot loads with bounded descriptor and annotation counts");
+        Check(catalog.DescriptorCount == 1063 && catalog.AnnotatedCount == 258, "embedded snapshot loads with bounded descriptor and annotation counts");
         var integer = catalog.Lookup(0, 16);
         Check(integer.DescriptorRva == 0x752F00 && integer.HandlerRva == 0x41DBF0 && integer.Flags == 0x40000001 &&
             integer.DeclaredOperandCount == 1 && integer.HasReturnSlot == true, "original RNG descriptor identity and flags are preserved");
@@ -123,6 +123,18 @@ internal static class BdxNativeCallCatalogTests
             catalog.Lookup(1,367).Notes.Contains("Actor memory is read before") &&
             catalog.Lookup(1,147).Summary.Contains("0x756B48"),
             "shared query result exposes stale-output, arithmetic and precheck-pointer limitations");
+        var motionRead = catalog.Lookup(1, 15);
+        Check(motionRead.HandlerRva == 0x42B480 && motionRead.DeclaredOperandCount == 1 && motionRead.HasReturnSlot == true &&
+            motionRead.Summary.Contains("+384") && motionRead.Summary.Contains("@INT") && motionRead.Evidence.Contains("motion-event27-20261008"),
+            "Event27 gate read keeps its operand ABI and evidence");
+        Check(motionRead.Notes.Contains("Inference, not established") && motionRead.Notes.Contains("logical motion ID") &&
+            !motionRead.DisplayName.Contains("motion"), "the +384 logical motion ID link is marked as an inference, not a name");
+        var actorHelper = catalog.Lookup(1, 87);
+        Check(actorHelper.HandlerRva == 0x42D540 && actorHelper.DeclaredOperandCount == 4 && actorHelper.HasReturnSlot == true &&
+            actorHelper.Summary.Contains("DWORD +4 as Actor") && actorHelper.Summary.Contains("@ADR"),
+            "Event27 Actor helper keeps its four-operand wrapper ABI and encoded result");
+        Check(actorHelper.Notes.Contains("effect of RVA 0x3B6670 is unresolved") && actorHelper.Notes.Contains("claims no gameplay effect") &&
+            actorHelper.DisplayName == "Call Actor helper RVA 0x3B6670", "1:87 claims no native effect");
         Reject(() => catalog.Lookup(-1, 0), "negative bank rejected by opcode representation");
         Reject(() => catalog.Lookup(1024, 0), "bank wider than ten bits rejected");
         Reject(() => catalog.Lookup(0, -1), "negative index rejected");

@@ -277,7 +277,7 @@ public sealed class AssetArchiveReader
         0 => "Dummy", 1 => "Binary/container", 2 => "List (context dependent)", 3 => "BDX script",
         4 => "Model", 7 => "Model texture", 8 => "DPX effects", 9 => "Motion", 10 => "TIM2 texture",
         17 => "Animation container", 18 => "PAX effects", 20 => "Motion set", 22 => "Event",
-        24 => "IMGD image", 25 => "SEQD sequence", 28 => "Layout", 29 => "IMGZ images",
+        23 => "Collision/contact definitions", 24 => "IMGD image", 25 => "SEQD sequence", 28 => "Layout", 29 => "IMGZ images",
         30 => "Animation map", 31 => "SEB audio", 32 => "WD audio", 34 => "IOP voice",
         46 => "BAR container (type 46)", 48 => "VAG audio", _ => $"Type {type} (0x{type:X4})"
     };

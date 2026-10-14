@@ -12,7 +12,7 @@ public sealed record BdxInstructionRow(BdxInstruction Instruction)
     public string OffsetText => $"0x{Instruction.FileOffset:X}";
     public string Words => string.Join(" ",Instruction.Words.Select(w=>$"{w:X4}"));
     public string Operation => Instruction.Operation;
-    public string Operands => Instruction.Operands;
+    public string Operands => Instruction.StoredText is {} text ? $"{Instruction.Operands} · {BdxInstruction.StoredTextLabel}: \"{text}\"" : Instruction.Operands;
     public string NativeCall => NativeInfo is {} info ? $"{info.Bank}:{info.Index}"+(info.HasAnnotation?$" · {info.DisplayName}":"") : "";
     public string SearchText => $"{PcText} {OffsetText} {Words} {Operation} {Operands} {NativeCall} {NativeInfo?.SearchText}";
     public string Edges => string.Join("\n",Instruction.Edges.Select(e=>e.Kind switch {
@@ -27,7 +27,8 @@ public sealed record BdxInstructionRow(BdxInstruction Instruction)
     public string Details
     {
         get {
-            return $"PC {PcText} · file {OffsetText} · {Instruction.WidthInWords} words\n{Words}\n{Operation}\n{Operands}\n\n"+
+            return $"PC {PcText} · file {OffsetText} · {Instruction.WidthInWords} words\n{Words}\n{Operation}\n{Operands}\n"+
+                (Instruction.StoredText==null?"":"The address lies outside the header and every decoded instruction. These are stored bytes; the native call that receives the address decides how they are used.\n")+"\n"+
                 (Edges.Length>0?Edges:"No statically followed successor. See diagnostics for invalid or unresolved operations.")+
                 (NativeInfo is {} info?"\n\n"+info.Details:"");
         }
@@ -35,7 +36,11 @@ public sealed record BdxInstructionRow(BdxInstruction Instruction)
 }
 public sealed record BdxEventRow(BdxEvent Event)
 {
-    public string Label=>$"Event {Event.Id} → PC {Event.Pc}"+(Event.IsFirstForId?"":" (shadowed by first entry)");
+    // Native lookup never selects a shadowed entry, so only first entries carry a role.
+    public BdxKnownEvent? Known { get; } = Event.IsFirstForId ? BdxKnownEvents.Find(Event.Id) : null;
+    public string Label=>$"Event {Event.Id} → PC {Event.Pc}"+(Known is {} known?$" · {known.Title}":"")+(Event.IsFirstForId?"":" (shadowed by first entry)");
+    public string Details=>!Event.IsFirstForId?$"Event {Event.Id} at PC {Event.Pc} is shadowed. Native event lookup selects the first entry for this ID.":
+        Known?.Details??$"Event {Event.Id} has no catalogued native caller. Its caller and operands are unknown.\n\n{BdxKnownEvents.Scope}";
 }
 
 public sealed partial class AssetExplorerViewModel
@@ -70,9 +75,12 @@ public sealed partial class AssetExplorerViewModel
         if(Set(ref selectedScriptInstruction,value))Changed(nameof(ScriptInstructionDetails));
     }}
     public string ScriptInstructionDetails=>selectedScriptInstruction?.Details??"Choose an instruction to see its raw words and control-flow edges.";
+    public string ScriptEventDetails=>selectedScriptEvent?.Details??"";
     public BdxEventRow? SelectedScriptEvent {get=>selectedScriptEvent;set {
         if(value==null&&selectedScriptEvent!=null&&scriptEvents.Contains(selectedScriptEvent))return;
-        if(Set(ref selectedScriptEvent,value)&&value!=null) {
+        if(!Set(ref selectedScriptEvent,value))return;
+        Changed(nameof(ScriptEventDetails));
+        if(value!=null) {
             ScriptFilter="";
             selectedScriptInstruction=value.Event.IsFirstForId?allScriptRows.FirstOrDefault(r=>r.Instruction.Pc==value.Event.Pc):null;
             Changed(nameof(SelectedScriptInstruction));Changed(nameof(ScriptInstructionDetails));
@@ -93,7 +101,8 @@ public sealed partial class AssetExplorerViewModel
     private void NotifyScript()
     {
         foreach(string name in new[]{nameof(HasScript),nameof(ScriptTitle),nameof(ScriptSummary),nameof(ScriptRows),nameof(ScriptEvents),nameof(ScriptFilter),
-            nameof(ScriptCountText),nameof(ScriptDiagnostics),nameof(SelectedScriptInstruction),nameof(SelectedScriptEvent),nameof(ScriptInstructionDetails)})Changed(name);
+            nameof(ScriptCountText),nameof(ScriptDiagnostics),nameof(SelectedScriptInstruction),nameof(SelectedScriptEvent),nameof(ScriptInstructionDetails),
+            nameof(ScriptEventDetails)})Changed(name);
     }
     private async Task LoadScript(AssetPayload payload,string name,CancellationToken token,int? expectedGeneration=null)
     {
