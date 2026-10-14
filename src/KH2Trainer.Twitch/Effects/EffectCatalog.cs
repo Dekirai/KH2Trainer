@@ -169,7 +169,8 @@ public static class EffectCatalog
         },
         new()
         {
-            // HP is lethal exactly when the native floor (STATUS+8) is zero and the hit would reach zero (player-health-20261007).
+            // A hit is lethal when HP clamped to the native floor (STATUS+8) would reach zero, or one for rescue Mickey,
+            // whose knockout starts at 1 HP (player-health-20261007, actor-movement-roles-20261007).
             Key = "guardian-angel", Category = RewardCategory.Help, Cost = 3000, DurationSeconds = 60, Group = "defense",
             AllowedRoles = EffectPlayerRoles.FieldPlayers,
             Title = "Guardian Angel", TitleDe = "Schutzengel",

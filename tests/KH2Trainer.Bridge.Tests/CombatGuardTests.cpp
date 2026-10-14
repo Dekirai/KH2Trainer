@@ -276,7 +276,8 @@ void OwnersAndIpc() {
     Check(!combat::guard.enabled&&Pins(generation)==0,"actual expired-host frame drops guard lease");
 }
 // Lethal-only mode: 3C0860 clamps HP+delta to the STATUS+8 floor, and 3D2EB0 runs
-// the zero-HP callback for a zero bar-0 result. Only such hits are blocked.
+// the zero-HP callback for a zero bar-0 result. Rescue Mickey's 4150E0 already starts
+// his knockout at 1 HP. Only hits reaching those results are blocked.
 bool ActivateLethal() { return Command(combat::LethalGuardSlot,1).code==0; }
 struct GuardView { double full,lethal,mode,ownerLow,ownerHigh; };
 GuardView ViewGuard() {

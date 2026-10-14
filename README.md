@@ -263,9 +263,9 @@ the cited research folders; none of it has been tested in a live game yet.
   mission handler tables are full; the native code has no capacity check there
   (`timer-message74-handlers-20261008`).
 - **Combat Practice > Block lethal player hits only** blocks only a normal HP hit that would knock
-  Sora, Roxas or rescue Mickey out (HP floor zero and the hit reaching zero). Other hits apply
-  normally. A blocked hit leaves HP unchanged and skips that hit's Drive/MP gain. Scripted HP
-  changes and falls still count. It shares the damage guard with **Block player HP damage**;
+  Sora, Roxas or rescue Mickey out (HP after the native floor clamp reaching zero, or one for rescue
+  Mickey, whose knockout starts at 1 HP). Other hits apply normally. A blocked hit leaves HP
+  unchanged and skips that hit's Drive/MP gain. Scripted HP changes and falls still count. It shares the damage guard with **Block player HP damage**;
   **Damage guard mode** shows which mode is active.
 - **Damage Tuning** shows the locked enemy's parameter ID and level row and how many actors share
   its STATUS (more than one means edits affect all of them). **Reset target damage factors**
