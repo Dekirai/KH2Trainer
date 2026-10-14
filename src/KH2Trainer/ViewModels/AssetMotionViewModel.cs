@@ -29,7 +29,11 @@ public sealed partial class AssetExplorerViewModel
     private IReadOnlyList<ContactDefinitionRow> allContactRows = [], contactRows = [];
     private string contactsTitle = "", contactsError = "";
     private bool showOnlyContacts;
+    /// <summary>The model's first type 3 entry, kept when empty so <see cref="ContactScriptText"/> can name it.</summary>
     private AssetRow? contactScript;
+    /// <summary>A BDX script needs its 28-byte header and an 8-byte event terminator. A shorter type 3 entry stores no script.</summary>
+    private const int MinimumScriptBytes = 36;
+    private AssetRow? ContactHandlerScript => contactScript is { Length: >= MinimumScriptBytes } script ? script : null;
     private int contactGeneration;
     public AsyncCommand OpenContactHandlerCommand { get; }
 
@@ -80,7 +84,9 @@ public sealed partial class AssetExplorerViewModel
     public string ContactCountText => $"{contactRows.Count:N0} of {allContactRows.Count:N0} definitions";
     public bool ShowOnlyContacts { get => showOnlyContacts; set { if(Set(ref showOnlyContacts,value))RefreshContactRows(); } }
     public string ContactScriptText => contactScript is { } script
-        ? $"Event 27 delivers new type 10/11 contact IDs to the Actor script. This model's first script is {script.Name}."
+        ? "Event 27 delivers new type 10/11 contact IDs to the Actor script. " + (ContactHandlerScript != null
+            ? $"This model's first script is {script.Name}."
+            : $"This model's type 3 entry {script.Name} is {(script.Length == 0 ? "empty" : $"only {script.Length:N0} bytes, too short for a BDX script")}, so it stores no Event 27 handler.")
         : contacts == null ? "" : "No BAR type 3 script was found next to these definitions.";
 
     private static string MaskGroups(uint mask)
@@ -160,7 +166,7 @@ public sealed partial class AssetExplorerViewModel
     }
     public Task OpenContactHandlerAsync()
     {
-        var script=contactScript;if(script?.Payload is not { } payload)return Task.CompletedTask;
+        var script=ContactHandlerScript;if(script?.Payload is not { } payload)return Task.CompletedTask;
         return Run("Reading BDX script…",async token=>{
             ClearScript();
             await LoadScript(payload,script.Name,token,scriptGeneration);

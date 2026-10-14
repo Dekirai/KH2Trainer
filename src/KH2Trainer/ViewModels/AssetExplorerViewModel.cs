@@ -109,7 +109,7 @@ public sealed partial class AssetExplorerViewModel : Observable, IDisposable
         BackCommand=new(Back,()=>Idle&&history.Count>0);
         InspectCommand=new(InspectSelectedAsync,()=>Idle&&selection?.Available==true);
         InspectScriptCommand=new(InspectScriptAsync,()=>Idle&&selection?.Available==true);
-        OpenContactHandlerCommand=new(OpenContactHandlerAsync,()=>Idle&&contactScript!=null);
+        OpenContactHandlerCommand=new(OpenContactHandlerAsync,()=>Idle&&ContactHandlerScript!=null);
         ExportCommand=new(()=>Export(false),()=>Idle&&selection?.Available==true);
         ExportContainerCommand=new(()=>Export(true),()=>Idle&&container!=null);
         CancelCommand=new(()=>{operation?.Cancel();return Task.CompletedTask;},()=>Busy);
@@ -212,6 +212,7 @@ public sealed partial class AssetExplorerViewModel : Observable, IDisposable
         var row=selection;var index=package;
         if(row==null)return Task.CompletedTask;
         // Event 27 runs in the script of the same model: keep its first type 3 sibling (or the current link on reopen).
+        // A first entry that is empty or too short for BDX stays the link target but opens no handler; a later entry never stands in.
         var script=row.IsContactDefinitions?allRows.FirstOrDefault(r=>r.BarType==3&&r.Payload!=null)??contactScript:null;
         return Run("Inspecting selected asset…",async token=>{
             if(row.PackageEntry is {} entry&&index!=null) {

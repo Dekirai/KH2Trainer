@@ -137,13 +137,14 @@ internal static class BdxInspectionUiChecks
             CheckBankInventory(output,app);
             CheckEventRolesAndText(output,app);
             CheckMotionAndContacts(output,app);
+            CheckEmptyContactScript(output,app);
             Settle(panel);Check(log.ToString().Length==0,"BDX WPF binding errors: "+log);
             Check(app.Windows.Count==0&&app.MainWindow==null,"offscreen checks create no windows");
             Check(File.ReadAllBytes(loose).SequenceEqual(script)&&File.ReadAllBytes(unknown).SequenceEqual(script),"inspection preserves source bytes");
             var report=new {success=true,checks,renders=12,width=780,bindingErrors=0,windowCount=app.Windows.Count,
                 renderFiles=new[]{"script-780.png","script-event-780.png","script-error-780.png","script-native-catalog-780.png","script-native-context-780.png","script-native-equipment-780.png","script-native-banks-780.png","script-native-query-780.png","script-events-780.png",
                     "motion-780.png","motion-error-780.png","contacts-780.png"},
-                scope="Actual BDX, Motion and Contacts views and viewmodel, synthetic loose/BAR/unknown payloads, native catalog labels/details/search, null and context-dependent metadata, conditional event roles, stored text operands, RAW/Prototype/invalid type 9 entries, frame slider, B_LK120-shaped type 23 definitions with the Event 27 script link, long-name wrapping, event scrolling, virtualization, cancellation, replaced selection, failures and dark offscreen rendering. No window, script execution, game, input or process attachment."};
+                scope="Actual BDX, Motion and Contacts views and viewmodel, synthetic loose/BAR/unknown payloads, native catalog labels/details/search, null and context-dependent metadata, conditional event roles, stored text operands, RAW/Prototype/invalid type 9 entries, frame slider, B_LK120-shaped type 23 definitions with the Event 27 script link, empty and too-short type 3 entries beside them, long-name wrapping, event scrolling, virtualization, cancellation, replaced selection, failures and dark offscreen rendering. No window, script execution, game, input or process attachment."};
             File.WriteAllText(Path.Combine(output,"report.json"),JsonSerializer.Serialize(report,new JsonSerializerOptions {WriteIndented=true}));return report;
         }
         finally {
@@ -366,6 +367,30 @@ internal static class BdxInspectionUiChecks
         try {Await(vm.InspectSelectedAsync());}finally {vm.PropertyChanged-=cancelWhenBusy;}
         Check(cancelled&&!vm.HasMotion&&!vm.Busy&&vm.Status.Contains("cancelled"),"cancelled motion inspection publishes nothing");
         Check(File.ReadAllBytes(path).SequenceEqual(bytes),"motion and definition inspection preserve source bytes");
+    }
+    private static void CheckEmptyContactScript(string output,Application app)
+    {
+        // F_HE040-shaped: the only type 3 entry is empty beside readable type 23 definitions. The second model's first type 3 entry is too short for BDX.
+        string path=Path.Combine(output,"F_HE040-shaped.mdlx"),shortPath=Path.Combine(output,"short-script.mdlx");
+        byte[] bytes=Bar([(3,"scpt",[]),(23,"coll",Lk120Definitions())]),shortBytes=Bar([(3,"scpt",ContactScript()[..20]),(3,"next",ContactScript()),(23,"coll",Lk120Definitions())]);
+        File.WriteAllBytes(path,bytes);File.WriteAllBytes(shortPath,shortBytes);
+        using var vm=new AssetExplorerViewModel(_=>{});
+        var view=new AssetExplorerView {DataContext=vm};var panel=Panel(view,app);Settle(panel);
+        var button=(Button)view.FindName("OpenContactHandlerButton");var text=(TextBlock)view.FindName("ContactScriptText");
+        const string empty="Event 27 delivers new type 10/11 contact IDs to the Actor script. This model's type 3 entry scpt · entry 0 is empty, so it stores no Event 27 handler.";
+        Await(vm.OpenFileAsync(path));
+        Check(vm.Rows[0] is {BarType:3,Length:0}&&vm.Rows[0].Payload!=null&&vm.Rows[1].IsContactDefinitions,"empty type 3 entry is listed with a payload beside the definitions");
+        vm.SelectedRow=vm.Rows[1];Await(vm.InspectSelectedAsync());Settle(panel);
+        Check(vm.HasContacts&&vm.ContactRows.Count==164&&vm.SelectedAssetTab==4&&vm.ContactScriptText==empty&&text.Text==empty&&
+            !vm.OpenContactHandlerCommand.CanExecute(null)&&!button.IsEnabled,"an empty type 3 entry is named and links no Event 27 handler");
+        Await(vm.OpenContactHandlerAsync());
+        Check(!vm.HasScript&&vm.HasContacts&&vm.SelectedAssetTab==4&&!vm.Busy&&vm.Status.StartsWith("Read 164 stored definitions"),"the handler link ignores an empty script instead of failing");
+        Await(vm.InspectSelectedAsync());
+        Check(vm.HasContacts&&vm.ContactScriptText==empty&&!vm.OpenContactHandlerCommand.CanExecute(null),"reopening the definitions keeps the empty-script reason");
+        Await(vm.OpenFileAsync(shortPath));vm.SelectedRow=vm.Rows[2];Await(vm.InspectSelectedAsync());Settle(panel);
+        Check(vm.HasContacts&&vm.ContactScriptText.EndsWith("This model's type 3 entry scpt · entry 0 is only 20 bytes, too short for a BDX script, so it stores no Event 27 handler.")&&
+            text.Text==vm.ContactScriptText&&!vm.OpenContactHandlerCommand.CanExecute(null)&&!button.IsEnabled,"a too-short first type 3 entry links no handler and a later entry does not stand in");
+        Check(File.ReadAllBytes(path).SequenceEqual(bytes)&&File.ReadAllBytes(shortPath).SequenceEqual(shortBytes),"empty-script inspection preserves source bytes");
     }
     private static byte[] MotionEntry(byte[] payload)=>[..new byte[144],..payload];
     private static byte[] RawMotion()
