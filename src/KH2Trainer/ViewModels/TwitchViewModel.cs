@@ -703,7 +703,8 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
     }
 
     /// <summary>Called when the trainer closes: ends effects, pauses rewards (if enabled) and stops the overlay.</summary>
-    /// <param name="waitForCleanup">Asked once if ended rewards are still not undone; true keeps retrying them for at most <see cref="CleanupWaitLimit"/>.</param>
+    /// <param name="waitForCleanup">Asked once if ended rewards are still not undone and the game is connected; true keeps retrying
+    /// them for at most <see cref="CleanupWaitLimit"/>, or until the game disconnects.</param>
     internal Task ShutdownAsync(Func<IReadOnlyList<PendingCleanupInfo>, bool>? waitForCleanup = null) => shutdown ??= ShutdownCoreAsync(waitForCleanup);
 
     private async Task ShutdownCoreAsync(Func<IReadOnlyList<PendingCleanupInfo>, bool>? waitForCleanup)
@@ -714,16 +715,17 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
         try { await Service.StopListeningAsync().WaitAsync(TimeSpan.FromSeconds(12)); } catch (Exception) { }
         try { await Engine.StopAllAsync("The trainer was closed", DateTimeOffset.UtcNow).WaitAsync(TimeSpan.FromSeconds(10)); } catch (Exception) { }
         // Before the final flush, so a cleanup that settles a redemption still reaches Twitch.
-        if (Engine.PendingCleanupCount > 0 && waitForCleanup?.Invoke(Engine.PendingCleanups) == true) await WaitForCleanupAsync();
+        // Only asked while the game is connected: an exited game cannot take anything back.
+        if (Engine.CanWaitForCleanup && waitForCleanup?.Invoke(Engine.PendingCleanups) == true) await WaitForCleanupAsync();
         try { await Service.FlushAsync().WaitAsync(TimeSpan.FromSeconds(6)); } catch (Exception) { }
         if (overlay is { } running) { overlay = null; try { await running.DisposeAsync(); } catch (Exception) { } }
     }
 
-    /// <summary>The poll loop has stopped, so the engine is ticked here until its cleanups finish or the limit passes.</summary>
+    /// <summary>The poll loop has stopped, so the engine is ticked here until its cleanups finish, the game disconnects or the limit passes.</summary>
     private async Task WaitForCleanupAsync()
     {
         var deadline = DateTime.UtcNow + CleanupWaitLimit;
-        while (Engine.PendingCleanupCount > 0 && deadline - DateTime.UtcNow is var left && left > TimeSpan.Zero)
+        while (Engine.CanWaitForCleanup && deadline - DateTime.UtcNow is var left && left > TimeSpan.Zero)
         {
             try
             {

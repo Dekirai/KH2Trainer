@@ -142,6 +142,10 @@ public sealed class EffectEngine
     /// <summary>Ends/owned values waiting for control to return. They continue blocking their effect group.</summary>
     public int PendingCleanupCount => deferredEnds.Count + restoring.Count;
 
+    /// <summary>Cleanups are pending and the game is still connected to take them back. A disconnected game
+    /// cannot undo anything, so waiting for its cleanups (for example while closing) would only use up the time.</summary>
+    public bool CanWaitForCleanup => PendingCleanupCount > 0 && game.IsConnected;
+
     /// <summary>The cleanups behind <see cref="PendingCleanupCount"/>, with what each one waits for now.</summary>
     public IReadOnlyList<PendingCleanupInfo> PendingCleanups =>
         deferredEnds.Select(d => Cleanup(d.Effect.Context, "Its end step is retried when the game allows it"))

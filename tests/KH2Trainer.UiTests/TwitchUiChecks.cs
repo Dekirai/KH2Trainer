@@ -233,9 +233,52 @@ internal static class TwitchUiChecks
         Check(!closing.HasCleanup && live.Snapshot.Values[145] == 80 && waited.Elapsed < TwitchVm.CleanupWaitLimit,
             "Waiting must finish the restore within the bounded close wait.");
         Wait(closing.DisposeAsync().AsTask());
+
+        // An exited game cannot take anything back: closing then never offers the futile wait.
+        var gone = StartSilence(output, "close-gone", catalog, Check);
+        gone.Host.IsConnected = false; gone.Host.Snapshot = TrainerSnapshot.Disconnected;
+        bool askedWhileGone = false;
+        waited.Restart();
+        Wait(Shutdown(gone.Vm, _ => { askedWhileGone = true; return false; }));
+        Check(!askedWhileGone && PendingCleanupCount(gone.Vm) == 1 && waited.Elapsed < TwitchVm.CleanupWaitLimit,
+            "Closing after the game exited must not ask to wait for cleanups it cannot finish.");
+        Wait(gone.Vm.DisposeAsync().AsTask());
+
+        // The game exits during a chosen wait: the wait ends at once instead of running out its limit.
+        var exiting = StartSilence(output, "close-exit", catalog, Check);
+        exiting.Host.Snapshot = Playable(GameplayBlockers.Menu, 0);
+        var exit = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
+        exit.Tick += (_, _) => { exit.Stop(); exiting.Host.IsConnected = false; exiting.Host.Snapshot = TrainerSnapshot.Disconnected; };
+        bool askedBeforeExit = false;
+        waited.Restart();
+        Wait(Shutdown(exiting.Vm, _ => { askedBeforeExit = true; exit.Start(); return true; }));
+        Check(askedBeforeExit && PendingCleanupCount(exiting.Vm) == 1 && waited.Elapsed < TwitchVm.CleanupWaitLimit / 2,
+            "A chosen close wait must stop as soon as the game disconnects.");
+        Wait(exiting.Vm.DisposeAsync().AsTask());
         Check(errors.Count == 0, "Commands reported errors: " + string.Join(" | ", errors.Select(e => e.Message)));
         return new { success = true, checks, rewards = rewards.Count, renders };
     }
+
+    /// <summary>A separate connected view model whose Silence! test run has muted the music (80 to 0).</summary>
+    private static (FakeHost Host, TwitchVm Vm) StartSilence(string output, string name, IReadOnlyList<FeatureDefinition> catalog, Action<bool, string> check)
+    {
+        string folder = Path.Combine(output, name);
+        if (Directory.Exists(folder)) Directory.Delete(folder, true);
+        Directory.CreateDirectory(folder);
+        new TwitchSettings { OverlayEnabled = false }.Save(Path.Combine(folder, "twitch.json"));
+        var host = new FakeHost(folder, catalog) { IsConnected = true, Snapshot = Playable(GameplayBlockers.None, 80) };
+        var vm = new TwitchVm(host);
+        vm.Rewards.Single(r => r.Key == "silence").TestCommand.Execute(null);
+        Pump();
+        check(vm.ActiveEffects.Count == 1 && host.Snapshot.Values[145] == 0, $"A connected test run must start Silence ({name}).");
+        return (host, vm);
+    }
+
+    private static Task Shutdown(TwitchVm vm, Func<IReadOnlyList<PendingCleanupInfo>, bool> waitForCleanup) =>
+        (Task)typeof(TwitchVm).GetMethod("ShutdownAsync", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(vm, [waitForCleanup])!;
+
+    private static int PendingCleanupCount(TwitchVm vm) =>
+        ((EffectEngine)typeof(TwitchVm).GetProperty("Engine", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(vm)!).PendingCleanupCount;
 
     /// <summary>Visible in the offscreen tree (IsVisible needs a window).</summary>
     private static bool Shown(DependencyObject element)

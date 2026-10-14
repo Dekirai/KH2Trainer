@@ -392,7 +392,7 @@ public sealed class MainViewModel : Observable, IFeatureHost, ITwitchHost, ITwit
     internal static void OpenPath(string path) => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
 
     /// <summary>Runs before the window closes: ends Twitch effects while the game is still connected.</summary>
-    /// <param name="waitForCleanup">Asked once if ended rewards are still not undone; true waits a bounded time for them.</param>
+    /// <param name="waitForCleanup">Asked once if ended rewards are still not undone while the game is connected; true waits a bounded time for them.</param>
     public async Task ShutdownAsync(Func<IReadOnlyList<PendingCleanupInfo>, bool>? waitForCleanup = null)
     {
         timer.Stop();
