@@ -18,6 +18,8 @@ public interface IGameControl
     DamageGuardSnapshot DamageGuard => DamageGuardSnapshot.Unavailable;
     /// <summary>Exact targeting pair captured together; older adapters fail closed.</summary>
     LockOnPairSnapshot LockOnPair => LockOnPairSnapshot.Unavailable;
+    /// <summary>The bridge's developer-desktop status (2 hidden, 3 visible); -1 when an adapter cannot tell.</summary>
+    int BridgeStatus => -1;
     MovementOperationHandle? PendingMovement => null;
     Task<MovementCommandResult> ExecuteMovementAsync(MovementCommand command, CancellationToken cancellation = default) =>
         throw new NotSupportedException("Typed movement ownership is unavailable.");
@@ -191,6 +193,8 @@ public sealed class EffectContext
     /// <summary>The game is in a playable scene (not loading).</summary>
     public bool SceneReady => game.IsConnected && game.SceneReady;
     public GameplayState Gameplay => game.Gameplay;
+    /// <summary>DevToolsProtocol.h Status::Visible.</summary>
+    internal bool DeveloperDesktopVisible => game.BridgeStatus == 3;
 
     /// <summary>Resource readiness and actual player control are separate requirements.</summary>
     public Readiness ControlReadiness(bool allowOwnPause = true) => ControlReadinessCore(allowOwnPause, null);
@@ -246,10 +250,10 @@ public sealed class EffectContext
     internal ActorMovementIdentity ActorLeaseIdentity => movementLease != null ? game.Movement.Identity : damageGuardLease?.Identity ?? default;
     internal Readiness DamageGuardStartReadiness => DamageGuardEffectLease.StartReadiness(game);
     internal Readiness DamageGuardActiveReadiness => damageGuardLease?.Readiness ?? Readiness.Wait("Waiting for damage protection");
-    internal async Task StartDamageGuardAsync()
+    internal async Task StartDamageGuardAsync(DamageGuardMode mode)
     {
         RequireControl(); Established = false;
-        damageGuardLease = new(game);
+        damageGuardLease = new(game, mode);
         await MaintainActorLeasesAsync();
     }
     internal async Task MaintainActorLeasesAsync()
@@ -263,10 +267,11 @@ public sealed class EffectContext
     internal Readiness MovementStartReadiness(MovementMask mask) => game.Movement.CanUse(mask) ? Readiness.Ready :
         Readiness.Wait("Waiting for movement identity and values within the supported range so they can be restored.");
     internal Readiness MovementActiveReadiness => movementLease?.Readiness ?? Readiness.Wait("Waiting for movement ownership");
-    internal async Task StartMovementAsync(MovementMask mask, Func<MovementValues, MovementValues> transform)
+    /// <param name="inputs">Unowned fields the transform reads; they must be valid whenever it runs.</param>
+    internal async Task StartMovementAsync(MovementMask mask, Func<MovementValues, MovementValues> transform, MovementMask inputs = MovementMask.None)
     {
         RequireControl(); Established = false;
-        movementLease = new(game, mask, transform);
+        movementLease = new(game, mask, transform, inputs);
         await MaintainMovementAsync();
     }
     internal async Task MaintainMovementAsync()
@@ -285,6 +290,10 @@ public sealed class EffectContext
     /// <summary>A starting original must be accepted by the same feature when restored later.</summary>
     internal double? ReadRestorableValue(string featureId) =>
         Read(featureId) is double value && features.Get(featureId).IsValidValue(value) ? value : null;
+
+    /// <summary>Whether <see cref="SetAsync"/> may change this value now. A toggle without a readback restores to off.</summary>
+    internal bool CanRestore(string featureId) =>
+        features.Get(featureId).Kind == FeatureKind.Toggle || ReadRestorableValue(featureId) is not null;
 
     public Task RunAsync(string featureId, params double[] arguments)
     {
@@ -309,7 +318,7 @@ public sealed class EffectContext
     }
 
     /// <summary>Applies a value and takes ownership of it for the effect's lifetime.</summary>
-    /// <param name="restore">Restore the original value when the effect ends.</param>
+    /// <param name="restore">Restore the original value when the effect ends. Without a restorable original nothing is written.</param>
     /// <param name="sustain">Re-apply the value if the game resets it while the effect runs (scene or form change).</param>
     public async Task SetAsync(string featureId, double value, bool restore = true, bool sustain = true)
     {
@@ -317,6 +326,8 @@ public sealed class EffectContext
         RequireControl();
         value = Math.Clamp(value, feature.Minimum, feature.Maximum);
         double? original = Read(featureId);
+        if (restore && feature.Kind != FeatureKind.Toggle && (original is not double known || !feature.IsValidValue(known)))
+            throw new EffectDeferredException($"Waiting for a current {feature.Name} value that can be restored afterwards");
         await game.ExecuteAsync(feature.CommandId, [value], "Twitch · " + Definition.Title);
         var existing = owned.Find(o => o.Feature.Id == featureId);
         if (existing != null) { existing.Applied = value; existing.Written = true; }

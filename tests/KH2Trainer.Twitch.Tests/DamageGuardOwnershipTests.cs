@@ -18,9 +18,9 @@ internal static class DamageGuardOwnershipTests
                 key => { var d = EffectCatalog.Find(key)!; return new(d.Title, d.DurationSeconds, d.Amount, SameEffectBehavior.Extend, ConflictBehavior.Queue); },
                 () => new(TimeSpan.FromSeconds(MaxWaitSeconds), 600, PauseTimers), Sink, _ => { }, _ => Task.CompletedTask);
         }
-        public void Redeem(string id = "a") => Engine.Submit(new(id, "invincible", "Viewer", "", Now));
+        public void Redeem(string id = "a", string key = "invincible") => Engine.Submit(new(id, key, "Viewer", "", Now));
         public Task Tick(double elapsed = .25) { Now = Now.AddSeconds(elapsed); return Engine.TickAsync(Now); }
-        public Task End() => Engine.EndEffectAsync("invincible", Now);
+        public Task End(string key = "invincible") => Engine.EndEffectAsync(key, Now);
         public double Remaining => Engine.ActiveEffects.Single().RemainingSeconds;
         public void Switch(PlayerRole role) => Game.SwitchMovementActor(role, Game.Movement.Values, retireOld: true);
     }
@@ -103,7 +103,7 @@ internal static class DamageGuardOwnershipTests
         {
             var h = new Harness(features); h.Redeem(); await h.Tick(); ulong owner = h.Game.GuardOwner;
             ulong wrongBridge = h.Game.MovementInstance + 1; bool rejected = false;
-            try { await h.Game.ExecuteAsync(1472, [0, (uint)owner, (uint)(owner >> 32), (uint)wrongBridge, (uint)(wrongBridge >> 32), 0, 0], "fixture stale release"); }
+            try { await h.Game.ExecuteAsync(1472, [0, (uint)owner, (uint)(owner >> 32), (uint)wrongBridge, (uint)(wrongBridge >> 32), 0, 0, 0], "fixture stale release"); }
             catch (InvalidOperationException) { rejected = true; }
             check(rejected && h.Game.DamageGuard.Effective && h.Game.GuardOwner == owner, "guard: native rejects wrong-bridge release instead of acknowledging cleanup");
         }
@@ -160,6 +160,59 @@ internal static class DamageGuardOwnershipTests
             h.Game.Gameplay = new(true, PlayerRole.Sora, GameplayBlockers.Menu); await h.End();
             check(h.Engine.PendingCleanupCount == 0 && !h.Game.DamageGuard.Effective, "guard: owner release is independent of player control and ActiveCheck");
         }
+        await LethalOnlyAsync(features, check);
+    }
+
+    // Guardian Angel uses the same owner contract; only its requested and published mode differ.
+    private static async Task LethalOnlyAsync(IReadOnlyList<FeatureDefinition> features, Action<bool, string> check)
+    {
+        const ulong foreign = 0xFEDCBA9876543210;
+        foreach (var role in new[] { PlayerRole.Sora, PlayerRole.Roxas, PlayerRole.Mickey })
+        {
+            var h = new Harness(features, role); h.Redeem("a", "guardian-angel"); await h.Tick();
+            var ensure = h.Game.Calls("combat.damage_guard_owned").Single();
+            check(h.Sink.IsFulfilled("a") && h.Game.DamageGuard.Mode == DamageGuardMode.LethalOnly && ensure[0] == 1 && ensure[7] == 1,
+                $"lethal guard: {role} paid only after owned lethal-only protection");
+            check(h.Game.Get("player_damage_guard_lethal") == 1 && h.Game.Get("player_damage_guard") == 0 && h.Game.Get("combat.damage_guard_mode") == 2,
+                $"lethal guard: {role} publishes the lethal-only mode, not the full guard");
+            double remain = h.Remaining; await h.Tick(.25);
+            check(h.Remaining == remain - .25, $"lethal guard: {role} confirmed interval counts");
+            await h.End("guardian-angel");
+            check(!h.Game.DamageGuard.Effective && h.Engine.PendingCleanupCount == 0 && h.Game.Calls("combat.damage_guard_owned").Last() is [0, .., 0],
+                $"lethal guard: {role} releases only its own owner");
+        }
+        {
+            var h = new Harness(features); h.Redeem(); await h.Tick();
+            check(h.Game.Calls("combat.damage_guard_owned").Single()[7] == 0 && h.Game.DamageGuard.Mode == DamageGuardMode.Full,
+                "lethal guard: Invincibility still requests the full mode");
+            h.Redeem("b", "guardian-angel"); await h.Tick();
+            check(!h.Sink.IsFulfilled("b") && h.Engine.PendingEffects.Count == 1 && h.Game.DamageGuard.Mode == DamageGuardMode.Full,
+                "lethal guard: the shared defense group queues Guardian Angel behind Invincibility");
+        }
+        foreach (var (key, manual) in new[] { ("guardian-angel", DamageGuardMode.Full), ("guardian-angel", DamageGuardMode.LethalOnly), ("invincible", DamageGuardMode.LethalOnly) })
+        {
+            var h = new Harness(features); h.Game.SetManualGuard(true, mode: manual); h.Redeem("a", key); await h.Tick();
+            check(h.Sink.IsRefunded("a") && h.Game.GuardWrites == 0, $"lethal guard: manual {manual} protection refunds {key} without takeover");
+        }
+        {
+            var h = new Harness(features); h.Redeem("a", "guardian-angel"); await h.Tick(); double remain = h.Remaining;
+            h.Game.SetGuardMode(DamageGuardMode.Full); await h.Tick(.25);
+            check(h.Remaining == remain && h.Game.DamageGuard.Mode == DamageGuardMode.LethalOnly && h.Game.Calls("combat.damage_guard_owned").Last()[7] == 1,
+                "lethal guard: a full-mode publication for this owner is not paid and is switched back in place");
+            await h.Tick(.25); check(h.Remaining == remain - .25, "lethal guard: the restored mode counts again");
+        }
+        {
+            var h = new Harness(features); h.Redeem("a", "guardian-angel"); await h.Tick(); double remain = h.Remaining;
+            h.Game.SetManualGuard(true, foreign, DamageGuardMode.LethalOnly); await h.Tick();
+            check(h.Remaining == remain && h.Engine.ActiveEffects.Single().Paused, "lethal guard: another owner's lethal-only guard does not pay this reward");
+            await h.End("guardian-angel");
+            check(h.Game.DamageGuard.Mode == DamageGuardMode.LethalOnly && h.Game.GuardOwner == foreign && h.Engine.PendingCleanupCount == 0,
+                "lethal guard: release preserves the other owner's guard");
+        }
+        var guardian = EffectCatalog.Find("guardian-angel")!;
+        check(guardian.AllowedRoles == EffectPlayerRoles.FieldPlayers && guardian.Group == "defense" && guardian.Category == RewardCategory.Help &&
+            guardian.Prompt.Contains("falls", StringComparison.Ordinal) && guardian.Prompt.Contains("HP stays", StringComparison.Ordinal),
+            "lethal guard: Guardian Angel is a field-player defense Help reward that states what still counts");
     }
 
     private static void DecoderChecks(Action<bool, string> check)
@@ -170,13 +223,27 @@ internal static class DamageGuardOwnershipTests
         {
             var s = new TrainerSnapshot { ProtocolVersion = 4, Connected = true, SceneReady = true, Status = 1 };
             foreach (var (slot, value) in new (int, double)[] { (106, 1), (456, 1), (457, 1), (458, 0), (459, 1), (463, 100),
-                (467, 0x87654321), (468, 0x12345678), (469, 0x76543210), (470, 0xFEDCBA98), (471, 1), (472, 1), (473, 0xFEDCBA98), (474, 0x87654321) }) Set(s, slot, value);
+                (467, 0x87654321), (468, 0x12345678), (469, 0x76543210), (470, 0xFEDCBA98), (471, 1), (472, 1), (473, 0xFEDCBA98), (474, 0x87654321),
+                (483, 1) }) Set(s, slot, value);
             return s;
         }
         var f = Fresh(); var parsed = DamageGuardSnapshot.FromSnapshot(f, 101);
-        check(parsed.CanEnsure && parsed.Effective && parsed.Identity == new ActorMovementIdentity(0xFEDCBA9876543210, 0x1234567887654321) && parsed.Owner == 0x87654321FEDCBA98,
+        check(parsed.CanEnsure && parsed.Effective && parsed.Mode == DamageGuardMode.Full &&
+            parsed.Identity == new ActorMovementIdentity(0xFEDCBA9876543210, 0x1234567887654321) && parsed.Owner == 0x87654321FEDCBA98,
             "guard decoder: exact high-bit UInt64 owner/identity from split binary words");
-        foreach (int slot in new[] { 106, 467, 468, 469, 470, 471, 473, 474 })
+        // Slot 106 may show either only the full guard or any guard; a lethal-only mode is decoded from slot 483 alone.
+        foreach (double full in new double[] { 0, 1 })
+        {
+            f = Fresh(); Set(f, 483, 2); Set(f, 106, full); parsed = DamageGuardSnapshot.FromSnapshot(f, 101);
+            check(parsed.Available && parsed.Effective && parsed.Mode == DamageGuardMode.LethalOnly && parsed.Owner == 0x87654321FEDCBA98,
+                $"guard decoder: lethal-only mode with full toggle {full} keeps its owner");
+        }
+        foreach (var (mode, full) in new (double, double)[] { (0, 1), (1, 0), (3, 1) })
+        {
+            f = Fresh(); Set(f, 483, mode); Set(f, 106, full);
+            check(!DamageGuardSnapshot.FromSnapshot(f, 101).Available, $"guard decoder: mode {mode} with full toggle {full} is inconsistent");
+        }
+        foreach (int slot in new[] { 106, 467, 468, 469, 470, 471, 473, 474, 483 })
         {
             var s = Fresh(); s.Valid[slot / 64] &= ~(1UL << (slot % 64));
             check(!DamageGuardSnapshot.FromSnapshot(s, 101).Available, $"guard decoder: missing {slot} fails closed");
@@ -188,10 +255,14 @@ internal static class DamageGuardOwnershipTests
         check(!DamageGuardSnapshot.FromSnapshot(Fresh(), 1101).Available, "guard decoder: stale publication unavailable");
         check(!DamageGuardSnapshot.FromSnapshot(Fresh(), 99).Available, "guard decoder: future tick unavailable");
         f = Fresh(); Set(f, 463, uint.MaxValue - 20); check(DamageGuardSnapshot.FromSnapshot(f, 20).Available, "guard decoder: clock wrap preserved");
-        f = Fresh(); Set(f, 106, 0); check(!DamageGuardSnapshot.FromSnapshot(f, 101).Available, "guard decoder: off with nonzero effective owner is inconsistent");
+        f = Fresh(); Set(f, 106, 0); Set(f, 483, 0); check(!DamageGuardSnapshot.FromSnapshot(f, 101).Available, "guard decoder: off with nonzero effective owner is inconsistent");
         Set(f, 473, 0); Set(f, 474, 0); Set(f, 467, 0); Set(f, 468, 0); Set(f, 471, 2);
         parsed = DamageGuardSnapshot.FromSnapshot(f, 101);
         check(parsed.Available && !parsed.CanEnsure && !parsed.Effective && parsed.Identity.BridgeInstance != 0, "guard decoder: observer fault keeps only fresh bridge proof for cleanup");
-        Set(f, 106, 1); check(!DamageGuardSnapshot.FromSnapshot(f, 101).Available, "guard decoder: effective guard needs observer and nonzero current generation");
+        foreach (double mode in new double[] { 1, 2 })
+        {
+            Set(f, 106, 1); Set(f, 483, mode);
+            check(!DamageGuardSnapshot.FromSnapshot(f, 101).Available, $"guard decoder: effective mode {mode} needs observer and nonzero current generation");
+        }
     }
 }

@@ -180,5 +180,46 @@ internal static class GameplayReadinessTests
             check(h.Game.Count("drive.cancel") == 1 && h.Game.Count("drive.revert") == 0 && h.Sink.Refunded.Count == 1 && h.Game.Get("combat.formtimer") == 0,
                 "Drive: deferred value cleanup neither cancels twice nor charges a failed transformation");
         }
+        await TimeRolesAsync(features, check);
+    }
+
+    // The global time settings have no character gate in the bridge; only Pause! keeps its Sora-only menu path.
+    private static async Task TimeRolesAsync(IReadOnlyList<FeatureDefinition> features, Action<bool, string> check)
+    {
+        var settings = new Dictionary<string, string> { ["fast-forward"] = "time.multiplier", ["slow-mo"] = "time.multiplier",
+            ["time-stop"] = "time.actor_effect_freeze", ["freeze-frame"] = "practice.field_pause" };
+        foreach (var (key, feature) in settings)
+        {
+            check(EffectCatalog.Find(key)!.AllowedRoles == EffectPlayerRoles.FieldPlayers, $"time roles: {key} admits Sora, Roxas and rescue Mickey");
+            foreach (var role in new[] { PlayerRole.Roxas, PlayerRole.Mickey })
+            {
+                var h = new Harness(features); h.State(role: role); h.Redeem(key); await h.Tick();
+                check(h.Sink.IsFulfilled("a") && h.Game.Calls(feature).Count() == 1, $"time roles: {role} starts {key}");
+            }
+            var other = new Harness(features); other.State(role: PlayerRole.Other); other.Redeem(key); await other.Tick();
+            check(other.Engine.PendingEffects.Count == 1 && other.Game.Commands.Count == 0, $"time roles: an unsupported role still waits for {key}");
+        }
+        check(EffectCatalog.Find("pause-menu")!.AllowedRoles == EffectPlayerRoles.Sora, "time roles: Pause! stays Sora-only");
+        check(EffectCatalog.Find("slow-mo")!.Prompt.Contains("Mission clocks and play time keep real-time pace", StringComparison.Ordinal) &&
+            !EffectCatalog.Find("fast-forward")!.Prompt.Contains("Mission clocks", StringComparison.Ordinal), "time roles: only Slow Motion states the real-time clocks");
+        {
+            var h = new Harness(features); h.Redeem("slow-mo"); await h.Tick(); await h.Tick(.25);
+            double remaining = h.Remaining;
+            h.State(role: PlayerRole.Roxas); await h.Tick(.25); h.State(role: PlayerRole.Mickey); await h.Tick(.25);
+            check(h.Remaining == remaining - .5 && h.Game.Get("time.multiplier") == .5, "time roles: switching between field roles keeps Slow Motion running");
+            h.State(role: PlayerRole.Other); await h.Tick(.25); remaining = h.Remaining; await h.Observe(3);
+            check(h.Remaining == remaining && h.Engine.ActiveEffects.Single().Paused, "time roles: an unsupported role pauses Slow Motion");
+            await h.End("slow-mo");
+            check(h.Game.Get("time.multiplier") == .5 && h.Engine.PendingCleanupCount == 1, "time roles: no restore while an unsupported role is current");
+            h.State(role: PlayerRole.Mickey); await h.Tick(1);
+            check(h.Game.Get("time.multiplier") == 1 && h.Engine.PendingCleanupCount == 0, "time roles: deferred cleanup completes once Mickey is current");
+        }
+        foreach (var (key, feature) in new[] { ("freeze-frame", "practice.field_pause"), ("time-stop", "time.actor_effect_freeze") })
+        {
+            var h = new Harness(features); h.State(role: PlayerRole.Mickey); h.Redeem(key); await h.Tick(); await h.Observe(2);
+            check(!h.Engine.ActiveEffects.Single().Paused && h.Remaining == 3, $"time roles: {key} counts its own pause while Mickey is current");
+            h.State(role: PlayerRole.Roxas); await h.Observe(4);
+            check(h.Engine.ActiveEffects.Count == 0 && h.Game.Get(feature) == 0, $"time roles: {key} releases itself after a switch to Roxas");
+        }
     }
 }

@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
+using KH2Trainer.Twitch;
 
 namespace KH2Trainer;
 
@@ -63,10 +64,25 @@ public partial class MainWindow : Window
     {
         IsEnabled = false;
         Title = "KH2 Trainer · closing…";
-        try { await model.ShutdownAsync(); }
+        try { await model.ShutdownAsync(AskToWaitForCleanup); }
         catch (Exception) { /* Closing must never fail. */ }
         shutDown = true;
         await Dispatcher.BeginInvoke(Close);
+    }
+
+    // Values of an ended reward that are not undone yet would otherwise silently stay in the game.
+    private bool AskToWaitForCleanup(IReadOnlyList<PendingCleanupInfo> cleanups)
+    {
+        const int Shown = 6;
+        string list = string.Join("\n", cleanups.Take(Shown).Select(c => $"•  {c.Title}: {c.Reason}"));
+        if (cleanups.Count > Shown) list += $"\n•  …and {cleanups.Count - Shown} more";
+        bool wait = MessageBox.Show(this,
+            $"These ended Twitch rewards are not fully undone yet:\n\n{list}\n\n" +
+            $"Yes: wait up to {TwitchVm.CleanupWaitLimit.TotalSeconds:0} seconds while the trainer keeps undoing them, then close.\n" +
+            "No: close anyway and leave the remaining changes in the game. Movement rewards still finish releasing in the game bridge.",
+            "Close KH2 Trainer", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.Yes) == MessageBoxResult.Yes;
+        if (wait) Title = "KH2 Trainer · undoing Twitch rewards…";
+        return wait;
     }
 
     private static void WaitBriefly(Task task, TimeSpan limit)

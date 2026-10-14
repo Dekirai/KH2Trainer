@@ -4,7 +4,8 @@ using KH2Trainer.Core;
 namespace KH2Trainer.Twitch;
 
 /// <summary>Owns native journal records, never scalar guesses about an actor's lifetime.</summary>
-internal sealed class MovementEffectLease(IGameControl game, MovementMask mask, Func<MovementValues, MovementValues> transform)
+/// <param name="inputs">Fields the transform reads without owning them; an acquire waits until they are restorable too.</param>
+internal sealed class MovementEffectLease(IGameControl game, MovementMask mask, Func<MovementValues, MovementValues> transform, MovementMask inputs)
 {
     private readonly ulong owner = NewOwner();
     private readonly Dictionary<(ulong Bridge, ulong Lease), MovementResponse> leases = [];
@@ -97,7 +98,7 @@ internal sealed class MovementEffectLease(IGameControl game, MovementMask mask, 
             }
             if (ending || pending != null || acknowledgements.Count != 0 || fault != null || game.PendingMovement != null) return;
             var snapshot = game.Movement;
-            if (!snapshot.CanUse(mask)) return;
+            if (!snapshot.CanUse(mask | inputs)) return;
             if (leases.Values.Any(l => l.Identity != snapshot.Identity && l.JournalState == MovementJournalState.Active)) return;
             var existing = leases.Values.FirstOrDefault(l => l.Identity == snapshot.Identity);
             if (existing != null && existing.JournalState != MovementJournalState.Active) return;

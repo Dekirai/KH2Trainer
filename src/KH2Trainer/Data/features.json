@@ -3304,6 +3304,30 @@
     ]
   },
   {
+    "Id": "player_damage_guard_lethal",
+    "Category": "Combat Practice",
+    "Name": "Block lethal player hits only",
+    "Description": "Practice mode between no protection and the full HP damage guard. Normal hits through the verified Sora, Roxas or rescue Mickey callback still deal damage; only a hit that would reduce HP to zero without a scripted minimum is ignored and leaves HP unchanged, also skipping that hit's Drive/MP gain and HUD update. Falls, scripted HP changes, status effects and other knockout paths still apply. Shares the single native guard with the full damage guard. Turns off after a character or scene change or connection loss.",
+    "Kind": "Toggle",
+    "CommandId": 1482,
+    "ValueSlot": 482,
+    "CapabilitySlot": 482,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Disable protection and release its actor instance. Transparent module-pinned callbacks remain installed for the game process lifetime; HP, its minimum and save data are not changed.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x5CBB10 / 0x5D1688 to 0x404EE0 / 0x415410 to 0x3A85F0; HP clamp 0x3C0860",
+        "Finding": "Same verified callbacks as the full guard. The native clamp keeps current HP plus delta between the minimum at STATUS+8 and the maximum at +4, so a hit is lethal exactly when that minimum is zero and HP plus delta is at most zero. Only such a hit returns the unchanged HP without calling the original. See docs/research/player-damage-guard-20261007 and docs/research/player-health-20261007.",
+        "Level": "Complete native bodies and original bytes verified; isolated role/dispatch/ownership tests. Live gameplay not tested."
+      }
+    ]
+  },
+  {
     "Id": "damage_guard_count",
     "Category": "Combat Practice",
     "Name": "Blocked HP changes",
@@ -6154,6 +6178,38 @@
         "Address": "RVA 0x3A2C30 / 0x3FC150 / 0x1571B0; current mission RVA 0x2A0FF68",
         "Finding": "Native inline objects and registry identify the current mission; clock uses 60 ticks per second. Values are read only after exact object, phase and range checks.",
         "Level": "Full fresh dedicated IDA assembly; isolated synthetic guards; no live test."
+      }
+    ]
+  },
+  {
+    "Id": "mission.timer.freeze",
+    "Category": "Missions",
+    "Name": "Freeze Mission Clock",
+    "Description": "Practice tool: holds the active mission's countdown or count-up with the trainer's own clock owner while gameplay, input and the HUD continue. A frozen countdown cannot run out, and count-up times, records and ranks improve while frozen. Turning it off resumes from the same value. Native pause owners are preserved, and both restart actions refuse while the clock is held.",
+    "Kind": "Toggle",
+    "CommandId": 1233,
+    "ValueSlot": 233,
+    "CapabilitySlot": 233,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Released on disable, Disable All, disconnect or heartbeat loss, and on a mission, room or phase change. Only the trainer's own owner bit is cleared; native owners are preserved. A native clock reset ends the hold without re-applying it.",
+    "Choices": [],
+    "Evidence": [
+      {
+        "Address": "RVA 0x157130 / 0x157110 / 0x1570F0 / 0x1571B0 / 0x157040 / 0x157090; owner mask 0xABB854",
+        "Finding": "0x157130 ORs owner bits into the mission-clock mask and 0x157110 clears only the given bits. 0x1570F0 advances the clock only while the mask is zero, and 0x1571B0 returns before countdown expiry or count-up limit dispatch while any owner is set. 0x157040/0x157090 zero the whole mask on clock init and reset. The trainer owns the private bit 0x20000000 beside its field pause bit 0x40000000. See docs/research/player-input-classification-20261007.",
+        "Level": "Full native bodies and original bytes verified statically; isolated synthetic guards; no live test."
+      },
+      {
+        "Address": "RVA 0x154700 / 0x1570F0 / 0x1574E0",
+        "Finding": "The timing callback advances both the mission clock and the play-time counters. The owner mask gates only the clock and is separate from the device pause at +776, so play time keeps counting. See docs/research/timing-callback-context-20261008 (finding 7).",
+        "Level": "Static IDA evidence with original-byte verification; no live test."
       }
     ]
   },
@@ -10470,6 +10526,52 @@
         "Minimum": 0,
         "Maximum": 4294967295,
         "DefaultValue": 0
+      },
+      {
+        "Name": "Lethal-only (0 / 1)",
+        "Minimum": 0,
+        "Maximum": 1,
+        "DefaultValue": 0
+      }
+    ]
+  },
+  {
+    "Id": "combat.damage_guard_mode",
+    "Category": "Combat automation",
+    "Name": "Damage guard mode",
+    "Description": "Mode of whichever owner currently holds the effective player damage guard: a manual toggle or a Crowd Control reward. Off while the guard is inactive, suspended or released.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 483,
+    "CapabilitySlot": 483,
+    "Minimum": 0,
+    "Maximum": 2,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. Published together with the guard owner and actor identity.",
+    "Choices": [
+      {
+        "Label": "Off",
+        "Value": 0
+      },
+      {
+        "Label": "Full",
+        "Value": 1
+      },
+      {
+        "Label": "Lethal only",
+        "Value": 2
+      }
+    ],
+    "Evidence": [
+      {
+        "Address": "RVA 0x5CBB10 / 0x5D1688 to 0x404EE0 / 0x415410 to 0x3A85F0",
+        "Finding": "One native guard lease with one owner and mode; the same owner may switch modes in place and a different owner is refused. See docs/research/player-damage-guard-20261007.",
+        "Level": "Complete native bodies and original bytes verified; isolated role/dispatch/ownership tests. Live gameplay not tested."
       }
     ]
   },

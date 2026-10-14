@@ -181,5 +181,47 @@ internal static class MovementRewardTests
             check(h.Engine.ActiveEffects.Count == 0 && h.Sink.IsRefunded("a") && h.Game.MovementWrites == 0,
                 "movement typed: definite no-write refusal honors configured maximum wait and refunds once");
         }
+        await WalkOnlyAsync(features, check);
+    }
+
+    // Walk Only owns only the run speed; the walk speed it copies must itself be valid whenever it is read.
+    private static async Task WalkOnlyAsync(IReadOnlyList<FeatureDefinition> features, Action<bool, string> check)
+    {
+        var map = new FeatureMap(features);
+        var definition = EffectCatalog.Find("walk-only")!;
+        check(definition.AllowedRoles == EffectPlayerRoles.FieldPlayers && definition.Group == "speed" && definition.Category == RewardCategory.Harm,
+            "walk only: a field-player Harm reward in the speed group");
+        foreach (var role in Enum.GetValues<PlayerRole>())
+        {
+            var h = new Harness(features, role); h.Redeem("walk-only"); await h.Tick();
+            bool allowed = Roles.Contains(role);
+            check(h.Sink.IsFulfilled("a") == allowed && (h.Game.MovementWrites == 1) == allowed && h.Game.Commands.Count == 0,
+                $"walk only: {role} uses one run-only journal write and no scalar commands");
+            if (!allowed) { check(h.Engine.PendingEffects.Count == 1, $"walk only: unsupported {role} waits"); continue; }
+            check(h.Game.MovementCommands.Single(c => c.Operation == MovementOperation.Acquire).Mask == MovementMask.Run &&
+                Same(h.Game.Get("movement.run_speed"), 2) && Same(h.Game.Get("movement.walk_speed"), 2), $"walk only: {role} runs at the live walking speed");
+            await h.Finish("walk-only");
+            check(Same(h.Game.Get("movement.run_speed"), 8) && h.Engine.PendingCleanupCount == 0, $"walk only: {role} restores its run speed");
+        }
+        foreach (double? walk in new double?[] { null, double.NaN, 33 })
+        {
+            var h = new Harness(features);
+            if (walk is double value) h.Game.Set("movement.walk_speed", value); else h.Game.Values.Remove(map.Get("movement.walk_speed").ValueSlot);
+            h.Redeem("walk-only"); await h.Tick();
+            check(h.Game.MovementWrites == 0 && h.Engine.PendingEffects.Count == 1, $"walk only: walking speed {walk} blocks the run write");
+        }
+        {
+            var h = new Harness(features); h.Game.Set("movement.run_speed", 2); h.Redeem("walk-only"); await h.Tick();
+            check(h.Sink.IsRefunded("a") && h.Game.MovementWrites == 0, "walk only: a character that already runs at walking speed refunds");
+        }
+        {
+            var h = new Harness(features); h.Redeem("walk-only"); await h.Tick(); int writes = h.Game.MovementWrites;
+            h.Game.SwitchMovementActor(PlayerRole.Roxas, MovementValues.FromValues(float.NaN, 9, 13, 180), retireOld: true); await h.Tick(.5);
+            check(h.Game.MovementWrites == writes && h.Engine.ActiveEffects.Single().Paused, "walk only: a replacement without a valid walking speed is not acquired");
+            h.Game.Set("movement.walk_speed", 3); await h.Tick(.5);
+            check(h.Game.MovementWrites == writes + 1 && Same(h.Game.Get("movement.run_speed"), 3), "walk only: the replacement is acquired with its own walking speed");
+            await h.Finish("walk-only");
+            check(Same(h.Game.Get("movement.run_speed"), 9) && h.Engine.PendingCleanupCount == 0, "walk only: the replacement's run speed is restored");
+        }
     }
 }

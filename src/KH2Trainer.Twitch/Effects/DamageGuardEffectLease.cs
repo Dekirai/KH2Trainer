@@ -4,7 +4,7 @@ using KH2Trainer.Core;
 namespace KH2Trainer.Twitch;
 
 /// <summary>One owner intent on the ordinary serialized command channel; this is not a MOV1 receipt.</summary>
-internal sealed class DamageGuardEffectLease(IGameControl game)
+internal sealed class DamageGuardEffectLease(IGameControl game, DamageGuardMode mode)
 {
     private readonly ulong owner = NewOwner();
     private ulong intentBridge;
@@ -19,7 +19,7 @@ internal sealed class DamageGuardEffectLease(IGameControl game)
         get
         {
             var sample = game.DamageGuard;
-            return !stopping && game.IsConnected && sample.CanEnsure && sample.Effective && sample.Owner == owner &&
+            return !stopping && game.IsConnected && sample.CanEnsure && sample.Mode == mode && sample.Owner == owner &&
                 sample.Identity == confirmed ? Readiness.Ready : Readiness.Wait("Waiting for confirmed protection on the current character");
         }
     }
@@ -48,7 +48,7 @@ internal sealed class DamageGuardEffectLease(IGameControl game)
             {
                 // Generation zero releases only this owner in this bridge, including an off-current lease.
                 // The ordinary transport cannot publish this while an earlier Ensure lacks its ACK.
-                await game.ExecuteAsync(1472, Arguments(0, owner, intentBridge, 0), "Twitch · release damage protection");
+                await game.ExecuteAsync(1472, Arguments(0, owner, intentBridge, 0, lethalOnly: false), "Twitch · release damage protection");
                 intentBridge = 0; confirmed = default; Detail = null;
             }
             catch (Exception error) { Detail = "Waiting to release damage protection: " + error.Message; }
@@ -61,7 +61,7 @@ internal sealed class DamageGuardEffectLease(IGameControl game)
         confirmed = default;
         try
         {
-            await game.ExecuteAsync(1472, Arguments(1, owner, intentBridge, sample.Identity.Generation), "Twitch · protect current character");
+            await game.ExecuteAsync(1472, Arguments(1, owner, intentBridge, sample.Identity.Generation, mode == DamageGuardMode.LethalOnly), "Twitch · protect current character");
             Detail = null;
         }
         catch (Exception error) { Detail = "Waiting for damage protection: " + error.Message; }
@@ -70,12 +70,13 @@ internal sealed class DamageGuardEffectLease(IGameControl game)
 
     private void Observe(DamageGuardSnapshot sample)
     {
-        if (intentBridge != 0 && sample.CanEnsure && sample.Identity.BridgeInstance == intentBridge && sample.Effective && sample.Owner == owner)
+        if (intentBridge != 0 && sample.CanEnsure && sample.Identity.BridgeInstance == intentBridge && sample.Mode == mode && sample.Owner == owner)
         { confirmed = sample.Identity; EverApplied = true; }
     }
 
-    private static double[] Arguments(uint operation, ulong owner, ulong bridge, ulong generation) =>
-        [operation, (uint)owner, (uint)(owner >> 32), (uint)bridge, (uint)(bridge >> 32), (uint)generation, (uint)(generation >> 32)];
+    // The last word selects lethal-only protection when enabling; the same owner may switch modes in place.
+    private static double[] Arguments(uint operation, ulong owner, ulong bridge, ulong generation, bool lethalOnly) =>
+        [operation, (uint)owner, (uint)(owner >> 32), (uint)bridge, (uint)(bridge >> 32), (uint)generation, (uint)(generation >> 32), lethalOnly ? 1 : 0];
     private static ulong NewOwner()
     {
         ulong result;
