@@ -288,7 +288,7 @@ public static class EffectCatalog
             {
                 double seconds = ctx.Read("mission.timer.seconds") ?? throw new EffectDeferredException("Waiting for the mission countdown.");
                 // Whole seconds only: the restart never adds more than 30 seconds.
-                await ctx.RunAsync("mission.timer.countdown", Math.Min(MaxCountdownSeconds, Math.Floor(seconds) + 30));
+                await RestartCountdownAsync(ctx, Math.Min(MaxCountdownSeconds, Math.Floor(seconds) + 30));
                 ctx.Detail = "+30 s";
             },
         },
@@ -534,7 +534,7 @@ public static class EffectCatalog
                 if (countdown.Kind != ReadinessKind.Ready) return countdown;
                 return ctx.Read("mission.timer.seconds") > 45 ? Readiness.Ready : Readiness.Reject("The countdown has 45 seconds or less left.");
             },
-            Start = async ctx => { await ctx.RunAsync("mission.timer.countdown", 30); ctx.Detail = "30 s left"; },
+            Start = async ctx => { await RestartCountdownAsync(ctx, 30); ctx.Detail = "30 s left"; },
         },
         Form("antiform", 6, RewardCategory.Harm, 4000, 30, "Antiform", "Anti-Form",
             "Turns Sora into Antiform for a while. No healing, no items, pure chaos.",
@@ -965,6 +965,16 @@ public static class EffectCatalog
     /// to the mission (timer-message74-handlers-20261008), so rewards never trigger it themselves.
     /// </summary>
     private static Readiness MissionCountdown(EffectContext ctx) => MissionClock(ctx, countdownOnly: true);
+
+    /// <summary>
+    /// Native restart (1226). Code 2 means it was called but its resulting clock could not be confirmed; the
+    /// bridge forbids an automatic retry, so the redemption is refunded once and never sent again.
+    /// </summary>
+    private static async Task RestartCountdownAsync(EffectContext ctx, double seconds)
+    {
+        try { await ctx.RunAsync("mission.timer.countdown", seconds); }
+        catch (BridgeCommandRejectedException error) when (error.Code == 2) { throw new EffectRejectedException(error.Message); }
+    }
 
     /// <summary>Time Out counts only while the bridge holds the active mission's clock with its own owner bit.</summary>
     private static EffectProgress MissionFreezeMonitor(EffectContext ctx)

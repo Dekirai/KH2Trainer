@@ -92,6 +92,19 @@ internal static class MissionRewardTests
             h.Game.Reject = null; await h.Tick(4);
             check(h.Sink.IsFulfilled("a") && h.Game.Get("mission.timer.seconds") == 30, "time crunch: the retry restarts the clock");
         }
+        // Native code 2: the restart was called, but its result could not be confirmed. The bridge forbids an automatic retry.
+        foreach (string key in new[] { "overtime", "time-crunch" })
+        {
+            const string unconfirmed = "Native timer restart was called, but its resulting state could not be confirmed. No automatic retry.";
+            var h = new Harness(features); h.Game.StartMission(90);
+            h.Game.AfterExecute = (f, _) => { if (f == "mission.timer.countdown") throw new BridgeCommandRejectedException(2, unconfirmed); };
+            h.Redeem(key); await h.Tick();
+            check(h.Sink.Refunded is [var refund] && refund.Redemption.Id == "a" && refund.Reason == unconfirmed && h.Engine.PendingEffects.Count == 0,
+                $"{key}: an unconfirmed restart (code 2) is refunded at once with the bridge's reason");
+            await h.Observe(70);
+            check(h.Game.Count("mission.timer.countdown") == 1 && h.Sink.Refunded.Count == 1 && !h.Sink.IsFulfilled("a") && h.Engine.ActiveEffects.Count == 0,
+                $"{key}: an unconfirmed restart (code 2) is sent exactly once and never retried");
+        }
 
         // Time Out: paid once the bridge publishes its own freeze bit; released at the end without native owners.
         foreach (bool countdown in new[] { true, false })
