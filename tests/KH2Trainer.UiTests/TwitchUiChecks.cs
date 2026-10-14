@@ -267,6 +267,7 @@ internal static class TwitchUiChecks
         source.Values.CopyTo(target.Values, 0);
         source.Valid.CopyTo(target.Valid, 0);
         source.Supported.CopyTo(target.Supported, 0);
+        target.Values[GameplayState.PublicationTickSlot] = unchecked((uint)Environment.TickCount); // Still a fresh publication.
     }
 
     /// <summary>A separate connected view model whose Silence! test run has muted the music (80 to 0).</summary>
