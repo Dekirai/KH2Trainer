@@ -221,8 +221,9 @@ mission, so the texts stay neutral. **Score Bonus** adds points in score mission
 Angel** ignores a normal hit that would knock the character out (HP stays as it was; scripted HP
 changes and falls still count). **Ouch!** halves the current HP but never knocks out, and **Walk
 Only** sets the run speed to the walk speed for 30 seconds. Fast Forward, Slow Motion, Time Stop
-and Freeze Frame now also run for Roxas and rescue Mickey; mission clocks and play time keep their
-real-time pace under all of them.
+and Freeze Frame now also run for Roxas and rescue Mickey. Mission clocks and play time keep their
+real-time pace under Fast Forward, Slow Motion and Time Stop; Freeze Frame also holds the mission
+clock, while play time keeps counting.
 
 ### Stream overlay
 
@@ -272,7 +273,7 @@ the cited research folders; none of it has been tested in a live game yet.
 - **Time** shows the save's play time in total and for the current world as h:mm:ss (the game
   clock at 60 ticks per second); the field pause and time multiplier do not stop or scale it.
 - **Renderer Timing** shows the unscaled ticks of the current frame and counts frames with more
-  than one tick since the last scene change. **Loot** shows rescue Mickey's prize mode, during
+  than one tick since the last scene change, connection or effect reset. **Loot** shows rescue Mickey's prize mode, during
   which Lucky and munny retention have no effect. **Gummi** shows the ship's hit-protection timer,
   the protection and destroyed flags and the movement attenuation. **Gameplay state** shows
   whether the actor lifetime observer is running or faulted.

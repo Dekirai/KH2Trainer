@@ -8850,7 +8850,7 @@
     "Id": "timing.late_frames",
     "Category": "Renderer Timing",
     "Name": "Frames with more than one tick",
-    "Description": "Counts frames whose unscaled delta exceeded 1 tick since the last scene change or trainer connection. A steadily rising count means frames regularly cover more than one tick. This is a frame count, not a frame rate.",
+    "Description": "Counts frames whose unscaled delta exceeded 1 tick since the last scene change, trainer connection, Disable all effects or Disable world and camera effects, and is unavailable while the trainer is disconnected. A steadily rising count means frames regularly cover more than one tick. This is a frame count, not a frame rate.",
     "Kind": "ReadOnly",
     "CommandId": 0,
     "ValueSlot": 198,
@@ -8863,11 +8863,11 @@
     "RequiresScene": false,
     "ChangesProgression": false,
     "CanSaveInProfile": false,
-    "RestoreBehavior": "Read-only observation. The bridge restarts the count on a scene change or a new connection; no game value is changed.",
+    "RestoreBehavior": "Read-only observation. The bridge restarts the count on a scene change, a new connection, Disable all effects or Disable world and camera effects; no game value is changed.",
     "Evidence": [
       {
         "Address": "RVA 0x1548E0; 0x717484",
-        "Finding": "The bridge counts the frames it observes in which the unscaled delta at 0x717484 is above 1 and resets the count when the scene identity changes or the trainer connects. See docs/research/timing-callback-context-20261008 (finding 10).",
+        "Finding": "The bridge counts the frames it observes in which the unscaled delta at 0x717484 is above 1 and resets the count when the scene identity changes, the trainer connects, or the world effects are reset (Disable all effects, Disable world and camera effects, failure reset). See docs/research/timing-callback-context-20261008 (finding 10).",
         "Level": "Static IDA evidence with original-byte verification; synthetic bridge tests; live gameplay not tested."
       }
     ]
