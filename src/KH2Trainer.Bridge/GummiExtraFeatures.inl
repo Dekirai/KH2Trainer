@@ -61,6 +61,20 @@ bool TuningReady(const Context& c,uintptr_t& tuning) {
     return Field<float>(tuning,4)>=0 && Field<float>(tuning,8)>=0 &&
         Field<float>(tuning,12)>=0 && Field<float>(tuning,64)>0 && Field<float>(tuning,68)>=0;
 }
+// 1FF930 (bdx-bank3-extended-20261008) takes N as the signed DWORD player+5128.
+// N<=0 gives 1 without reading tuning. Otherwise v starts at 1 and subtracts
+// tuning[+16]/k for k=1..N in float32 order; the result is 0.1 if v<0.1, else
+// min(1,v). The native loop is unbounded; this readout gives up above 4096.
+bool AttenuationFactor(const Context& c,int count,float& factor) {
+    factor=1.0f;
+    if(count<=0)return true;
+    uintptr_t tuning=0;
+    if(count>4096||!TuningReady(c,tuning))return false;
+    const float step=Field<float>(tuning,16);
+    for(int k=1;k<=count;++k)factor-=step/static_cast<float>(k);
+    factor=factor<0.1f?0.1f:fminf(1.0f,factor);
+    return true;
+}
 bool LockonReady(const Context& c,int value,uintptr_t rows[4]) {
     const uintptr_t lockon=c.player+2960;
     if(Field<uintptr_t>(lockon,0)!=g_base+0x5B5320)return false;
@@ -164,6 +178,14 @@ void GummiExtraSnapshot(const TrainerContext& host) {
     const float remaining=Field<float>(c.player,1512);
     if(isfinite(remaining))SnapshotValue(327,fmaxf(0,remaining));
     Combo q{};if(ComboReady(c,q)){SnapshotValue(324,q.stock);SnapshotValue(325,q.progress);SnapshotValue(326,q.phase);}
+    // Damage entries 1FF340/1FF4F0 set flags+5132 bit 0x10 when durability runs
+    // out and start the +1500 protection timer with bit 0x20. State 2 (1FD1E0)
+    // subtracts native engine ticks and clears the timer and bit at zero.
+    const float protection=Field<float>(c.player,1500);
+    if((c.flags&0x20)&&isfinite(protection))SnapshotValue(330,protection);
+    SnapshotValue(331,(c.flags&0x20)?1:0);SnapshotValue(332,(c.flags&0x10)?1:0);
+    const int attenuation=Field<int>(c.player,5128);SnapshotValue(333,attenuation);
+    float factor=1;if(AttenuationFactor(c,attenuation,factor))SnapshotValue(334,factor);
 }
-void GummiExtraCapabilities(){for(unsigned slot=320;slot<=329;++slot)SupportCapability(slot);}
+void GummiExtraCapabilities(){for(unsigned slot=320;slot<=334;++slot)SupportCapability(slot);}
 

@@ -366,6 +366,39 @@ bool Rotate(float yaw, float pitch) {
     return true;
 }
 void ClearCamera() { freeCamera=false; fovEnabled=false; cameraScene=cameraHeap=0; cameraRoom={}; cameraSubmode=-1; heldRoll=0; }
+
+// Read-only timing diagnostics (timing-callback-context-20261008 #6, #10).
+// Each timing callback (1574E0) adds one tick to save+0x2444 and to
+// save+0x244C+4*world for worlds 0..18, saturating at 0xCDFE5C4 (999:59:59 at
+// 60 ticks per second). 1548E0 stores the frame's unscaled tick delta at
+// 717484, clamped to 6; the trainer's speed multiplier changes only 717480.
+struct LateFrames { uintptr_t scheduler, heap; MapTarget room; unsigned count; };
+LateFrames lateFrames{};
+bool SameLateFrameScene() {
+    return lateFrames.scheduler==At<uintptr_t>(0x716868) && lateFrames.heap==At<uintptr_t>(0x9BA920) &&
+           !memcmp(&lateFrames.room,&At<MapTarget>(0x717008),sizeof(MapTarget));
+}
+// WorldTick calls this once per bridge frame, after the game's update, while
+// the host is connected. Scene teardown, a new scene, or a reset on disconnect
+// or Disable All starts the count again; loading frames are never counted.
+void CountLateFrame(const TrainerContext& c) {
+    if (!c.sceneReady) { lateFrames={}; return; }
+    if (!SameLateFrameScene()) lateFrames={At<uintptr_t>(0x716868),At<uintptr_t>(0x9BA920),At<MapTarget>(0x717008),0};
+    const float delta=At<float>(0x717484);
+    if (Range(delta,0,6) && delta>1) ++lateFrames.count;
+}
+void TimingSnapshot() {
+    constexpr uintptr_t save=0x9A98B0;
+    if (Readable(reinterpret_cast<void*>(g_base+save),8) && At<uint64_t>(save)==0x0000003A4A32484Bull &&
+        Readable(reinterpret_cast<void*>(g_base+save+0x2444),8+4*19)) {
+        SnapshotValue(195,At<unsigned>(save+0x2444)/60.0);
+        const BYTE world=At<BYTE>(0x717008);
+        if (world<19) SnapshotValue(196,At<unsigned>(save+0x244C+4*world)/60.0);
+    }
+    const float delta=At<float>(0x717484);
+    if (Range(delta,0,6)) SnapshotValue(197,delta);
+    if (SameLateFrameScene()) SnapshotValue(198,lateFrames.count);
+}
 }
 
 bool WorldCameraExtraIsHeld() {
@@ -385,6 +418,7 @@ void WorldReset(const TrainerContext&) {
     SetTaskHook(At<uintptr_t>(0x9BA888),g_base+0x1548E0,TimingFrame,false,true);
     SetTaskHook(At<uintptr_t>(0x716868),g_base+0x19CBA0,CameraFrame,false,false);
     timeHook=false; cameraHook=false;
+    lateFrames={};
 }
 void WorldTick(const TrainerContext& c) {
     using namespace world_features;
@@ -394,6 +428,7 @@ void WorldTick(const TrainerContext& c) {
     if ((freeCamera || fovEnabled) && (!c.sceneReady || !CallbackWritesAllowed() || !CameraAvailable() || !SameCameraScene())) ClearCamera();
     if (speed != 1) EnsureTimeHook();
     if (c.sceneReady && (fovEnabled || freeCamera)) EnsureCameraHook();
+    CountLateFrame(c);
 }
 bool WorldHandle(const TrainerContext& c, unsigned slot, const double a[8], TrainerResult& r) {
     using namespace world_features;
@@ -562,6 +597,7 @@ void WorldSnapshot(const TrainerContext& c) {
     }
     if (Finite(At<float>(0x717424))) SnapshotValue(70,At<float>(0x717424));
     if (Finite(At<float>(0x717480))) SnapshotValue(71,At<float>(0x717480));
+    TimingSnapshot();
     if (CameraAvailable()) {
         const float angle=At<float>(0xAC1840+68)*57.29577951308232f;
         if (Range(angle,0.01,179.99)) SnapshotValue(72,angle);
@@ -574,4 +610,5 @@ void WorldCapabilities() {
     for (unsigned slot=48;slot<=79;++slot) SupportCapability(slot);
     SupportCapability(115);
     SupportCapability(116); SupportCapability(117);
+    for (unsigned slot=195;slot<=198;++slot) SupportCapability(slot);
 }

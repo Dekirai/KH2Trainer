@@ -237,8 +237,45 @@ int main(){
     Ready();At<int>(gummi::ModuleRva+36)=2;ClearSnapshot();GummiExtraSnapshot(host);Check(Valid(320)&&Valid(324),"paused readouts remain available");
     Ready();At<uintptr_t>(gummi::HeapRva)=0;ClearSnapshot();GummiExtraSnapshot(host);Check(!Valid(320)&&!Valid(324),"module teardown omits all stale values");
     Ready();At<unsigned>(0x50000+4872+68)=0;ClearSnapshot();GummiExtraSnapshot(host);Check(Valid(320)&&!Valid(324),"uninstalled combo omitted independently");
-    Ready();GummiExtraCapabilities();for(unsigned s=320;s<=329;++s)Check((shared.supported[s/64]&(uint64_t(1)<<(s%64)))!=0,"exact capability range");
-    Check(!(shared.supported[319/64]&(uint64_t(1)<<(319%64)))&&!(shared.supported[330/64]&(uint64_t(1)<<(330%64))),"adjacent slots remain free");
+    // Protection timer (330), protection/destroyed flags (331/332), attenuation counter (333) and factor (334).
+    const uintptr_t timer=0x50000+1500,flags=0x50000+5132,counter=0x50000+5128,step=0xC1008+16;
+    Ready();ClearSnapshot();GummiExtraSnapshot(host);
+    Check(!Valid(330)&&Valid(331)&&shared.values[331]==0&&Valid(332)&&shared.values[332]==0,"idle ship has no protection timer or damage flags");
+    Check(Valid(333)&&shared.values[333]==0&&Valid(334)&&shared.values[334]==1,"zero attenuation counter keeps full movement");
+    for(unsigned bits:{0u,0x10u,0x20u,0x30u,0x400020u,0xFFFFFFCFu}){
+        Ready();At<unsigned>(flags)=bits;At<float>(timer)=37.5f;ClearSnapshot();GummiExtraSnapshot(host);
+        const bool protectedShip=(bits&0x20)!=0,destroyed=(bits&0x10)!=0;
+        Check(Valid(330)==protectedShip&&(!protectedShip||shared.values[330]==37.5),"protection timer is published only while bit 0x20 is set");
+        Check(shared.values[331]==(protectedShip?1:0)&&shared.values[332]==(destroyed?1:0),"protection and destroyed bits read independently");
+    }
+    for(float bad:{std::numeric_limits<float>::quiet_NaN(),std::numeric_limits<float>::infinity()}){
+        Ready();At<unsigned>(flags)=0x20;At<float>(timer)=bad;ClearSnapshot();GummiExtraSnapshot(host);
+        Check(!Valid(330)&&Valid(331)&&shared.values[331]==1,"non-finite protection timer is withheld");
+    }
+    Ready();At<float>(step)=0.25f;At<int>(counter)=2;ClearSnapshot();GummiExtraSnapshot(host);
+    Check(shared.values[333]==2&&shared.values[334]==0.625,"attenuation subtracts tuning+16 divided by each step");
+    Ready();At<float>(step)=0.1f;At<int>(counter)=3;ClearSnapshot();GummiExtraSnapshot(host);
+    Check(shared.values[334]==0.8166666030883789&&shared.values[334]!=0.8166666626930237,"attenuation accumulates in float32, not in double");
+    Ready();At<float>(step)=0.25f;At<int>(counter)=16;ClearSnapshot();GummiExtraSnapshot(host);
+    Check(shared.values[334]==0.15481773018836975&&shared.values[334]!=0.15481774508953094,"each native quotient is rounded to float32 before its subtraction");
+    Ready();At<int>(counter)=1;ClearSnapshot();GummiExtraSnapshot(host);Check(shared.values[334]==double(0.1f),"native floor 0.1");
+    Ready();At<float>(step)=-0.5f;At<int>(counter)=2;ClearSnapshot();GummiExtraSnapshot(host);Check(shared.values[334]==1,"native ceiling 1");
+    Ready();At<float>(step)=0.01f;At<int>(counter)=4096;ClearSnapshot();GummiExtraSnapshot(host);
+    Check(shared.values[334]==0.9110488891601562&&shared.values[334]!=0.911048948764801,"largest counted attenuation keeps float32 order");
+    At<int>(counter)=4097;ClearSnapshot();GummiExtraSnapshot(host);Check(Valid(333)&&shared.values[333]==4097&&!Valid(334),"attenuation above 4096 steps is withheld");
+    for(int negative:{-1,INT32_MIN}){
+        Ready();At<int>(counter)=negative;At<uintptr_t>(0x50560)=0;ClearSnapshot();GummiExtraSnapshot(host);
+        Check(shared.values[333]==negative&&Valid(334)&&shared.values[334]==1,"a negative counter gives 1 without reading tuning");
+    }
+    Ready();At<int>(counter)=3;At<uintptr_t>(0x50560)=0;ClearSnapshot();GummiExtraSnapshot(host);
+    Check(Valid(333)&&!Valid(334)&&Valid(331),"missing tuning row withholds only the factor");
+    Ready();At<int>(counter)=3;At<uintptr_t>(0x50560)=g_base+0xC1088;ClearSnapshot();GummiExtraSnapshot(host);Check(!Valid(334),"tuning pointer of another row withholds the factor");
+    Ready();At<int>(counter)=3;At<float>(step)=std::numeric_limits<float>::quiet_NaN();ClearSnapshot();GummiExtraSnapshot(host);Check(!Valid(334),"non-finite tuning+16 withholds the factor");
+    Ready();At<int>(counter)=3;At<uintptr_t>(gummi::HeapRva)=0;ClearSnapshot();GummiExtraSnapshot(host);
+    Check(!Valid(330)&&!Valid(331)&&!Valid(332)&&!Valid(333)&&!Valid(334),"module teardown omits the protection and attenuation readouts");
+    Ready();GummiExtraCapabilities();for(unsigned s=320;s<=334;++s)Check((shared.supported[s/64]&(uint64_t(1)<<(s%64)))!=0,"exact capability range");
+    Check(!(shared.supported[319/64]&(uint64_t(1)<<(319%64)))&&!(shared.supported[335/64]&(uint64_t(1)<<(335%64))),"adjacent slots remain free");
     double args[8]{};TrainerResult result{};Check(!GummiExtraHandle(host,319,args,result)&&!GummiExtraHandle(host,324,args,result),"read-only/reserved slot writes rejected");
+    for(unsigned s=330;s<=334;++s)Check(!GummiExtraHandle(host,s,args,result),"protection and attenuation readouts have no command");
     printf("GummiExtraGuardTests: %u checks, %u failures\n",checks,failures);VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);return failures?1:0;
 }
