@@ -77,7 +77,7 @@ bool CombatHandle(const TrainerContext& c,unsigned slot,const double args[8],Tra
         }
         if(!combat::StartGuard(c,0,0,mode)){result={3,L"A controlled supported player, a fresh connection and verified native callbacks are required."};return true;}
         result={0,mode==combat::GuardFull?L"HP damage through the player callback is blocked, including its damage-driven Drive and MP gains. Hit reactions and direct scripted changes still apply.":
-            L"Only player callback hits that would leave HP at zero are blocked, including that hit's Drive and MP gains. Other hits, hit reactions and direct scripted changes still apply."};return true;
+            L"Only player callback hits that would knock the character out are blocked (HP at zero after the native minimum, or 1 HP for rescue Mickey), including that hit's Drive and MP gains. Other hits, hit reactions and direct scripted changes still apply."};return true;
     }
     if(slot!=102&&slot!=103&&slot!=104&&slot!=110)return true;
     combat::Target t{};

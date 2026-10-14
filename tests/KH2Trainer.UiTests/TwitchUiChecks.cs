@@ -162,7 +162,9 @@ internal static class TwitchUiChecks
             root.SetValue(TextElement.FontFamilyProperty, new FontFamily("Segoe UI")); root.SetValue(TextElement.FontSizeProperty, 13.5);
             double height = Layout(root, 1000);
             Check(height > 200 && height < 16000, $"Invalid Twitch {name} height {height}.");
-            var texts = Descendants<TextBlock>(root).Where(t => Shown(t)).Select(t => t.Text).ToHashSet();
+            var shown = Descendants<TextBlock>(root).Where(t => Shown(t)).ToArray();
+            // A TextBlock composed of bound Runs keeps Text empty, so its Runs are compared as well.
+            var texts = shown.Select(t => t.Text).Concat(shown.Select(t => string.Concat(t.Inlines.OfType<Run>().Select(r => r.Text)))).ToHashSet();
             if (tab == 0)
             {
                 Check(texts.Contains("How redemptions behave") && texts.Contains("Stream overlay"), "The setup tab must show behaviour and overlay settings.");
@@ -217,7 +219,7 @@ internal static class TwitchUiChecks
         closing.Rewards.Single(r => r.Key == "silence").TestCommand.Execute(null);
         Pump();
         Check(closing.ActiveEffects.Count == 1 && live.Snapshot.Values[145] == 0, "A connected test run must start Silence.");
-        live.Snapshot = Playable(GameplayBlockers.Menu, 0);
+        Become(live.Snapshot, Playable(GameplayBlockers.Menu, 0));
         IReadOnlyList<PendingCleanupInfo>? asked = null;
         Func<IReadOnlyList<PendingCleanupInfo>, bool> waitForCleanup = cleanups =>
         {
@@ -246,7 +248,7 @@ internal static class TwitchUiChecks
 
         // The game exits during a chosen wait: the wait ends at once instead of running out its limit.
         var exiting = StartSilence(output, "close-exit", catalog, Check);
-        exiting.Host.Snapshot = Playable(GameplayBlockers.Menu, 0);
+        Become(exiting.Host.Snapshot, Playable(GameplayBlockers.Menu, 0));
         var exit = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
         exit.Tick += (_, _) => { exit.Stop(); exiting.Host.IsConnected = false; exiting.Host.Snapshot = TrainerSnapshot.Disconnected; };
         bool askedBeforeExit = false;
@@ -257,6 +259,14 @@ internal static class TwitchUiChecks
         Wait(exiting.Vm.DisposeAsync().AsTask());
         Check(errors.Count == 0, "Commands reported errors: " + string.Join(" | ", errors.Select(e => e.Message)));
         return new { success = true, checks, rewards = rewards.Count, renders };
+    }
+
+    /// <summary>Changes a fixture snapshot in place, so the adapter's short snapshot cache already holds the new state.</summary>
+    private static void Become(TrainerSnapshot target, TrainerSnapshot source)
+    {
+        source.Values.CopyTo(target.Values, 0);
+        source.Valid.CopyTo(target.Valid, 0);
+        source.Supported.CopyTo(target.Supported, 0);
     }
 
     /// <summary>A separate connected view model whose Silence! test run has muted the music (80 to 0).</summary>

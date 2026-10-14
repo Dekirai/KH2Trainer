@@ -215,11 +215,11 @@ Reward texts can be English or German. Twitch allows 50 custom rewards per chann
 
 The mission rewards work only while a mission clock runs (timed missions, minigames and timed
 fights) and are refunded otherwise. **Overtime** restarts a running countdown with 30 more seconds,
-**Time Crunch** restarts it at 30 seconds when more time is left, and **Time Out!** holds the
+**Time Crunch** restarts it at 30 seconds when more than 45 seconds are left, and **Time Out!** holds the
 mission clock for 30 seconds while the game keeps running. What happens at zero depends on the
 mission, so the texts stay neutral. **Score Bonus** adds points in score missions. **Guardian
 Angel** ignores a normal hit that would knock the character out (HP stays as it was; scripted HP
-changes and falls still count). **Ouch!** halves the current HP but never knocks out, and **Walk
+changes and falls still count). **Ouch!** halves the current HP but never knocks out (rescue Mickey keeps at least 2 HP), and **Walk
 Only** sets the run speed to the walk speed for 30 seconds. Fast Forward, Slow Motion, Time Stop
 and Freeze Frame now also run for Roxas and rescue Mickey. Mission clocks and play time keep their
 real-time pace under Fast Forward, Slow Motion and Time Stop; Freeze Frame also holds the mission
@@ -274,7 +274,7 @@ the cited research folders; none of it has been tested in a live game yet.
   clock at 60 ticks per second); the field pause and time multiplier do not stop or scale it.
 - **Renderer Timing** shows the unscaled ticks of the current frame and counts frames with more
   than one tick since the last scene change, connection or effect reset. **Loot** shows rescue Mickey's prize mode, during
-  which Lucky and munny retention have no effect. **Gummi** shows the ship's hit-protection timer,
+  which Lucky and munny retention have no effect. **Gummi** shows the ship's hit-protection timer (started by hits, maneuvers and reactions),
   the protection and destroyed flags and the movement attenuation. **Gameplay state** shows
   whether the actor lifetime observer is running or faulted.
 
@@ -305,8 +305,8 @@ evidence and isolated checks; this does not broadly enable input during events.
 | Player | Current reward policy |
 | --- | --- |
 | Sora, including supported forms | Each reward keeps its individual native resource and state checks. |
-| Roxas, including dual-wield Roxas | Healing, full restore, one HP, Ouch!, regeneration, unlimited MP, MP refill, damage guard, Guardian Angel, Super Speed, Snail Mode, Walk Only, Moon Jump, Fast Forward, Slow Motion, Time Stop, Freeze Frame, the mission clock rewards, Score Bonus and the explicitly shared audio/display/caption rewards are permitted when their own checks pass. Drive, animation and other unverified rewards wait. |
-| Rescue Mickey | Same conservative shared-reward list without the mission clock rewards and Score Bonus. Drive transitions remain unavailable. |
+| Roxas, including dual-wield Roxas | Healing, full restore, One HP Left, Ouch!, regeneration, unlimited MP, MP refill, damage guard, Guardian Angel, Super Speed, Snail Mode, Walk Only, Moon Jump, Fast Forward, Slow Motion, Time Stop, Freeze Frame, the mission clock rewards, Score Bonus and the explicitly shared audio/display/caption rewards are permitted when their own checks pass. Drive, animation and other unverified rewards wait. |
+| Rescue Mickey | Same conservative shared-reward list without One HP Left, the mission clock rewards and Score Bonus: his knockout already starts at 1 HP, so Ouch! keeps him at 2 HP or more. Drive transitions remain unavailable. |
 | Unknown or another actor class | Player-dependent rewards wait; no inferred Sora layout is used. |
 
 This is a static compatibility policy, not a claim that every reward has been playtested with

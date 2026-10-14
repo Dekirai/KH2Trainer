@@ -328,7 +328,8 @@ public static class EffectCatalog
         new()
         {
             Key = "one-hp", Category = RewardCategory.Harm, Cost = 5000,
-            AllowedRoles = EffectPlayerRoles.FieldPlayers,
+            // Not rescue Mickey: his per-frame callback 4150E0 starts his knockout at exactly 1 HP (actor-movement-roles-20261007).
+            AllowedRoles = EffectPlayerRoles.Sora | EffectPlayerRoles.Roxas,
             Title = "One HP Left", TitleDe = "Nur noch 1 HP",
             Prompt = "Drops the controlled character to 1 HP. One hit and it's over...",
             PromptDe = "Setzt die gesteuerte Figur auf 1 HP. Ein Treffer und es ist vorbei...",
@@ -352,16 +353,18 @@ public static class EffectCatalog
             Check = ctx =>
             {
                 if (ctx.Read("player.hp") is not double hp) return Readiness.Wait("Waiting for the current HP.");
-                if (hp <= 1) return Readiness.Reject("The current character already has 1 HP.");
+                if (hp <= LowestSafeHp(ctx)) return Readiness.Reject(LowestHpReason(ctx));
                 // Regeneration would refill the HP within a frame.
                 return ctx.Read("combat.autoheal") == 1 ? Readiness.Wait("Waiting for Regeneration to end.") : Readiness.Ready;
             },
             Start = async ctx =>
             {
-                // The native setter keeps any value from 1 to the maximum, so it never reaches the knockout path (player-health-20261007).
+                // The native setter keeps any value from 1 to the maximum, so it never reaches the zero-HP path (player-health-20261007);
+                // rescue Mickey keeps at least 2 HP, because 1 HP already starts his knockout.
                 double hp = ctx.Read("player.hp") ?? throw new EffectDeferredException("Waiting for the current HP.");
-                if (hp <= 1) throw new EffectRejectedException("The current character already has 1 HP.");
-                double target = Math.Max(1, Math.Floor(hp / 2));
+                double lowest = LowestSafeHp(ctx);
+                if (hp <= lowest) throw new EffectRejectedException(LowestHpReason(ctx));
+                double target = Math.Max(lowest, Math.Floor(hp / 2));
                 await ctx.RunAsync("player.hp", target);
                 ctx.Detail = $"-{N(hp - target)} HP";
             },
@@ -526,8 +529,8 @@ public static class EffectCatalog
             Key = "time-crunch", Category = RewardCategory.Harm, Cost = 2500, Group = "mission-clock",
             AllowedRoles = MissionRoles,
             Title = "Time Crunch", TitleDe = "Zeitnot",
-            Prompt = "Restarts a running mission countdown at 30 seconds if more time is left. What happens at zero depends on the mission. Refunded without a countdown.",
-            PromptDe = "Startet einen laufenden Missions-Countdown mit 30 Sekunden neu, wenn mehr Zeit übrig ist. Was bei null passiert, hängt von der Mission ab. Ohne Countdown gibt es die Punkte zurück.",
+            Prompt = "Restarts a running mission countdown at 30 seconds if more than 45 seconds are left. What happens at zero depends on the mission. Refunded otherwise.",
+            PromptDe = "Startet einen laufenden Missions-Countdown mit 30 Sekunden neu, wenn mehr als 45 Sekunden übrig sind. Was bei null passiert, hängt von der Mission ab. Sonst gibt es die Punkte zurück.",
             Features = MissionCountdownFeatures,
             Check = ctx =>
             {
@@ -750,6 +753,13 @@ public static class EffectCatalog
     // A property, not a field: the catalog is built by a static initializer that runs before later fields are set.
     private static string[] FormFeatures =>
         ["drive.trigger", "drive.revert", "drive.cancel", "combat.formtimer", "player.form.id", "drive.phase", "drive.result", "drive.requested"];
+
+    // Rescue Mickey's per-frame callback 4150E0 starts his knockout at exactly 1 HP (actor-movement-roles-20261007).
+    private static double LowestSafeHp(EffectContext ctx) => ctx.Gameplay.Role == PlayerRole.Mickey ? 2 : 1;
+
+    private static string LowestHpReason(EffectContext ctx) => LowestSafeHp(ctx) > 1
+        ? "Rescue Mickey already has the lowest HP that does not knock him out."
+        : "The current character already has 1 HP.";
 
     /// <summary>The bridge takes one Drive switch at a time; a queued form waits until the previous revert or transformation is done.</summary>
     private static Readiness FormCheck(EffectContext ctx) => NoDriveTransition(ctx);

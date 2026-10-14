@@ -4213,7 +4213,7 @@
     "Id": "gummi.protection_timer",
     "Category": "Gummi",
     "Name": "Hit protection time remaining",
-    "Description": "Read the ship's remaining post-hit protection countdown while protection is active. The unit is an engine tick: it counts down by the effective simulation delta, so scaled simulation time changes its real-time length.",
+    "Description": "Read the ship's remaining hit-protection countdown while protection is active. Accepted hits through the captured damage entries start it, and so do the 3:100 maneuver, the 3:106 and 0x1000 reactions and other state-2 paths, so it does not always follow a hit. The unit is an engine tick: it counts down by the effective simulation delta, so scaled simulation time changes its real-time length.",
     "Kind": "ReadOnly",
     "CommandId": 0,
     "ValueSlot": 330,
@@ -4230,7 +4230,7 @@
     "Evidence": [
       {
         "Address": "RVA 0x1FF340 / 0x1FF4F0 / 0x1FD1E0 / 0x154430; player+1500, flags +5132",
-        "Finding": "An accepted hit through either captured damage entry starts the float timer at player+1500 from tuning(+1376)+76 when it is not positive and sets flag 0x20. In state 2 (+1496), 0x1FD1E0 subtracts the 0x154430 delta (0x717480) while 0x20 is set and clears the flag and the timer at or below zero. See docs/research/bdx-bank3-extended-20261008.",
+        "Finding": "An accepted hit through either captured damage entry starts the float timer at player+1500 from tuning(+1376)+76 when it is not positive and sets flag 0x20. The 3:106 reaction 0x1FD7E0 (+108), the 3:100 maneuver 0x1FE860 (+68), the 0x1000 reaction 0x200B80 (+112), 0x1FDD50 (+104) and a per-frame branch of 0x1FD1E0 start or re-arm the same timer and flag. In state 2 (+1496), 0x1FD1E0 subtracts the 0x154430 delta (0x717480) while 0x20 is set and clears the flag and the timer at or below zero. See docs/research/bdx-bank3-extended-20261008.",
         "Level": "Static IDA evidence with original-byte verification; synthetic bridge tests; no live Gummi validation."
       }
     ]
@@ -4239,7 +4239,7 @@
     "Id": "gummi.protection_active",
     "Category": "Gummi",
     "Name": "Hit protection active",
-    "Description": "Read whether the ship's post-hit protection flag is set. The two captured damage entries ignore hits while it is set; whether every durability path honors it is not established.",
+    "Description": "Read whether the ship's hit-protection flag (bit 0x20) is set, whichever hit, maneuver or reaction started it. The two captured damage entries ignore hits while it is set; whether every durability path honors it is not established.",
     "Kind": "ReadOnly",
     "CommandId": 0,
     "ValueSlot": 331,
