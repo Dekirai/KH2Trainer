@@ -51,7 +51,7 @@ internal static class BdxInspectionUiChecks
             Render(panel,output,"script-780.png");
             var tabs=(TabControl)view.FindName("AssetTabs");var list=(ListBox)view.FindName("ScriptInstructions");
             var picker=(ComboBox)view.FindName("ScriptEventPicker");
-            Check(tabs.Items.Count==3&&tabs.SelectedIndex==2,"Script is the bound third tab");
+            Check(tabs.Items.Count==5&&tabs.SelectedIndex==2,"Script is the bound third tab");
             Check(VisualChildren<ListBoxItem>(list).Count()<50,"large script realizes only a bounded viewport");
             Check(VirtualizingPanel.GetIsVirtualizing(list)&&VirtualizingPanel.GetVirtualizationMode(list)==VirtualizationMode.Recycling,"script uses recycling virtualization");
             Check(((TextBox)view.FindName("ScriptInstructionDetails")).IsReadOnly&&((TextBox)view.FindName("ScriptDiagnostics")).IsReadOnly,"details and diagnostics are selectable read-only text");
@@ -136,12 +136,14 @@ internal static class BdxInspectionUiChecks
             CheckExpandedCatalog(output,app);
             CheckBankInventory(output,app);
             CheckEventRolesAndText(output,app);
+            CheckMotionAndContacts(output,app);
             Settle(panel);Check(log.ToString().Length==0,"BDX WPF binding errors: "+log);
             Check(app.Windows.Count==0&&app.MainWindow==null,"offscreen checks create no windows");
             Check(File.ReadAllBytes(loose).SequenceEqual(script)&&File.ReadAllBytes(unknown).SequenceEqual(script),"inspection preserves source bytes");
-            var report=new {success=true,checks,renders=9,width=780,bindingErrors=0,windowCount=app.Windows.Count,
-                renderFiles=new[]{"script-780.png","script-event-780.png","script-error-780.png","script-native-catalog-780.png","script-native-context-780.png","script-native-equipment-780.png","script-native-banks-780.png","script-native-query-780.png","script-events-780.png"},
-                scope="Actual BDX view and viewmodel, synthetic loose/BAR/unknown payloads, native catalog labels/details/search, null and context-dependent metadata, conditional event roles, stored text operands, long-name wrapping, event scrolling, virtualization, cancellation, replaced selection, failures and dark offscreen rendering. No window, script execution, game, input or process attachment."};
+            var report=new {success=true,checks,renders=12,width=780,bindingErrors=0,windowCount=app.Windows.Count,
+                renderFiles=new[]{"script-780.png","script-event-780.png","script-error-780.png","script-native-catalog-780.png","script-native-context-780.png","script-native-equipment-780.png","script-native-banks-780.png","script-native-query-780.png","script-events-780.png",
+                    "motion-780.png","motion-error-780.png","contacts-780.png"},
+                scope="Actual BDX, Motion and Contacts views and viewmodel, synthetic loose/BAR/unknown payloads, native catalog labels/details/search, null and context-dependent metadata, conditional event roles, stored text operands, RAW/Prototype/invalid type 9 entries, frame slider, B_LK120-shaped type 23 definitions with the Event 27 script link, long-name wrapping, event scrolling, virtualization, cancellation, replaced selection, failures and dark offscreen rendering. No window, script execution, game, input or process attachment."};
             File.WriteAllText(Path.Combine(output,"report.json"),JsonSerializer.Serialize(report,new JsonSerializerOptions {WriteIndented=true}));return report;
         }
         finally {
@@ -285,6 +287,127 @@ internal static class BdxInspectionUiChecks
         Check(vm.ScriptRows.Count==1&&vm.ScriptRows[0].NativeCall=="1:15 · Read DWORD at decoded operand +384","inferred +384 meaning is searchable but not the call name");
         vm.ScriptFilter="";Render(panel,output,"script-events-780.png");
         Check(File.ReadAllBytes(path).SequenceEqual(bytes),"event-role inspection preserves source bytes");
+    }
+    private static void CheckMotionAndContacts(string output,Application app)
+    {
+        static string Row(int row,params string[] values)=>(row==3?"row 3 (translation)":$"row {row}").PadRight(21)+string.Concat(values.Select(v=>v.PadLeft(15)));
+        string path=Path.Combine(output,"B_LK120-shaped.mdlx");
+        byte[] bytes=Bar([(3,"scpt",ContactScript()),(9,"raw ",MotionEntry(RawMotion())),(9,"prot",MotionEntry(PrototypeMotion())),
+            (9,"bad ",MotionEntry([7,0,0,0])),(23,"coll",Lk120Definitions()),(23,"tiny",new byte[40])]);
+        File.WriteAllBytes(path,bytes);
+        using var vm=new AssetExplorerViewModel(_=>{});
+        var view=new AssetExplorerView {DataContext=vm};var panel=Panel(view,app);Settle(panel);
+        var tabs=(TabControl)view.FindName("AssetTabs");var slider=(Slider)view.FindName("MotionFrameSlider");
+        var scope=(TextBlock)view.FindName("MotionScope");var error=(Border)view.FindName("MotionErrorBanner");
+        Check(tabs.Items.Count==5&&tabs.Items.IndexOf(view.FindName("MotionTab"))==3&&tabs.Items.IndexOf(view.FindName("ContactsTab"))==4,"Motion and Contacts are the fourth and fifth tabs");
+        tabs.SelectedIndex=3;Settle(panel);
+        Check(vm.SelectedAssetTab==3&&!vm.HasMotion&&!slider.IsEnabled&&scope.Text.Contains("Offline projection, not native safety")&&scope.Text.Contains("OfflineMotionProjection")&&
+            scope.Visibility==Visibility.Visible&&((FrameworkElement)scope.Parent).Visibility==Visibility.Visible,"motion scope label is shown before any motion is opened");
+        Await(vm.OpenFileAsync(path));var rows=vm.Rows.ToArray();
+        Check(rows[1].IsMotion&&rows[1].Kind=="Motion"&&rows[4].IsContactDefinitions&&rows[4].Kind=="Collision/contact definitions"&&rows[0].BarType==3&&!rows[0].IsMotion,
+            "BAR rows keep their type for the motion and contact viewers");
+        vm.SelectedRow=rows[1];Await(vm.InspectSelectedAsync());Settle(panel);
+        Check(vm.HasMotion&&vm.SelectedAssetTab==3&&tabs.SelectedIndex==3&&vm.MotionSummary=="RAW format · root motion present · 0 time keys · 2 RAW matrix frames",
+            "RAW type 9 entry opens the Motion tab with its format and counts");
+        Check(vm.SelectedRow!.IsMotion&&vm.SelectedRow.Kind=="Motion","type 9 context survives navigation into its payload");
+        Check(vm.MotionFrame==0&&vm.MotionSampleText.Contains("RAW frames 0 → 1, fraction 0")&&vm.MotionSampleText.Contains(Row(3,"0","0","0","1")),
+            "frame 0 evaluates the first stored RAW matrix");
+        Check(slider.Maximum==vm.MotionFrameMaximum&&slider.IsSnapToTickEnabled&&slider.IsEnabled&&error.Visibility==Visibility.Collapsed,"frame slider spans the bounded frame range");
+        slider.Value=1;Settle(panel);
+        Check(vm.MotionFrame==1&&vm.MotionSampleText.Contains("RAW frames 1 → 0")&&vm.MotionSampleText.Contains(Row(3,"10","0","0","3"))&&
+            ((TextBox)view.FindName("MotionSample")).Text==vm.MotionSampleText,"slider evaluates the root matrix at the chosen frame");
+        vm.MotionFrame=1e9;Settle(panel);
+        Check(vm.MotionFrame==vm.MotionFrameMaximum&&slider.Value==vm.MotionFrameMaximum&&vm.MotionFrameText=="Frame 600 of 600"&&vm.MotionSampleText.Contains("RAW frames 1 → 0"),
+            "frame input is clamped to the slider range and RAW evaluation clamps to its last frame");
+        vm.MotionFrame=double.NaN;Check(vm.MotionFrame==vm.MotionFrameMaximum,"nonfinite frame input is ignored");
+        Render(panel,output,"motion-780.png");
+        vm.BackCommand.Execute(null);
+        Check(!vm.HasMotion&&vm.MotionSampleText==""&&vm.SelectedAssetTab==0,"back clears the motion inspection");
+        vm.SelectedRow=vm.Rows[2];Await(vm.InspectSelectedAsync());
+        Check(vm.MotionSummary=="Prototype format · root motion present · 2 time keys · 0 RAW matrix frames"&&vm.MotionSampleText.Contains("effective frame 0")&&
+            vm.MotionSampleText.Contains(Row(3,"5","0","0","1"))&&!vm.MotionSampleText.Contains("RAW frames"),"Prototype root channels evaluate through the reviewed evaluator");
+        vm.BackCommand.Execute(null);vm.SelectedRow=vm.Rows[3];Await(vm.InspectSelectedAsync());Settle(panel);
+        Check(!vm.HasMotion&&vm.HasMotionError&&vm.MotionError.Contains("Unsupported type9 motion kind")&&vm.MotionSummary.Contains("could not be read")&&
+            vm.SelectedAssetTab==3&&error.Visibility==Visibility.Visible&&scope.Visibility==Visibility.Visible,"unreadable type 9 entry shows the parser reason beside the scope label");
+        Check(!slider.IsEnabled&&vm.MotionSampleText=="","failed motion has no frame slider or matrix");
+        Render(panel,output,"motion-error-780.png");
+
+        vm.BackCommand.Execute(null);vm.SelectedRow=vm.Rows[4];Await(vm.InspectSelectedAsync());Settle(panel);
+        Check(vm.HasContacts&&!vm.HasMotion&&vm.SelectedAssetTab==4&&tabs.SelectedIndex==4&&vm.ContactRows.Count==164&&vm.ContactCountText=="164 of 164 definitions",
+            "type 23 entry opens every stored definition in the Contacts tab");
+        Check(vm.ContactsSummary.Contains("164 stored definitions · 9 type 10/11 contact definitions · 0 trailing bytes")&&
+            vm.ContactsSummary.Contains("0xBFF00001 enables groups 0, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31"),"summary shows counts and the stored default mask groups");
+        Check(VisualChildren<TextBlock>(view).Any(t=>t.Text=="ENABLED BY STORED DEFAULT MASK")&&vm.ContactsScope.Contains("+1440")&&vm.ContactsScope.Contains("0x3B6310"),
+            "enabled column is labelled by the stored default mask and runtime overrides are disclosed");
+        var list=(ListBox)view.FindName("ContactDefinitions");
+        Check(VirtualizingPanel.GetIsVirtualizing(list)&&VisualChildren<ListBoxItem>(list).Count()<60,"definition list realizes only a bounded viewport");
+        vm.ShowOnlyContacts=true;var first=vm.ContactRows[0];
+        Check(vm.ContactRows.Count==9&&vm.ContactCountText=="9 of 164 definitions"&&first.OrdinalText=="61"&&first.OffsetText=="0x504"&&first.GroupText=="12"&&
+            first.TypeText=="10"&&first.JointText=="127"&&first.HeightText=="500"&&first.EnabledText=="no"&&first.RawText.StartsWith("0C 00 00 00 0A 00 7F 00"),
+            "contact filter lists type 10 joints and heights that the stored mask leaves disabled");
+        vm.ShowOnlyContacts=false;
+        Check(vm.ContactRows[0] is {JointText:"",HeightText:"",EnabledText:"yes"}&&vm.ContactRows[0].RawText.Length==59,"other records show only raw bytes");
+        Check(vm.ContactScriptText.Contains("scpt")&&vm.OpenContactHandlerCommand.CanExecute(null)&&
+            ((Button)view.FindName("OpenContactHandlerButton")).Command==vm.OpenContactHandlerCommand,"the model script is linked for its Event 27 handler");
+        Render(panel,output,"contacts-780.png");
+        Await(vm.OpenContactHandlerAsync());
+        Check(vm.HasScript&&vm.SelectedAssetTab==2&&vm.SelectedScriptEvent?.Event.Id==27&&vm.SelectedScriptInstruction?.Instruction.Pc==19&&
+            vm.Status.Contains("Event 27 starts at PC 19")&&vm.HasContacts,"handler link opens the script at its first Event 27 entry and keeps the definitions");
+        Await(vm.InspectSelectedAsync());
+        Check(vm.HasContacts&&vm.ContactScriptText.Contains("scpt")&&!vm.HasScript,"reopening the definitions keeps the script link");
+        vm.BackCommand.Execute(null);vm.SelectedRow=vm.Rows[5];Await(vm.InspectSelectedAsync());Settle(panel);
+        Check(!vm.HasContacts&&vm.HasContactsError&&vm.ContactsError.Contains("64")&&vm.SelectedAssetTab==4&&vm.ContactRows.Count==0&&
+            vm.ContactScriptText==""&&!vm.OpenContactHandlerCommand.CanExecute(null),"truncated type 23 entry shows its reason and no script link");
+        vm.BackCommand.Execute(null);vm.SelectedRow=vm.Rows[1];bool cancelled=false;
+        System.ComponentModel.PropertyChangedEventHandler cancelWhenBusy=(_,e)=>{
+            if(e.PropertyName==nameof(vm.Busy)&&vm.Busy&&!cancelled) {cancelled=true;vm.CancelCommand.Execute(null);}
+        };
+        vm.PropertyChanged+=cancelWhenBusy;
+        try {Await(vm.InspectSelectedAsync());}finally {vm.PropertyChanged-=cancelWhenBusy;}
+        Check(cancelled&&!vm.HasMotion&&!vm.Busy&&vm.Status.Contains("cancelled"),"cancelled motion inspection publishes nothing");
+        Check(File.ReadAllBytes(path).SequenceEqual(bytes),"motion and definition inspection preserve source bytes");
+    }
+    private static byte[] MotionEntry(byte[] payload)=>[..new byte[144],..payload];
+    private static byte[] RawMotion()
+    {
+        // Two RAW matrices: identity, then translation (10,0,0) with W 3; loop end 1, rate 60.
+        float[] values=[1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1, 1,0,0,0, 0,1,0,0, 0,0,1,0, 10,0,0,3];
+        byte[] b=new byte[128+4*values.Length];BinaryPrimitives.WriteInt32LittleEndian(b,1);
+        BinaryPrimitives.WriteInt32LittleEndian(b.AsSpan(36),2);BinaryPrimitives.WriteInt32LittleEndian(b.AsSpan(44),128);
+        BinaryPrimitives.WriteSingleLittleEndian(b.AsSpan(84),1);BinaryPrimitives.WriteSingleLittleEndian(b.AsSpan(88),60);
+        for(int i=0;i<values.Length;i++)BinaryPrimitives.WriteSingleLittleEndian(b.AsSpan(128+4*i),values[i]);
+        return b;
+    }
+    private static byte[] PrototypeMotion()
+    {
+        // Root descriptor at 160 with unit scale, translation X 5 and no curves; two time keys (0, 10).
+        byte[] b=new byte[2048];
+        void I(int at,int v)=>BinaryPrimitives.WriteInt32LittleEndian(b.AsSpan(at),v);
+        void F(int at,float v)=>BinaryPrimitives.WriteSingleLittleEndian(b.AsSpan(at),v);
+        I(44,160);I(172,1);I(32,2);I(48,256);I(52,9);I(56,310);I(64,384);I(68,1024);I(72,1280);I(76,1536);
+        F(152,60);F(1028,10);F(160,1);F(164,1);F(168,1);F(192,5);
+        for(int i=0;i<9;i++)I(208+4*i,-1);
+        return b;
+    }
+    private static byte[] Lk120Definitions()
+    {
+        // B_LK120-shaped type 23: 164 records, mask 0xBFF00001 and the original type 10 records (motion-event27-20261008).
+        (int Ordinal,string Raw)[] contacts=[(61,"0c0000000a007f00e903000000000000fa00f401"),(62,"0c0000000a007900e903000000000000fa00f401"),
+            (63,"0c0000000a0053000004000000000000fa00bc02"),(64,"0c0000000a0067000004000000000000fa00bc02"),(151,"0d0000000a035e00760300000000000014001400"),
+            (160,"0d0000000a007f00e903000000000000fa009b02"),(161,"0d0000000a007900e903000000000000fa009b02"),
+            (162,"0d0000000a0067000004000000000000fa009b02"),(163,"0d0000000a0053000004000000000000fa009b02")];
+        byte[] b=new byte[64+20*164];BinaryPrimitives.WriteInt32LittleEndian(b,164);BinaryPrimitives.WriteUInt32LittleEndian(b.AsSpan(4),0xBFF00001);
+        for(int i=0;i<164;i++)b[64+20*i+4]=1;
+        foreach(var (ordinal,raw) in contacts)Convert.FromHexString(raw).CopyTo(b,64+20*ordinal);
+        return b;
+    }
+    private static byte[] ContactScript()
+    {
+        // Events 0 and 27 at PCs 18 and 19, each a single Stop.
+        byte[] b=new byte[56];"b_lk120"u8.CopyTo(b);
+        BinaryPrimitives.WriteInt32LittleEndian(b.AsSpan(32),18);BinaryPrimitives.WriteInt32LittleEndian(b.AsSpan(36),27);BinaryPrimitives.WriteInt32LittleEndian(b.AsSpan(40),19);
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(52),0x49);BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(54),0x49);
+        return b;
     }
     private static Border Panel(AssetExplorerView view,Application app)
     {

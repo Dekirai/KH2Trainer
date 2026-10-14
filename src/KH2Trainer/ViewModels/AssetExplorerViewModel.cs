@@ -7,10 +7,12 @@ namespace KH2Trainer;
 
 public sealed record AssetRow(string Name, string Kind, long Length, string Detail,
     AssetPayload? Payload = null, PackageEntryInfo? PackageEntry = null, string? ExportName = null,
-    AssetFingerprintSelection? FingerprintSelection = null, bool IsBdxScript = false)
+    AssetFingerprintSelection? FingerprintSelection = null, bool IsBdxScript = false, ushort? BarType = null)
 {
     public string SizeText => $"{Length:N0} bytes";
     public bool Available => PackageEntry?.IsAvailable ?? true;
+    public bool IsMotion => BarType == 9;
+    public bool IsContactDefinitions => BarType == 23;
 }
 
 public sealed record AssetFingerprintRow(AssetFingerprint Fingerprint)
@@ -71,7 +73,7 @@ public sealed partial class AssetExplorerViewModel : Observable, IDisposable
     public bool Idle => !Busy;
     public AssetRow? SelectedRow { get => selection; set {
         if(value==null&&selection!=null&&rows.Contains(selection))return; // see SelectedFingerprint
-        if(Set(ref selection,value)) { Preview=""; ClearScript(); Changed(nameof(SelectionDetails)); RefreshCommands(); } } }
+        if(Set(ref selection,value)) { Preview=""; ClearInspection(); Changed(nameof(SelectionDetails)); RefreshCommands(); } } }
     public string SelectionDetails => selection is null ? "Choose an entry to inspect or export." :
         $"{selection.Name}\n{selection.Kind} · {selection.SizeText}\n{selection.Detail}";
     public AsyncCommand OpenLooseCommand { get; }
@@ -92,7 +94,7 @@ public sealed partial class AssetExplorerViewModel : Observable, IDisposable
     private IEnumerable<AsyncCommand> Commands => new[] { OpenLooseCommand,OpenPackageCommand,ChooseNamesCommand,
         ClearNamesCommand,BackCommand,InspectCommand,ExportCommand,ExportContainerCommand,CancelCommand,
         CaptureFingerprintCommand,CaptureContainerFingerprintCommand,CompareFingerprintCommand,
-        LoadFingerprintIndexCommand,SaveFingerprintIndexCommand,ClearFingerprintIndexCommand,InspectScriptCommand };
+        LoadFingerprintIndexCommand,SaveFingerprintIndexCommand,ClearFingerprintIndexCommand,InspectScriptCommand,OpenContactHandlerCommand };
     public AssetExplorerViewModel(Action<string> log)
     {
         this.log=log;
@@ -107,6 +109,7 @@ public sealed partial class AssetExplorerViewModel : Observable, IDisposable
         BackCommand=new(Back,()=>Idle&&history.Count>0);
         InspectCommand=new(InspectSelectedAsync,()=>Idle&&selection?.Available==true);
         InspectScriptCommand=new(InspectScriptAsync,()=>Idle&&selection?.Available==true);
+        OpenContactHandlerCommand=new(OpenContactHandlerAsync,()=>Idle&&contactScript!=null);
         ExportCommand=new(()=>Export(false),()=>Idle&&selection?.Available==true);
         ExportContainerCommand=new(()=>Export(true),()=>Idle&&container!=null);
         CancelCommand=new(()=>{operation?.Cancel();return Task.CompletedTask;},()=>Busy);
@@ -145,7 +148,7 @@ public sealed partial class AssetExplorerViewModel : Observable, IDisposable
     {
         Title=pageTitle;Description=pageDescription;allRows=entries;package=index;container=payload;
         containerFingerprint=fingerprintSelection;
-        selection=null;filter="";Preview="";ClearScript();SelectedAssetTab=0;Changed(nameof(Filter));Changed(nameof(SelectedRow));Changed(nameof(SelectionDetails));
+        selection=null;filter="";Preview="";ClearInspection();SelectedAssetTab=0;Changed(nameof(Filter));Changed(nameof(SelectedRow));Changed(nameof(SelectionDetails));
         RefreshRows();RefreshCommands();
     }
     private Task Back()
@@ -176,7 +179,7 @@ public sealed partial class AssetExplorerViewModel : Observable, IDisposable
     public Task OpenFileAsync(string path)
     {
         return Run("Reading asset…",async token=>{
-            ClearScript();
+            ClearInspection();
             var payload=await Task.Run(()=>reader.OpenLooseFile(path),token);
             var locator=AssetFingerprintSelection.FromLoose(payload,DefaultSourceLabel(path));
             await OpenPayload(payload,false,token,fingerprintSelection:locator);
@@ -193,7 +196,7 @@ public sealed partial class AssetExplorerViewModel : Observable, IDisposable
     {
         string? names=namesFile.Length==0?null:namesFile;
         return Run("Reading package index…",async token=>{
-            ClearScript();
+            ClearInspection();
             var index=await Task.Run(()=>reader.OpenPackageIndex(path,names,token),token);
             var entries=index.Entries.Select(e=>new AssetRow(e.Name,e.IsAvailable?"Package entry":"Unavailable",e.OriginalLength,
                 $"#{e.Ordinal} · MD5 {e.NameHash} · stored {e.StoredLength:N0} bytes · offset {e.Offset:N0}",PackageEntry:e)).ToArray();
@@ -208,6 +211,8 @@ public sealed partial class AssetExplorerViewModel : Observable, IDisposable
     {
         var row=selection;var index=package;
         if(row==null)return Task.CompletedTask;
+        // Event 27 runs in the script of the same model: keep its first type 3 sibling (or the current link on reopen).
+        var script=row.IsContactDefinitions?allRows.FirstOrDefault(r=>r.BarType==3&&r.Payload!=null)??contactScript:null;
         return Run("Inspecting selected asset…",async token=>{
             if(row.PackageEntry is {} entry&&index!=null) {
                 var info=await Task.Run(()=>reader.InspectPackageEntry(index,entry.Ordinal,token),token);
@@ -219,26 +224,26 @@ public sealed partial class AssetExplorerViewModel : Observable, IDisposable
                 token.ThrowIfCancellationRequested();PushPage();
                 ShowPage(entry.Name,"Original payload and remastered assets",entries,null,null);
                 Status=$"{entries.Count:N0} payloads. Choose one to inspect or export.";
-            } else if(row.Payload is {} payload) await OpenPayload(payload,true,token,row.Name,row.FingerprintSelection,row.IsBdxScript);
+            } else if(row.Payload is {} payload) await OpenPayload(payload,true,token,row.Name,row.FingerprintSelection,row.IsBdxScript,row.BarType,script);
         });
     }
     private static AssetRow PayloadRow(AssetPayload p,string kind,string detail,string? exportName=null,
-        AssetFingerprintSelection? fingerprintSelection=null,bool isBdxScript=false) =>
+        AssetFingerprintSelection? fingerprintSelection=null,bool isBdxScript=false,ushort? barType=null) =>
         new(p.Name,kind,p.Length,detail,p,ExportName:exportName,FingerprintSelection:fingerprintSelection,
-            IsBdxScript:isBdxScript||Path.GetExtension(p.Name).Equals(".bdx",StringComparison.OrdinalIgnoreCase));
+            IsBdxScript:isBdxScript||Path.GetExtension(p.Name).Equals(".bdx",StringComparison.OrdinalIgnoreCase),BarType:barType);
     private async Task OpenPayload(AssetPayload payload,bool push,CancellationToken token,string? displayName=null,
-        AssetFingerprintSelection? fingerprintSelection=null,bool isBdxScript=false)
+        AssetFingerprintSelection? fingerprintSelection=null,bool isBdxScript=false,ushort? barType=null,AssetRow? script=null)
     {
         byte[] prefix=await Task.Run(()=>reader.ReadPrefixAsync(payload,4096,token),token);
         bool explicitBdx=isBdxScript||Path.GetExtension(payload.Name).Equals(".bdx",StringComparison.OrdinalIgnoreCase);
-        string kind=explicitBdx?"BDX script":AssetArchiveReader.Recognize(prefix);
+        string kind=explicitBdx?"BDX script":barType is 9 or 23?AssetArchiveReader.TypeName(barType.Value):AssetArchiveReader.Recognize(prefix);
         // BDX's raw name field can start with BAR magic. Its explicit context wins.
         bool isBar=!explicitBdx&&prefix.Length>=4&&prefix[0]==0x42&&prefix[1]==0x41&&prefix[2]==0x52&&prefix[3]==1;
         BarDocument? bar=isBar?await Task.Run(()=>reader.ReadBarAsync(payload,token),token):null;
-        var entries=bar is null ? new[]{PayloadRow(payload,kind,payload.Description,fingerprintSelection:fingerprintSelection,isBdxScript:explicitBdx)} : bar.Entries.Select(e=>
+        var entries=bar is null ? new[]{PayloadRow(payload,kind,payload.Description,fingerprintSelection:fingerprintSelection,isBdxScript:explicitBdx,barType:barType)} : bar.Entries.Select(e=>
             new AssetRow($"{e.Tag} · entry {e.Ordinal}",e.TypeName,e.Payload.Length,$"#{e.Ordinal} · tag {e.Tag} ({e.TagHex}) · type {e.Type} · link {e.LinkIndex} · offset {e.RelativeOffset:N0}"+
                 (e.AliasOf is {} alias?$" · alias of #{alias}":""),e.Payload,ExportName:e.SuggestedFileName,
-                FingerprintSelection:fingerprintSelection?.Child(e),IsBdxScript:e.Type==3)).ToArray();
+                FingerprintSelection:fingerprintSelection?.Child(e),IsBdxScript:e.Type==3,BarType:e.Type)).ToArray();
         token.ThrowIfCancellationRequested();
         if(push&&!ReferenceEquals(container,payload))PushPage();
         ShowPage(displayName??payload.Name,$"{kind} · {payload.Length:N0} bytes · {payload.SourcePath}",entries,null,payload,fingerprintSelection);
@@ -249,6 +254,10 @@ public sealed partial class AssetExplorerViewModel : Observable, IDisposable
             $"BAR contains {bar.Entries.Count:N0} entries. Select an entry to open nested BARs or export its bytes.";
         if(bar is null&&explicitBdx)
             await LoadScript(payload,displayName??payload.Name,token);
+        else if(bar is null&&barType==9)
+            await LoadMotion(payload,displayName??payload.Name,token);
+        else if(bar is null&&barType==23)
+            await LoadContacts(payload,displayName??payload.Name,script,token);
     }
     private static string DefaultSourceLabel(string path)
     {

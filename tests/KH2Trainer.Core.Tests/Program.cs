@@ -214,6 +214,7 @@ await EffectiveAssetReaderTests.RunAsync(workspace, Check);
 await AssetFingerprintTests.RunAsync(workspace, Check);
 await BdxInspectionTests.RunAsync(workspace, Check);
 BdxNativeCallCatalogTests.Run(Check);
+await ContactDefinitionTests.RunAsync(workspace, Check);
 if(args.Length>1) {
     await AssetExplorerTests.RunRetailAsync(args[1],Check);
     await AssetFingerprintTests.RunRealAsync(Path.Combine(args[1],"Modding","openkh","data","kh2","00battle.bin"),Check);

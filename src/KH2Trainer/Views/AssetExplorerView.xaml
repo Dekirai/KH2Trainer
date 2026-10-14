@@ -172,6 +172,103 @@
      </Expander>
     </Grid>
    </TabItem>
+   <TabItem x:Name="MotionTab" Header="Motion">
+    <StackPanel>
+     <TextBlock Text="{Binding MotionTitle}" Style="{StaticResource Text.CardTitle}" TextTrimming="CharacterEllipsis" ToolTip="{Binding MotionTitle}"/>
+     <TextBlock x:Name="MotionSummary" Text="{Binding MotionSummary}" Style="{StaticResource Text.Muted}" Margin="0,6,0,0"/>
+     <Border Style="{StaticResource Banner.Warning}" Margin="0,12,0,0">
+      <TextBlock x:Name="MotionScope" Text="{Binding MotionScope}" TextWrapping="Wrap"/>
+     </Border>
+     <Border x:Name="MotionErrorBanner" Style="{StaticResource Banner.Error}" Margin="0,10,0,0" Visibility="{Binding HasMotionError,Converter={StaticResource BoolVisibility}}">
+      <TextBlock x:Name="MotionError" Text="{Binding MotionError}" TextWrapping="Wrap"/>
+     </Border>
+     <Grid Margin="0,16,0,10">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <TextBlock Text="FRAME" Style="{StaticResource Text.Overline}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+      <Slider x:Name="MotionFrameSlider" Grid.Column="1" Minimum="0" Maximum="{Binding MotionFrameMaximum}" Value="{Binding MotionFrame,Mode=TwoWay}"
+              IsSnapToTickEnabled="True" TickFrequency="1" SmallChange="1" LargeChange="10" IsEnabled="{Binding HasMotion}" VerticalAlignment="Center"
+              AutomationProperties.Name="Motion frame" ToolTip="Frame input in native 60-per-second units. Outside the stored range RAW frames clamp and curves apply their own extrapolation.">
+       <Slider.Template>
+        <ControlTemplate TargetType="Slider">
+         <Grid Height="22" Background="Transparent">
+          <Border Height="4" CornerRadius="2" Background="{StaticResource StrongLineBrush}" VerticalAlignment="Center"/>
+          <Track x:Name="PART_Track">
+           <Track.DecreaseRepeatButton><RepeatButton Command="{x:Static Slider.DecreaseLarge}" Opacity="0" Focusable="False"/></Track.DecreaseRepeatButton>
+           <Track.IncreaseRepeatButton><RepeatButton Command="{x:Static Slider.IncreaseLarge}" Opacity="0" Focusable="False"/></Track.IncreaseRepeatButton>
+           <Track.Thumb>
+            <Thumb Width="14" Height="14">
+             <Thumb.Template><ControlTemplate TargetType="Thumb"><Ellipse Fill="{StaticResource AccentBrush}"/></ControlTemplate></Thumb.Template>
+            </Thumb>
+           </Track.Thumb>
+          </Track>
+         </Grid>
+         <ControlTemplate.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4"/></Trigger></ControlTemplate.Triggers>
+        </ControlTemplate>
+       </Slider.Template>
+      </Slider>
+      <TextBlock x:Name="MotionFrameText" Grid.Column="2" Text="{Binding MotionFrameText}" Style="{StaticResource Text.Small}" VerticalAlignment="Center" MinWidth="110" Margin="12,0,0,0"/>
+     </Grid>
+     <TextBox x:Name="MotionSample" Text="{Binding MotionSampleText,Mode=OneWay}" Style="{StaticResource TextBox.Code}" TextWrapping="NoWrap"
+              Height="130" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Evaluated root matrix"/>
+    </StackPanel>
+   </TabItem>
+   <TabItem x:Name="ContactsTab" Header="Contact definitions">
+    <Grid>
+     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="300"/></Grid.RowDefinitions>
+     <StackPanel Margin="0,0,0,12">
+      <TextBlock Text="{Binding ContactsTitle}" Style="{StaticResource Text.CardTitle}" TextTrimming="CharacterEllipsis" ToolTip="{Binding ContactsTitle}"/>
+      <TextBlock x:Name="ContactsSummary" Text="{Binding ContactsSummary}" Style="{StaticResource Text.Muted}" Margin="0,6,0,0"/>
+      <TextBlock Text="{Binding ContactsScope}" Style="{StaticResource Text.Small}" Margin="0,9,0,0"/>
+      <Border x:Name="ContactsErrorBanner" Style="{StaticResource Banner.Error}" Margin="0,10,0,0" Visibility="{Binding HasContactsError,Converter={StaticResource BoolVisibility}}">
+       <TextBlock x:Name="ContactsError" Text="{Binding ContactsError}" TextWrapping="Wrap"/>
+      </Border>
+     </StackPanel>
+     <DockPanel Grid.Row="1" Margin="0,0,0,10">
+      <Button x:Name="OpenContactHandlerButton" DockPanel.Dock="Right" Content="Open Event 27 handler" Command="{Binding OpenContactHandlerCommand}" Margin="12,0,0,0"
+              ToolTip="Open this model's first BAR type 3 script at its stored Event 27 entry, if it declares one."/>
+      <TextBlock x:Name="ContactScriptText" Text="{Binding ContactScriptText}" Style="{StaticResource Text.Small}" VerticalAlignment="Center"/>
+     </DockPanel>
+     <DockPanel Grid.Row="2" Margin="0,0,0,6">
+      <TextBlock DockPanel.Dock="Right" Text="{Binding ContactCountText}" Style="{StaticResource Text.Small}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+      <CheckBox x:Name="ShowOnlyContacts" Content="Only type 10/11 contact definitions" IsChecked="{Binding ShowOnlyContacts}" IsEnabled="{Binding HasContacts}"/>
+     </DockPanel>
+     <Grid Grid.Row="3">
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+      <Grid Margin="14,0,14,6">
+       <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="40"/><ColumnDefinition Width="48"/><ColumnDefinition Width="40"/><ColumnDefinition Width="48"/><ColumnDefinition Width="54"/><ColumnDefinition Width="124"/><ColumnDefinition Width="*"/>
+       </Grid.ColumnDefinitions>
+       <TextBlock Text="#" Style="{StaticResource Text.Overline}"/>
+       <TextBlock Grid.Column="1" Text="GROUP" Style="{StaticResource Text.Overline}"/>
+       <TextBlock Grid.Column="2" Text="TYPE" Style="{StaticResource Text.Overline}"/>
+       <TextBlock Grid.Column="3" Text="JOINT" Style="{StaticResource Text.Overline}"/>
+       <TextBlock Grid.Column="4" Text="HEIGHT" Style="{StaticResource Text.Overline}"/>
+       <TextBlock Grid.Column="5" Text="ENABLED BY STORED DEFAULT MASK" Style="{StaticResource Text.Overline}" TextWrapping="Wrap"/>
+       <TextBlock Grid.Column="6" Text="STORED 20 BYTES" Style="{StaticResource Text.Overline}"/>
+      </Grid>
+      <ListBox x:Name="ContactDefinitions" Grid.Row="1" ItemsSource="{Binding ContactRows}" Style="{StaticResource List}" ItemContainerStyle="{StaticResource ListRow}"
+               VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="True"
+               AutomationProperties.Name="Contact definitions">
+       <ListBox.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel/></ItemsPanelTemplate></ListBox.ItemsPanel>
+       <ListBox.ItemTemplate><DataTemplate>
+        <Grid>
+         <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="40"/><ColumnDefinition Width="48"/><ColumnDefinition Width="40"/><ColumnDefinition Width="48"/><ColumnDefinition Width="54"/><ColumnDefinition Width="124"/><ColumnDefinition Width="*"/>
+         </Grid.ColumnDefinitions>
+         <TextBlock Text="{Binding OrdinalText}" FontFamily="{StaticResource MonoFont}" FontSize="12" ToolTip="{Binding OffsetText}"/>
+         <TextBlock Grid.Column="1" Text="{Binding GroupText}" FontFamily="{StaticResource MonoFont}" FontSize="12"/>
+         <TextBlock Grid.Column="2" Text="{Binding TypeText}" FontFamily="{StaticResource MonoFont}" FontSize="12"/>
+         <TextBlock Grid.Column="3" Text="{Binding JointText}" FontFamily="{StaticResource MonoFont}" FontSize="12"/>
+         <TextBlock Grid.Column="4" Text="{Binding HeightText}" FontFamily="{StaticResource MonoFont}" FontSize="12"/>
+         <TextBlock Grid.Column="5" Text="{Binding EnabledText}" FontSize="12"/>
+         <TextBlock Grid.Column="6" Text="{Binding RawText}" FontFamily="{StaticResource MonoFont}" FontSize="12" Foreground="{StaticResource MutedBrush}"
+                    TextTrimming="CharacterEllipsis" ToolTip="{Binding RawText}"/>
+        </Grid>
+       </DataTemplate></ListBox.ItemTemplate>
+      </ListBox>
+     </Grid>
+    </Grid>
+   </TabItem>
   </TabControl>
  </Grid>
 </UserControl>
