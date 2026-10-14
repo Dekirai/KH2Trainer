@@ -47,6 +47,9 @@ bool pauseGlobalsOwned=false, pauseTimerAfterStep=false;
 // Native157130/157110 implement an opaque DWORD owner mask. All native call
 // sites use1/2/4/8/16; this separate bit keeps their ownership intact.
 constexpr unsigned pauseTimerMask=0x40000000u;
+// The mission clock freeze (MissionFeatures.inl) owns this second private bit.
+// It stops only the clock, so field pause ignores it and never clears it.
+constexpr unsigned missionFreezeMask=0x20000000u;
 
 bool Finite(double v) { return v == v && v <= 1.7976931348623157e308 && v >= -1.7976931348623157e308; }
 bool CallbackWritesAllowed() {
@@ -161,7 +164,7 @@ void PauseBeforeTiming() {
         if (!PauseSceneReady(2) || At<BYTE>(0xABADE0)!=1 || !(At<unsigned>(0xABB854)&pauseTimerMask)) ReleaseFieldPause();
         return;
     }
-    if (!PauseSceneReady(1) || At<BYTE>(0xABADE0) || At<unsigned>(0xABB854)) { ReleaseFieldPause(); return; }
+    if (!PauseSceneReady(1) || At<BYTE>(0xABADE0) || (At<unsigned>(0xABB854)&~missionFreezeMask)) { ReleaseFieldPause(); return; }
     const bool wasStep=pausePhase==PausePhase::Step;
     // Native153430 allocates only when its recreate flag is set. Otherwise it
     // unconditionally passes the existing pointer into the renderer.
@@ -405,7 +408,7 @@ bool WorldHandle(const TrainerContext& c, unsigned slot, const double a[8], Trai
         if (!a[0]) { ReleaseFieldPause(); r={0,L"Trainer field pause released; native menu/event ownership is preserved."}; return true; }
         if (pausePhase!=PausePhase::Off) { r={0,L"Trainer field pause is already enabled or queued."}; return true; }
         if (!c.sceneReady || !StableScene() || At<BYTE>(0xAC183C) || At<BYTE>(0xABADE0) ||
-            At<unsigned>(0xABB854) || NativePauseTakeover() || !PauseTasksPresent() || !EnsureTimeHook()) {
+            (At<unsigned>(0xABB854)&~missionFreezeMask) || NativePauseTakeover() || !PauseTasksPresent() || !EnsureTimeHook()) {
             r={3,L"Field pause requires normal single-camera gameplay, unowned native pause state and the original outer tasks."}; return true;
         }
         pauseOuter=At<uintptr_t>(0x9BA888); pauseScheduler=At<uintptr_t>(0x716868); pauseHeap=At<uintptr_t>(0x9BA920);
@@ -415,7 +418,7 @@ bool WorldHandle(const TrainerContext& c, unsigned slot, const double a[8], Trai
     }
     if (slot==117) {
         if (pausePhase!=PausePhase::Held || !PauseSceneReady(2) || At<BYTE>(0xABADE0)!=1 ||
-            At<unsigned>(0xABB854)!=pauseTimerMask || !PauseTasksPresent() || !EnsureTimeHook()) {
+            (At<unsigned>(0xABB854)&~missionFreezeMask)!=pauseTimerMask || !PauseTasksPresent() || !EnsureTimeHook()) {
             r={3,L"A trainer-owned field pause with intact native tasks is required before stepping."}; return true;
         }
         pausePhase=PausePhase::Step; At<BYTE>(0xABADE0)=0; At<unsigned>(0xABB854)&=~pauseTimerMask; At<int>(0x716884)=1;

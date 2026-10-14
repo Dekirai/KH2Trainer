@@ -350,7 +350,7 @@ int main() {
           "rescue capabilities cover exactly the allocated protocol range");
     Check((shared.supportedCapabilities[3] & (uint64_t(0x1ffffff) << 16)) == (uint64_t(0x1ffffff) << 16) &&
           (shared.supportedCapabilities[3] & (uint64_t(0x1ff) << 48)) == (uint64_t(0x1ff) << 48) &&
-          !Supported(207) && !Supported(233) && !Supported(239) && !Supported(249),
+          !Supported(207) && Supported(233) && !Supported(234) && !Supported(239) && !Supported(249),
           "Mission including event setters and Camera occupy their allocated protocol ranges");
     Check((shared.supportedCapabilities[4] & (uint64_t(0x3fffff) << 16)) == (uint64_t(0x3fffff) << 16) &&
           !Supported(271) && !Supported(294),
@@ -395,6 +395,21 @@ int main() {
     Request(1226,30); TrainerFrame();
     Check(shared.responseSequence==shared.requestSequence && shared.resultCode!=0 && !At<uintptr_t>(0x2A0FF68) && !Valid(210),
           "Mission timer command is rejected without an active mission and publishes no invented clock value");
+    Request(1233,1); TrainerFrame();
+    Check(shared.responseSequence==shared.requestSequence && shared.resultCode==1 && wcsstr(shared.resultText,L"running mission timer") &&
+          !At<unsigned>(0xABB854) && Valid(233) && shared.values[233]==0,
+          "Mission clock freeze wire command is rejected without an active mission and publishes no held freeze");
+    // A held freeze with no current mission: the frame tick, Disable All, host
+    // expiry and the failure reset each clear only the trainer's private bit.
+    for(unsigned path=0;path<4;++path) {
+        mission_features::freeze.owned=true; At<unsigned>(0xABB854)=world_features::missionFreezeMask|2;
+        if(path==1) Request(1114,0);
+        if(path==2) shared.hostHeartbeat=GetTickCount()-6000;
+        if(path<3) TrainerFrame(); else BestEffortTrainerFailureReset();
+        Check(At<unsigned>(0xABB854)==2 && !mission_features::freeze.owned,"every bridge release path clears only the mission clock freeze bit");
+        shared.hostHeartbeat=GetTickCount();
+    }
+    At<unsigned>(0xABB854)=0; TrainerFrame();
     Request(1477,3); TrainerFrame();
     Check(shared.responseSequence==shared.requestSequence&&shared.resultCode==1&&wcsstr(shared.resultText,L"index 0, 1 or 2"),
           "counter delta wire command reaches index validation");

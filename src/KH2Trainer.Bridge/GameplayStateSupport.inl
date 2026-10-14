@@ -533,9 +533,10 @@ State InspectNativeUnsafe(const TrainerContext& c) {
     if(s.fieldState==2 && !ownField && !(s.blockers&Menu)) s.blockers|=InputBlocked;
     if((At<unsigned>(0x2A11400)&0x20) && !ownFreeze) s.blockers|=InputBlocked;
     // Script owner2 pauses only the mission clock (1570F0/1571B0). The normal
-    // field frame154700 and player controller still update. Other unclassified
+    // field frame154700 and player controller still update; the trainer's mission
+    // clock freeze bit is the same clock-only kind of owner. Other unclassified
     // owners remain conservative; their presence is not an event-mode exception.
-    if(At<unsigned>(0xABB854)&~(world_features::pauseTimerMask|scriptClockOwner)) UnknownState(s);
+    if(At<unsigned>(0xABB854)&~(world_features::pauseTimerMask|world_features::missionFreezeMask|scriptClockOwner)) UnknownState(s);
     const uintptr_t rawPlayer=At<uintptr_t>(0x2A105D0);
     if(!rawPlayer) { s.blockers|=NoPlayer;return s; }
     if(!c.player || !c.status || rawPlayer!=c.player) { s.blockers|=NoPlayer;UnknownState(s);return s; }

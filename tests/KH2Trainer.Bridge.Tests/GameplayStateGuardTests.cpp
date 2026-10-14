@@ -36,6 +36,7 @@ PausePhase pausePhase=PausePhase::Off;
 bool pauseGlobalsOwned=false,actorFreezeOwned=false;
 bool samePause=true,sameFreeze=true;
 constexpr unsigned pauseTimerMask=0x40000000u;
+constexpr unsigned missionFreezeMask=0x20000000u;
 bool SamePauseScene() {return samePause;}
 bool SameFreezeScene() {return sameFreeze;}
 }
@@ -167,7 +168,7 @@ void ScriptClockReadiness() {
         const auto s=Read();Check(s.known && s.controllable && s.role==role && !s.blockers,"clock-only script pause permits verified supported role");
         for(unsigned bit=0;bit<32;++bit) {
             Reset();player_role::next.role=role;At<unsigned>(0xABB854)=2|(1u<<bit);
-            if(bit==1 || (1u<<bit)==world_features::pauseTimerMask)
+            if(bit==1 || (1u<<bit)==world_features::pauseTimerMask || (1u<<bit)==world_features::missionFreezeMask)
                 Check(Read().controllable,"known clock owners do not imply loss of controls");
             else ExpectUnknown("every other timer-owner bit remains conservative even beside script owner2");
         }
@@ -183,6 +184,26 @@ void ScriptClockReadiness() {
         Has(InputBlocked,"clock-only exception does not bypass actual input lock");
         Reset();player_role::next.role=role;At<unsigned>(0xABB854)=2;At<int>(0x716884)=2;
         Has(InputBlocked,"clock-only exception does not bypass suspended field");
+        // The trainer's mission clock freeze is a clock-only owner like script owner2.
+        for(unsigned owners:{0u,2u}) {
+            Reset();player_role::next.role=role;At<unsigned>(0xABB854)=world_features::missionFreezeMask|owners;
+            const auto frozen=Read();
+            Check(frozen.known && frozen.controllable && frozen.role==role && !frozen.blockers,"trainer clock freeze keeps a known controllable player");
+            Reset();player_role::next.role=role;OwnedField();At<unsigned>(0xABB854)|=world_features::missionFreezeMask|owners;
+            Check(Read().known && Read().blockers==TrainerFieldPause,"clock freeze beside the trainer field pause keeps its exact classification");
+            Reset();player_role::next.role=role;OwnedFreeze();At<unsigned>(0xABB854)=world_features::missionFreezeMask|owners;
+            Check(Read().known && Read().blockers==TrainerActorFreeze,"clock freeze beside the trainer actor freeze keeps its exact classification");
+        }
+        for(unsigned foreign:{1u,4u,8u,16u}) {
+            Reset();player_role::next.role=role;At<unsigned>(0xABB854)=world_features::missionFreezeMask|foreign;
+            ExpectUnknown("clock freeze does not hide an unclassified native owner");
+        }
+        Reset();player_role::next.role=role;At<unsigned>(0xABB854)=world_features::missionFreezeMask;At<uintptr_t>(0x2A11478)=1;
+        Has(Cutscene,"clock freeze does not permit an active event");
+        Reset();player_role::next.role=role;At<unsigned>(0xABB854)=world_features::missionFreezeMask;At<BYTE>(0x9006B0)=1;
+        Has(Menu,"clock freeze does not bypass the pause menu");
+        Reset();player_role::next.role=role;At<unsigned>(0xABB854)=world_features::missionFreezeMask;At<int>(0x716884)=2;
+        Has(InputBlocked,"clock freeze does not bypass a suspended field");
     }
     // Execute only the two verified leaf timer bodies in this synthetic image.
     // Their RIP-relative targets remain in this allocation; no game/module call.
@@ -200,6 +221,14 @@ void ScriptClockReadiness() {
         Check(reinterpret_cast<Leaf>(g_base+0x1570F0)()==2 && At<unsigned>(0xABB850)==11,"native clock-only pause stops only the mission counter");
         At<unsigned>(0xABB854)=0;
         Check(reinterpret_cast<Leaf>(g_base+0x1570F0)()==12 && At<unsigned>(0xABB850)==12,"native mission counter resumes after owner cleared");
+        // The same pinned owner leaf with the trainer's private clock freeze bit.
+        using Owner=unsigned(*)(unsigned);
+        Check(reinterpret_cast<Owner>(g_base+0x157130)(world_features::missionFreezeMask)==world_features::missionFreezeMask &&
+            At<unsigned>(0xABB854)==world_features::missionFreezeMask && Read().controllable,
+            "native owner leaf sets the clock freeze bit while player controls remain");
+        Check(reinterpret_cast<Leaf>(g_base+0x1570F0)()==world_features::missionFreezeMask && At<unsigned>(0xABB850)==12,
+            "clock freeze stops only the mission counter");
+        At<unsigned>(0xABB854)=0;
     }
     if(vmRx) Check(VirtualProtect(reinterpret_cast<void*>(g_base+0x433000),4096,oldVm,&ignored)!=0,"restore synthetic VM page");
     if(clockRx) Check(VirtualProtect(reinterpret_cast<void*>(g_base+0x157000),4096,oldClock,&ignored)!=0,"restore synthetic clock page");

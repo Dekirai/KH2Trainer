@@ -261,6 +261,30 @@ int main() {
     Check(world_features::pausePhase==world_features::PausePhase::Off&&captures==beforeBadCapture,"missing texture without recreate flag never calls native capture"); At<BYTE>(0x9BAA50)=1;
     Command(116,1,result); world_features::PauseBeforeTiming(); WorldReset(context);
     Check(At<int>(0x716884)==1&&At<BYTE>(0xABADE0)==0&&At<unsigned>(0xABB854)==0&&Pointer(timing)==g_base+0x1548E0,"disable-all restores pause and timing callback");
+    // The mission clock freeze owns a second private bit. Field pause and step
+    // ignore it, never clear it, and still yield to every native owner.
+    const unsigned freeze=world_features::missionFreezeMask,pauseBit=world_features::pauseTimerMask;
+    Check(freeze==0x20000000u&&!(freeze&pauseBit),"clock freeze and field pause use separate private bits");
+    At<unsigned>(0xABB854)=freeze; Command(116,1,result);
+    Check(result.code==0&&world_features::pausePhase==world_features::PausePhase::Requested,"field pause queues while the mission clock is frozen");
+    world_features::PauseBeforeTiming(); world_features::PauseBeforeTiming();
+    Check(world_features::pausePhase==world_features::PausePhase::Held&&At<int>(0x716884)==2&&At<unsigned>(0xABB854)==(freeze|pauseBit),"field pause captures and holds beside the clock freeze");
+    Command(117,0,result);
+    Check(result.code==0&&At<int>(0x716884)==1&&At<unsigned>(0xABB854)==freeze,"step releases only the field pause bit");
+    world_features::PauseBeforeTiming(); world_features::PauseAfterTiming();
+    Check(world_features::pausePhase==world_features::PausePhase::Held&&At<unsigned>(0xABB854)==(freeze|pauseBit),"step recaptures beside the clock freeze");
+    Command(116,0,result);
+    Check(result.code==0&&At<int>(0x716884)==1&&At<BYTE>(0xABADE0)==0&&At<unsigned>(0xABB854)==freeze,"field pause release never clears the clock freeze");
+    At<unsigned>(0xABB854)=0; Command(116,1,result); world_features::PauseBeforeTiming(); At<unsigned>(0xABB854)|=freeze;
+    world_features::PauseBeforeTiming(); Check(world_features::pausePhase==world_features::PausePhase::Held,"a clock freeze taken during the pause keeps it held");
+    WorldReset(context); Check(At<int>(0x716884)==1&&At<unsigned>(0xABB854)==freeze,"disable-all field release keeps the clock freeze");
+    At<unsigned>(0xABB854)=freeze|1; Command(116,1,result); Check(result.code!=0&&At<unsigned>(0xABB854)==(freeze|1),"native owner beside the clock freeze still refuses field pause");
+    At<unsigned>(0xABB854)=freeze; Command(116,1,result); At<unsigned>(0xABB854)|=4; world_features::PauseBeforeTiming();
+    Check(world_features::pausePhase==world_features::PausePhase::Off&&At<unsigned>(0xABB854)==(freeze|4),"native owner arriving beside the clock freeze still wins before capture");
+    At<unsigned>(0xABB854)=freeze; Command(116,1,result); world_features::PauseBeforeTiming(); At<unsigned>(0xABB854)|=1; Command(117,0,result);
+    Check(result.code!=0&&At<unsigned>(0xABB854)==(freeze|pauseBit|1),"step refuses a native owner beside the clock freeze");
+    WorldReset(context); Check(At<unsigned>(0xABB854)==(freeze|1),"release keeps native and clock freeze owners");
+    At<unsigned>(0xABB854)=0; At<int>(0x716884)=1; At<BYTE>(0xABADE0)=0;
     Check((shared.supported[1]&(uint64_t(1)<<(116-64)))&&(shared.supported[1]&(uint64_t(1)<<(117-64))),"field pause and step capabilities published");
     printf("World guard tests: %u checks, %u failures; synthetic memory only.\n",checks,failures);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);

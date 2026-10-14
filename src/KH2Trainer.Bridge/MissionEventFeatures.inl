@@ -210,6 +210,18 @@ bool HandlerRowsReady() {
     }
     return true;
 }
+// Boundary scripts may register new handlers. With no free row and no exact
+// pair, 3F5DC0 stores through NULL at 3F5E1C (16 rows of 96 bytes, free:
+// message < 0); 3F4A20 stores a ninth record at 3F4A82 when all 8 registry
+// VM pointers (2AE5D80+8, stride 16) are set. Neither rejects a full table
+// (docs/research/timer-message74-handlers-20261008 #11/#12). One free entry
+// each is required; how many entries a script registers stays unproven.
+bool HandlerCapacityReady() {
+    bool row=false,slot=false;
+    for(unsigned i=0;i<16 && !row;++i) row=Field<int>(g_base+0x2AE6ED0+96*i,0)<0;
+    for(unsigned i=0;i<8 && !slot;++i) slot=!At<uintptr_t>(0x2AE5D88+16*i);
+    return row && slot;
+}
 bool EventsReady(const TrainerContext& c,const View& v) {
     if(At<uintptr_t>(0x2A250B0) || At<uintptr_t>(0x2A25048) ||
         At<uintptr_t>(0x2A250A0)!=v.heap || !Range(v.heap,128) ||
@@ -221,7 +233,8 @@ bool EventsReady(const TrainerContext& c,const View& v) {
     // outerScheduler; that is not the active gameplay allocator accepted here.
     const uintptr_t start=Field<uintptr_t>(v.heap,64),end=Field<uintptr_t>(v.heap,72);
     if(start<v.heap+128 || end<=start || !Range(start,end-start) ||
-        !PendingEventsReady() || !ActorsReady(c.player) || !ResourceReady(v.bar) || !HandlerRowsReady()) return false;
+        !PendingEventsReady() || !ActorsReady(c.player) || !ResourceReady(v.bar) ||
+        !HandlerRowsReady() || !HandlerCapacityReady()) return false;
     for(unsigned i=0;i<8;++i) if(!ScriptReady(At<uintptr_t>(0x2AE5D88+16*i))) return false;
     // Deferred script cleanup can run inside an event. Bound its list too.
     uintptr_t seen[2048]{}; unsigned count=0;
@@ -279,8 +292,11 @@ bool MissionEventHandle(const TrainerContext& c,unsigned slot,const double args[
     // Derived commands always require the full event preflight, including when
     // the calculated absolute target does not cross a boundary.
     const bool event=derived || Boundary(widget,gauge,delivered);
-    if(!CodeReady() || (event && !EventsReady(c,before))) {
-        result={1,L"Native mission code, event lists, script contexts or widget resources are not ready."}; return true;
+    const bool codeReady=CodeReady();
+    if(!codeReady || (event && !EventsReady(c,before))) {
+        result={1,codeReady && !HandlerCapacityReady() ?
+            L"A native mission handler table is full, so a boundary event could overflow it. Nothing was called." :
+            L"Native mission code, event lists, script contexts or widget resources are not ready."}; return true;
     }
     if(!mission_features::ReadView(c,fresh) || !mission_features::SameView(before,fresh) || !Stable(c,fresh) ||
         !ReadWidget(fresh,slot,index,current) || !SameWidget(widget,current) ||

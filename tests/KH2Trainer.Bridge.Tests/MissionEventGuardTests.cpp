@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <wchar.h>
 #include <initializer_list>
 #include <limits>
 namespace {
@@ -46,6 +47,7 @@ void SnapshotValue(unsigned s,double v){shared.values[s]=v;shared.valid[s/64]|=u
 void SupportCapability(unsigned s){shared.supported[s/64]|=uint64_t(1)<<(s%64);}
 DWORD TestTick(){return fakeNow;}
 #define GetTickCount TestTick
+namespace world_features { constexpr unsigned missionFreezeMask=0x20000000u; }
 #include "../../src/KH2Trainer.Bridge/MissionFeatures.inl"
 #include "../../src/KH2Trainer.Bridge/MissionEventFeatures.inl"
 unsigned checks=0,failures=0,calls=0,events=0,completedHud=0,resetHud=0,sounds=0;
@@ -244,11 +246,48 @@ void DerivedCounterTests() {
     Setup();At<int>(FixtureWidget(230)+36)=INT32_MAX;At<int>(FixtureWidget(230)+56)=INT32_MAX;
     Check(Derived(477,1).code!=0&&calls==0,"INT32_MAX plus one rejected without signed overflow");
 }
+bool FullTable(const TrainerResult& r){return r.text && wcsstr(r.text,L"handler table is full");}
+// A negative spare index uses every entry; otherwise exactly that entry stays free.
+// Used rows carry message i and an empty item list; used slots hold valid scripts.
+void UseHandlerRows(int spare){for(int i=0;i<16;++i)At<int>(0x2AE6ED0+96*i)=i==spare?-1:i;}
+void UseRegistry(int spare){
+    for(int i=0;i<8;++i){const uintptr_t context=0x1A0000+0x100*i;MakeScript(context);At<uintptr_t>(0x2AE5D88+16*i)=i==spare?0:g_base+context;}
+}
+void HandlerCapacityTests() {
+    // 3F5DC0 needs a row with message < 0 among 16; 3F4A20 needs a NULL VM among 8.
+    for(unsigned slot:{230u,231u}) {
+        Setup();UseHandlerRows(-1);auto r=Execute(slot,0);
+        Check(r.code!=0&&calls==0&&FullTable(r),"full 16-row handler table refuses a boundary event by name");
+        Setup();UseRegistry(-1);r=Execute(slot,0);
+        Check(r.code!=0&&calls==0&&FullTable(r),"full 8-slot script registry refuses a boundary event by name");
+        Setup();UseHandlerRows(-1);UseRegistry(-1);r=Execute(slot,50);
+        Check(r.code==0&&calls==1&&events==0,"a value without boundary event needs no handler capacity");
+    }
+    for(int spare=0;spare<16;++spare) {
+        Setup();UseHandlerRows(spare);const auto r=Execute();
+        Check(r.code==0&&calls==1&&events==1,"exactly one free handler row in any position admits the boundary event");
+    }
+    for(int spare=0;spare<8;++spare) {
+        Setup();UseRegistry(spare);const auto r=Execute();
+        Check(r.code==0&&calls==1&&events==1,"exactly one free registry slot in any position admits the boundary event");
+    }
+    for(unsigned slot:{477u,478u}) {
+        Setup();UseHandlerRows(-1);auto r=slot==477?Derived(slot,1):Derived(slot,0,1);
+        Check(r.code!=0&&calls==0&&FullTable(r),"derived counter action keeps the handler row gate");
+        Setup();UseRegistry(-1);r=slot==477?Derived(slot,1):Derived(slot,0,1);
+        Check(r.code!=0&&calls==0&&FullTable(r),"derived counter action keeps the registry gate");
+    }
+    Setup();UseHandlerRows(-1);At<BYTE>(0x3FBAE0)^=1;auto r=Execute();
+    Check(r.code!=0&&calls==0&&!FullTable(r),"changed native code is reported before table capacity");
+    Setup();At<uintptr_t>(0x2A250B0)=1;r=Execute();
+    Check(r.code!=0&&calls==0&&!FullTable(r),"other event gates keep the general refusal");
+}
 }
 int main(){
     using namespace mission_event_features;
     g_base=reinterpret_cast<uintptr_t>(VirtualAlloc(nullptr,0x2C00000,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE));if(!g_base)return 2;
     DerivedCounterTests();
+    HandlerCapacityTests();
     for(unsigned slot:{230u,231u})for(unsigned index=0;index<3;++index)for(unsigned mode=0;mode<3;++mode){
         Setup();const double value=mode==0?0:mode==1?50:slot==230?100:200;
         const auto r=Execute(slot,value,index);

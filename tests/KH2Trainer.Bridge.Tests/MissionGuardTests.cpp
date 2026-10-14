@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <wchar.h>
 #include <initializer_list>
 #include <limits>
 namespace {
@@ -47,6 +48,7 @@ void SupportCapability(unsigned s) { shared.supported[s/64]|=uint64_t(1)<<(s%64)
 DWORD fakeNow=100000;
 DWORD TestTick() { return fakeNow; }
 #define GetTickCount TestTick
+namespace world_features { constexpr unsigned missionFreezeMask=0x20000000u; }
 #include "../../src/KH2Trainer.Bridge/MissionFeatures.inl"
 unsigned checks=0,failures=0,calls=0; int gotSeconds=0,gotIndex=-1;
 bool nativeWrites=true,changeDuringCall=false; char nativeReturn=0;
@@ -73,8 +75,9 @@ void Setup(unsigned mode=1) {
     g_gameThread=GetCurrentThreadId(); g_disabled=0; g_shared=&shared; fakeNow=100000;
     shared.hostHeartbeat=fakeNow; unreadable=unwritable=0; onCodeRead=nullptr; onComboConfirm=nullptr; comboReadSeen=false;
     calls=0; gotSeconds=0; gotIndex=-1; nativeWrites=true; changeDuringCall=false; nativeReturn=0;
-    mission_features::testRestart=Native;
+    mission_features::testRestart=Native; mission_features::freeze={};
     for(const auto& entry:mission_features::code) memcpy(reinterpret_cast<void*>(g_base+entry.rva),entry.bytes,entry.length);
+    for(const auto& entry:mission_features::freezeCode) memcpy(reinterpret_cast<void*>(g_base+entry.rva),entry.bytes,entry.length);
     At<BYTE>(0x9BA8D0)=1; At<int>(0x716884)=1;
     At<uintptr_t>(0x9BA920)=g_base+0x130000; At<uintptr_t>(0x716868)=g_base+0x131000; At<uintptr_t>(0x9BA888)=g_base+0x132000;
     At<uintptr_t>(0x2A105D0)=g_base+actor;
@@ -183,11 +186,129 @@ void ComboTests() {
     }
     for(unsigned slot=479;slot<=481;++slot) {SetupCombo();Check(Command(slot,1).code!=0&&calls==0,"combo slot strictly read-only");}
 }
+constexpr unsigned freezeBit=world_features::missionFreezeMask;
+// Native call sites own 1/2/4/8/16; the field pause owns 0x40000000.
+constexpr unsigned foreignOwners[]={0u,1u,2u,4u,8u,16u,0x40000000u,0x80000000u,0x4000001Fu};
+unsigned& Mask() { return At<unsigned>(0xABB854); }
+bool Owned() { return mission_features::freeze.owned; }
+TrainerResult Freeze(double value,const TrainerContext* alternate=nullptr) { return Command(233,value,alternate); }
+double Published() {
+    ZeroMemory(shared.valid,sizeof(shared.valid)); MissionSnapshot(Context());
+    return Has(233)?shared.values[233]:-1;
+}
+bool ClockUntouched() {
+    return At<uint32_t>(0xABB850)==1234 && At<uint32_t>(0xABB858)==1000 && At<int>(0xABB85C)==7200 &&
+        At<int>(0xABB860)==123 && calls==0;
+}
+void Held(unsigned owners,const char* name) {
+    Check(Freeze(1).code==0 && Owned() && Mask()==(owners|freezeBit) && ClockUntouched() && Published()==1,name);
+}
+void RefuseFreeze(const char* name,const TrainerContext* context=nullptr,double value=1) {
+    const unsigned before=Mask();
+    Check(Freeze(value,context).code!=0 && !Owned() && Mask()==before && ClockUntouched(),name);
+}
+void ChangeHeap() { At<uintptr_t>(0x9BA920)=g_base+0x134000; }
+void ChangeFieldScheduler() { At<uintptr_t>(0x716868)=g_base+0x135000; }
+void ChangeOuterScheduler() { At<uintptr_t>(0x9BA888)=g_base+0x136000; }
+void EndPhase() { At<int>(storage+1072)=2; }
+void Disable() { g_disabled=1; }
+void LoseMission() { At<uintptr_t>(0x2A0FF68)=0; }
+void FreezeTests() {
+    for(unsigned mode:{0u,1u}) for(int phase:{1,2}) {
+        Setup(mode); At<int>(0xABB864)=phase;
+        Held(0,"countdown or count-up freeze owns only the private clock owner bit without a native call");
+        Check(At<int>(0xABB864)==phase && At<BYTE>(0xABB868)==mode,"freeze keeps clock phase and direction");
+        for(unsigned i=0;i<3;++i) MissionTick(Context());
+        Check(Owned() && Mask()==freezeBit && ClockUntouched(),"tick keeps the freeze in the same mission");
+        const auto r=Freeze(0);
+        Check(r.code==0 && !Owned() && Mask()==0 && ClockUntouched() && Published()==0,"disable clears only the private bit and resumes the held clock");
+    }
+    for(unsigned owners:foreignOwners) {
+        Setup(); Mask()=owners; Held(owners,"freeze is taken alongside native and field pause owners");
+        Check(Published()==1,"published freeze state follows the owned bit");
+        Check(Freeze(0).code==0 && !Owned() && Mask()==owners,"disable preserves every native and field pause owner");
+        Setup(); Mask()=owners; Freeze(1); MissionReset(Context());
+        Check(!Owned() && Mask()==owners,"Disable All and failure reset clear only the private bit");
+        Setup(); Mask()=owners; Freeze(1); const TrainerContext failure{g_base,0,0,false}; MissionReset(failure);
+        Check(!Owned() && Mask()==owners,"failure reset without a scene context still releases the clock");
+        for(auto change:{ChangeMission,ChangeDescriptor,ChangeRoom,ChangeHeap,ChangeFieldScheduler,ChangeOuterScheduler,EndPhase,Expire,Disable,LoseMission}) {
+            Setup(); Mask()=owners; Freeze(1); change(); MissionTick(Context());
+            Check(!Owned() && Mask()==owners,"mission, room, heap, scheduler, phase, host or bridge change releases only the private bit");
+            MissionTick(Context()); Check(!Owned() && Mask()==owners,"a released freeze is never re-asserted");
+        }
+        Setup(); Mask()=owners; Freeze(1); auto unready=Context(); unready.sceneReady=false; MissionTick(unready);
+        Check(!Owned() && Mask()==owners,"unready scene releases the freeze");
+        Setup(); Mask()=owners; Freeze(1); fakeNow+=5001; MissionTick(Context());
+        Check(!Owned() && Mask()==owners,"heartbeat timeout releases the freeze");
+        // 157040/157090 zero the whole mask on clock init/reset.
+        Setup(); Mask()=owners; Freeze(1); Mask()=0; Check(Published()==0,"vanished bit is not reported as held");
+        MissionTick(Context()); Check(!Owned() && Mask()==0,"native mask reset ends ownership without re-asserting");
+        Mask()=owners; MissionTick(Context()); MissionReset(Context());
+        Check(Mask()==owners && !Owned(),"owners set after a native reset are never cleared by a lost lease");
+    }
+    for(unsigned byte=0;byte<10;++byte) {
+        Setup(); Freeze(1); At<BYTE>(0x717008+byte)^=0x80; MissionTick(Context());
+        Check(!Owned() && Mask()==0,"every room byte belongs to the freeze lease");
+    }
+    for(int phase:{0,2,3,4}) { Setup(); Freeze(1); At<int>(storage+1072)=phase; MissionTick(Context()); Check(!Owned() && Mask()==0,"ended mission phase releases the freeze"); }
+    Setup(); Freeze(1); Mask()|=4; MissionTick(Context()); Mask()&=~4u; MissionTick(Context());
+    Check(Owned() && Mask()==freezeBit,"native owners may come and go during the freeze");
+    Setup(); Freeze(1); At<int>(0x716884)=2; At<int>(storage+1048)=6; At<unsigned>(storage+4)|=4; At<int>(0xABB864)=0; MissionTick(Context());
+    Check(Owned() && Mask()==freezeBit,"field state, widget registry, mission flags and clock phase are not part of the lease");
+    Setup(); Freeze(1); const auto again=Freeze(1);
+    Check(again.code==0 && Owned() && Mask()==freezeBit && wcsstr(again.text,L"already"),"repeated enable keeps one lease");
+    Setup(); Freeze(1); ChangeMission(); Check(Freeze(1).code==0 && Owned() && mission_features::freeze.id==43 && Mask()==freezeBit,
+        "a new request in a later mission drops the stale lease before taking a new one");
+    MissionTick(Context()); Check(Owned() && Mask()==freezeBit,"the replacement lease belongs to the current mission");
+    Setup(); const auto idle=Freeze(0); Check(idle.code==0 && !Owned() && Mask()==0,"disable without a lease changes nothing");
+    // A set bit that the trainer does not own is never claimed, cleared or reported.
+    for(unsigned owners:{freezeBit,freezeBit|2u}) {
+        Setup(); Mask()=owners; const auto r=Freeze(1);
+        Check(r.code!=0 && !Owned() && Mask()==owners && wcsstr(r.text,L"already set"),"foreign private bit is refused");
+        Freeze(0); MissionTick(Context()); MissionReset(Context());
+        Check(Mask()==owners && Published()==0,"unowned private bit survives disable, tick and reset");
+    }
+    Setup(); LoseMission(); RefuseFreeze("absent mission refuses the freeze");
+    Check(Published()==0 && !Has(208),"freeze state is published even without a mission");
+    for(int phase:{0,2,3,4}) { Setup(); At<int>(storage+1072)=phase; RefuseFreeze("inactive mission phase refuses the freeze"); }
+    for(int phase:{-1,0,3}) { Setup(); At<int>(0xABB864)=phase; RefuseFreeze("stopped or invalid clock phase refuses the freeze"); }
+    Setup(); At<BYTE>(0xABB868)=2; RefuseFreeze("invalid clock direction refuses the freeze");
+    Setup(); At<unsigned>(storage+320)=1; RefuseFreeze("inactive timer refuses the freeze");
+    Setup(); At<uintptr_t>(storage+296)=g_base+0x5C4248; RefuseFreeze("wrong timer class refuses the freeze");
+    Setup(); At<uintptr_t>(storage+976)=g_base+storage+808; RefuseFreeze("unregistered timer refuses the freeze");
+    for(const auto& entry:mission_features::freezeCode) {
+        Setup(); At<BYTE>(entry.rva)^=1; RefuseFreeze("changed first byte of a clock mask leaf refuses the freeze");
+        Setup(); At<BYTE>(entry.rva+entry.length-1)^=1; RefuseFreeze("changed last byte of a clock mask leaf refuses the freeze");
+        Setup(); unreadable=g_base+entry.rva+entry.length-1; RefuseFreeze("unreadable clock mask leaf refuses the freeze");
+    }
+    Setup(); At<BYTE>(0x3FB9A0)^=1; Held(0,"restart-only code is not a freeze requirement");
+    Setup(); unwritable=g_base+0xABB854; RefuseFreeze("read-only clock owner mask refuses the freeze");
+    Setup(); g_gameThread=GetCurrentThreadId()+1; RefuseFreeze("worker thread cannot freeze");
+    Setup(); g_disabled=1; RefuseFreeze("disabled bridge cannot freeze");
+    Setup(); fakeNow+=5001; RefuseFreeze("expired host cannot freeze");
+    Setup(); auto context=Context(); context.sceneReady=false; RefuseFreeze("unready scene cannot freeze",&context);
+    Setup(); context=Context(); ++context.base; RefuseFreeze("wrong base cannot freeze",&context);
+    for(double bad:{-1.0,2.0,0.5,std::numeric_limits<double>::quiet_NaN(),std::numeric_limits<double>::infinity()}) {
+        Setup(); RefuseFreeze("invalid freeze value refused",nullptr,bad);
+        Setup(); Freeze(1); Check(Freeze(bad).code!=0 && Owned() && Mask()==freezeBit,"invalid value never changes a held freeze");
+    }
+    // The restart gate refuses every clock owner and names the trainer's own.
+    for(unsigned slot:{226u,227u}) {
+        Setup(); Freeze(1); const auto r=Command(slot,90);
+        Check(r.code!=0 && calls==0 && wcsstr(r.text,L"Release the mission clock freeze first") && Owned() && Mask()==freezeBit,
+            "restart is refused with a named reason while the trainer freezes the clock");
+        Freeze(0); Check(Command(slot,90).code==0 && calls==1,"restart works again after release");
+    }
+    Setup(); Mask()=freezeBit; const auto foreign=Command(226,90);
+    Check(foreign.code!=0 && calls==0 && !wcsstr(foreign.text,L"Release the mission clock freeze"),"unowned private bit keeps the general restart refusal");
+    Setup(); Freeze(1); MissionSnapshot(Context()); Check(shared.values[229]==1,"paused readout includes the trainer's clock owner");
+}
 }
 int main() {
     g_base=reinterpret_cast<uintptr_t>(VirtualAlloc(nullptr,0x2C00000,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE));
     if(!g_base) return 2;
     ComboTests();
+    FreezeTests();
     for(unsigned mode:{0u,1u}) for(int phase:{1,2}) for(int seconds:{1,90,3599}) {
         Setup(mode); At<int>(0xABB864)=phase; const auto r=Command(226,seconds);
         Check(r.code==0 && calls==1 && gotSeconds==seconds && gotIndex==0,"countdown restarts or changes direction through exactly one native call");
@@ -209,7 +330,7 @@ int main() {
     Setup(); At<int>(storage+332)=INT_MAX; Check(Command(226,60).code==0,"countdown does not impose an unrelated configured count-up limit");
     for(unsigned i:{0u,7u}) { Setup(); At<BYTE>(0xABB868)=static_cast<BYTE>(i+2); Reject("invalid native direction rejected"); }
     for(int phase:{-1,0,3}) { Setup(); At<int>(0xABB864)=phase; Reject("stopped or invalid clock cannot be resurrected"); }
-    for(unsigned bit:{1u,2u,4u,8u,16u,0x40000000u,0x80000000u}) { Setup(); At<unsigned>(0xABB854)=bit; Reject("any existing pause owner is preserved"); }
+    for(unsigned bit:{1u,2u,4u,8u,16u,0x20000000u,0x40000000u,0x80000000u}) { Setup(); At<unsigned>(0xABB854)=bit; Reject("any existing pause owner is preserved"); }
     for(unsigned bit:{4u,16u}) { Setup(); At<unsigned>(storage+4)|=bit; Reject("ending mission rejected"); }
     for(int phase:{0,2,3,4,5,-1}) { Setup(); At<int>(storage+1072)=phase; Reject("unstable mission phase rejected"); }
     Setup(); At<unsigned>(storage+4)=0; Reject("mission controls not activated");
@@ -261,7 +382,7 @@ int main() {
     Setup(); Command(226,90); MissionReset(Context()); MissionTick(Context());
     Check(At<int>(0xABB860)==5400&&calls==1,"disable-all leaves one-time native restart intact");
     Setup(); MissionCapabilities();
-    for(unsigned slot=0;slot<512;++slot) Check(((shared.supported[slot/64]>>(slot%64))&1)==((slot>=208&&slot<=229)||(slot>=479&&slot<=481)),"capabilities cover only implemented mission slots");
+    for(unsigned slot=0;slot<512;++slot) Check(((shared.supported[slot/64]>>(slot%64))&1)==((slot>=208&&slot<=229)||slot==233||(slot>=479&&slot<=481)),"capabilities cover only implemented mission slots");
     Setup(); MissionSnapshot(Context());
     for(unsigned slot=208;slot<=229;++slot) Check(Has(slot)==(slot!=226&&slot!=227),"only valid data has a snapshot value");
     Check(shared.values[208]==42&&shared.values[209]==1&&shared.values[210]==2.05&&shared.values[228]==120&&shared.values[229]==0,"mission and clock readouts use correct offsets/timebase");
@@ -281,7 +402,8 @@ int main() {
     Setup(); At<uintptr_t>(0x2A0FF68)=0; MissionSnapshot(Context()); Check(!Has(208)&&!Has(210),"absent mission has no fabricated zero values");
     Setup(); g_gameThread=0; MissionSnapshot(Context()); Check(!Has(208),"worker snapshot is rejected");
     for(unsigned slot=208;slot<=229;++slot) if(slot!=226&&slot!=227) { Setup(); Check(Command(slot).code!=0&&calls==0,"read-only slot cannot mutate"); }
-    Setup(); double none[8]{}; Check(!MissionHandle(Context(),230,none,result)&&calls==0,"reserved slot falls through");
+    Setup(); double none[8]{};
+    for(unsigned slot:{207u,230u,232u,234u,478u,482u}) Check(!MissionHandle(Context(),slot,none,result)&&calls==0,"slots outside the mission handler fall through");
     printf("Mission guard tests: %u checks, %u failures\n",checks,failures);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE); return failures?1:0;
 }
