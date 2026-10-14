@@ -4,13 +4,16 @@
 constexpr uintptr_t SoraDescriptor=0x750300,SoraTable=0x5CBA28,SoraDamageSlot=0x5CBB10,SoraDamage=0x404EE0;
 constexpr uintptr_t MickeyDescriptor=0x7523B8,MickeyTable=0x5D15A0,MickeyDamageSlot=0x5D1688,MickeyDamage=0x415410;
 constexpr unsigned OwnedGuardSlot=472,GuardOwnerLowSlot=473,GuardOwnerHighSlot=474;
+constexpr unsigned LethalGuardSlot=482,GuardModeSlot=483;
 using DamageFn=intptr_t (__fastcall*)(uintptr_t,uintptr_t,int,unsigned,BYTE);
 enum GuardHookState { GuardUninstalled=0,GuardInstalled=1,GuardFault=2 };
+enum GuardMode { GuardFull=0,GuardLethalOnly=1 };
 LONG guardHookState=GuardUninstalled;
 uintptr_t guardBase=0;
 DamageFn originalSoraDamage=nullptr,originalMickeyDamage=nullptr;
 struct GuardLease {
     bool enabled=false;
+    GuardMode mode=GuardFull;
     uintptr_t player=0,status=0,scheduler=0,heap=0,descriptor=0,object=0;
     uint64_t generation=0,owner=0;
     unsigned character=0;
@@ -177,7 +180,11 @@ bool MayBlock(uintptr_t expectedDescriptor,uintptr_t descriptor,uintptr_t actor,
     if(delta>=0 || bar!=0 || descriptor!=guardBase+expectedDescriptor || descriptor!=guard.descriptor || actor!=guard.player) return false;
     const TrainerContext c{g_base,actor,guard.status,true};
     if(!GuardContext(c)) return false;
-    hp=Field<int>(c.status,0);return true;
+    hp=Field<int>(c.status,0);
+    // 3C0860 clamps HP+delta to the floor at STATUS+8 and the maximum at +4, and
+    // 3D2EB0 dispatches the zero-HP callback for a zero bar-0 result. With HP and
+    // maximum positive, the clamped result is not positive exactly in this case.
+    return guard.mode==GuardFull || (Field<int>(c.status,8)<=0 && static_cast<int64_t>(hp)+delta<=0);
 }
 bool BlockDamage(uintptr_t expectedDescriptor,uintptr_t descriptor,uintptr_t actor,int delta,unsigned bar,int& hp) {
     // Other native threads must not inspect mutable update-thread lease state.
@@ -204,7 +211,7 @@ intptr_t __fastcall MickeyDamageHook(uintptr_t descriptor,uintptr_t actor,int de
 void TickGuard(const TrainerContext& c) {
     if(guard.enabled && !GuardContext(c,true)) StopGuard();
 }
-bool StartGuard(const TrainerContext& c,uint64_t owner=0,uint64_t expectedGeneration=0) {
+bool StartGuard(const TrainerContext& c,uint64_t owner=0,uint64_t expectedGeneration=0,GuardMode mode=GuardFull) {
     if(GetCurrentThreadId()!=g_gameThread || !HostFresh() || !PlayerReady(c) || At<uintptr_t>(0x2A11478) ||
        !PlayerHealthControlReady(c)) return false;
     const auto role=player_role::Inspect(c);
@@ -213,10 +220,11 @@ bool StartGuard(const TrainerContext& c,uint64_t owner=0,uint64_t expectedGenera
     if(!generation || (expectedGeneration && generation!=expectedGeneration)) return false;
     TickGuard(c);
     if(owner && guard.enabled && guard.owner!=owner) return false;
-    if(guard.enabled && guard.owner==owner && guard.generation==generation && GuardContext(c)) return true;
+    // The same owner switches mode in place; its lease, pin and counters remain.
+    if(guard.enabled && guard.owner==owner && guard.generation==generation && GuardContext(c)) { guard.mode=mode;return true; }
     if(!InstallGuardHooks() || !actor_lifetime::Pin(generation)) return false;
     StopGuard();
-    guard.enabled=true;guard.player=c.player;guard.status=c.status;guard.generation=generation;guard.owner=owner;
+    guard.enabled=true;guard.mode=mode;guard.player=c.player;guard.status=c.status;guard.generation=generation;guard.owner=owner;
     guard.scheduler=At<uintptr_t>(0x716868);guard.heap=At<uintptr_t>(0x9BA920);
     guard.descriptor=role.descriptor;guard.object=role.object;guard.character=role.characterId;guard.form=role.form;
     memcpy(guard.room,reinterpret_cast<void*>(g_base+0x717008),sizeof(guard.room));
@@ -227,8 +235,8 @@ uint64_t GuardWordPair(const double* args) {
         (static_cast<uint64_t>(static_cast<uint32_t>(args[1]))<<32);
 }
 bool OwnedGuardHandle(const TrainerContext& c,const double args[8],TrainerResult& result) {
-    result={2,L"Owned damage guard requires an operation and exact owner, bridge and player identifiers."};
-    if(!IsInteger(args[0],0,1) || args[7]!=0) return true;
+    result={2,L"Owned damage guard requires an operation, exact owner, bridge and player identifiers, and mode 0 (full) or 1 (lethal-only)."};
+    if(!IsInteger(args[0],0,1) || !IsInteger(args[7],0,1)) return true;
     for(unsigned i=1;i<=6;++i) if(!IsInteger(args[i],0,4294967295.0)) return true;
     const uint64_t owner=GuardWordPair(args+1),bridge=GuardWordPair(args+3),generation=GuardWordPair(args+5);
     if(!owner || !bridge || bridge!=actor_lifetime::BridgeInstance() || (args[0] && !generation)) return true;
@@ -237,8 +245,10 @@ bool OwnedGuardHandle(const TrainerContext& c,const double args[8],TrainerResult
         if(guard.enabled && guard.owner==owner && (!generation || guard.generation==generation)) StopGuard();
         result={0,L"Owned damage guard release acknowledged; a different owner is preserved."};return true;
     }
-    if(!StartGuard(c,owner,generation)) {
+    const GuardMode mode=args[7]!=0?GuardLethalOnly:GuardFull;
+    if(!StartGuard(c,owner,generation,mode)) {
         result={3,L"Waiting for the expected controlled player and an available damage guard; another owner is preserved."};return true;
     }
-    result={0,L"Owned damage guard applied to the expected player instance."};return true;
+    result={0,mode==GuardLethalOnly?L"Owned lethal-only damage guard applied to the expected player instance.":
+        L"Owned damage guard applied to the expected player instance."};return true;
 }

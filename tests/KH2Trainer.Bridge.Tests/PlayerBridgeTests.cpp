@@ -352,9 +352,9 @@ int main() {
           (shared.supportedCapabilities[3] & (uint64_t(0x1ff) << 48)) == (uint64_t(0x1ff) << 48) &&
           !Supported(207) && Supported(233) && !Supported(234) && !Supported(239) && !Supported(249),
           "Mission including event setters and Camera occupy their allocated protocol ranges");
-    Check((shared.supportedCapabilities[4] & (uint64_t(0x3fffff) << 16)) == (uint64_t(0x3fffff) << 16) &&
-          !Supported(271) && !Supported(294),
-          "Damage tuning edits and diagnostics are exposed by the integrated bridge");
+    Check((shared.supportedCapabilities[4] & (uint64_t(0x3ffffff) << 16)) == (uint64_t(0x3ffffff) << 16) &&
+          !Supported(271) && !Supported(298),
+          "Damage tuning edits, diagnostics, enemy parameter readouts and reset are exposed by the integrated bridge");
     Check((shared.supportedCapabilities[4] & (uint64_t(7) << 48)) == (uint64_t(7) << 48) &&
           !Supported(303) && !Supported(307),
           "Display preview actions are exposed by the integrated bridge");
@@ -370,7 +370,7 @@ int main() {
     for(unsigned slot=431;slot<=438;++slot) Check(Supported(slot),"Window display capability is integrated");
     for(unsigned slot=447;slot<=455;++slot) Check(Supported(slot),"MSAA policy capability is integrated");
     for(unsigned slot=477;slot<=481;++slot) Check(Supported(slot),"checked mission counter actions and read-only combo capabilities are integrated");
-    Check(!Supported(482),"mission additions leave the next protocol slot reserved");
+    Check(Supported(482) && Supported(483) && !Supported(484),"lethal-only guard toggle and guard mode follow; the next protocol slot stays reserved");
     for(unsigned slot : {319u,330u,343u,348u,351u,362u,367u,374u,375u,419u,420u,421u,422u,423u,439u,446u}) Check(!Supported(slot),"adjacent unused slots remain reserved");
     Request(1432,0); TrainerFrame();
     Check(shared.resultCode!=0 && wcsstr(shared.resultText,L"renderer") && !Valid(433),"maximize dispatch rejects an absent renderer before callout");

@@ -64,13 +64,20 @@ bool GetTarget(const TrainerContext& c,Target& t,bool manual=false,bool allowFie
 
 bool CombatHandle(const TrainerContext& c,unsigned slot,const double args[8],TrainerResult& result) {
     if(slot==combat::OwnedGuardSlot) return combat::OwnedGuardHandle(c,args,result);
-    if(slot<98||slot>110||slot==109)return false;
+    if((slot<98||slot>110||slot==109)&&slot!=combat::LethalGuardSlot&&slot!=combat::GuardModeSlot)return false;
     result={1,L"This combat value is read-only."};
-    if(slot==106) {
+    if(slot==106||slot==combat::LethalGuardSlot) {
+        // Both toggles control the one manual owner, each in its own mode.
+        const combat::GuardMode mode=slot==106?combat::GuardFull:combat::GuardLethalOnly;
         if(!IsInteger(args[0],0,1)){result={2,L"Choose On or Off."};return true;}
-        if(!args[0]){combat::StopGuard();result={0,L"Player HP damage guard disabled."};return true;}
-        if(!combat::StartGuard(c)){result={3,L"A controlled supported player, a fresh connection and verified native callbacks are required."};return true;}
-        result={0,L"HP damage through the player callback is blocked, including its damage-driven Drive and MP gains. Hit reactions and direct scripted changes still apply."};return true;
+        if(!args[0]) {
+            if(combat::guard.enabled&&!combat::guard.owner&&combat::guard.mode==mode)combat::StopGuard();
+            result={0,mode==combat::GuardFull?L"Player HP damage guard disabled. A lethal-only guard or another owner's guard is preserved.":
+                L"Lethal-hit guard disabled. A full damage guard or another owner's guard is preserved."};return true;
+        }
+        if(!combat::StartGuard(c,0,0,mode)){result={3,L"A controlled supported player, a fresh connection and verified native callbacks are required."};return true;}
+        result={0,mode==combat::GuardFull?L"HP damage through the player callback is blocked, including its damage-driven Drive and MP gains. Hit reactions and direct scripted changes still apply.":
+            L"Only player callback hits that would leave HP at zero are blocked, including that hit's Drive and MP gains. Other hits, hit reactions and direct scripted changes still apply."};return true;
     }
     if(slot!=102&&slot!=103&&slot!=104&&slot!=110)return true;
     combat::Target t{};
@@ -96,8 +103,12 @@ bool CombatHandle(const TrainerContext& c,unsigned slot,const double args[8],Tra
 void CombatTick(const TrainerContext& c) { combat::TickGuard(c); }
 void CombatSnapshot(const TrainerContext& c) {
     const bool effective=combat::GuardContext(c);
+    const bool lethal=effective&&combat::guard.mode==combat::GuardLethalOnly;
     const uint64_t owner=effective?combat::guard.owner:0;
-    SnapshotValue(106,effective?1:0);
+    // Toggles show the effective guard of either owner in their own mode; 483 is 0 off, 1 full, 2 lethal-only.
+    SnapshotValue(106,effective&&!lethal?1:0);
+    SnapshotValue(combat::LethalGuardSlot,lethal?1:0);
+    SnapshotValue(combat::GuardModeSlot,lethal?2:effective?1:0);
     SnapshotValue(combat::GuardOwnerLowSlot,static_cast<uint32_t>(owner));
     SnapshotValue(combat::GuardOwnerHighSlot,static_cast<uint32_t>(owner>>32));
     SnapshotValue(107,static_cast<double>(combat::blockedHits));
@@ -117,5 +128,6 @@ void CombatCapabilities() {
     for(unsigned s=98;s<=110;++s)if(s!=109)SupportCapability(s);
     SupportCapability(combat::OwnedGuardSlot);
     SupportCapability(combat::GuardOwnerLowSlot);SupportCapability(combat::GuardOwnerHighSlot);
+    SupportCapability(combat::LethalGuardSlot);SupportCapability(combat::GuardModeSlot);
 }
 void CombatReset(const TrainerContext&) { combat::StopGuard(); }
