@@ -181,10 +181,14 @@ bool MayBlock(uintptr_t expectedDescriptor,uintptr_t descriptor,uintptr_t actor,
     const TrainerContext c{g_base,actor,guard.status,true};
     if(!GuardContext(c)) return false;
     hp=Field<int>(c.status,0);
-    // 3C0860 clamps HP+delta to the floor at STATUS+8 and the maximum at +4, and
-    // 3D2EB0 dispatches the zero-HP callback for a zero bar-0 result. With HP and
-    // maximum positive, the clamped result is not positive exactly in this case.
-    return guard.mode==GuardFull || (Field<int>(c.status,8)<=0 && static_cast<int64_t>(hp)+delta<=0);
+    if(guard.mode==GuardFull) return true;
+    // For a negative delta with HP at most the maximum at +4, 3C0860 stores
+    // max(floor at STATUS+8, HP+delta). 3D2EB0 dispatches the zero-HP callback for a
+    // zero bar-0 result, and rescue Mickey's per-frame callback 4150E0 already starts
+    // its departure (knockout) at exactly 1 HP. The descriptor checks above tie
+    // expectedDescriptor to the leased role.
+    const int64_t floorHp=Field<int>(c.status,8),afterHit=static_cast<int64_t>(hp)+delta;
+    return (afterHit<floorHp?floorHp:afterHit)<=(expectedDescriptor==MickeyDescriptor?1:0);
 }
 bool BlockDamage(uintptr_t expectedDescriptor,uintptr_t descriptor,uintptr_t actor,int delta,unsigned bar,int& hp) {
     // Other native threads must not inspect mutable update-thread lease state.

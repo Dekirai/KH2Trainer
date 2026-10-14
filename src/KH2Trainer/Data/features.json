@@ -3307,7 +3307,7 @@
     "Id": "player_damage_guard_lethal",
     "Category": "Combat Practice",
     "Name": "Block lethal player hits only",
-    "Description": "Practice mode between no protection and the full HP damage guard. Normal hits through the verified Sora, Roxas or rescue Mickey callback still deal damage; only a hit that would reduce HP to zero without a scripted minimum is ignored and leaves HP unchanged, also skipping that hit's Drive/MP gain and HUD update. Falls, scripted HP changes, status effects and other knockout paths still apply. Shares the single native guard with the full damage guard. Turns off after a character or scene change or connection loss.",
+    "Description": "Practice mode between no protection and the full HP damage guard. Normal hits through the verified Sora, Roxas or rescue Mickey callback still deal damage; only a hit that would reduce HP to zero without a scripted minimum is ignored and leaves HP unchanged, also skipping that hit's Drive/MP gain and HUD update. For rescue Mickey, whose rescue departure (knockout) already starts at 1 HP, a hit that would leave 1 HP also counts as a knockout and is ignored. Falls, scripted HP changes, status effects and other knockout paths still apply. Shares the single native guard with the full damage guard. Turns off after a character or scene change or connection loss.",
     "Kind": "Toggle",
     "CommandId": 1482,
     "ValueSlot": 482,
@@ -3321,8 +3321,8 @@
     "RestoreBehavior": "Disable protection and release its actor instance. Transparent module-pinned callbacks remain installed for the game process lifetime; HP, its minimum and save data are not changed.",
     "Evidence": [
       {
-        "Address": "RVA 0x5CBB10 / 0x5D1688 to 0x404EE0 / 0x415410 to 0x3A85F0; HP clamp 0x3C0860",
-        "Finding": "Same verified callbacks as the full guard. The native clamp keeps current HP plus delta between the minimum at STATUS+8 and the maximum at +4, so a hit is lethal exactly when that minimum is zero and HP plus delta is at most zero. Only such a hit returns the unchanged HP without calling the original. See docs/research/player-damage-guard-20261007 and docs/research/player-health-20261007.",
+        "Address": "RVA 0x5CBB10 / 0x5D1688 to 0x404EE0 / 0x415410 to 0x3A85F0; HP clamp 0x3C0860; rescue Mickey 1-HP knockout 0x4150E0",
+        "Finding": "Same verified callbacks as the full guard. For a negative hit the native clamp stores the larger of the minimum at STATUS+8 and current HP plus delta (the guard admits HP only up to the maximum at +4), so for Sora and Roxas a hit is lethal exactly when that stored result is at most zero. Rescue Mickey's per-frame callback 0x4150E0 (vtable 0x5D15A0+0x20) starts his rescue departure when HP equals 1, with the same 0x3FD5A0 first step as his zero-HP handler 0x415380 to 0x3A81C0, so for him a stored result of at most 1 is also a knockout. Only such a hit returns the unchanged HP without calling the original. See docs/research/player-damage-guard-20261007, docs/research/player-health-20261007 and docs/research/actor-movement-roles-20261007.",
         "Level": "Complete native bodies and original bytes verified; isolated role/dispatch/ownership tests. Live gameplay not tested."
       }
     ]

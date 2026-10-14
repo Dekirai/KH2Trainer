@@ -290,27 +290,34 @@ bool Shows(double full,double lethal,double mode,uint64_t owner=0) {
         p.ownerHigh==static_cast<uint32_t>(owner>>32);
 }
 void LethalOnly() {
-    struct Case { int hp,floor,delta; unsigned bar; bool block; const char* name; };
+    // Sora/Roxas are knocked out at zero HP. Rescue Mickey's per-frame callback
+    // 4150E0 already starts his departure (knockout) at exactly 1 HP.
+    struct Case { int hp,floor,delta; unsigned bar; bool block,mickeyBlock; const char* name; };
     const Case cases[]={
-        {100,0,-99,0,false,"a hit leaving one HP forwards exactly"},
-        {100,0,-100,0,true,"a hit reaching exactly zero HP is blocked"},
-        {100,0,-101,0,true,"a hit below zero HP is blocked"},
-        {1,0,-1,0,true,"one remaining HP is protected from the last point of damage"},
-        {255,0,-254,0,false,"maximum HP survives a one-HP-short hit"},
-        {255,0,-255,0,true,"maximum HP is protected from an exactly lethal hit"},
-        {1,0,0,0,false,"zero delta forwards"},
-        {1,0,10,0,false,"healing forwards"},
-        {1,0,INT_MAX,0,false,"maximum healing forwards"},
-        {100,0,INT_MIN,0,true,"INT_MIN is lethal in 64-bit arithmetic"},
-        {1,0,INT_MIN+1,0,true,"a near-minimum delta at one HP is lethal"},
-        {100,1,-100,0,false,"a positive native floor keeps HP and forwards"},
-        {1,1,INT_MIN,0,false,"a positive floor forwards even INT_MIN"},
-        {100,100,-1000,0,false,"a floor at current HP forwards"},
-        {100,-5,-100,0,true,"a zero result below a negative floor is still blocked"},
-        {100,INT_MIN,INT_MIN,0,true,"a negative clamped result is blocked"},
-        {100,-5,-99,0,false,"a negative floor still forwards a surviving hit"},
-        {100,0,-100,1,false,"another status bar forwards like the full guard"},
-        {100,0,-100,UINT_MAX,false,"a signed-negative bar index forwards"},
+        {100,0,-99,0,false,true,"a hit leaving one HP forwards for Sora/Roxas and is lethal for rescue Mickey"},
+        {100,0,-98,0,false,false,"a hit leaving two HP forwards for every role"},
+        {2,0,-1,0,false,true,"two HP losing one forwards for Sora/Roxas and is lethal for rescue Mickey"},
+        {100,0,-100,0,true,true,"a hit reaching exactly zero HP is blocked"},
+        {100,0,-101,0,true,true,"a hit below zero HP is blocked"},
+        {1,0,-1,0,true,true,"one remaining HP is protected from the last point of damage"},
+        {255,0,-254,0,false,true,"a one-HP-short hit at maximum HP forwards for Sora/Roxas and is lethal for rescue Mickey"},
+        {255,0,-253,0,false,false,"maximum HP survives a two-HP-short hit for every role"},
+        {255,0,-255,0,true,true,"maximum HP is protected from an exactly lethal hit"},
+        {1,0,0,0,false,false,"zero delta forwards"},
+        {1,0,10,0,false,false,"healing forwards"},
+        {1,0,INT_MAX,0,false,false,"maximum healing forwards"},
+        {100,0,INT_MIN,0,true,true,"INT_MIN is lethal in 64-bit arithmetic"},
+        {1,0,INT_MIN+1,0,true,true,"a near-minimum delta at one HP is lethal"},
+        {100,1,-100,0,false,true,"a native floor of one forwards for Sora/Roxas and is lethal for rescue Mickey"},
+        {1,1,INT_MIN,0,false,true,"a floor of one forwards INT_MIN for Sora/Roxas and blocks it for rescue Mickey"},
+        {100,2,-1000,0,false,false,"a native floor of two keeps every role alive and forwards"},
+        {100,100,-1000,0,false,false,"a floor at current HP forwards"},
+        {100,-5,-100,0,true,true,"a zero result below a negative floor is still blocked"},
+        {100,INT_MIN,INT_MIN,0,true,true,"a negative clamped result is blocked"},
+        {100,-5,-99,0,false,true,"a negative floor forwards a one-HP hit for Sora/Roxas and blocks it for rescue Mickey"},
+        {100,-5,-98,0,false,false,"a negative floor still forwards a surviving hit"},
+        {100,0,-100,1,false,false,"another status bar forwards like the full guard"},
+        {100,0,-100,UINT_MAX,false,false,"a signed-negative bar index forwards"},
     };
     for(unsigned character:{1u,14u,4u}) {
         Setup(character,character==4?11:0);
@@ -322,7 +329,7 @@ void LethalOnly() {
             At<int>(Pool)=k.hp;At<int>(Pool+8)=k.floor;
             const unsigned before=forwardCalls;const uint64_t hits=combat::blockedHits;
             const auto result=Hit(k.delta,k.bar,0xC3);
-            if(k.block) Check(result==k.hp&&forwardCalls==before&&combat::blockedHits==hits+1&&At<int>(Pool)==k.hp&&
+            if(mickey?k.mickeyBlock:k.block) Check(result==k.hp&&forwardCalls==before&&combat::blockedHits==hits+1&&At<int>(Pool)==k.hp&&
                 At<int>(Pool+8)==k.floor,k.name);
             else Check(result==original&&forwardCalls==before+1&&combat::blockedHits==hits&&last.delta==k.delta&&
                 last.bar==k.bar&&last.effects==0xC3&&last.mickey==mickey&&last.actor==g_base+Actor&&
