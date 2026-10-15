@@ -358,6 +358,7 @@ void ResetTrainerEffects(const TrainerContext& c) {
     DriveReset(c);
     GummiReset(c);
     MotionReset(c);
+    MissionReset(c);
     RendererDiagnosticsReset(c);
     WindowDisplayReset(c);
     RendererAaReset(c);
@@ -381,6 +382,7 @@ void BestEffortTrainerFailureReset() {
     __try { DriveReset(c); } __except (EXCEPTION_EXECUTE_HANDLER) {}
     __try { GummiReset(c); } __except (EXCEPTION_EXECUTE_HANDLER) {}
     __try { MotionReset(c); } __except (EXCEPTION_EXECUTE_HANDLER) {}
+    __try { MissionReset(c); } __except (EXCEPTION_EXECUTE_HANDLER) {}
     __try { RendererDiagnosticsFailureReset(c); } __except (EXCEPTION_EXECUTE_HANDLER) {}
     __try { WindowDisplayFailureReset(c); } __except (EXCEPTION_EXECUTE_HANDLER) {}
     __try { RendererAaFailureReset(c); } __except (EXCEPTION_EXECUTE_HANDLER) {}
@@ -470,6 +472,7 @@ void TrainerFrame() {
         MotionTick(c);
         RendererAaTick(c);
         CameraExtraTick(c);
+        MissionTick(c);
     }
     c=MakeTrainerContext();
     movement_tx::Tick(c,g_hostExpired);

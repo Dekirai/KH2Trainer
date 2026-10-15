@@ -4,12 +4,14 @@ using KH2Trainer.Core;
 namespace KH2Trainer.Twitch;
 
 /// <summary>One owner intent on the ordinary serialized command channel; this is not a MOV1 receipt.</summary>
-internal sealed class DamageGuardEffectLease(IGameControl game)
+internal sealed class DamageGuardEffectLease(IGameControl game, DamageGuardMode mode)
 {
     private readonly ulong owner = NewOwner();
     private ulong intentBridge;
     private bool stopping;
     private ActorMovementIdentity confirmed;
+    /// <summary>The native owner this lease publishes; never zero.</summary>
+    public ulong Owner => owner;
     public bool EverApplied { get; private set; }
     public bool PendingCleanup => intentBridge != 0;
     public string? Detail { get; private set; }
@@ -19,16 +21,19 @@ internal sealed class DamageGuardEffectLease(IGameControl game)
         get
         {
             var sample = game.DamageGuard;
-            return !stopping && game.IsConnected && sample.CanEnsure && sample.Effective && sample.Owner == owner &&
+            return !stopping && game.IsConnected && sample.CanEnsure && sample.Mode == mode && sample.Owner == owner &&
                 sample.Identity == confirmed ? Readiness.Ready : Readiness.Wait("Waiting for confirmed protection on the current character");
         }
     }
 
-    public static Readiness StartReadiness(IGameControl game)
+    /// <param name="releasing">The lease a replacing reward ends first. Only its own published owner is not foreign
+    /// protection; the new lease still ensures only once that owner's guard is off (<see cref="MaintainAsync"/>).</param>
+    public static Readiness StartReadiness(IGameControl game, DamageGuardEffectLease? releasing = null)
     {
         var sample = game.DamageGuard;
         if (!game.Supports(472) || !sample.CanEnsure) return Readiness.Wait("Waiting for fresh damage-guard ownership and character information");
-        return sample.Effective ? Readiness.Reject("Damage protection is already active outside this reward.") : Readiness.Ready;
+        bool foreign = sample.Effective && (releasing == null || sample.Owner != releasing.Owner);
+        return foreign ? Readiness.Reject("Damage protection is already active outside this reward.") : Readiness.Ready;
     }
 
     public async Task MaintainAsync(bool mayEnsure, bool release = false)
@@ -48,7 +53,7 @@ internal sealed class DamageGuardEffectLease(IGameControl game)
             {
                 // Generation zero releases only this owner in this bridge, including an off-current lease.
                 // The ordinary transport cannot publish this while an earlier Ensure lacks its ACK.
-                await game.ExecuteAsync(1472, Arguments(0, owner, intentBridge, 0), "Twitch · release damage protection");
+                await game.ExecuteAsync(1472, Arguments(0, owner, intentBridge, 0, lethalOnly: false), "Twitch · release damage protection");
                 intentBridge = 0; confirmed = default; Detail = null;
             }
             catch (Exception error) { Detail = "Waiting to release damage protection: " + error.Message; }
@@ -61,7 +66,7 @@ internal sealed class DamageGuardEffectLease(IGameControl game)
         confirmed = default;
         try
         {
-            await game.ExecuteAsync(1472, Arguments(1, owner, intentBridge, sample.Identity.Generation), "Twitch · protect current character");
+            await game.ExecuteAsync(1472, Arguments(1, owner, intentBridge, sample.Identity.Generation, mode == DamageGuardMode.LethalOnly), "Twitch · protect current character");
             Detail = null;
         }
         catch (Exception error) { Detail = "Waiting for damage protection: " + error.Message; }
@@ -70,12 +75,13 @@ internal sealed class DamageGuardEffectLease(IGameControl game)
 
     private void Observe(DamageGuardSnapshot sample)
     {
-        if (intentBridge != 0 && sample.CanEnsure && sample.Identity.BridgeInstance == intentBridge && sample.Effective && sample.Owner == owner)
+        if (intentBridge != 0 && sample.CanEnsure && sample.Identity.BridgeInstance == intentBridge && sample.Mode == mode && sample.Owner == owner)
         { confirmed = sample.Identity; EverApplied = true; }
     }
 
-    private static double[] Arguments(uint operation, ulong owner, ulong bridge, ulong generation) =>
-        [operation, (uint)owner, (uint)(owner >> 32), (uint)bridge, (uint)(bridge >> 32), (uint)generation, (uint)(generation >> 32)];
+    // The last word selects lethal-only protection when enabling; the same owner may switch modes in place.
+    private static double[] Arguments(uint operation, ulong owner, ulong bridge, ulong generation, bool lethalOnly) =>
+        [operation, (uint)owner, (uint)(owner >> 32), (uint)bridge, (uint)(bridge >> 32), (uint)generation, (uint)(generation >> 32), lethalOnly ? 1 : 0];
     private static ulong NewOwner()
     {
         ulong result;

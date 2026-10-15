@@ -56,6 +56,7 @@ internal sealed class TrainerGameControl(ITwitchHost shell) : IGameControl
     public LockOnPairSnapshot LockOnPair => shell.IsConnected
         ? LockOnPairSnapshot.FromSnapshot(Current, unchecked((uint)Environment.TickCount)) : LockOnPairSnapshot.Unavailable;
     public MovementOperationHandle? PendingMovement => (shell as ITwitchMovementHost)?.PendingMovement;
+    public int BridgeStatus => shell.IsConnected && Current is { Connected: true } current ? current.Status : -1;
     public bool Supports(int capabilitySlot) => Current.Supports(capabilitySlot);
 
     public bool TryRead(int valueSlot, out double value)
@@ -119,7 +120,9 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
 {
     public const string DeveloperConsoleUrl = "https://dev.twitch.tv/console/apps/create";
     public const int TwitchRewardLimit = 50;
-    private static readonly TimeSpan SyncDelay = TimeSpan.FromSeconds(1.2);
+    /// <summary>How long closing may keep retrying cleanups the streamer chose to wait for.</summary>
+    public static readonly TimeSpan CleanupWaitLimit = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan SyncDelay = TimeSpan.FromSeconds(1.2), CleanupRetryDelay = TimeSpan.FromMilliseconds(200);
 
     private readonly ITwitchHost shell;
     private readonly string settingsPath;
@@ -377,9 +380,12 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
     public ObservableCollection<ActiveEffectVm> ActiveEffects { get; } = [];
     public ObservableCollection<PendingEffectVm> PendingEffects { get; } = [];
     public ObservableCollection<EffectEventVm> Events { get; } = [];
+    /// <summary>Ended rewards whose changes are not undone yet; their reward groups stay reserved.</summary>
+    public ObservableCollection<PendingCleanupVm> PendingCleanups { get; } = [];
     public bool HasActive => ActiveEffects.Count > 0;
     public bool HasPending => PendingEffects.Count > 0;
     public bool HasEvents => Events.Count > 0;
+    public bool HasCleanup => PendingCleanups.Count > 0;
     public string GameText => Engine.IsGameReady ? "Player control is available. Compatible rewards can run."
         : shell.IsConnected ? "Waiting for player control. Rewards follow their character and scene requirements."
         : "The trainer is not connected to the game. Redemptions wait until it is.";
@@ -615,7 +621,14 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
             lastEventKey = newest;
             Sync(Events, events, EffectEventVm.KeyOf, vm => vm.Key, e => new EffectEventVm(e), (_, _) => { });
         }
-        Changed(nameof(HasActive), nameof(HasPending), nameof(HasEvents), nameof(GameText), nameof(GameReady), nameof(LiveTabTitle));
+        // Cleanups have no unique key (a reward can leave several), so the short list is replaced when it changes.
+        var cleanups = Engine.PendingCleanups;
+        if (!cleanups.SequenceEqual(PendingCleanups.Select(c => c.Info)))
+        {
+            PendingCleanups.Clear();
+            foreach (var cleanup in cleanups) PendingCleanups.Add(new PendingCleanupVm(cleanup));
+        }
+        Changed(nameof(HasActive), nameof(HasPending), nameof(HasEvents), nameof(HasCleanup), nameof(GameText), nameof(GameReady), nameof(LiveTabTitle));
         StopAllCommand.Refresh();
     }
 
@@ -692,17 +705,39 @@ public sealed class TwitchVm : PageVm, IAsyncDisposable
     }
 
     /// <summary>Called when the trainer closes: ends effects, pauses rewards (if enabled) and stops the overlay.</summary>
-    internal Task ShutdownAsync() => shutdown ??= ShutdownCoreAsync();
+    /// <param name="waitForCleanup">Asked once if ended rewards are still not undone and the game is connected; true keeps retrying
+    /// them for at most <see cref="CleanupWaitLimit"/>, or until the game disconnects.</param>
+    internal Task ShutdownAsync(Func<IReadOnlyList<PendingCleanupInfo>, bool>? waitForCleanup = null) => shutdown ??= ShutdownCoreAsync(waitForCleanup);
 
-    private async Task ShutdownCoreAsync()
+    private async Task ShutdownCoreAsync(Func<IReadOnlyList<PendingCleanupInfo>, bool>? waitForCleanup)
     {
         shutDown = true;
         syncTimer.Stop();
         // Stop receiving first, so nothing arrives after the queue was settled.
         try { await Service.StopListeningAsync().WaitAsync(TimeSpan.FromSeconds(12)); } catch (Exception) { }
         try { await Engine.StopAllAsync("The trainer was closed", DateTimeOffset.UtcNow).WaitAsync(TimeSpan.FromSeconds(10)); } catch (Exception) { }
+        // Before the final flush, so a cleanup that settles a redemption still reaches Twitch.
+        // Only asked while the game is connected: an exited game cannot take anything back.
+        if (Engine.CanWaitForCleanup && waitForCleanup?.Invoke(Engine.PendingCleanups) == true) await WaitForCleanupAsync();
         try { await Service.FlushAsync().WaitAsync(TimeSpan.FromSeconds(6)); } catch (Exception) { }
         if (overlay is { } running) { overlay = null; try { await running.DisposeAsync(); } catch (Exception) { } }
+    }
+
+    /// <summary>The poll loop has stopped, so the engine is ticked here until its cleanups finish, the game disconnects or the limit passes.</summary>
+    private async Task WaitForCleanupAsync()
+    {
+        var deadline = DateTime.UtcNow + CleanupWaitLimit;
+        while (Engine.CanWaitForCleanup && deadline - DateTime.UtcNow is var left && left > TimeSpan.Zero)
+        {
+            try
+            {
+                await Task.Delay(CleanupRetryDelay);
+                // A game command that never acknowledges must not stretch the limit.
+                await Engine.TickAsync(DateTimeOffset.UtcNow).WaitAsync(left);
+            }
+            catch (Exception error) { shell.Log("Twitch effects: " + error.Message); break; }
+            RefreshLive();
+        }
     }
 
     public async ValueTask DisposeAsync()
@@ -1001,6 +1036,14 @@ public sealed class ActiveEffectVm : Observable
         info = next;
         Changed(nameof(Title), nameof(Viewers), nameof(Detail), nameof(HasDetail), nameof(Starting), nameof(Fraction), nameof(RemainingText), nameof(PauseReason));
     }
+}
+
+public sealed class PendingCleanupVm(PendingCleanupInfo info)
+{
+    public PendingCleanupInfo Info { get; } = info;
+    public string Title => Info.Title;
+    public string Reason => Info.Reason;
+    public Brush Brush { get; } = RewardVm.BrushOf(EffectCatalog.Find(info.Key)?.Color ?? "#5B9BFF");
 }
 
 public sealed class PendingEffectVm : Observable

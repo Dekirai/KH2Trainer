@@ -132,7 +132,7 @@ internal static class GameplayAdapterChecks
             snapshot.Values[slot]=value; snapshot.Valid[slot/64]|=1UL<<(slot%64); snapshot.Supported[slot/64]|=1UL<<(slot%64);
         }
         Set(456,1); Set(457,1); Set(458,0); Set(459,1); Set(463,unchecked((uint)Environment.TickCount));
-        Set(106,1); Set(467,(uint)generation); Set(468,(uint)(generation>>32));
+        Set(106,1); Set(483,1); Set(467,(uint)generation); Set(468,(uint)(generation>>32));
         Set(469,(uint)bridge); Set(470,(uint)(bridge>>32)); Set(471,1); Set(472,0);
         Set(473,(uint)owner); Set(474,(uint)(owner>>32));
         var host=new Host { Snapshot=snapshot }; var game=Adapter(host); var sample=game.DamageGuard;
@@ -143,14 +143,14 @@ internal static class GameplayAdapterChecks
         check(game.DamageGuard.Effective && game.DamageGuard.Owner==0 && host.Reads==2,
             "Ordinary owned-guard command invalidates the adapter cache and exposes a later manual owner coherently.");
         host.FailOrdinaryCommand=true;
-        host.OnOrdinaryCommand=()=> { host.Snapshot=snapshot with { Values=(double[])snapshot.Values.Clone() }; host.Snapshot.Values[106]=0; host.Snapshot.Values[473]=0; host.Snapshot.Values[474]=0; host.Snapshot.Values[471]=2; };
+        host.OnOrdinaryCommand=()=> { host.Snapshot=snapshot with { Values=(double[])snapshot.Values.Clone() }; host.Snapshot.Values[106]=0; host.Snapshot.Values[483]=0; host.Snapshot.Values[473]=0; host.Snapshot.Values[474]=0; host.Snapshot.Values[471]=2; };
         bool failed=false; try { game.ExecuteAsync(1472,[],"fixture").GetAwaiter().GetResult(); } catch(IOException) { failed=true; }
         sample=game.DamageGuard;
         check(failed && sample.Available && !sample.CanEnsure && !sample.Effective && sample.Identity.BridgeInstance==bridge,
             "A lost ordinary acknowledgement discards cached protection; an observer fault preserves only the fresh nonce needed for cleanup.");
-        host.Snapshot.Values[106]=1;
+        host.Snapshot.Values[106]=1; host.Snapshot.Values[483]=1;
         check(!game.DamageGuard.Available,"A faulted observer cannot advertise effective guard ownership.");
-        host.Snapshot.Values[106]=0; host.Snapshot.Values[463]=unchecked((uint)Environment.TickCount-2000);
+        host.Snapshot.Values[106]=0; host.Snapshot.Values[483]=0; host.Snapshot.Values[463]=unchecked((uint)Environment.TickCount-2000);
         check(!game.DamageGuard.Available,"Cached guard ownership expires with its native publication.");
         host.Snapshot.Values[463]=unchecked((uint)Environment.TickCount); host.IsConnected=false;
         check(!game.DamageGuard.Available,"Host disconnect suppresses cached guard ownership.");

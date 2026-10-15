@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -18,13 +20,39 @@ internal static class TwitchUiChecks
     {
         public string UserFolder => folder;
         public IReadOnlyList<FeatureDefinition> Catalog => catalog;
-        public bool IsConnected => false;
+        public bool IsConnected { get; set; }
+        public TrainerSnapshot Snapshot { get; set; } = TrainerSnapshot.Disconnected;
         public List<string> Logs { get; } = [];
         public List<(string Message, bool Error)> Notifications { get; } = [];
-        public TrainerSnapshot ReadGameSnapshot() => TrainerSnapshot.Disconnected;
-        public Task Execute(int command, IReadOnlyList<double> arguments, string label) => Task.FromException(new InvalidOperationException("Not connected."));
+        // A connected fixture publishes a fresh native tick on every read, like the running bridge.
+        public TrainerSnapshot ReadGameSnapshot()
+        {
+            if (Snapshot.Connected) Snapshot.Values[GameplayState.PublicationTickSlot] = unchecked((uint)Environment.TickCount);
+            return Snapshot;
+        }
+        // Value commands write their own slot (command 1000 + slot).
+        public Task Execute(int command, IReadOnlyList<double> arguments, string label)
+        {
+            if (!IsConnected) return Task.FromException(new InvalidOperationException("Not connected."));
+            Snapshot.Values[command - 1000] = arguments[0];
+            return Task.CompletedTask;
+        }
         public void Log(string message) => Logs.Add(message);
         public void Notify(string message, bool isError) => Notifications.Add((message, isError));
+    }
+
+    /// <summary>Fresh controllable Sora (or the given blockers) with the music level readable.</summary>
+    private static TrainerSnapshot Playable(GameplayBlockers blockers, double music)
+    {
+        var snapshot = new TrainerSnapshot { Connected = true, SceneReady = true, Status = 1, ProtocolVersion = 4 };
+        foreach (var (slot, value) in new (int, double)[] { (GameplayState.KnownSlot, 1), (GameplayState.RoleSlot, (int)PlayerRole.Sora),
+            (GameplayState.BlockersSlot, (uint)blockers), (GameplayState.ControllableSlot, blockers == GameplayBlockers.None ? 1 : 0),
+            (GameplayState.PublicationTickSlot, 0), (145, music) })
+        {
+            snapshot.Values[slot] = value;
+            snapshot.Valid[slot / 64] |= 1UL << (slot % 64); snapshot.Supported[slot / 64] |= 1UL << (slot % 64);
+        }
+        return snapshot;
     }
 
     public static object Run(string output, Application app)
@@ -122,6 +150,7 @@ internal static class TwitchUiChecks
         Check(vm.PendingEffects.Count == 2 && vm.LiveTabTitle == "Live (2)" && host.Notifications.Count == 2, "Test runs must queue while the game is not connected.");
         Check(vm.PendingEffects.All(p => p.Status.Contains("connect", StringComparison.OrdinalIgnoreCase)), "Waiting rows must say why they wait.");
         rewards["valor"].IsExpanded = true;
+        vm.PendingCleanups.Add(new PendingCleanupVm(new PendingCleanupInfo("silence", "Silence!", "Waiting for player control (Menu)")));
 
         var renders = new List<object>();
         foreach (var (tab, name) in new[] { (0, "setup"), (1, "rewards"), (2, "live") })
@@ -133,7 +162,9 @@ internal static class TwitchUiChecks
             root.SetValue(TextElement.FontFamilyProperty, new FontFamily("Segoe UI")); root.SetValue(TextElement.FontSizeProperty, 13.5);
             double height = Layout(root, 1000);
             Check(height > 200 && height < 16000, $"Invalid Twitch {name} height {height}.");
-            var texts = Descendants<TextBlock>(root).Where(t => Shown(t)).Select(t => t.Text).ToHashSet();
+            var shown = Descendants<TextBlock>(root).Where(t => Shown(t)).ToArray();
+            // A TextBlock composed of bound Runs keeps Text empty, so its Runs are compared as well.
+            var texts = shown.Select(t => t.Text).Concat(shown.Select(t => string.Concat(t.Inlines.OfType<Run>().Select(r => r.Text)))).ToHashSet();
             if (tab == 0)
             {
                 Check(texts.Contains("How redemptions behave") && texts.Contains("Stream overlay"), "The setup tab must show behaviour and overlay settings.");
@@ -151,6 +182,8 @@ internal static class TwitchUiChecks
             {
                 Check(texts.Contains("Running now") && texts.Contains("Waiting") && texts.Contains("Nothing is running."), "The live tab must show both lists.");
                 Check(Descendants<Button>(root).Count(b => Shown(b) && b.DataContext is PendingEffectVm) == 2, "Every waiting redemption needs a refund button.");
+                Check(texts.Contains("Still being undone") && texts.Contains("Silence! · Waiting for player control (Menu)"),
+                    "Rewards that are not undone yet must be listed with what they wait for.");
             }
             var bitmap = new RenderTargetBitmap(1000, (int)height, 96, 96, PixelFormats.Pbgra32); bitmap.Render(root);
             var pixels = new byte[bitmap.PixelWidth * bitmap.PixelHeight * 4]; bitmap.CopyPixels(pixels, bitmap.PixelWidth * 4, 0);
@@ -166,10 +199,97 @@ internal static class TwitchUiChecks
         Pump();
         Check(vm.PendingEffects.Count == 1, "Refund must remove the waiting redemption.");
         Wait(vm.DisposeAsync().AsTask());
-        Check(vm.PendingEffects.Count == 0 && !vm.IsOverlayRunning, "Shutting down must clear the queue and stop the overlay.");
+        Check(vm.PendingEffects.Count == 0 && !vm.IsOverlayRunning && !vm.HasCleanup, "Shutting down must clear the queue and stop the overlay.");
+
+        // The real adapter reports the bridge's developer-desktop status (Hacker Mode never hides the streamer's own desktop).
+        var adapterHost = new FakeHost(folder, catalog);
+        var adapter = (IGameControl)Activator.CreateInstance(typeof(TwitchVm).Assembly.GetType("KH2Trainer.TrainerGameControl", throwOnError: true)!,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, binder: null, args: [adapterHost], culture: null)!;
+        Check(adapter.BridgeStatus == -1, "A disconnected adapter must not claim a developer-desktop status.");
+        adapterHost.IsConnected = true; adapterHost.Snapshot = Playable(GameplayBlockers.None, 80) with { Status = 3 };
+        Check(adapter.BridgeStatus == 3, "The adapter must report the bridge status of the current snapshot.");
+
+        // Closing while an ended reward is not undone: asked once, and a chosen wait finishes the restore within its bound.
+        string closeFolder = Path.Combine(output, "close");
+        if (Directory.Exists(closeFolder)) Directory.Delete(closeFolder, true);
+        Directory.CreateDirectory(closeFolder);
+        new TwitchSettings { OverlayEnabled = false }.Save(Path.Combine(closeFolder, "twitch.json"));
+        var live = new FakeHost(closeFolder, catalog) { IsConnected = true, Snapshot = Playable(GameplayBlockers.None, 80) };
+        var closing = new TwitchVm(live);
+        closing.Rewards.Single(r => r.Key == "silence").TestCommand.Execute(null);
+        Pump();
+        Check(closing.ActiveEffects.Count == 1 && live.Snapshot.Values[145] == 0, "A connected test run must start Silence.");
+        Become(live.Snapshot, Playable(GameplayBlockers.Menu, 0));
+        IReadOnlyList<PendingCleanupInfo>? asked = null;
+        Func<IReadOnlyList<PendingCleanupInfo>, bool> waitForCleanup = cleanups =>
+        {
+            asked = cleanups;
+            live.Snapshot = Playable(GameplayBlockers.None, live.Snapshot.Values[145]); // The streamer closes the menu.
+            return true;
+        };
+        var shutdown = (Task)typeof(TwitchVm).GetMethod("ShutdownAsync", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(closing, [waitForCleanup])!;
+        var waited = Stopwatch.StartNew();
+        Wait(shutdown);
+        Check(asked is [{ Key: "silence", Title: "Silence!" }] && asked[0].Reason.Contains("Menu", StringComparison.Ordinal),
+            "Closing must ask once and name the reward that is not undone yet.");
+        Check(!closing.HasCleanup && live.Snapshot.Values[145] == 80 && waited.Elapsed < TwitchVm.CleanupWaitLimit,
+            "Waiting must finish the restore within the bounded close wait.");
+        Wait(closing.DisposeAsync().AsTask());
+
+        // An exited game cannot take anything back: closing then never offers the futile wait.
+        var gone = StartSilence(output, "close-gone", catalog, Check);
+        gone.Host.IsConnected = false; gone.Host.Snapshot = TrainerSnapshot.Disconnected;
+        bool askedWhileGone = false;
+        waited.Restart();
+        Wait(Shutdown(gone.Vm, _ => { askedWhileGone = true; return false; }));
+        Check(!askedWhileGone && PendingCleanupCount(gone.Vm) == 1 && waited.Elapsed < TwitchVm.CleanupWaitLimit,
+            "Closing after the game exited must not ask to wait for cleanups it cannot finish.");
+        Wait(gone.Vm.DisposeAsync().AsTask());
+
+        // The game exits during a chosen wait: the wait ends at once instead of running out its limit.
+        var exiting = StartSilence(output, "close-exit", catalog, Check);
+        Become(exiting.Host.Snapshot, Playable(GameplayBlockers.Menu, 0));
+        var exit = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
+        exit.Tick += (_, _) => { exit.Stop(); exiting.Host.IsConnected = false; exiting.Host.Snapshot = TrainerSnapshot.Disconnected; };
+        bool askedBeforeExit = false;
+        waited.Restart();
+        Wait(Shutdown(exiting.Vm, _ => { askedBeforeExit = true; exit.Start(); return true; }));
+        Check(askedBeforeExit && PendingCleanupCount(exiting.Vm) == 1 && waited.Elapsed < TwitchVm.CleanupWaitLimit / 2,
+            "A chosen close wait must stop as soon as the game disconnects.");
+        Wait(exiting.Vm.DisposeAsync().AsTask());
         Check(errors.Count == 0, "Commands reported errors: " + string.Join(" | ", errors.Select(e => e.Message)));
         return new { success = true, checks, rewards = rewards.Count, renders };
     }
+
+    /// <summary>Changes a fixture snapshot in place, so the adapter's short snapshot cache already holds the new state.</summary>
+    private static void Become(TrainerSnapshot target, TrainerSnapshot source)
+    {
+        source.Values.CopyTo(target.Values, 0);
+        source.Valid.CopyTo(target.Valid, 0);
+        source.Supported.CopyTo(target.Supported, 0);
+        target.Values[GameplayState.PublicationTickSlot] = unchecked((uint)Environment.TickCount); // Still a fresh publication.
+    }
+
+    /// <summary>A separate connected view model whose Silence! test run has muted the music (80 to 0).</summary>
+    private static (FakeHost Host, TwitchVm Vm) StartSilence(string output, string name, IReadOnlyList<FeatureDefinition> catalog, Action<bool, string> check)
+    {
+        string folder = Path.Combine(output, name);
+        if (Directory.Exists(folder)) Directory.Delete(folder, true);
+        Directory.CreateDirectory(folder);
+        new TwitchSettings { OverlayEnabled = false }.Save(Path.Combine(folder, "twitch.json"));
+        var host = new FakeHost(folder, catalog) { IsConnected = true, Snapshot = Playable(GameplayBlockers.None, 80) };
+        var vm = new TwitchVm(host);
+        vm.Rewards.Single(r => r.Key == "silence").TestCommand.Execute(null);
+        Pump();
+        check(vm.ActiveEffects.Count == 1 && host.Snapshot.Values[145] == 0, $"A connected test run must start Silence ({name}).");
+        return (host, vm);
+    }
+
+    private static Task Shutdown(TwitchVm vm, Func<IReadOnlyList<PendingCleanupInfo>, bool> waitForCleanup) =>
+        (Task)typeof(TwitchVm).GetMethod("ShutdownAsync", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(vm, [waitForCleanup])!;
+
+    private static int PendingCleanupCount(TwitchVm vm) =>
+        ((EffectEngine)typeof(TwitchVm).GetProperty("Engine", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(vm)!).PendingCleanupCount;
 
     /// <summary>Visible in the offscreen tree (IsVisible needs a window).</summary>
     private static bool Shown(DependencyObject element)

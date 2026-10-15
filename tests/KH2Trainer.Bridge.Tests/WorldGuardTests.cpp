@@ -16,7 +16,7 @@ namespace {
 uintptr_t g_base=0;
 volatile LONG g_disabled=0;
 DWORD g_gameThread=0;
-struct TestShared { DWORD hostHeartbeat; double values[128]; uint64_t valid[2], supported[2]; } shared{};
+struct TestShared { DWORD hostHeartbeat; double values[512]; uint64_t valid[8], supported[8]; } shared{};
 TestShared* g_shared=&shared;
 struct TrainerContext { uintptr_t base,player,status; bool sceneReady; };
 struct TrainerResult { LONG code; const wchar_t* text; };
@@ -72,6 +72,61 @@ void Task(Buffer& b,void* manager,uintptr_t callback,unsigned group,unsigned pri
 uintptr_t Pointer(const Buffer& b) { return *reinterpret_cast<const uintptr_t*>(&b); }
 bool Command(unsigned slot,double value,TrainerResult& result) {
     TrainerContext c{g_base,0,0,true}; double args[8]{}; args[0]=value; return WorldHandle(c,slot,args,result);
+}
+bool Valid(unsigned slot) { return (shared.valid[slot/64]&(uint64_t(1)<<(slot%64)))!=0; }
+void Snapshot(const TrainerContext& c) { ZeroMemory(shared.valid,sizeof(shared.valid)); WorldSnapshot(c); }
+// Play time (195/196), unscaled frame delta (197) and late-frame count (198).
+void TimingReadoutTests(const TrainerContext& context) {
+    constexpr uintptr_t save=0x9A98B0;
+    At<uint64_t>(save)=0x0000003A4A32484Bull; At<unsigned>(save+0x2444)=3600*60+90; At<unsigned>(save+0x2448)=7;
+    for (unsigned world=0;world<19;++world) At<unsigned>(save+0x244C+4*world)=600*(world+1);
+    At<BYTE>(0x717008)=2; Snapshot(context);
+    Check(Valid(195)&&shared.values[195]==3601.5&&Valid(196)&&shared.values[196]==30,"play time converts 60 native ticks per second for the total and the current world");
+    At<unsigned>(save+0x2444)=0xCDFE5C4; At<unsigned>(save+0x244C+4*18)=0xCDFE5C4; At<BYTE>(0x717008)=18; Snapshot(context);
+    Check(shared.values[195]==3599999&&shared.values[196]==3599999,"native saturation value reads as 999:59:59");
+    for (BYTE world : {BYTE(19),BYTE(0xFF)}) {
+        At<BYTE>(0x717008)=world; Snapshot(context);
+        Check(Valid(195)&&!Valid(196),"a world without one of the 19 native counters publishes only the total");
+    }
+    At<BYTE>(0x717008)=0;
+    At<uint64_t>(save)=0; Snapshot(context); Check(!Valid(195)&&!Valid(196),"missing save header publishes no play time");
+    At<uint64_t>(save)=0x0000003A4A32484Bull;
+    DWORD old=0,unused=0; void* counters=reinterpret_cast<void*>((g_base+save+0x2444)&~uintptr_t(4095));
+    Check(VirtualProtect(counters,4096,PAGE_NOACCESS,&old)!=FALSE,"counter page protection changed");
+    Snapshot(context); Check(!Valid(195)&&!Valid(196),"unreadable counter block publishes no play time");
+    VirtualProtect(counters,4096,old,&unused);
+    TrainerContext unready=context; unready.sceneReady=false;
+    At<float>(0x717484)=2; Snapshot(unready); Check(!Valid(195)&&!Valid(197)&&!Valid(198),"no timing readouts without a ready scene");
+    WorldReset(context); Snapshot(context); Check(Valid(197)&&shared.values[197]==2&&!Valid(198),"reset late-frame count waits for the next counted frame");
+    At<float>(0x717484)=1; WorldTick(context); At<float>(0x717480)=3; WorldTick(context);
+    At<float>(0x717484)=2.5f; WorldTick(context); WorldTick(context); Snapshot(context);
+    Check(shared.values[197]==2.5&&Valid(198)&&shared.values[198]==2,"only frames whose unscaled delta exceeds one tick count");
+    At<float>(0x717484)=6; WorldTick(context); Snapshot(context);
+    Check(shared.values[197]==6&&shared.values[198]==3,"native clamp value is published and counted");
+    for (float bad : {std::numeric_limits<float>::quiet_NaN(),std::numeric_limits<float>::infinity(),6.5f,-1.0f}) {
+        At<float>(0x717484)=bad; WorldTick(context); Snapshot(context);
+        Check(!Valid(197)&&Valid(198)&&shared.values[198]==3,"invalid unscaled delta is neither published nor counted");
+    }
+    At<float>(0x717484)=2; WorldTick(unready); Snapshot(context); Check(!Valid(198),"scene teardown drops the count without counting a loading frame");
+    WorldTick(context); Snapshot(context); Check(Valid(198)&&shared.values[198]==1,"a scene reloaded with the same identity counts from zero");
+    for (unsigned field=0;field<3;++field) {
+        if (field==0) At<BYTE>(0x717008+9)^=1;
+        if (field==1) At<uintptr_t>(0x9BA920)+=0x1000;
+        if (field==2) At<uintptr_t>(0x716868)+=8;
+        Snapshot(context); Check(!Valid(198),"room, heap or scheduler change hides the previous scene's count");
+        WorldTick(context); Snapshot(context); Check(Valid(198)&&shared.values[198]==1,"a new scene restarts the count");
+        if (field==0) At<BYTE>(0x717008+9)^=1;
+        if (field==1) At<uintptr_t>(0x9BA920)-=0x1000;
+        if (field==2) At<uintptr_t>(0x716868)-=8;
+        WorldTick(context);
+    }
+    Snapshot(context); Check(shared.values[198]==1,"returning to the original scene also restarts the count");
+    WorldReset(context); Snapshot(context); Check(!Valid(198),"disconnect or Disable All drops the count");
+    At<float>(0x717484)=1; WorldTick(context); Snapshot(context); Check(Valid(198)&&shared.values[198]==0,"the next connected frame restarts from zero");
+    WorldCapabilities();
+    for (unsigned slot=195;slot<=198;++slot) Check((shared.supported[slot/64]&(uint64_t(1)<<(slot%64)))!=0,"timing readout capabilities published");
+    Check(!(shared.supported[194/64]&(uint64_t(1)<<(194%64)))&&!(shared.supported[199/64]&(uint64_t(1)<<(199%64))),"neighboring slots stay with their owners");
+    At<float>(0x717484)=0; At<float>(0x717480)=0;
 }
 }
 int main() {
@@ -194,6 +249,7 @@ int main() {
     Check(!world_features::actorFreezeOwned&&!(At<unsigned>(0x2A11400)&0x20),"disable-all releases same-scene freeze");
     WorldCapabilities(); Check((shared.supported[0]&(uint64_t(1)<<48)) && (shared.supported[1]&(uint64_t(1)<<15)),"declared range publishes capabilities");
     WorldSnapshot(context); Check((shared.valid[0]&(uint64_t(1)<<48))&&shared.values[48]==1,"snapshot shows restored speed");
+    TimingReadoutTests(context);
     world_features::testRetryCall=FakeRetry;
     At<uint64_t>(0x9A98B0)=At<uint64_t>(0x29FB580)=0x0000003A4A32484Bull;
     At<world_features::MapTarget>(0x2A0C540)={0,1,7,0,91,-1,300};
@@ -261,6 +317,30 @@ int main() {
     Check(world_features::pausePhase==world_features::PausePhase::Off&&captures==beforeBadCapture,"missing texture without recreate flag never calls native capture"); At<BYTE>(0x9BAA50)=1;
     Command(116,1,result); world_features::PauseBeforeTiming(); WorldReset(context);
     Check(At<int>(0x716884)==1&&At<BYTE>(0xABADE0)==0&&At<unsigned>(0xABB854)==0&&Pointer(timing)==g_base+0x1548E0,"disable-all restores pause and timing callback");
+    // The mission clock freeze owns a second private bit. Field pause and step
+    // ignore it, never clear it, and still yield to every native owner.
+    const unsigned freeze=world_features::missionFreezeMask,pauseBit=world_features::pauseTimerMask;
+    Check(freeze==0x20000000u&&!(freeze&pauseBit),"clock freeze and field pause use separate private bits");
+    At<unsigned>(0xABB854)=freeze; Command(116,1,result);
+    Check(result.code==0&&world_features::pausePhase==world_features::PausePhase::Requested,"field pause queues while the mission clock is frozen");
+    world_features::PauseBeforeTiming(); world_features::PauseBeforeTiming();
+    Check(world_features::pausePhase==world_features::PausePhase::Held&&At<int>(0x716884)==2&&At<unsigned>(0xABB854)==(freeze|pauseBit),"field pause captures and holds beside the clock freeze");
+    Command(117,0,result);
+    Check(result.code==0&&At<int>(0x716884)==1&&At<unsigned>(0xABB854)==freeze,"step releases only the field pause bit");
+    world_features::PauseBeforeTiming(); world_features::PauseAfterTiming();
+    Check(world_features::pausePhase==world_features::PausePhase::Held&&At<unsigned>(0xABB854)==(freeze|pauseBit),"step recaptures beside the clock freeze");
+    Command(116,0,result);
+    Check(result.code==0&&At<int>(0x716884)==1&&At<BYTE>(0xABADE0)==0&&At<unsigned>(0xABB854)==freeze,"field pause release never clears the clock freeze");
+    At<unsigned>(0xABB854)=0; Command(116,1,result); world_features::PauseBeforeTiming(); At<unsigned>(0xABB854)|=freeze;
+    world_features::PauseBeforeTiming(); Check(world_features::pausePhase==world_features::PausePhase::Held,"a clock freeze taken during the pause keeps it held");
+    WorldReset(context); Check(At<int>(0x716884)==1&&At<unsigned>(0xABB854)==freeze,"disable-all field release keeps the clock freeze");
+    At<unsigned>(0xABB854)=freeze|1; Command(116,1,result); Check(result.code!=0&&At<unsigned>(0xABB854)==(freeze|1),"native owner beside the clock freeze still refuses field pause");
+    At<unsigned>(0xABB854)=freeze; Command(116,1,result); At<unsigned>(0xABB854)|=4; world_features::PauseBeforeTiming();
+    Check(world_features::pausePhase==world_features::PausePhase::Off&&At<unsigned>(0xABB854)==(freeze|4),"native owner arriving beside the clock freeze still wins before capture");
+    At<unsigned>(0xABB854)=freeze; Command(116,1,result); world_features::PauseBeforeTiming(); At<unsigned>(0xABB854)|=1; Command(117,0,result);
+    Check(result.code!=0&&At<unsigned>(0xABB854)==(freeze|pauseBit|1),"step refuses a native owner beside the clock freeze");
+    WorldReset(context); Check(At<unsigned>(0xABB854)==(freeze|1),"release keeps native and clock freeze owners");
+    At<unsigned>(0xABB854)=0; At<int>(0x716884)=1; At<BYTE>(0xABADE0)=0;
     Check((shared.supported[1]&(uint64_t(1)<<(116-64)))&&(shared.supported[1]&(uint64_t(1)<<(117-64))),"field pause and step capabilities published");
     printf("World guard tests: %u checks, %u failures; synthetic memory only.\n",checks,failures);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);

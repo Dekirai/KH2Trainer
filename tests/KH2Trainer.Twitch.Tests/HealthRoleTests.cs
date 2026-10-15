@@ -22,7 +22,7 @@ internal static class HealthRoleTests
 
     public static async Task RunAsync(IReadOnlyList<FeatureDefinition> features, Action<bool, string> check)
     {
-        string[] keys = ["heal", "full-restore", "one-hp", "regen", "infinite-mp", "restore-mp"];
+        string[] keys = ["heal", "full-restore", "regen", "infinite-mp", "restore-mp"];
         var map = new FeatureMap(features);
         foreach (string key in keys)
         {
@@ -30,6 +30,19 @@ internal static class HealthRoleTests
             check(definition.AllowedRoles == EffectPlayerRoles.FieldPlayers, $"health roles: {key} explicitly allows the three audited roles");
             check(!definition.Prompt.Contains("Sora's", StringComparison.Ordinal) && !definition.PromptDe.Contains("Soras", StringComparison.Ordinal),
                 $"health roles: {key} describes the controlled character");
+        }
+        // Rescue Mickey's knockout starts at 1 HP (4150E0), so One HP Left is limited to Sora and Roxas.
+        check(EffectCatalog.Find("one-hp")!.AllowedRoles == (EffectPlayerRoles.Sora | EffectPlayerRoles.Roxas),
+            "health roles: one-hp excludes rescue Mickey, whose knockout starts at 1 HP");
+        foreach (var role in Enum.GetValues<PlayerRole>())
+        {
+            var h = new Harness(features, role); h.Redeem("one-hp"); await h.Tick();
+            bool supported = role is PlayerRole.Sora or PlayerRole.Roxas;
+            check((h.Game.Get("player.hp") == 1) == supported && h.Sink.IsFulfilled("a") == supported,
+                $"health roles: {role}/one-hp admission uses the Sora/Roxas matrix");
+            if (!supported)
+                check(h.Engine.PendingEffects.Count == 1 && !h.Sink.IsRefunded("a") && h.Game.Count("player.hp") == 0,
+                    $"health roles: {role}/one-hp waits without a command");
         }
         check(EffectCatalog.Find("heal")!.Title == "Heal Player" && EffectCatalog.Find("heal")!.TitleDe == "Spieler heilen",
             "health roles: healing title no longer excludes Roxas or Mickey");
@@ -79,8 +92,11 @@ internal static class HealthRoleTests
                 $"health roles: {role} can restore damaged HP without an MP gauge");
             var already = new Harness(features, role); already.Game.Set("player.hp", 120); already.Redeem("heal"); await already.Tick();
             check(already.Sink.IsRefunded("a") && already.Game.Count("player.heal") == 0, $"health roles: full-health {role} receives a healing refund");
-            var regen = new Harness(features, role); regen.Game.Set("combat.autoheal", 1); regen.Redeem("one-hp"); await regen.Tick();
-            check(regen.Engine.PendingEffects.Count == 1 && regen.Game.Count("player.hp") == 0, $"health roles: {role} one-HP waits for regeneration");
+            if (role != PlayerRole.Mickey)
+            {
+                var regen = new Harness(features, role); regen.Game.Set("combat.autoheal", 1); regen.Redeem("one-hp"); await regen.Tick();
+                check(regen.Engine.PendingEffects.Count == 1 && regen.Game.Count("player.hp") == 0, $"health roles: {role} one-HP waits for regeneration");
+            }
         }
         foreach (string key in new[] { "regen", "infinite-mp" })
         {
@@ -101,6 +117,45 @@ internal static class HealthRoleTests
             h.Game.Gameplay = new(true, PlayerRole.Sora, GameplayBlockers.None); await h.Tick(1);
             check(h.Game.Get(toggle) == 0 && h.Engine.PendingCleanupCount == 0,
                 $"health roles: {key} restores once a supported controlled player returns");
+        }
+        await OuchAsync(features, check);
+    }
+
+    // Ouch halves HP through the same setter as One HP Left; a requested value of at least 1 never reaches the zero-HP path,
+    // and rescue Mickey keeps at least 2 HP because 1 HP already starts his knockout.
+    private static async Task OuchAsync(IReadOnlyList<FeatureDefinition> features, Action<bool, string> check)
+    {
+        var map = new FeatureMap(features);
+        var definition = EffectCatalog.Find("ouch")!;
+        check(definition.AllowedRoles == EffectPlayerRoles.FieldPlayers && definition.Category == RewardCategory.Harm && !definition.IsTimed,
+            "ouch: a one-time Harm reward for the three audited roles");
+        foreach (var role in Enum.GetValues<PlayerRole>())
+        {
+            var h = new Harness(features, role); h.Redeem("ouch"); await h.Tick();
+            bool supported = role is PlayerRole.Sora or PlayerRole.Roxas or PlayerRole.Mickey;
+            check((h.Game.Get("player.hp") == 30) == supported && h.Sink.IsFulfilled("a") == supported, $"ouch: {role} admission uses the explicit role matrix");
+        }
+        foreach (var (role, hp, target) in new[] { (PlayerRole.Mickey, 60.0, 30.0), (PlayerRole.Mickey, 255.0, 127.0), (PlayerRole.Mickey, 5.0, 2.0),
+            (PlayerRole.Mickey, 3.0, 2.0), (PlayerRole.Sora, 3.0, 1.0), (PlayerRole.Roxas, 2.0, 1.0) })
+        {
+            var h = new Harness(features, role); h.Game.Set("player.hp", hp); h.Redeem("ouch"); await h.Tick();
+            check(h.Game.Calls("player.hp").Single().SequenceEqual([target]) && h.Engine.RecentEvents.First().Detail == $"-{hp - target:0} HP",
+                $"ouch: {role} at {hp} HP becomes {target}, never a knockout");
+        }
+        foreach (double hp in new[] { 2.0, 1.0 })
+        {
+            var h = new Harness(features, PlayerRole.Mickey); h.Game.Set("player.hp", hp); h.Redeem("ouch"); await h.Tick();
+            check(h.Sink.IsRefunded("a") && h.Game.Commands.Count == 0, $"ouch: rescue Mickey at {hp} HP refunds without a command");
+        }
+        {
+            var h = new Harness(features, PlayerRole.Sora); h.Game.Set("player.hp", 1); h.Redeem("ouch"); await h.Tick();
+            check(h.Sink.IsRefunded("a") && h.Game.Commands.Count == 0, "ouch: 1 HP refunds without a command");
+            var regen = new Harness(features, PlayerRole.Roxas); regen.Game.Set("combat.autoheal", 1); regen.Redeem("ouch"); await regen.Tick();
+            check(regen.Engine.PendingEffects.Count == 1 && regen.Game.Count("player.hp") == 0, "ouch: waits while Regeneration would refill HP");
+            var missing = new Harness(features, PlayerRole.Sora); missing.Game.Values.Remove(map.Get("player.hp").ValueSlot); missing.Redeem("ouch"); await missing.Tick();
+            check(missing.Engine.PendingEffects.Count == 1 && missing.Game.Commands.Count == 0 && !missing.Sink.IsRefunded("a"), "ouch: unknown HP waits instead of guessing");
+            missing.Game.Set("player.hp", 40); await missing.Tick();
+            check(missing.Sink.IsFulfilled("a") && missing.Game.Get("player.hp") == 20, "ouch: starts once HP is readable");
         }
     }
 }

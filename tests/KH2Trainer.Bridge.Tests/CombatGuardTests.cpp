@@ -257,6 +257,10 @@ void OwnersAndIpc() {
     OwnerArgs(args,true,0,bridge,generation);Check(Owned(args).code,"zero owner rejected");
     OwnerArgs(args,true,owner,0,generation);Check(Owned(args).code,"zero bridge rejected");
     OwnerArgs(args,true,owner,bridge,0);Check(Owned(args).code,"zero acquire generation rejected");
+    for(double mode:{2.0,3.0,255.0,4294967295.0}) {
+        OwnerArgs(args,true,owner,bridge,generation);args[7]=mode;
+        Check(Owned(args).code==2&&!combat::guard.enabled&&Pins(generation)==0,"guard modes above lethal-only are refused before any acquisition");
+    }
     // Actual common command1472 dispatch, seqlock snapshot and stale owner release.
     OwnerArgs(args,true,owner,bridge,generation);
     state.commandId=1472;state.commandIssuedAt=GetTickCount();state.hostHeartbeat=GetTickCount();
@@ -270,6 +274,144 @@ void OwnersAndIpc() {
         "actual stale CC release cannot remove manual guard");
     state.hostHeartbeat=GetTickCount()-6001;TrainerFrame();
     Check(!combat::guard.enabled&&Pins(generation)==0,"actual expired-host frame drops guard lease");
+}
+// Lethal-only mode: 3C0860 clamps HP+delta to the STATUS+8 floor, and 3D2EB0 runs
+// the zero-HP callback for a zero bar-0 result. Rescue Mickey's 4150E0 already starts
+// his knockout at 1 HP. Only hits reaching those results are blocked.
+bool ActivateLethal() { return Command(combat::LethalGuardSlot,1).code==0; }
+struct GuardView { double full,lethal,mode,ownerLow,ownerHigh; };
+GuardView ViewGuard() {
+    CombatCapabilities();CombatSnapshot(Context());
+    return {state.values[106],state.values[combat::LethalGuardSlot],state.values[combat::GuardModeSlot],
+        state.values[combat::GuardOwnerLowSlot],state.values[combat::GuardOwnerHighSlot]};
+}
+bool Shows(double full,double lethal,double mode,uint64_t owner=0) {
+    const auto p=ViewGuard();
+    return p.full==full&&p.lethal==lethal&&p.mode==mode&&p.ownerLow==static_cast<uint32_t>(owner)&&
+        p.ownerHigh==static_cast<uint32_t>(owner>>32);
+}
+void LethalOnly() {
+    // Sora/Roxas are knocked out at zero HP. Rescue Mickey's per-frame callback
+    // 4150E0 already starts his departure (knockout) at exactly 1 HP.
+    struct Case { int hp,floor,delta; unsigned bar; bool block,mickeyBlock; const char* name; };
+    const Case cases[]={
+        {100,0,-99,0,false,true,"a hit leaving one HP forwards for Sora/Roxas and is lethal for rescue Mickey"},
+        {100,0,-98,0,false,false,"a hit leaving two HP forwards for every role"},
+        {2,0,-1,0,false,true,"two HP losing one forwards for Sora/Roxas and is lethal for rescue Mickey"},
+        {100,0,-100,0,true,true,"a hit reaching exactly zero HP is blocked"},
+        {100,0,-101,0,true,true,"a hit below zero HP is blocked"},
+        {1,0,-1,0,true,true,"one remaining HP is protected from the last point of damage"},
+        {255,0,-254,0,false,true,"a one-HP-short hit at maximum HP forwards for Sora/Roxas and is lethal for rescue Mickey"},
+        {255,0,-253,0,false,false,"maximum HP survives a two-HP-short hit for every role"},
+        {255,0,-255,0,true,true,"maximum HP is protected from an exactly lethal hit"},
+        {1,0,0,0,false,false,"zero delta forwards"},
+        {1,0,10,0,false,false,"healing forwards"},
+        {1,0,INT_MAX,0,false,false,"maximum healing forwards"},
+        {100,0,INT_MIN,0,true,true,"INT_MIN is lethal in 64-bit arithmetic"},
+        {1,0,INT_MIN+1,0,true,true,"a near-minimum delta at one HP is lethal"},
+        {100,1,-100,0,false,true,"a native floor of one forwards for Sora/Roxas and is lethal for rescue Mickey"},
+        {1,1,INT_MIN,0,false,true,"a floor of one forwards INT_MIN for Sora/Roxas and blocks it for rescue Mickey"},
+        {100,2,-1000,0,false,false,"a native floor of two keeps every role alive and forwards"},
+        {100,100,-1000,0,false,false,"a floor at current HP forwards"},
+        {100,-5,-100,0,true,true,"a zero result below a negative floor is still blocked"},
+        {100,INT_MIN,INT_MIN,0,true,true,"a negative clamped result is blocked"},
+        {100,-5,-99,0,false,true,"a negative floor forwards a one-HP hit for Sora/Roxas and blocks it for rescue Mickey"},
+        {100,-5,-98,0,false,false,"a negative floor still forwards a surviving hit"},
+        {100,0,-100,1,false,false,"another status bar forwards like the full guard"},
+        {100,0,-100,UINT_MAX,false,false,"a signed-negative bar index forwards"},
+    };
+    for(unsigned character:{1u,14u,4u}) {
+        Setup(character,character==4?11:0);
+        const bool mickey=character==4;const auto original=mickey?MickeyResult:SoraResult;const auto generation=Generation();
+        Check(ActivateLethal()&&combat::guard.enabled&&combat::guard.mode==combat::GuardLethalOnly&&!combat::guard.owner&&
+            Pins(generation)==1,"manual lethal-only guard acquires one pin for every audited role");
+        Check(Shows(0,1,2),"lethal-only manual guard publishes only its own toggle and mode 2");
+        for(const auto& k:cases) {
+            At<int>(Pool)=k.hp;At<int>(Pool+8)=k.floor;
+            const unsigned before=forwardCalls;const uint64_t hits=combat::blockedHits;
+            const auto result=Hit(k.delta,k.bar,0xC3);
+            if(mickey?k.mickeyBlock:k.block) Check(result==k.hp&&forwardCalls==before&&combat::blockedHits==hits+1&&At<int>(Pool)==k.hp&&
+                At<int>(Pool+8)==k.floor,k.name);
+            else Check(result==original&&forwardCalls==before+1&&combat::blockedHits==hits&&last.delta==k.delta&&
+                last.bar==k.bar&&last.effects==0xC3&&last.mickey==mickey&&last.actor==g_base+Actor&&
+                last.descriptor==g_base+(mickey?combat::MickeyDescriptor:combat::SoraDescriptor),k.name);
+        }
+        At<int>(Pool)=100;At<int>(Pool+8)=0;Hit(INT_MIN);
+        Check(combat::lastBlockedDamage==2147483648u,"lethal diagnostic magnitude uses wider arithmetic");
+        const unsigned before=forwardCalls;
+        const auto other=mickey?combat::SoraDamageHook(g_base+combat::SoraDescriptor,g_base+Actor,-100,0,0xAB):
+            combat::MickeyDamageHook(g_base+combat::MickeyDescriptor,g_base+Actor,-100,0,0xAB);
+        Check(other==(mickey?SoraResult:MickeyResult)&&forwardCalls==before+1,"wrong role descriptor forwards a lethal hit");
+        Check(combat::SoraDamageHook(g_base+combat::SoraDescriptor,g_base+EnemyActor,-1000,0,0xAB)==SoraResult,
+            "another Actor's lethal hit forwards");
+        At<int>(0x716884)=2;CombatTick(Context());
+        Check(combat::guard.enabled&&Hit(-100)==original&&Shows(0,0,0),"field pause keeps the lethal lease but forwards and publishes off");
+        At<int>(0x716884)=1;Check(Hit(-100)==100&&Shows(0,1,2),"resumed field step restores lethal protection");
+        Check(Command(106,0).code==0&&combat::guard.enabled&&combat::guard.mode==combat::GuardLethalOnly,
+            "disabling the full toggle preserves a lethal-only manual guard");
+        Check(Command(combat::LethalGuardSlot,0).code==0&&!combat::guard.enabled&&Pins(generation)==0&&Shows(0,0,0),
+            "disabling the lethal toggle releases its manual guard and pin");
+        Check(Hit(-100)==original,"released lethal guard forwards");
+    }
+}
+void ModeOwnership() {
+    Setup();const auto generation=Generation(),bridge=actor_lifetime::BridgeInstance();
+    Check(Activate()&&Shows(1,0,1),"manual full guard publishes only the full toggle and mode 1");
+    Hit();const uint64_t hits=combat::blockedHits;
+    Check(ActivateLethal()&&combat::guard.mode==combat::GuardLethalOnly&&Pins(generation)==1&&combat::blockedHits==hits&&Shows(0,1,2),
+        "manual lethal toggle switches the same lease in place");
+    Check(Hit(-10)==SoraResult&&Hit(-100)==100,"switched lease applies lethal-only blocking");
+    Check(Activate()&&combat::guard.mode==combat::GuardFull&&Pins(generation)==1&&Shows(1,0,1)&&Hit(-10)==100,
+        "manual full toggle switches back in place");
+    Check(Command(combat::LethalGuardSlot,0).code==0&&combat::guard.enabled&&combat::guard.mode==combat::GuardFull,
+        "disabling the lethal toggle preserves a full manual guard");
+    for(double bad:{-1.0,0.5,2.0}) Check(Command(combat::LethalGuardSlot,bad).code==2&&combat::guard.mode==combat::GuardFull,
+        "lethal toggle accepts only on or off");
+    Check(Command(106,0).code==0&&!combat::guard.enabled&&Pins(generation)==0,"full toggle releases its own mode");
+    Check(Command(combat::LethalGuardSlot,0).code==0&&!combat::guard.enabled,"disabling an inactive toggle is a harmless acknowledgement");
+    constexpr uint64_t owner=0x0123456789ABCDEFULL,other=0x1111222233334444ULL;
+    double args[8];OwnerArgs(args,true,owner,bridge,generation);args[7]=1;
+    Check(!Owned(args).code&&combat::guard.owner==owner&&combat::guard.mode==combat::GuardLethalOnly&&Pins(generation)==1,
+        "owned lethal-only acquire");
+    Check(Shows(0,1,2,owner)&&Hit(-99)==SoraResult&&Hit(-100)==100,"owned lethal-only guard publishes its owner and blocks only lethal hits");
+    args[7]=0;Check(!Owned(args).code&&combat::guard.owner==owner&&combat::guard.mode==combat::GuardFull&&Pins(generation)==1&&
+        Shows(1,0,1,owner),"same owner switches to full in place");
+    args[7]=1;Check(!Owned(args).code&&combat::guard.mode==combat::GuardLethalOnly&&Pins(generation)==1,"same owner switches back to lethal-only");
+    OwnerArgs(args,true,other,bridge,generation);
+    for(double mode:{0.0,1.0}) {
+        args[7]=mode;Check(Owned(args).code==3&&combat::guard.owner==owner&&combat::guard.mode==combat::GuardLethalOnly,
+            "another owner cannot take or switch the mode in either mode");
+    }
+    OwnerArgs(args,false,owner,bridge,generation);args[7]=2;
+    Check(Owned(args).code==2&&combat::guard.owner==owner&&Pins(generation)==1,"release with an invalid mode word is refused and preserves the guard");
+    Check(Command(106,0).code==0&&Command(combat::LethalGuardSlot,0).code==0&&combat::guard.owner==owner&&
+        combat::guard.mode==combat::GuardLethalOnly&&Pins(generation)==1,"manual disables preserve an owned guard");
+    Check(Activate()&&!combat::guard.owner&&combat::guard.mode==combat::GuardFull&&Pins(generation)==1&&Shows(1,0,1),
+        "manual full enable takes over an owned lethal guard exactly like before");
+    OwnerArgs(args,false,owner,bridge,generation);args[7]=1;
+    Check(!Owned(args).code&&combat::guard.enabled&&!combat::guard.owner,"stale owned release in either mode preserves the manual guard");
+    Command(106,0);OwnerArgs(args,true,owner,bridge,generation);
+    Check(!Owned(args).code&&combat::guard.owner==owner&&combat::guard.mode==combat::GuardFull,"owned full acquire");
+    Check(ActivateLethal()&&!combat::guard.owner&&combat::guard.mode==combat::GuardLethalOnly&&Pins(generation)==1&&Shows(0,1,2),
+        "manual lethal enable takes over an owned full guard like the full toggle");
+    Command(combat::LethalGuardSlot,0);OwnerArgs(args,true,owner,bridge,generation);args[7]=1;
+    Check(!Owned(args).code&&combat::guard.owner==owner&&combat::guard.mode==combat::GuardLethalOnly,"owned lethal reacquire after manual release");
+    OwnerArgs(args,false,owner,bridge,generation);args[7]=1;
+    Check(!Owned(args).code&&!combat::guard.enabled&&Pins(generation)==0&&Shows(0,0,0),"owned release accepts the mode word and releases its lease");
+    TrainerResult r{};const double none[8]{};
+    Check(CombatHandle(Context(),combat::GuardModeSlot,none,r)&&r.code==1&&!combat::guard.enabled,"published guard mode is read-only");
+    Check(!CombatHandle(Context(),481,none,r)&&!CombatHandle(Context(),484,none,r),"neighboring slots stay unclaimed");
+    ZeroMemory(state.supportedCapabilities,sizeof(state.supportedCapabilities));CombatCapabilities();
+    for(unsigned slot:{106u,combat::LethalGuardSlot,combat::GuardModeSlot})
+        Check(((state.supportedCapabilities[slot/64]>>(slot%64))&1)!=0,"guard toggles and mode advertise capabilities");
+    // Actual command dispatch for the manual lethal toggle.
+    const double on[8]{1};memcpy(state.arguments,on,sizeof(on));
+    state.commandId=1482;state.commandIssuedAt=GetTickCount();state.hostHeartbeat=GetTickCount();++state.requestSequence;TrainerFrame();
+    Check(state.responseSequence==state.requestSequence&&!state.resultCode&&combat::guard.mode==combat::GuardLethalOnly&&
+        state.values[combat::LethalGuardSlot]==1&&state.values[combat::GuardModeSlot]==2&&state.values[106]==0,
+        "actual TrainerFrame routes the lethal toggle and publishes a coherent mode");
+    state.hostHeartbeat=GetTickCount()-6001;TrainerFrame();
+    Check(!combat::guard.enabled&&Pins(generation)==0,"expired host drops a lethal-only lease");
 }
 SIZE_T WINAPI NoQuery(LPCVOID,PMEMORY_BASIC_INFORMATION,SIZE_T) { return 0; }
 SIZE_T WINAPI ReservedQuery(LPCVOID p,PMEMORY_BASIC_INFORMATION m,SIZE_T n) {
@@ -572,7 +714,7 @@ void DisconnectedMovementCleanup() {
 int main() {
     g_base=reinterpret_cast<uintptr_t>(VirtualAlloc(nullptr,kImageSize,MEM_COMMIT|MEM_RESERVE,PAGE_READWRITE));
     if(!g_base)return 2;
-    RolesAndAbi();LifetimeAndPhases();OwnersAndIpc();PinsTablesProtection();TargetRegression();ReduceTargetHp();DisconnectedMovementCleanup();
+RolesAndAbi();LifetimeAndPhases();OwnersAndIpc();LethalOnly();ModeOwnership();PinsTablesProtection();TargetRegression();ReduceTargetHp();DisconnectedMovementCleanup();
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     std::printf("CombatGuardTests: %u checks, %u failures. Synthetic memory; no game code executed.\n",checks,failures);
     return failures?1:0;

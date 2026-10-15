@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
+using KH2Trainer.Twitch;
 
 namespace KH2Trainer;
 
@@ -63,10 +64,27 @@ public partial class MainWindow : Window
     {
         IsEnabled = false;
         Title = "KH2 Trainer · closing…";
-        try { await model.ShutdownAsync(); }
+        try { await model.ShutdownAsync(AskToWaitForCleanup); }
         catch (Exception) { /* Closing must never fail. */ }
         shutDown = true;
         await Dispatcher.BeginInvoke(Close);
+    }
+
+    // Asked only while the game is connected. Closing ends the bridge heartbeat, and the bridge then releases the
+    // trainer's continuous effects itself (ResetTrainerEffects); direct value changes that are not undone yet stay.
+    private bool AskToWaitForCleanup(IReadOnlyList<PendingCleanupInfo> cleanups)
+    {
+        const int Shown = 6;
+        string list = string.Join("\n", cleanups.Take(Shown).Select(c => $"•  {c.Title}: {c.Reason}"));
+        if (cleanups.Count > Shown) list += $"\n•  …and {cleanups.Count - Shown} more";
+        bool wait = MessageBox.Show(this,
+            $"These ended Twitch rewards are not fully undone yet:\n\n{list}\n\n" +
+            $"Yes: wait up to {TwitchVm.CleanupWaitLimit.TotalSeconds:0} seconds while the trainer keeps undoing them, then close.\n" +
+            "No: close now. Closing the trainer makes the game bridge release the trainer's continuous effects (movement, damage protection, speed, freezes); " +
+            "only direct value changes that were not restored yet, such as audio, loot, brightness or lock-on settings, may remain.",
+            "Close KH2 Trainer", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.Yes) == MessageBoxResult.Yes;
+        if (wait) Title = "KH2 Trainer · undoing Twitch rewards…";
+        return wait;
     }
 
     private static void WaitBriefly(Task task, TimeSpan limit)

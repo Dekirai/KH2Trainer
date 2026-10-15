@@ -12,6 +12,8 @@ public sealed record EngineSettings(TimeSpan MaxWait, int MaxDurationSeconds, bo
 public sealed record ActiveEffectInfo(string Key, string Title, string Viewers, string? Detail, double RemainingSeconds, double DurationSeconds,
     bool Established, bool Paused = false, string? PauseReason = null);
 public sealed record PendingEffectInfo(string RedemptionId, string Key, string Title, string Viewer, string Status, double WaitedSeconds);
+/// <summary>An ended effect whose end step or restore has not completed yet.</summary>
+public sealed record PendingCleanupInfo(string Key, string Title, string Reason);
 public enum EffectEventKind { Redeemed, Started, Done, Extended, Ended, Refunded, Failed }
 
 /// <summary>Something that happened to a redemption. <see cref="Text"/> is the English log line.</summary>
@@ -139,6 +141,24 @@ public sealed class EffectEngine
 
     /// <summary>Ends/owned values waiting for control to return. They continue blocking their effect group.</summary>
     public int PendingCleanupCount => deferredEnds.Count + restoring.Count;
+
+    /// <summary>Cleanups are pending and the game is still connected to take them back. A disconnected game
+    /// cannot undo anything, so waiting for its cleanups (for example while closing) would only use up the time.</summary>
+    public bool CanWaitForCleanup => PendingCleanupCount > 0 && game.IsConnected;
+
+    /// <summary>The cleanups behind <see cref="PendingCleanupCount"/>, with what each one waits for now.</summary>
+    public IReadOnlyList<PendingCleanupInfo> PendingCleanups =>
+        deferredEnds.Select(d => Cleanup(d.Effect.Context, "Its end step is retried when the game allows it"))
+            .Concat(restoring.Select(r => Cleanup(r.Context, "Changed values are restored when the game accepts them"))).ToArray();
+
+    private PendingCleanupInfo Cleanup(EffectContext context, string retry)
+    {
+        // Native ownership releases do not need player control; scalar restores do.
+        var control = context.ControlReadiness();
+        string reason = context.HasActorLease ? "Waiting for the game to release native ownership"
+            : control.Kind != ReadinessKind.Ready ? control.Reason : retry;
+        return new PendingCleanupInfo(context.Definition.Key, Title(context.Definition.Key), reason);
+    }
 
     public IReadOnlyList<PendingEffectInfo> PendingEffects => pending.Select(p => new PendingEffectInfo(
         p.Redemption.Id, p.Definition.Key, Title(p.Definition.Key), p.Redemption.UserName, p.Status,
@@ -477,6 +497,8 @@ public sealed class EffectEngine
     private Readiness Check(EffectContext context, bool includeEffectCheck, EffectContext? releasing = null)
     {
         var definition = context.Definition;
+        // A Replace admission previews the game after the replaced effect let go of what it owns.
+        context.Releasing = releasing;
         var control = releasing == null ? context.ControlReadiness(allowOwnPause: false) : context.ControlAfterRelease(releasing);
         if (control.Kind != ReadinessKind.Ready)
         {

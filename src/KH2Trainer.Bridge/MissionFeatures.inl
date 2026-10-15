@@ -1,6 +1,9 @@
-// Native mission diagnostics and one-time timer restart.
+// Native mission diagnostics, one-time timer restart and the mission clock freeze.
 // Evidence and ABI: research archive (see README): missions_deep* and missions_contract.txt.
-// All entry points run after update on the game thread. No persistent leases.
+// Clock owner mask: docs/research/player-input-classification-20261007 and
+// docs/research/timing-callback-context-20261008.
+// All entry points run after update on the game thread. The clock freeze is the
+// only lease; MissionTick and MissionReset release it. Include after WorldFeatures.inl.
 namespace mission_features {
 constexpr uintptr_t kMission=0x2A0FF68,kStorage=0x2A0F8B0,kDescriptor=0x2A0FF70;
 constexpr uintptr_t kClock=0xABB850,kPause=0xABB854,kOrigin=0xABB858,kLimit=0xABB85C,kValue=0xABB860,kPhase=0xABB864,kMode=0xABB868;
@@ -23,15 +26,23 @@ constexpr BYTE code4[]={0x6b,0xc1,0x3c,0xc6,0x5,0x1e,0x47,0x96,0x0,0x1,0xc7,0x5,
 constexpr BYTE code5[]={0x33,0xc0,0xc6,0x5,0xef,0x46,0x96,0x0,0x0,0x89,0x5,0xe5,0x46,0x96,0x0,0x89,0x5,0xdb,0x46,0x96,0x0,0x6b,0xc1,0x3c,0x89,0x5,0xce,0x46,0x96,0x0,0xc3};
 constexpr BYTE code6[]={0x8b,0x5,0xba,0x46,0x96,0x0,0x89,0x5,0xbc,0x46,0x96,0x0,0xc7,0x5,0xbe,0x46,0x96,0x0,0x1,0x0,0x0,0x0,0xc3};
 constexpr BYTE code7[]={0x8b,0x5,0x3e,0x47,0x96,0x0,0xf7,0xd1,0x23,0xc1,0x89,0x5,0x34,0x47,0x96,0x0,0xc3};
+// Clock owner mask leaves: 157130 ORs owner bits, 157110 (code7) clears them and
+// 157040/157090 zero the whole mask on clock init/reset. The freeze calls none
+// of them; it requires their exact bytes before it claims its private bit.
+constexpr BYTE code8[]={0x8b,0x5,0x1e,0x47,0x96,0x0,0xb,0xc1,0x89,0x5,0x16,0x47,0x96,0x0,0xc3};
+constexpr BYTE code9[]={0x33,0xc0,0x89,0x5,0x8,0x48,0x96,0x0,0x89,0x5,0x12,0x48,0x96,0x0,0x89,0x5,0x0,0x48,0x96,0x0,0x89,0x5,0xa,0x48,0x96,0x0,0xc3};
+constexpr BYTE code10[]={0x48,0x8b,0xd,0xf1,0x37,0x86,0x0,0x4c,0x8d,0xd,0x12,0x1,0x0,0x0,0x33,0xc0,0x33,0xd2,0x89,0x5,0xa8,0x47,0x96,0x0,0x89,0x5,0xb2,0x47,0x96,0x0,0x89,0x5,0xa0,0x47,0x96,0x0,0x44,0x8d,0x40,0x1,0x89,0x5,0xa6,0x47,0x96,0x0,0xe9,0xad,0x86,0xff,0xff};
 struct Code { uintptr_t rva; const BYTE* bytes; SIZE_T length; };
 const Code code[]={{0x3fb9a0,code0,sizeof(code0)},{0x3a39f0,code1,sizeof(code1)},{0x3a3970,code2,sizeof(code2)},{0x3fa5d0,code3,sizeof(code3)},{0x157140,code4,sizeof(code4)},{0x157170,code5,sizeof(code5)},{0x157190,code6,sizeof(code6)},{0x157110,code7,sizeof(code7)}};
+const Code freezeCode[]={{0x157110,code7,sizeof(code7)},{0x157130,code8,sizeof(code8)},{0x157040,code9,sizeof(code9)},{0x157090,code10,sizeof(code10)}};
 
-bool CodeReady() {
-    for(const auto& entry:code)
+template<SIZE_T N> bool Pinned(const Code (&pins)[N]) {
+    for(const auto& entry:pins)
         if(!Range(g_base+entry.rva,entry.length) ||
             memcmp(reinterpret_cast<const void*>(g_base+entry.rva),entry.bytes,entry.length)) return false;
     return true;
 }
+bool CodeReady() { return Pinned(code); }
 struct View {
     uintptr_t mission=0,descriptor=0,bar=0,heap=0,fieldScheduler=0,outerScheduler=0;
     unsigned id=0,flags=0; int phase=0,count=0; BYTE room[10]{};
@@ -147,10 +158,65 @@ void ComboSnapshot(const TrainerContext& c,const View& before) {
     // detector for destruction and identical reconstruction at static storage.
     SnapshotValue(479,b.current); SnapshotValue(480,b.peak); SnapshotValue(481,b.allowance);
 }
+// Trainer-private clock owner bit. 1570F0/1571B0 stop the clock while any owner
+// is set; no native call site uses this bit. The lease records the mission,
+// room, field heap and schedulers it was taken in and is never re-asserted once lost.
+struct FreezeLease {
+    bool owned=false; unsigned id=0;
+    uintptr_t mission=0,descriptor=0,heap=0,fieldScheduler=0,outerScheduler=0;
+    BYTE room[10]{};
+};
+FreezeLease freeze;
+bool FreezeBit() { return (At<unsigned>(kPause)&world_features::missionFreezeMask)!=0; }
+bool FreezeHeld() { return freeze.owned && FreezeBit(); }
+bool SameFreeze(const View& v) {
+    return v.id==freeze.id && v.mission==freeze.mission && v.descriptor==freeze.descriptor &&
+        v.heap==freeze.heap && v.fieldScheduler==freeze.fieldScheduler &&
+        v.outerScheduler==freeze.outerScheduler && !memcmp(v.room,freeze.room,sizeof(v.room));
+}
+// ReadView includes Allowed(): game thread, enabled bridge and a live host.
+bool FreezeCurrent(const TrainerContext& c) {
+    View v{};
+    return FreezeHeld() && ReadView(c,v) && SameFreeze(v) && v.phase==1;
+}
+void ReleaseFreeze() {
+    // Clear only the trainer's bit; native owners stay intact. A bit already
+    // zeroed by native 157040/157090 is only forgotten. Like the field pause
+    // bit it is also cleared after a mission or room change: no native owner
+    // releases it, so until the next clock reset it would hold the clock ownerless.
+    if(FreezeHeld()) At<unsigned>(kPause)&=~world_features::missionFreezeMask;
+    freeze=FreezeLease{};
+}
+void FreezeHandle(const TrainerContext& c,double value,TrainerResult& result) {
+    if(!IsInteger(value,0,1)) { result={1,L"Mission clock freeze must be zero or one."}; return; }
+    if(value==0) {
+        const bool held=FreezeHeld();
+        ReleaseFreeze();
+        result={0,held?L"Mission clock freeze released; the clock resumes from its held value. Native clock owners are preserved.":
+            L"The trainer holds no mission clock freeze. Native clock owners are unchanged."};
+        return;
+    }
+    if(freeze.owned && !FreezeCurrent(c)) ReleaseFreeze(); // Never carry a lease into another mission.
+    if(freeze.owned) { result={0,L"The trainer already holds the mission clock freeze."}; return; }
+    View v{};
+    if(!ReadView(c,v) || v.phase!=1 || !Timer(v) || At<int>(kPhase)<1 || At<int>(kPhase)>2) {
+        result={1,L"Freezing needs an active mission with a running mission timer in a stable scene."}; return;
+    }
+    if(FreezeBit()) { result={1,L"The trainer's private mission clock owner bit is already set by another component. Nothing was changed."}; return; }
+    if(!Pinned(freezeCode)) { result={1,L"Native mission clock code differs from the supported build."}; return; }
+    if(!Writable(reinterpret_cast<void*>(g_base+kPause),4)) { result={1,L"The native mission clock owner mask is not writable."}; return; }
+    // Same operation as native 157130 with a private bit; existing owners stay set.
+    At<unsigned>(kPause)|=world_features::missionFreezeMask;
+    freeze.owned=true; freeze.id=v.id; freeze.mission=v.mission; freeze.descriptor=v.descriptor;
+    freeze.heap=v.heap; freeze.fieldScheduler=v.fieldScheduler; freeze.outerScheduler=v.outerScheduler;
+    memcpy(freeze.room,v.room,sizeof(freeze.room));
+    result={0,L"Mission clock frozen. Gameplay, input and native clock owners continue; timeout events wait until release."};
+}
 }
 bool MissionHandle(const TrainerContext& c,unsigned slot,const double args[8],TrainerResult& result) {
     using namespace mission_features;
-    if((slot<208 || slot>229) && (slot<479 || slot>481)) return false;
+    if((slot<208 || slot>229) && slot!=233 && (slot<479 || slot>481)) return false;
+    if(slot==233) { FreezeHandle(c,args[0],result); return true; }
     if(slot!=226 && slot!=227) { result={1,L"This mission value is read-only."}; return true; }
     for(unsigned i=0;i<8;++i)
         if(!isfinite(args[i])) { result={1,L"Mission timer arguments must be finite."}; return true; }
@@ -158,6 +224,8 @@ bool MissionHandle(const TrainerContext& c,unsigned slot,const double args[8],Tr
     if(!countUp && !IsInteger(args[0],1,3599)) {
         result={1,L"Choose a whole countdown from 1 to 3599 seconds."}; return true;
     }
+    // MayRestart refuses every clock owner; name the one the trainer holds.
+    if(FreezeHeld()) { result={1,L"Release the mission clock freeze first. A restart never replaces a clock owner."}; return true; }
     View before{},fresh{};
     if(!ReadView(c,before) || !MayRestart(c,before,countUp)) {
         result={1,L"Restart needs an active mission timer, living player and stable unpaused gameplay with unchanged native code."}; return true;
@@ -190,10 +258,12 @@ bool MissionHandle(const TrainerContext& c,unsigned slot,const double args[8],Tr
 }
 void MissionCapabilities() {
     for(unsigned i=208;i<=229;++i) SupportCapability(i);
+    SupportCapability(233);
     for(unsigned i=479;i<=481;++i) SupportCapability(i);
 }
 void MissionSnapshot(const TrainerContext& c) {
     using namespace mission_features;
+    SnapshotValue(233,FreezeHeld()?1:0);
     View v{}; if(!ReadView(c,v)) return;
     SnapshotValue(208,v.id); SnapshotValue(209,v.phase);
     if(Timer(v)) {
@@ -221,5 +291,11 @@ void MissionSnapshot(const TrainerContext& c) {
         SnapshotValue(225,Field<int>(score,56));
     ComboSnapshot(c,v);
 }
-void MissionTick(const TrainerContext&) {}
-void MissionReset(const TrainerContext&) {}
+void MissionTick(const TrainerContext& c) {
+    using namespace mission_features;
+    // A changed mission, room, heap or scheduler, an ended phase, a lost host or
+    // disabled bridge, or a native mask reset ends the freeze. A lost bit is never re-asserted.
+    if(freeze.owned && !FreezeCurrent(c)) ReleaseFreeze();
+}
+// Disable All, host expiry and bridge failure: release the clock immediately.
+void MissionReset(const TrainerContext&) { mission_features::ReleaseFreeze(); }

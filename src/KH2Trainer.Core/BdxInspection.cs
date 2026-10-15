@@ -25,9 +25,11 @@ public enum BdxEdgeKind { Next, Branch, Call, CallContinuation, YieldResume, Nat
 public sealed record BdxFlowEdge(BdxEdgeKind Kind, int? TargetPc);
 public sealed record BdxDiagnostic(string Code, string Message, int? Pc = null, long? FileOffset = null);
 public sealed record BdxInstruction(int Pc, int FileOffset, ushort Opcode, IReadOnlyList<ushort> Words,
-    string Operation, string Operands, IReadOnlyList<BdxFlowEdge> Edges, int? TrapBank = null, int? TrapIndex = null)
+    string Operation, string Operands, IReadOnlyList<BdxFlowEdge> Edges, int? TrapBank = null, int? TrapIndex = null,
+    string? StoredText = null)
 {
     public int WidthInWords => Words.Count;
+    public const string StoredTextLabel = "stored bytes as text";
 }
 public sealed record BdxDocument(BdxHeader Header, int ByteLength, IReadOnlyList<BdxInstruction> Instructions,
     IReadOnlyList<BdxDiagnostic> Diagnostics, bool HitLimit, int SuppressedDiagnostics)
@@ -224,7 +226,28 @@ public static class BdxInspector
                 for (int i = 0; i < width; i++) wordOwners.Add(pc + i, pc);
                 foreach (var edge in edges) if (edge.TargetPc is int target) Enqueue(target);
             }
-            return new(header, bytes.Length, Array.AsReadOnly(instructions.Values.ToArray()), diagnostics.AsReadOnly(), hitLimit, suppressed);
+            var decoded = instructions.Values.Select(i => StoredText(i) is string text ? i with { StoredText = text } : i).ToArray();
+            return new(header, bytes.Length, Array.AsReadOnly(decoded), diagnostics.AsReadOnly(), hitLimit, suppressed);
+        }
+
+        // Opcode 0x00E0 (group 0, mode 2, selector 3) pushes script byte 16 + 2 * operand; selected scripts pass
+        // such addresses to 1:8 as names (timer-message74-handlers-20261008). Only printable bytes outside the header
+        // and every decoded word, NUL-terminated within 64 bytes, qualify. They are stored bytes, not proof of a string use.
+        private string? StoredText(BdxInstruction instruction)
+        {
+            if (instruction.Opcode != 0x00E0) return null;
+            long start = Offset(instruction.Words[1]);
+            if (start < headerEnd) return null;
+            var text = new StringBuilder();
+            for (long at = start; at < bytes.Length && at < start + 64; at++)
+            {
+                if (wordOwners.ContainsKey((int)((at - 16) / 2))) return null;
+                byte value = bytes[at];
+                if (value == 0) return text.Length == 0 ? null : text.ToString();
+                if (value is < 32 or > 126) return null;
+                text.Append((char)value);
+            }
+            return null;
         }
     }
 }

@@ -34,6 +34,8 @@ internal sealed partial class FakeGame : IGameControl
 
     public bool IsConnected { get; set; } = true;
     public bool SceneReady { get; set; } = true;
+    /// <summary>DevToolsProtocol.h Status: 2 ReadyHidden, 3 Visible.</summary>
+    public int BridgeStatus { get; set; } = 2;
     private GameplayState gameplay = new(true, PlayerRole.Sora, GameplayBlockers.None);
     public GameplayState Gameplay
     {
@@ -107,6 +109,7 @@ internal sealed partial class FakeGame : IGameControl
         if (Reject?.Invoke(feature.Id, args) == true) throw new InvalidOperationException("Rejected by the bridge.");
         if (feature.Id is "drive.trigger" or "drive.revert" && Get("drive.phase") is > 0)
             throw new InvalidOperationException("A Drive switch is already queued. Cancel its pending steps before another request.");
+        RejectMissionCommand(feature.Id, args);
         Simulate(feature, args);
         AfterExecute?.Invoke(feature.Id, args);
     }
@@ -136,6 +139,13 @@ internal sealed partial class FakeGame : IGameControl
         switch (feature.Id)
         {
             case "player_damage_guard": SetManualGuard(args[0] == 1); break;
+            case "player_damage_guard_lethal": SetManualGuard(args[0] == 1, mode: DamageGuardMode.LethalOnly); break;
+            case "developer.show": BridgeStatus = 3; break;
+            case "developer.hide": BridgeStatus = 2; break;
+            // The native restart arms the clock; its next unpaused tick (always here) starts it.
+            case "mission.timer.countdown": Set("mission.timer.seconds", args[0]); Set("mission.timer.direction", 1); Set("mission.timer.phase", 2); break;
+            case "mission.timer.freeze": PublishClockPause(); break;
+            case "mission.score.set": Set("mission.score", args[0]); break;
             case "drive.trigger" when DriveSteps > 0:
                 Set("drive.requested", args[0]); Set("drive.result", 1);
                 Set("drive.phase", Get("player.form.id") is > 0 ? 3 : 2); // An active form reverts first.

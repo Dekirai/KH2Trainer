@@ -1385,10 +1385,10 @@
       "descriptorRva": 7689312,
       "handlerRva": 4371584,
       "flags": 1073741825,
-      "name": "",
-      "summary": "",
-      "notes": "",
-      "evidence": "bdx-bank12-inventory-20261008/evidence.json"
+      "name": "Read DWORD at decoded operand +384",
+      "summary": "Adapter RVA 0x42B480 decodes operand 0 and returns the DWORD at the decoded pointer +384 as @INT.",
+      "notes": "No pointer, type or lifetime check is established; operand 0 must decode to readable memory. The B_LK120 Event 27 handler applies it to the pointer stored at Work +580, which is not proven to be the incoming Actor. Inference, not established: that handler compares the result with values such as 213 and 214 that it later passes to 1:87, so +384 may hold a logical motion ID. No native writer or consumer of +384 confirms this meaning.",
+      "evidence": "motion-event27-20261008/evidence.json#functions[addr=0x14042b480]; helper RVA 0x4AD270; motion-event27-20261008/report.txt; bdx-bank12-inventory-20261008/evidence.json"
     },
     {
       "bank": 1,
@@ -2177,10 +2177,10 @@
       "descriptorRva": 7690464,
       "handlerRva": 4379968,
       "flags": 1073741828,
-      "name": "",
-      "summary": "",
-      "notes": "",
-      "evidence": "bdx-bank12-inventory-20261008/evidence.json"
+      "name": "Call Actor helper RVA 0x3B6670",
+      "summary": "Adapter RVA 0x42D540 decodes operand 0 as a wrapper and its DWORD +4 as Actor, then calls RVA 0x3B6670 with (Actor, operand 1, operand 2, operand 3) and a zero fifth argument. Returns the helper result pointer encoded as @ADR.",
+      "notes": "The effect of RVA 0x3B6670 is unresolved. This entry records the operand ABI only and claims no gameplay effect. The B_LK120 Event 27 handler passes its incoming Actor directly as operand 0, followed by 213 to 216, 1 and 0; the constructor self-link at Actor +4 makes an Actor structurally compatible with the wrapper layout while intact. The adapter checks no wrapper, Actor or lifetime validity.",
+      "evidence": "motion-event27-20261008/evidence.json#functions[addr=0x14042d540]; helpers RVA 0x4AD270, RVA 0x4AD240; motion-event27-20261008/report.txt; bdx-bank12-inventory-20261008/evidence.json"
     },
     {
       "bank": 1,

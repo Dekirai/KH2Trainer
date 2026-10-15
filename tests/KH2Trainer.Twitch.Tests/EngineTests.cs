@@ -295,6 +295,20 @@ internal static class EngineTests
             h.Game.SceneReady = true; await h.TickAsync(1);
             check(h.Game.Get("combat.autoheal") == 0 && h.Engine.PendingCleanupCount == 0, "stop: restores values after control returns");
 
+            // Closing offers to wait only for cleanups a connected game can still take back. Scalar and native-owner
+            // cleanups both stay pending while the game is gone, so waiting then could never finish them.
+            foreach (string key in new[] { "silence", "lucky-streak", "guardian-angel", "super-speed" })
+            {
+                var gone = Create(features); gone.Redeem("a", key); await gone.TickAsync(1);
+                check(gone.IsActive(key) && gone.Sink.IsFulfilled("a") && !gone.Engine.CanWaitForCleanup, $"close wait: a running {key} has no cleanup to wait for");
+                gone.Game.IsConnected = false; await gone.Engine.StopAllAsync("The game was disconnected", gone.Clock.Now); await gone.TickAsync(400, 5);
+                check(gone.Engine.PendingCleanupCount == 1 && !gone.Engine.CanWaitForCleanup, $"close wait: {key} cleanup after the game exited is not worth waiting for");
+                gone.Game.IsConnected = true;
+                check(gone.Engine.CanWaitForCleanup, $"close wait: {key} cleanup can be waited for while connected");
+                await gone.TickAsync(2);
+                check(gone.Engine.PendingCleanupCount == 0 && !gone.Engine.CanWaitForCleanup, $"close wait: {key} cleanup finishes once the game is connected");
+            }
+
             var cancel = Create(features);
             cancel.Game.SceneReady = false; cancel.Redeem("a", "heal"); await cancel.TickAsync(1);
             await cancel.Engine.CancelAsync("a", cancel.Clock.Now);

@@ -82,7 +82,7 @@ public static class EffectCatalog
                 if (ctx.Read("player.drive.max") is not double max) return Readiness.Wait("Waiting for the Drive gauge.");
                 return ctx.Read("player.drive.bars") >= max ? Readiness.Reject("The Drive gauge is already full.") : Readiness.Ready;
             },
-            Start = ctx => ctx.RunAsync("player.drive.bars", ctx.Read("player.drive.max") ?? 0),
+            Start = ctx => ctx.RunAsync("player.drive.bars", ctx.Read("player.drive.max") ?? throw new EffectDeferredException("Waiting for the Drive gauge.")),
         },
         new()
         {
@@ -136,7 +136,7 @@ public static class EffectCatalog
             },
             Start = async ctx =>
             {
-                double current = ctx.Read("munny") ?? 0, target = Math.Min(999999, current + ctx.Amount);
+                double current = ctx.Read("munny") ?? throw new EffectDeferredException("Waiting for the save data."), target = Math.Min(999999, current + ctx.Amount);
                 await ctx.RunAsync("munny", target);
                 ctx.Detail = $"+{N(target - current)} munny";
             },
@@ -172,10 +172,24 @@ public static class EffectCatalog
             Title = "Invincibility", TitleDe = "Unverwundbar",
             Prompt = "Blocks normal HP damage to the controlled character. Time counts only while protection is confirmed; scripted HP changes can bypass it.",
             PromptDe = "Blockiert normalen HP-Schaden an der gesteuerten Figur. Die Zeit zählt nur bei bestätigtem Schutz; direkte HP-Änderungen durch Skripte können ihn umgehen.",
-            Features = ["player_damage_guard", "combat.damage_guard_owned"],
+            Features = ["player_damage_guard", "combat.damage_guard_owned", "combat.damage_guard_mode"],
             Check = ctx => ctx.DamageGuardStartReadiness,
             ActiveCheck = ctx => ctx.DamageGuardActiveReadiness,
-            Start = ctx => ctx.StartDamageGuardAsync(),
+            Start = ctx => ctx.StartDamageGuardAsync(DamageGuardMode.Full),
+        },
+        new()
+        {
+            // A hit is lethal when HP clamped to the native floor (STATUS+8) would reach zero, or one for rescue Mickey,
+            // whose knockout starts at 1 HP (player-health-20261007, actor-movement-roles-20261007).
+            Key = "guardian-angel", Category = RewardCategory.Help, Cost = 3000, DurationSeconds = 60, Group = "defense",
+            AllowedRoles = EffectPlayerRoles.FieldPlayers,
+            Title = "Guardian Angel", TitleDe = "Schutzengel",
+            Prompt = "Ignores normal hits that would knock the controlled character out; HP stays as it was. Scripted HP changes, falls and other knockouts still count.",
+            PromptDe = "Ignoriert normale Treffer, die die gesteuerte Figur K.o. schlagen würden; die HP bleiben gleich. HP-Änderungen durch Skripte, Stürze und andere K.-o.-Arten zählen weiter.",
+            Features = ["player_damage_guard", "combat.damage_guard_owned", "combat.damage_guard_mode"],
+            Check = ctx => ctx.DamageGuardStartReadiness,
+            ActiveCheck = ctx => ctx.DamageGuardActiveReadiness,
+            Start = ctx => ctx.StartDamageGuardAsync(DamageGuardMode.LethalOnly),
         },
         new()
         {
@@ -184,10 +198,12 @@ public static class EffectCatalog
             Prompt = "More munny, orbs and item drops for a while.",
             PromptDe = "Eine Weile lang mehr Munny, Kugeln und Item-Drops.",
             Features = ["loot.jackpot", "loot.lucky"],
+            // Never boost a value whose original could not be put back. A rejected second write undoes the first.
+            Check = ctx => ctx.CanRestore("loot.jackpot") && ctx.CanRestore("loot.lucky") ? Readiness.Ready : Readiness.Wait("Waiting for the current loot values."),
             Start = async ctx =>
             {
-                await ctx.SetAsync("loot.jackpot", (ctx.Read("loot.jackpot") ?? 0) + 3);
-                await ctx.SetAsync("loot.lucky", (ctx.Read("loot.lucky") ?? 0) + 20);
+                await ctx.SetAsync("loot.jackpot", RestorableValue(ctx, "loot.jackpot") + 3);
+                await ctx.SetAsync("loot.lucky", RestorableValue(ctx, "loot.lucky") + 20);
             },
         },
         new()
@@ -197,7 +213,8 @@ public static class EffectCatalog
             Prompt = "Pulls in orbs from far away for a while.",
             PromptDe = "Zieht eine Weile lang Kugeln aus großer Entfernung an.",
             Features = ["loot.draw"],
-            Start = ctx => ctx.SetAsync("loot.draw", Math.Max(ctx.Read("loot.draw") ?? 0, 1500)),
+            Check = ctx => ctx.CanRestore("loot.draw") ? Readiness.Ready : Readiness.Wait("Waiting for the current orb pull range."),
+            Start = ctx => ctx.SetAsync("loot.draw", Math.Max(RestorableValue(ctx, "loot.draw"), 1500)),
         },
         new()
         {
@@ -291,6 +308,59 @@ public static class EffectCatalog
             Check = InGummiMission,
             Start = ctx => ctx.RunAsync("gummi.projectiles.clear"),
         },
+        new()
+        {
+            Key = "overtime", Category = RewardCategory.Help, Cost = 1500, Group = "mission-clock",
+            AllowedRoles = MissionRoles,
+            Title = "Overtime", TitleDe = "Nachspielzeit",
+            Prompt = "Restarts a running mission countdown with 30 more seconds. What happens at zero depends on the mission. Refunded without a countdown.",
+            PromptDe = "Startet einen laufenden Missions-Countdown mit 30 Sekunden mehr neu. Was bei null passiert, hängt von der Mission ab. Ohne Countdown gibt es die Punkte zurück.",
+            Features = MissionCountdownFeatures,
+            Check = ctx =>
+            {
+                var countdown = MissionCountdown(ctx);
+                if (countdown.Kind != ReadinessKind.Ready) return countdown;
+                return ctx.Read("mission.timer.seconds") >= MaxCountdownSeconds - 30
+                    ? Readiness.Reject("The countdown is already close to its one-hour maximum.") : Readiness.Ready;
+            },
+            Start = async ctx =>
+            {
+                double seconds = ctx.Read("mission.timer.seconds") ?? throw new EffectDeferredException("Waiting for the mission countdown.");
+                // Whole seconds only: the restart never adds more than 30 seconds.
+                await RestartCountdownAsync(ctx, Math.Min(MaxCountdownSeconds, Math.Floor(seconds) + 30));
+                ctx.Detail = "+30 s";
+            },
+        },
+        new()
+        {
+            Key = "time-out", Category = RewardCategory.Help, Cost = 2000, DurationSeconds = 30, Group = "mission-clock",
+            AllowedRoles = MissionRoles,
+            Title = "Time Out!", TitleDe = "Auszeit!",
+            Prompt = "Stops the running mission clock for a while; the game itself keeps going. A countdown cannot run out meanwhile. Refunded without a mission clock.",
+            PromptDe = "Hält die laufende Missionsuhr eine Weile an; das Spiel läuft weiter. Ein Countdown kann so lange nicht ablaufen. Ohne Missionsuhr gibt es die Punkte zurück.",
+            Features = ["mission.timer.freeze", "mission.timer.phase", "mission.timer.paused", "mission.phase"],
+            Check = ctx => ctx.Read("mission.timer.freeze") == 1 ? Readiness.Reject("The mission clock is already frozen.") : MissionClock(ctx, countdownOnly: false),
+            // Paid once the bridge publishes its own clock owner. Never re-applied: the native hold ends for good with its mission or clock.
+            Start = async ctx => { ctx.Established = false; await ctx.SetAsync("mission.timer.freeze", 1, sustain: false); },
+            Monitor = MissionFreezeMonitor,
+        },
+        new()
+        {
+            Key = "score-bonus", Category = RewardCategory.Help, Cost = 1000, Amount = 100, AmountLabel = "points", AmountLabelDe = "Punkte", MaxAmount = 9999,
+            AllowedRoles = MissionRoles,
+            Title = "Score Bonus", TitleDe = "Punktebonus",
+            Prompt = "Adds points to the current mission score; later score rewards and results use it. Refunded outside score missions.",
+            PromptDe = "Erhöht die aktuelle Missionswertung; spätere Wertungs-Belohnungen und Ergebnisse nutzen den neuen Wert. Außerhalb von Wertungs-Missionen gibt es die Punkte zurück.",
+            Features = ["mission.score.set", "mission.score", "mission.phase"], ChangesSaveData = true,
+            Check = ctx => ctx.Read("mission.phase") != 1 || ctx.Read("mission.score") is not double score ? Readiness.Reject("No active mission score.")
+                : score >= 9999 ? Readiness.Reject("The mission score is already at its maximum.") : Readiness.Ready,
+            Start = async ctx =>
+            {
+                double current = ctx.Read("mission.score") ?? throw new EffectDeferredException("Waiting for the mission score."), target = Math.Min(9999, current + ctx.Amount);
+                await ctx.RunAsync("mission.score.set", target);
+                ctx.Detail = $"+{N(target - current)} points";
+            },
+        },
 
         new()
         {
@@ -309,7 +379,8 @@ public static class EffectCatalog
         new()
         {
             Key = "one-hp", Category = RewardCategory.Harm, Cost = 5000,
-            AllowedRoles = EffectPlayerRoles.FieldPlayers,
+            // Not rescue Mickey: his per-frame callback 4150E0 starts his knockout at exactly 1 HP (actor-movement-roles-20261007).
+            AllowedRoles = EffectPlayerRoles.Sora | EffectPlayerRoles.Roxas,
             Title = "One HP Left", TitleDe = "Nur noch 1 HP",
             Prompt = "Drops the controlled character to 1 HP. One hit and it's over...",
             PromptDe = "Setzt die gesteuerte Figur auf 1 HP. Ein Treffer und es ist vorbei...",
@@ -321,6 +392,33 @@ public static class EffectCatalog
                 return ctx.Read("combat.autoheal") == 1 ? Readiness.Wait("Waiting for Regeneration to end.") : Readiness.Ready;
             },
             Start = ctx => ctx.RunAsync("player.hp", 1),
+        },
+        new()
+        {
+            Key = "ouch", Category = RewardCategory.Harm, Cost = 1500,
+            AllowedRoles = EffectPlayerRoles.FieldPlayers,
+            Title = "Ouch!", TitleDe = "Autsch!",
+            Prompt = "Halves the controlled character's current HP. This alone never knocks them out.",
+            PromptDe = "Halbiert die aktuellen HP der gesteuerten Figur. Das allein schlägt sie nie K.o.",
+            Features = ["player.hp", "combat.autoheal"],
+            Check = ctx =>
+            {
+                if (ctx.Read("player.hp") is not double hp) return Readiness.Wait("Waiting for the current HP.");
+                if (hp <= LowestSafeHp(ctx)) return Readiness.Reject(LowestHpReason(ctx));
+                // Regeneration would refill the HP within a frame.
+                return ctx.Read("combat.autoheal") == 1 ? Readiness.Wait("Waiting for Regeneration to end.") : Readiness.Ready;
+            },
+            Start = async ctx =>
+            {
+                // The native setter keeps any value from 1 to the maximum, so it never reaches the zero-HP path (player-health-20261007);
+                // rescue Mickey keeps at least 2 HP, because 1 HP already starts his knockout.
+                double hp = ctx.Read("player.hp") ?? throw new EffectDeferredException("Waiting for the current HP.");
+                double lowest = LowestSafeHp(ctx);
+                if (hp <= lowest) throw new EffectRejectedException(LowestHpReason(ctx));
+                double target = Math.Max(lowest, Math.Floor(hp / 2));
+                await ctx.RunAsync("player.hp", target);
+                ctx.Detail = $"-{N(hp - target)} HP";
+            },
         },
         new()
         {
@@ -352,7 +450,7 @@ public static class EffectCatalog
             },
             Start = async ctx =>
             {
-                double current = ctx.Read("munny") ?? 0, target = Math.Max(0, current - ctx.Amount);
+                double current = ctx.Read("munny") ?? throw new EffectDeferredException("Waiting for the save data."), target = Math.Max(0, current - ctx.Amount);
                 await ctx.RunAsync("munny", target);
                 ctx.Detail = $"-{N(current - target)} munny";
             },
@@ -430,7 +528,7 @@ public static class EffectCatalog
                 if (locked.Kind != ReadinessKind.Ready) return locked;
                 return ctx.Read("target_revenge_threshold") is > 0 ? Readiness.Ready : Readiness.Reject("This enemy has no revenge meter.");
             },
-            Start = ctx => ctx.RunAsync("target_set_revenge", ctx.Read("target_revenge_threshold") ?? 0),
+            Start = ctx => ctx.RunAsync("target_set_revenge", ctx.Read("target_revenge_threshold") ?? throw new EffectDeferredException("Waiting for the enemy's revenge meter.")),
         },
         new()
         {
@@ -481,12 +579,48 @@ public static class EffectCatalog
             Start = ctx => ctx.StartMovementAsync(MovementMask.Speed, v => MovementValues.FromValues(
                 Math.Clamp(v.Value(0) * .25f, .5f, 32), Math.Clamp(v.Value(1) * .25f, 1, 64), 0, 0)),
         },
+        new()
+        {
+            Key = "walk-only", Category = RewardCategory.Harm, Cost = 1500, DurationSeconds = 30, Group = "speed",
+            Title = "Walk Only", TitleDe = "Nur gehen",
+            Prompt = "The controlled character can only walk for a while: running uses the walking speed. Special actions keep their own speed.",
+            PromptDe = "Die gesteuerte Figur kann eine Weile lang nur gehen: Rennen nutzt das Gehtempo. Spezialaktionen behalten ihr eigenes Tempo.",
+            AllowedRoles = EffectPlayerRoles.FieldPlayers,
+            Features = ["movement.run_speed", "movement.walk_speed"],
+            Check = ctx =>
+            {
+                var movement = ctx.MovementStartReadiness(MovementMask.Speed);
+                if (movement.Kind != ReadinessKind.Ready) return movement;
+                return ctx.Read("movement.run_speed") <= ctx.Read("movement.walk_speed")
+                    ? Readiness.Reject("The current character already runs no faster than it walks.") : Readiness.Ready;
+            },
+            ActiveCheck = ctx => ctx.MovementActiveReadiness,
+            // Only the run speed is owned. The walk speed it copies must be valid too; its range (0..32) lies within the run range.
+            Start = ctx => ctx.StartMovementAsync(MovementMask.Run, v => MovementValues.FromValues(0, v.Value(0), 0, 0), inputs: MovementMask.Walk),
+        },
         Values("fast-forward", RewardCategory.Harm, 2000, 30, "time", "Fast Forward", "Vorspulen",
             "The whole game runs at double speed. Good luck dodging.", "Das ganze Spiel läuft doppelt so schnell. Viel Glück beim Ausweichen.",
             ("time.multiplier", 2)),
         LockOnPair("short-sighted", RewardCategory.Harm, 1000, 60, "Short-Sighted", "Kurzsichtig",
             "Lock-on only reaches enemies right next to Sora for a while.", "Lock-on erreicht eine Weile lang nur Gegner direkt neben Sora.",
             .15f),
+        new()
+        {
+            // A floor, never an expiry: the countdown keeps 30 seconds and a count-up is never converted.
+            Key = "time-crunch", Category = RewardCategory.Harm, Cost = 2500, Group = "mission-clock",
+            AllowedRoles = MissionRoles,
+            Title = "Time Crunch", TitleDe = "Zeitnot",
+            Prompt = "Restarts a running mission countdown at 30 seconds if more than 45 seconds are left. What happens at zero depends on the mission. Refunded otherwise.",
+            PromptDe = "Startet einen laufenden Missions-Countdown mit 30 Sekunden neu, wenn mehr als 45 Sekunden übrig sind. Was bei null passiert, hängt von der Mission ab. Sonst gibt es die Punkte zurück.",
+            Features = MissionCountdownFeatures,
+            Check = ctx =>
+            {
+                var countdown = MissionCountdown(ctx);
+                if (countdown.Kind != ReadinessKind.Ready) return countdown;
+                return ctx.Read("mission.timer.seconds") > 45 ? Readiness.Ready : Readiness.Reject("The countdown has 45 seconds or less left.");
+            },
+            Start = async ctx => { await RestartCountdownAsync(ctx, 30); ctx.Detail = "30 s left"; },
+        },
         Form("antiform", 6, RewardCategory.Harm, 4000, 30, "Antiform", "Anti-Form",
             "Turns Sora into Antiform for a while. No healing, no items, pure chaos.",
             "Verwandelt Sora eine Weile lang in die Anti-Form. Keine Heilung, keine Items, nur Chaos."),
@@ -520,7 +654,8 @@ public static class EffectCatalog
             Start = ctx => ctx.StartMovementAsync(MovementMask.Air, v => MovementValues.FromValues(0, 0, 3, Math.Clamp(v.Value(3) * 4, 0, 1000))),
         },
         Values("slow-mo", RewardCategory.Funny, 1500, 30, "time", "Slow Motion", "Zeitlupe",
-            "The whole game runs at half speed for a while.", "Das ganze Spiel läuft eine Weile lang mit halber Geschwindigkeit.",
+            "The whole game runs at half speed for a while. Mission clocks and play time keep real-time pace.",
+            "Das ganze Spiel läuft eine Weile lang mit halber Geschwindigkeit. Missionsuhren und Spielzeit laufen in Echtzeit weiter.",
             ("time.multiplier", 0.5)),
         Fov("fisheye", 750, 60, 120, "Fisheye", "Fischauge",
             "Ultra-wide field of view for a while.", "Eine Weile lang ein extrem weites Sichtfeld."),
@@ -583,8 +718,13 @@ public static class EffectCatalog
             Prompt = "Opens the game's hidden developer desktop for a few seconds.",
             PromptDe = "Öffnet für ein paar Sekunden den versteckten Entwickler-Desktop des Spiels.",
             Features = ["developer.show", "developer.hide"],
-            Start = ctx => ctx.RunAsync("developer.show"),
-            End = ctx => ctx.RunAsync("developer.hide"),
+            // A desktop the streamer opened stays theirs: no charge, and the end hides only what this reward showed.
+            Check = ctx => ctx.DeveloperDesktopVisible ? Readiness.Reject("The developer desktop is already open.") : Readiness.Ready,
+            Start = async ctx => { await ctx.RunAsync("developer.show"); ctx.State["opened"] = 1; },
+            End = async ctx =>
+            {
+                if (ctx.State.GetValueOrDefault("opened") == 1 && ctx.DeveloperDesktopVisible) await ctx.RunAsync("developer.hide");
+            },
         },
 
         // ---- Annoying -----------------------------------------------------------------------
@@ -637,7 +777,9 @@ public static class EffectCatalog
         Key = key, Category = category, Cost = cost, DurationSeconds = duration, Group = group,
         Title = title, TitleDe = titleDe, Prompt = prompt, PromptDe = promptDe,
         Features = value.Feature == "combat.fullmp" ? [value.Feature, "player.mp.max"] : [value.Feature],
+        // The global time settings have no character-specific native path (reward-ownership-audit-20261007).
         AllowedRoles = value.Feature is "audio.music" or "audio.voice" or "render.hide_captions" or "combat.autoheal" or "combat.fullmp"
+            or "time.multiplier" or "time.actor_effect_freeze" or "practice.field_pause"
             ? EffectPlayerRoles.FieldPlayers : EffectPlayerRoles.Sora,
         SelfPauseFeature = value.Feature is "practice.field_pause" or "time.actor_effect_freeze" ? value.Feature : null,
         SelfPauseBlocker = value.Feature switch
@@ -654,6 +796,7 @@ public static class EffectCatalog
                 var gauge = MpGauge(ctx, rejectNoGauge: true);
                 if (gauge.Kind != ReadinessKind.Ready) return gauge;
             }
+            if (!ctx.CanRestore(value.Feature)) return Readiness.Wait("Waiting for a current value that can be restored afterwards.");
             return ctx.Read(value.Feature) is double current && EffectContext.Near(current, value.Value)
                 ? Readiness.Reject($"{title} is already active.") : Readiness.Ready;
         },
@@ -696,6 +839,13 @@ public static class EffectCatalog
     // A property, not a field: the catalog is built by a static initializer that runs before later fields are set.
     private static string[] FormFeatures =>
         ["drive.trigger", "drive.revert", "drive.cancel", "combat.formtimer", "player.form.id", "drive.phase", "drive.result", "drive.requested"];
+
+    // Rescue Mickey's per-frame callback 4150E0 starts his knockout at exactly 1 HP (actor-movement-roles-20261007).
+    private static double LowestSafeHp(EffectContext ctx) => ctx.Gameplay.Role == PlayerRole.Mickey ? 2 : 1;
+
+    private static string LowestHpReason(EffectContext ctx) => LowestSafeHp(ctx) > 1
+        ? "Rescue Mickey already has the lowest HP that does not knock him out."
+        : "The current character already has 1 HP.";
 
     /// <summary>The bridge takes one Drive switch at a time; a queued form waits until the previous revert or transformation is done.</summary>
     private static Readiness FormCheck(EffectContext ctx) => FormReadiness(ctx, null);
@@ -871,6 +1021,10 @@ public static class EffectCatalog
         ctx.State["colorOwned"] = 0;
     }
 
+    /// <summary>The current value as a restorable original; a missing one defers the start before anything is written.</summary>
+    private static double RestorableValue(EffectContext ctx, string feature) =>
+        ctx.ReadRestorableValue(feature) ?? throw new EffectDeferredException("Waiting for a current value that can be restored afterwards.");
+
     private static bool Full(EffectContext ctx, string value, string maximum) =>
         ctx.Read(value) is double current && ctx.Read(maximum) is double max && max > 0 && current >= max;
 
@@ -920,6 +1074,55 @@ public static class EffectCatalog
 
     private static Readiness InGummiMission(EffectContext ctx) =>
         ctx.Read("gummi.hp") is not null ? Readiness.Ready : Readiness.Reject("Only works during a Gummi Ship mission.");
+
+    // Sora's and Roxas' missions (Roxas' Twilight Town jobs are timed too); the native actions still check the living controlled player.
+    private const EffectPlayerRoles MissionRoles = EffectPlayerRoles.Sora | EffectPlayerRoles.Roxas;
+    // The native countdown restart takes 1..3599 seconds, keeping the HUD below one hour.
+    private const double MaxCountdownSeconds = 3599;
+
+    private static string[] MissionCountdownFeatures =>
+        ["mission.timer.countdown", "mission.timer.seconds", "mission.timer.direction", "mission.timer.phase", "mission.timer.paused", "mission.phase"];
+
+    /// <summary>
+    /// The active mission's clock is running. Any pause owner (a script, the trainer's field pause or clock freeze) waits:
+    /// the clock already stands still and the native restart refuses. An armed clock starts on its next unpaused tick (0x1571B0).
+    /// </summary>
+    private static Readiness MissionClock(EffectContext ctx, bool countdownOnly)
+    {
+        if (ctx.Read("mission.phase") != 1 || ctx.Read("mission.timer.phase") is not (1 or 2) ||
+            countdownOnly && (ctx.Read("mission.timer.direction") != 1 || ctx.Read("mission.timer.seconds") is null))
+            return Readiness.Reject(countdownOnly ? "No running mission countdown." : "No running mission clock.");
+        if (ctx.Read("mission.timer.paused") != 0) return Readiness.Wait("Waiting for the paused mission clock to continue.");
+        return ctx.Read("mission.timer.phase") == 2 ? Readiness.Ready : Readiness.Wait("Waiting for the mission clock to start.");
+    }
+
+    /// <summary>
+    /// Only an already-running countdown is restarted; a count-up is never converted. What expiry does belongs
+    /// to the mission (timer-message74-handlers-20261008), so rewards never trigger it themselves.
+    /// </summary>
+    private static Readiness MissionCountdown(EffectContext ctx) => MissionClock(ctx, countdownOnly: true);
+
+    /// <summary>
+    /// Native restart (1226). Code 2 means it was called but its resulting clock could not be confirmed; the
+    /// bridge forbids an automatic retry, so the redemption is refunded once and never sent again.
+    /// </summary>
+    private static async Task RestartCountdownAsync(EffectContext ctx, double seconds)
+    {
+        try { await ctx.RunAsync("mission.timer.countdown", seconds); }
+        catch (BridgeCommandRejectedException error) when (error.Code == 2) { throw new EffectRejectedException(error.Message); }
+    }
+
+    /// <summary>Time Out counts only while the bridge holds the active mission's clock with its own owner bit.</summary>
+    private static EffectProgress MissionFreezeMonitor(EffectContext ctx)
+    {
+        bool active = ctx.Read("mission.phase") == 1, held = active && ctx.Read("mission.timer.freeze") == 1;
+        if (!ctx.Established)
+        {
+            if (held) { ctx.Established = true; return EffectProgress.Running; }
+            return ctx.SinceStart > TimeSpan.FromSeconds(10) ? EffectProgress.Failed("The game did not hold the mission clock.") : EffectProgress.Running;
+        }
+        return held ? EffectProgress.Running : EffectProgress.Ended(active ? "The game released the mission clock." : "The mission is no longer active.");
+    }
 
     /// <summary>Best effort: the scene may have changed in the meantime. Returns whether the game accepted it.</summary>
     private static async Task<bool> TryRunAsync(EffectContext ctx, string featureId, params double[] arguments)

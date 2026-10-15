@@ -58,6 +58,7 @@ internal static class AssetExplorerTests
               AssetArchiveReader.Recognize(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }) == "PNG image", "texture signature recognition is distinct from payload validation");
         check(AssetArchiveReader.Recognize("B"u8) == "Binary data", "short/unknown signatures stay generic");
         check(AssetArchiveReader.TypeName(2).Contains("context") && AssetArchiveReader.TypeName(60000).Contains("60000"), "generic and unknown BAR types are preserved honestly");
+        check(AssetArchiveReader.TypeName(23) == "Collision/contact definitions", "BAR type 23 names its collision and contact definitions");
         await using (var stream = await reader.OpenReadAsync(inner.Entries[0].Payload))
         {
             stream.Position = stream.Length - 1; byte[] bytes = new byte[8];

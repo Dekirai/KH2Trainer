@@ -7,6 +7,7 @@ internal sealed partial class FakeGame
     private PlayerRole guardRole;
     private ulong guardOwner;
     private bool guardOn;
+    private DamageGuardMode guardMode = DamageGuardMode.Full;
     private double[]? queuedGuard;
     public bool GuardSnapshotAvailable { get; set; } = true;
     public bool GuardAcceptWithoutApplying { get; set; }
@@ -28,20 +29,29 @@ internal sealed partial class FakeGame
             bool contextRetained = state.Known && state.Role == guardRole &&
                 (state.Blockers & ~(GameplayBlockers.InputBlocked | GameplayBlockers.TrainerFieldPause)) == 0;
             if (guardOn && (guardIdentity != new ActorMovementIdentity(MovementInstance, MovementGeneration) || !contextRetained))
-            { guardOn = false; guardOwner = 0; Set("player_damage_guard", 0); }
+            { guardOn = false; guardOwner = 0; PublishGuard(DamageGuardMode.Off); }
             if (!IsConnected || !GuardSnapshotAvailable || !Supports(472)) return DamageGuardSnapshot.Unavailable;
-            bool effective = guardOn && (state.Blockers & GameplayBlockers.TrainerFieldPause) == 0;
-            Set("player_damage_guard", effective ? 1 : 0);
-            return new(true, new(MovementInstance, MovementGeneration), state, effective, effective ? guardOwner : 0);
+            var mode = guardOn && (state.Blockers & GameplayBlockers.TrainerFieldPause) == 0 ? guardMode : DamageGuardMode.Off;
+            PublishGuard(mode);
+            return new(true, new(MovementInstance, MovementGeneration), state, mode, mode != DamageGuardMode.Off ? guardOwner : 0);
         }
     }
-    public void SetManualGuard(bool enabled, ulong foreignOwner = 0)
+    // Each manual toggle shows only its own mode; slot 483 names the mode of whichever owner holds the guard.
+    private void PublishGuard(DamageGuardMode mode)
     {
-        guardOn = enabled; guardOwner = enabled ? foreignOwner : 0;
+        Set("player_damage_guard", mode == DamageGuardMode.Full ? 1 : 0);
+        Set("player_damage_guard_lethal", mode == DamageGuardMode.LethalOnly ? 1 : 0);
+        Set("combat.damage_guard_mode", (int)mode);
+    }
+    public void SetManualGuard(bool enabled, ulong foreignOwner = 0, DamageGuardMode mode = DamageGuardMode.Full)
+    {
+        guardOn = enabled; guardOwner = enabled ? foreignOwner : 0; guardMode = mode;
         guardIdentity = new(MovementInstance, MovementGeneration);
         guardRole = Gameplay.Role;
-        Set("player_damage_guard", enabled ? 1 : 0);
+        PublishGuard(enabled ? mode : DamageGuardMode.Off);
     }
+    /// <summary>The owner holding the guard switches its mode in place.</summary>
+    public void SetGuardMode(DamageGuardMode mode) => guardMode = mode;
     public void CompleteQueuedGuard()
     {
         var args = queuedGuard ?? throw new InvalidOperationException("No queued guard request");
@@ -49,7 +59,7 @@ internal sealed partial class FakeGame
     }
     private async Task ExecuteGuardAsync(double[] args)
     {
-        if (args.Length != 7 || args.Any(a => !double.IsFinite(a) || a < 0 || a > uint.MaxValue || a != Math.Truncate(a)))
+        if (args.Length != 8 || args.Any(a => !double.IsFinite(a) || a < 0 || a > uint.MaxValue || a != Math.Truncate(a)) || args[7] > 1)
             throw new ArgumentException("Invalid guard words");
         if (queuedGuard != null) throw new InvalidOperationException("The previous command is still pending");
         if (GuardHold is { } hold) await hold.Task;
@@ -71,13 +81,15 @@ internal sealed partial class FakeGame
         if (args[0] == 0)
         {
             if (guardOn && bridge == MovementInstance && guardOwner == owner && (generation == 0 || generation == guardIdentity.Generation))
-            { guardOn = false; guardOwner = 0; GuardWrites++; Set("player_damage_guard", 0); }
+            { guardOn = false; guardOwner = 0; GuardWrites++; PublishGuard(DamageGuardMode.Off); }
             return;
         }
         if (args[0] != 1 || !Gameplay.IsControllable || generation != MovementGeneration || bridge != MovementInstance || guardOn && guardOwner != owner)
             throw new InvalidOperationException("Guard identity or ownership changed");
         if (GuardAcceptWithoutApplying) return;
+        // The same owner may switch modes in place.
         guardIdentity = new(bridge, generation); guardRole = Gameplay.Role; guardOwner = owner; guardOn = true; GuardWrites++;
-        Set("player_damage_guard", 1);
+        guardMode = args[7] == 1 ? DamageGuardMode.LethalOnly : DamageGuardMode.Full;
+        PublishGuard(guardMode);
     }
 }

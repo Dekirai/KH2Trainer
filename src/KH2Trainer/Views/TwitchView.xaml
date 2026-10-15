@@ -328,6 +328,23 @@
       </DockPanel>
      </Border>
 
+     <Border Style="{StaticResource Card}" Margin="0,0,0,14" Visibility="{Binding HasCleanup,Converter={StaticResource BoolVisibility}}">
+      <StackPanel>
+       <TextBlock Text="Still being undone" Style="{StaticResource Text.CardTitle}" Margin="0,0,0,4"/>
+       <TextBlock Text="These rewards ended, but some of their changes are not undone yet. Rewards that change the same thing wait until this finishes." Style="{StaticResource Text.Small}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+       <ItemsControl ItemsSource="{Binding PendingCleanups}" Focusable="False">
+        <ItemsControl.ItemTemplate>
+         <DataTemplate>
+          <DockPanel Margin="0,0,0,6">
+           <Ellipse DockPanel.Dock="Left" Width="10" Height="10" Fill="{Binding Brush}" Margin="0,5,12,0" VerticalAlignment="Top"/>
+           <TextBlock TextWrapping="Wrap"><Run Text="{Binding Title,Mode=OneWay}" FontWeight="SemiBold"/><Run Text="{Binding Reason,Mode=OneWay,StringFormat=' · {0}'}" Foreground="{StaticResource MutedBrush}"/></TextBlock>
+          </DockPanel>
+         </DataTemplate>
+        </ItemsControl.ItemTemplate>
+       </ItemsControl>
+      </StackPanel>
+     </Border>
+
      <local:AdaptiveGrid MinColumnWidth="380" MaxColumns="2" ColumnSpacing="14" RowSpacing="14">
       <Border Style="{StaticResource Card}">
        <StackPanel>

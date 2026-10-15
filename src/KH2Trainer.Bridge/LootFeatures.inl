@@ -2,7 +2,7 @@
 // Included after DamageTuningFeatures.inl; shares the allocated STATUS guard.
 // No retained actor pointers, callbacks, save edits, or continuous overrides.
 namespace loot_features {
-constexpr unsigned First=352, LastEdit=355, Last=359;
+constexpr unsigned First=352, LastEdit=355, Last=359, PrizeMode=199;
 constexpr unsigned Offsets[]={520,568,572,580};
 constexpr double Maxima[]={5000,9,99,100};
 bool PlayerReady(const TrainerContext& c,bool paused=false) {
@@ -60,6 +60,9 @@ bool LootHandle(const TrainerContext& c,unsigned slot,const double args[8],Train
 void LootSnapshot(const TrainerContext& c) {
     using namespace loot_features;
     if(!PlayerReady(c,true)) return;
+    // 415840 (status-rebuild-ownership-20261007): Actor+1736 bit 0x02000000 selects
+    // rescue-Mickey prize mode, where 3DC170 remaps orbs and bypasses Lucky and retention.
+    SnapshotValue(PrizeMode,(combat::Field<unsigned>(c.player,1736)&0x02000000)?1:0);
     for(unsigned i=0;i<4;++i) {
         const float value=combat::Field<float>(c.status,Offsets[i]);
         if(isfinite(value)) SnapshotValue(First+i,i==3?value*100.0:value);
@@ -76,4 +79,7 @@ void LootSnapshot(const TrainerContext& c) {
         SnapshotValue(357,quantity); SnapshotValue(358,luck); SnapshotValue(359,retained*100);
     }
 }
-void LootCapabilities() { for(unsigned slot=loot_features::First;slot<=loot_features::Last;++slot) SupportCapability(slot); }
+void LootCapabilities() {
+    for(unsigned slot=loot_features::First;slot<=loot_features::Last;++slot) SupportCapability(slot);
+    SupportCapability(loot_features::PrizeMode);
+}

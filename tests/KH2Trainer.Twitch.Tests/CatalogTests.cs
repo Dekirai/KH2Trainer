@@ -22,6 +22,11 @@ internal static class CatalogTests
             {
                 var spec = RewardResolver.Spec(effect, settings);
                 check(spec.Validate() is null, $"{language} {effect.Key}: Twitch accepts the default reward ({spec.Validate()})");
+                // Twitch's limit would otherwise cut off the stated duration or amount.
+                string prompt = RewardResolver.Prompt(effect, settings);
+                check(prompt.StartsWith(effect.PromptFor(language), StringComparison.Ordinal) &&
+                    prompt.EndsWith(effect.Amount > 0 ? ")" : effect.IsTimed ? " s." : effect.PromptFor(language), StringComparison.Ordinal),
+                    $"{language} {effect.Key}: the default description fits without truncation");
             }
         }
 
@@ -44,6 +49,7 @@ internal static class CatalogTests
             game.Set("gummi.hp", 50);
             game.Set("gummi.special_stock", 2); game.Set("gummi.special_progress", 50);
             if (effect.Key == "timer-refill") { game.Set("player.gauge.mode", 2); game.Set("player.gauge.remaining", 20); game.Set("player.gauge.maximum", 100); }
+            game.StartMission(120); game.Set("mission.score", 500);
             if (effect.Key == "revert") game.Set("player.form.id", 1);
             if (effect.Key is "heal" or "restore-mp" or "full-restore") { game.Set("player.hp", 10); game.Set("player.mp", 10); }
             var context = new EffectContext(effect, new Redemption("r", effect.Key, "Viewer", "", DateTimeOffset.UtcNow, IsTest: true),
@@ -80,7 +86,7 @@ internal static class CatalogTests
         foreach (var effect in all.Where(e => e.IsTimed && e.Group is not ("form" or "position" or "debug")))
         {
             var game = new FakeGame(features);
-            game.Set("target_lock_mode", 2); game.Set("target_hp", 500);
+            game.Set("target_lock_mode", 2); game.Set("target_hp", 500); game.StartMission(120);
             var before = new Dictionary<int, double>(game.Values);
             var context = new EffectContext(effect, new Redemption("r", effect.Key, "Viewer", "", DateTimeOffset.UtcNow, IsTest: true),
                 effect.DurationSeconds, effect.Amount, game, map, new Random(1), _ => Task.CompletedTask);

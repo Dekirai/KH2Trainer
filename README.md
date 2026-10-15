@@ -169,6 +169,27 @@ makes them permanent. The generated user guide describes every feature.
 
 Profiles, backups and preferences are stored in `%LOCALAPPDATA%\KH2Trainer`.
 
+### Inspect game scripts offline
+
+In **Asset Explorer**, open a `.bdx` file or a type-3 entry inside a BAR container.
+The **Script** tab shows its events, stored instructions, branch and call targets,
+and native calls. Choose an event to jump to its entry, or search for an operation,
+PC or native call such as `2:95`. For an unnamed script payload, select it and use
+**Inspect BDX**. Inspection works while disconnected and reads the selected file.
+
+The decoder follows declared event entries with bounded reads. Diagnostics identify
+invalid targets, overlapping instructions and inspection limits. Calls and yields
+have conditional continuations; dynamic returns and native callback effects require
+runtime state. Undecoded bytes may contain data or other code. This view helps locate
+script behavior and compare potential mod targets; it does not execute or modify scripts.
+
+Event rows name the native calling convention where the research identifies one (Event 0 init
+with its Actor, Event 1 after init, Event 10 native messages such as timer expiry 74, Event 27
+contact hits); this describes how the game calls an event, not proof that a handler runs.
+Address operands that point at stored text show it as "stored bytes as text", and the search finds
+it. A BAR **Motion** entry (type 9) opens a read-only root-motion summary with a frame slider, and
+a type 23 entry lists its collision/contact definitions with their stored default groups. Both are
+offline projections of the file, not a check of what the running game does.
 To add a catalog category to a section, edit `src/KH2Trainer/ViewModels/Navigation.cs`. A category
 missing there still appears, in a "More" section.
 
@@ -221,18 +242,37 @@ same file in your reward dashboard (**Reward dashboard** button) to use it on Tw
   redemption) and recent results. **Stop all** ends everything and refunds what still waits;
   disconnecting from the game and **Disable all effects** do the same.
 - Closing the trainer pauses the rewards on Twitch (switchable), so nobody redeems while it is off.
+  If an ended effect still waits to be undone (for example because the game is in a menu), the Live
+  tab lists it under **Still being undone**, and closing the trainer offers to wait up to 30 seconds
+  for the restore instead of leaving the value applied.
+- A reward that would change a value the trainer cannot currently read waits instead of writing,
+  so its original can always be restored.
+- **Hacker Mode** does not take points while the developer desktop is already open, and it only
+  hides the desktop again if it opened it.
 
 ### Rewards
 
 | Category | Rewards |
 | --- | --- |
-| Help | Heal Player, Refill MP, Full Restore, Refill Drive Gauge, Potion Care Package, Gift a Megalixir, Mystery Gift, Munny Donation, EXP Gift, Strength +1, Regeneration, Unlimited MP, Invincibility, Lucky Streak, Orb Magnet, Super Speed, Eagle Eye, Weaken the Enemy, Valor/Wisdom/Limit/Master/Final Form, Repair Gummi Ship, Clear Enemy Bullets |
-| Harm | One HP Left, Drain Drive Gauge, Pickpocket, Potion Thief, Reload Room, Kick Out of Drive Form, Heal the Enemy, Enrage the Enemy, Glass Cannon, Tax Collector, Snail Mode, Fast Forward, Short-Sighted, Antiform |
+| Help | Heal Player, Refill MP, Full Restore, Refill Drive Gauge, Potion Care Package, Gift a Megalixir, Mystery Gift, Munny Donation, EXP Gift, Strength +1, Regeneration, Unlimited MP, Invincibility, Guardian Angel, Lucky Streak, Orb Magnet, Super Speed, Eagle Eye, Weaken the Enemy, Valor/Wisdom/Limit/Master/Final Form, Overtime, Time Out!, Score Bonus, Repair Gummi Ship, Clear Enemy Bullets |
+| Harm | One HP Left, Ouch!, Drain Drive Gauge, Pickpocket, Potion Thief, Reload Room, Kick Out of Drive Form, Heal the Enemy, Enrage the Enemy, Glass Cannon, Tax Collector, Snail Mode, Walk Only, Fast Forward, Short-Sighted, Time Crunch, Antiform |
 | Funny | Drive Roulette, Moon Jump, Slow Motion, Fisheye, Tunnel Vision, Upside-Down Camera, Slowpoke Animations, Hyperactive Sora, Color Chaos, Silence!, Ghost Walk, Hacker Mode |
 | Annoying | Time Stop, Freeze Frame, Pause!, Lights Out, Flashbang, Déjà Vu, Who Said That?, No Subtitles |
 
 Reward texts can be English or German. Twitch allows 50 custom rewards per channel, so not all
-59 can be on at once.
+66 can be on at once.
+
+The mission rewards work only while a mission clock runs (timed missions, minigames and timed
+fights) and are refunded otherwise. **Overtime** restarts a running countdown with 30 more seconds,
+**Time Crunch** restarts it at 30 seconds when more than 45 seconds are left, and **Time Out!** holds the
+mission clock for 30 seconds while the game keeps running. What happens at zero depends on the
+mission, so the texts stay neutral. **Score Bonus** adds points in score missions. **Guardian
+Angel** ignores a normal hit that would knock the character out (HP stays as it was; scripted HP
+changes and falls still count). **Ouch!** halves the current HP but never knocks out (rescue Mickey keeps at least 2 HP), and **Walk
+Only** sets the run speed to the walk speed for 30 seconds. Fast Forward, Slow Motion, Time Stop
+and Freeze Frame now also run for Roxas and rescue Mickey. Mission clocks and play time keep their
+real-time pace under Fast Forward, Slow Motion and Time Stop; Freeze Frame also holds the mission
+clock, while play time keeps counting.
 
 ### Stream overlay
 
@@ -255,6 +295,41 @@ build: the trainer rejects a mismatched resident bridge instead of mixing old na
 new feature catalog.
 
 ## Research archive
+
+### Research-backed additions (0.12.16)
+
+This round turns verified parts of the October research into features. Everything below follows
+the cited research folders; none of it has been tested in a live game yet.
+
+- **Missions > Freeze Mission Clock** holds the mission countdown or count-up while gameplay,
+  input and the HUD keep running. The trainer owns a private bit of the native clock-owner mask
+  (`0xABB854`), next to the field pause's bit. Native owners are never touched. The freeze ends
+  on disable, Disable All, disconnect, a mission, room or scene change, or when the game resets
+  the clock, and it is never re-applied to a new mission. The restart actions refuse while it is
+  held. A frozen countdown cannot expire and count-up results improve, so treat it as practice.
+  See `player-input-classification-20261007` and `timing-callback-context-20261008`.
+- Mission counter and gauge actions that can fire a boundary event now refuse while the game's
+  mission handler tables are full; the native code has no capacity check there
+  (`timer-message74-handlers-20261008`).
+- **Combat Practice > Block lethal player hits only** blocks only a normal HP hit that would knock
+  Sora, Roxas or rescue Mickey out (HP after the native floor clamp reaching zero, or one for rescue
+  Mickey, whose knockout starts at 1 HP). Other hits apply normally. A blocked hit leaves HP
+  unchanged and skips that hit's Drive/MP gain. Scripted HP changes and falls still count. It shares the damage guard with **Block player HP damage**;
+  **Damage guard mode** shows which mode is active.
+- **Damage Tuning** shows the locked enemy's parameter ID and level row and how many actors share
+  its STATUS (more than one means edits affect all of them). **Reset target damage factors**
+  copies the parameter row's values back (`actor-rebind-context-20261008`).
+- **Time** shows the save's play time in total and for the current world as h:mm:ss (the game
+  clock at 60 ticks per second); the field pause and time multiplier do not stop or scale it.
+- **Renderer Timing** shows the unscaled ticks of the current frame and counts frames with more
+  than one tick since the last scene change, connection or effect reset. **Loot** shows rescue Mickey's prize mode, during
+  which Lucky and munny retention have no effect. **Gummi** shows the ship's hit-protection timer (started by hits, maneuvers and reactions),
+  the protection and destroyed flags and the movement attenuation. **Gameplay state** shows
+  whether the actor lifetime observer is running or faulted.
+
+The research also lists ideas that stay blocked on purpose: the STATUS runtime, Tiny/Giant size
+rewards, enemy STATUS rebinds, running BDX calls, live heap or collision tools and Crowd Control
+during events. See the individual reports for the reasons.
 
 ### Current analysis and Crowd Control checks (0.12.10)
 
@@ -279,8 +354,8 @@ evidence and isolated checks; this does not broadly enable input during events.
 | Player | Current reward policy |
 | --- | --- |
 | Sora, including supported forms | Each reward keeps its individual native resource and state checks. |
-| Roxas, including dual-wield Roxas | Healing, full restore, one HP, regeneration, unlimited MP, MP refill, damage guard, Super Speed, Snail Mode, Moon Jump and the explicitly shared audio/display/caption rewards are permitted when their own checks pass. Drive, animation and other unverified rewards wait. |
-| Rescue Mickey | Same conservative shared-reward list. Drive transitions remain unavailable. |
+| Roxas, including dual-wield Roxas | Healing, full restore, One HP Left, Ouch!, regeneration, unlimited MP, MP refill, damage guard, Guardian Angel, Super Speed, Snail Mode, Walk Only, Moon Jump, Fast Forward, Slow Motion, Time Stop, Freeze Frame, the mission clock rewards, Score Bonus and the explicitly shared audio/display/caption rewards are permitted when their own checks pass. Drive, animation and other unverified rewards wait. |
+| Rescue Mickey | Same conservative shared-reward list without One HP Left, the mission clock rewards and Score Bonus: his knockout already starts at 1 HP, so Ouch! keeps him at 2 HP or more. Drive transitions remain unavailable. |
 | Unknown or another actor class | Player-dependent rewards wait; no inferred Sora layout is used. |
 
 This is a static compatibility policy, not a claim that every reward has been playtested with

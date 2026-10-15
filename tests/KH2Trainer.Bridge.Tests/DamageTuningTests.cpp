@@ -68,6 +68,71 @@ void RejectBoth(const char* why) {
     Check(Run(272,17).code!=0&&Run(279,17).code!=0,why);
     Check(!memcmp(before,reinterpret_cast<void*>(g_base+PlayerStatus),sizeof(before)),"rejected request leaves both status records unchanged");
 }
+// Enemy parameter table: [2AE57C0] -> {+4 signed count, +8 92-byte rows}.
+constexpr uintptr_t Table=0xC0000,Rows=Table+8;
+uintptr_t Row(unsigned index) { return Rows+92*index; }
+void SetupRow(unsigned index=3,unsigned count=8,uint16_t id=0x123,uint16_t level=2) {
+    Setup();At<uintptr_t>(0x2AE57C0)=g_base+Table;At<int>(Table+4)=static_cast<int>(count);
+    for(unsigned i=0;i<92;++i)At<BYTE>(Row(index)+i)=static_cast<BYTE>(0xA0+i);
+    At<uint16_t>(Row(index))=id;At<uint16_t>(Row(index)+2)=level;
+    At<uint32_t>(EnemyStatus+624)=static_cast<uint32_t>(Row(index));At<int>(EnemyStatus+612)=3;
+}
+bool Published(unsigned slot) { return ((shared.valid[slot/64]>>(slot%64))&1)!=0; }
+void RejectRow(const char* why,bool targetResolved=true) {
+    DamageTuningSnapshot(context);
+    Check(!Published(294)&&!Published(295)&&Published(296)==targetResolved&&Published(279)==targetResolved,why);
+    BYTE before[1264]{};memcpy(before,reinterpret_cast<void*>(g_base+PlayerStatus),sizeof(before));
+    Check(Run(297).code==3,"target reset refused without a validated parameter row");
+    Check(!memcmp(before,reinterpret_cast<void*>(g_base+PlayerStatus),sizeof(before)),"refused target reset changes no status byte");
+}
+void EnemyParameters() {
+    SetupRow();DamageTuningSnapshot(context);
+    Check(shared.values[294]==0x123&&shared.values[295]==2&&shared.values[296]==3,"target parameter ID, level selector and STATUS users published");
+    for(unsigned i=0;i<7;++i)Check(shared.values[279+i]==80+i,"coefficient readouts unchanged by parameter readouts");
+    SetupRow(3,8,0x45,0);DamageTuningSnapshot(context);
+    Check(shared.values[294]==0x45&&shared.values[295]==0,"native fallback row 0x45 and default level selector are shown as stored");
+    SetupRow(0,1);DamageTuningSnapshot(context);Check(Published(294),"single-row table first row accepted");
+    SetupRow(4095,4096);DamageTuningSnapshot(context);Check(Published(294)&&shared.values[294]==0x123,"last row of the largest table accepted");
+    SetupRow();At<int>(0x716884)=2;DamageTuningSnapshot(context);Check(Published(294)&&Published(296),"field pause permits parameter inspection");
+    SetupRow();At<uint32_t>(EnemyStatus+624)+=1;RejectRow("misaligned row rejected");
+    SetupRow();At<uint32_t>(EnemyStatus+624)+=91;RejectRow("row interior rejected");
+    SetupRow(8,8);RejectRow("row one past the table end rejected");
+    SetupRow();At<uint32_t>(EnemyStatus+624)=static_cast<uint32_t>(Table);RejectRow("table header rejected as a row");
+    SetupRow();At<uint32_t>(EnemyStatus+624)=static_cast<uint32_t>(Rows-92);RejectRow("row before the table rejected");
+    SetupRow();At<uint32_t>(EnemyStatus+624)=0;RejectRow("null parameter row rejected");
+    SetupRow();At<uintptr_t>(0x2AE57C0)=0;RejectRow("missing parameter table rejected");
+    SetupRow();At<uintptr_t>(0x2AE57C0)=g_base+0x2C00000-4;RejectRow("unreadable table header rejected");
+    SetupRow();At<int>(Table+4)=0;RejectRow("empty table rejected");
+    SetupRow();At<int>(Table+4)=-1;RejectRow("negative table count rejected");
+    SetupRow(3,4097);RejectRow("oversized table count rejected");
+    DWORD old=0,unused=0;auto rowPage=reinterpret_cast<void*>(g_base+0xC1000);
+    for(unsigned index:{44u,45u}) {
+        SetupRow(index,64);Check(VirtualProtect(rowPage,4096,PAGE_NOACCESS,&old)!=FALSE,"inaccessible row page applied");
+        RejectRow(index==44?"row crossing into an unreadable page rejected":"unreadable row rejected");
+        VirtualProtect(rowPage,4096,old,&unused);
+    }
+    SetupRow();At<int>(0x2A11208)=1;RejectRow("automatic lock-on has no parameter readout",false);
+    SetupRow();At<uint32_t>(EnemyStatus+620)=1;RejectRow("save-backed enemy status has no parameter readout",false);
+    for(unsigned slot=294;slot<=296;++slot) {
+        SetupRow();BYTE before[1264]{};memcpy(before,reinterpret_cast<void*>(g_base+PlayerStatus),sizeof(before));
+        Check(Run(slot,7).code==1&&!memcmp(before,reinterpret_cast<void*>(g_base+PlayerStatus),sizeof(before)),"parameter readouts are read-only");
+    }
+    SetupRow();BYTE expected[1264]{};memcpy(expected,reinterpret_cast<void*>(g_base+PlayerStatus),sizeof(expected));
+    for(unsigned i=0;i<7;++i)expected[632+424+i]=static_cast<BYTE>(0xA0+72+2*i);
+    Check(Run(297,0).code==0,"target reset applies to a validated parameter row");
+    Check(!memcmp(expected,reinterpret_cast<void*>(g_base+PlayerStatus),sizeof(expected)),
+        "reset copies parameter bytes +72,+74..+84 into exactly target STATUS+424..430");
+    Check(At<uint32_t>(EnemyStatus+624)==static_cast<uint32_t>(Row(3))&&At<int>(EnemyStatus+612)==3,"reset leaves row binding and users unchanged");
+    SetupRow();At<int>(0x2A11208)=1;RejectRow("reset refused without a manual target",false);
+    SetupRow();At<int>(0x716884)=2;Check(Run(297).code==3&&At<BYTE>(EnemyStatus+424)==80,"field pause blocks the target reset");
+    SetupRow();shared.hostHeartbeat=0;Check(Run(297).code==3&&At<BYTE>(EnemyStatus+424)==80,"stale host blocks the target reset");
+    SetupRow();g_disabled=1;Check(Run(297).code==3&&At<BYTE>(EnemyStatus+424)==80,"disabled bridge blocks the target reset");
+    SetupRow();++g_gameThread;Check(Run(297).code==3&&At<BYTE>(EnemyStatus+424)==80,"foreign thread blocks the target reset");
+    SetupRow();auto statusPage=reinterpret_cast<void*>((g_base+EnemyStatus)&~uintptr_t(4095));
+    Check(VirtualProtect(statusPage,4096,PAGE_READONLY,&old)!=FALSE,"read-only target status applied");
+    Check(Run(297).code==3,"read-only target coefficients refuse the reset");
+    VirtualProtect(statusPage,4096,old,&unused);Check(At<BYTE>(EnemyStatus+424)==80,"refused read-only reset changes nothing");
+}
 }
 int main() {
     g_base=reinterpret_cast<uintptr_t>(VirtualAlloc(nullptr,0x2C00000,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE));if(!g_base)return 2;
@@ -123,8 +188,9 @@ int main() {
     Setup();DWORD old=0,unused=0;auto page=reinterpret_cast<void*>((g_base+PlayerStatus)&~uintptr_t(4095));
     Check(VirtualProtect(page,4096,PAGE_READONLY,&old)!=FALSE,"real read-only fixture protection applied");
     RejectBoth("actual read-only coefficient pages rejected");VirtualProtect(page,4096,old,&unused);
+    EnemyParameters();
     Setup();DamageTuningCapabilities();
-    for(unsigned slot=0;slot<512;++slot)Check(!!(shared.supported[slot/64]&(uint64_t(1)<<(slot%64)))==(slot>=272&&slot<=293),"only assigned capabilities are published");
-    double args[8]{};TrainerResult r{};Check(!DamageTuningHandle(context,271,args,r)&&!DamageTuningHandle(context,294,args,r),"neighboring domains unclaimed");
+    for(unsigned slot=0;slot<512;++slot)Check(!!(shared.supported[slot/64]&(uint64_t(1)<<(slot%64)))==(slot>=272&&slot<=297),"only assigned capabilities are published");
+    double args[8]{};TrainerResult r{};Check(!DamageTuningHandle(context,271,args,r)&&!DamageTuningHandle(context,298,args,r),"neighboring domains unclaimed");
     printf("DamageTuningTests: %u checks, %u failures\n",checks,failures);VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);return failures?1:0;
 }

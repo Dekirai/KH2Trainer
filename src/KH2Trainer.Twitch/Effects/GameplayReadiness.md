@@ -17,11 +17,19 @@ an integer from 1 through 255, matching the native `PlayerLiving` bounds on
 when there is no MP gauge, but refunds if all available gauges are already full.
 The owned damage guard admits all three field roles through the separately
 verified Sora/Roxas and rescue-Mickey damage callbacks and actor identity.
+Guardian Angel requests the same guard in lethal-only mode; paid time also
+requires the published mode (slot 483) to match its request.
+The global time rewards (Fast Forward, Slow Motion, Time Stop, Freeze Frame) admit
+all three field roles: the bridge's time multiplier, actor/effect freeze and field
+pause have no character-specific path. Pause! keeps its Sora-only menu path.
+Mission clock and score rewards admit Sora and Roxas (Roxas' Twilight Town jobs are
+timed missions); the native mission actions still check the living controlled player.
 Drive and animation rewards remain Sora-only.
 Gummi repair/bullet removal retain their separate native context checks.
 
-The `super-speed`, `snail` and `moon-jump` rewards now admit Sora, Roxas and rescue
-Mickey through the protocol-v4 movement journal. They do not use scalar
+The `super-speed`, `snail`, `walk-only` and `moon-jump` rewards admit Sora, Roxas and rescue
+Mickey through the protocol-v4 movement journal. Walk Only owns only the run field;
+the walk value it copies must itself be valid before any acquire. They do not use scalar
 `OwnedValue` restores. One coherent snapshot supplies the bridge instance, actor
 generation, control state and exact Float32 movement values. Every selected
 original must be finite and within the native policy before the entire cohort is
@@ -92,12 +100,23 @@ observed trainer pause bit. Other blockers still stop the clock. Replacing one
 freeze first releases its owned bit; a rejected release blocks the replacement.
 Neither admission previews nor this exemption bypass the native command guards.
 
+Time Out! holds the mission clock with the bridge's private owner bit (slot 233)
+and is paid only once that hold is published; an unconfirmed hold is refunded.
+It ends when the mission or the hold ends and never re-applies the hold, so a
+native clock reset or a new mission is never frozen by it. Overtime and Time Crunch
+restart only an already-running countdown and wait while any owner pauses the
+clock, including Time Out!; the shared group keeps them from overlapping.
+
 Sustain, monitors for established effects, and restoration wait for control.
 Native acknowledgements for a not-yet-established Drive request may still be
 observed while it loads. A stopped unsuccessful request is refunded once; slot
 126 may cancel its trainer-owned queued steps while loading. That cancellation
 does not change the active actor or interrupt a native transition already running.
 
+Owned values need a restorable original before they are first written: a numeric
+value must be readable and accepted by the same feature, otherwise the start is
+deferred without a write (a toggle without a readback restores to off). Rewards
+that add to a current value wait for it instead of assuming zero.
 Owned values need a current finite readback before restoration. Failed sustain
 writes do not replace the saved original. Restores preserve reverse ordering and
 retry for up to three minutes of observed available time; menus, unknown periods
@@ -112,6 +131,8 @@ not dropped after the scalar three-minute limit. Host shutdown/heartbeat expiry
 requests native cleanup; an old off-current actor may still need to return or be
 proven retired. A fresh different bridge discards inaccessible local records
 without restoring their values into the new process.
+`EffectEngine.PendingCleanups` lists each unfinished cleanup with what it waits for;
+the Live tab shows it, and closing the trainer offers a wait of at most 30 seconds.
 
 FOV restoration requires both current camera observations and respects changed
 values. Rejected cleanup is retried, rather than treated as completed. Brightness
@@ -138,7 +159,10 @@ backward clocks, deferred cleanup and preservation of external toggle changes.
 `MovementRewardTests` covers three roles, policy boundaries, atomic cohort
 rejection, equal-value actor replacement, same-role reconstruction, old actors
 returning, awaited changes, late acknowledgements, control loss, terminal garbage
-collection, no-write refusal limits and fresh-bridge recovery. Core
+collection, no-write refusal limits and fresh-bridge recovery, plus Walk Only's
+run-only cohort and its walk input. `MissionRewardTests` covers the clock and score
+rewards; `RewardSafetyTests` covers restorable originals, Hacker Mode and the
+pending-cleanup list. Core
 `MovementProtocolTests` separately covers binary layout/correlation, malformed
 packets, large UInt64 values, freshness, cancellation, lost ACKs, QueryMiss/rejected
 queries, reconnect, unbound uncertainty and replacement-instance proof. Fake

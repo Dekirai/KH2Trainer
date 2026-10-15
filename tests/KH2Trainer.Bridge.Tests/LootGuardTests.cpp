@@ -123,6 +123,14 @@ int main() {
     Setup();At<float>(AllyStatus+572)=std::numeric_limits<float>::infinity();LootSnapshot(context);Check(!Valid(357)&&!Valid(358)&&!Valid(359),"non-finite party aggregate unavailable");
     Setup();At<float>(0x2A11418)=2;LootSnapshot(context);Check(shared.values[357]==2.75,"script-selected base quantity retained");
     Setup();At<int>(0x716884)=2;LootSnapshot(context);Check(Valid(352)&&Valid(359),"field pause supports readouts");Reject("field pause blocks edits");
+    Setup();LootSnapshot(context);Check(Valid(199)&&shared.values[199]==0,"ordinary prize mode reads zero");
+    Setup();At<unsigned>(Player+1736)=0x02000084;LootSnapshot(context);
+    Check(Valid(199)&&shared.values[199]==1&&shared.values[356]==170,"Actor+1736 bit 0x02000000 reads as rescue-Mickey prize mode");
+    Setup();At<unsigned>(Player+1736)=0xFDFFFFFF;LootSnapshot(context);Check(Valid(199)&&shared.values[199]==0,"no other Actor+1736 bit reads as prize mode");
+    Setup();At<unsigned>(Ally+1736)=0x02000008;LootSnapshot(context);Check(shared.values[199]==0,"a party member's flag is not the current player's prize mode");
+    Setup();At<int>(0x716884)=2;At<unsigned>(Player+1736)=0x02000084;LootSnapshot(context);Check(Valid(199)&&shared.values[199]==1,"field pause keeps the prize mode readout");
+    Setup();At<unsigned>(Player+1736)=0x02000084;At<int>(Status)=0;LootSnapshot(context);Check(!Valid(199)&&!Valid(352),"prize mode needs the loot player gate");
+    Setup();At<unsigned>(Player+1736)=0x02000084;At<uintptr_t>(Status+504)=0;LootSnapshot(context);Check(!Valid(199),"invalid ability status owner hides prize mode");
     Setup();At<uintptr_t>(Status+504)=0;Reject("ability status backlink mismatch");
     Setup();At<uint32_t>(Status+616)=Ally;Reject("actor status backlink mismatch");
     Setup();At<int>(0x2A23810)=0;Reject("current status on free list");
@@ -138,7 +146,9 @@ int main() {
     Check(VirtualProtect(page,4096,PAGE_READONLY,&old)!=FALSE,"real read-only page set");Reject("read-only field");VirtualProtect(page,4096,old,&unused);
     Setup();for(unsigned s=356;s<=359;++s)Check(Run(s,100).code!=0,"readout command cannot mutate");
     LootCapabilities();Check(shared.supported[5]==(uint64_t(255)<<32),"exact loot capability mask");
+    Check(shared.supported[3]==(uint64_t(1)<<(199-192)),"prize mode capability is the only bank-3 loot slot");
     Check(shared.supported[0]==0&&shared.supported[4]==0&&shared.supported[6]==0,"neighboring capability banks preserved");
     const double args[8]{};TrainerResult r{};Check(!LootHandle(context,351,args,r)&&!LootHandle(context,360,args,r),"neighboring commands unclaimed");
+    Check(!LootHandle(context,199,args,r),"read-only prize mode has no command");
     printf("LootGuardTests: %u checks, %u failures\n",checks,failures);VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);return failures?1:0;
 }

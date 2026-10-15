@@ -311,6 +311,24 @@ void RescueTests(const TrainerContext& c) {
     memcpy(reinterpret_cast<void*>(g_base+0x9A98B0),saved,sizeof(saved));
     At<uintptr_t>(0x2AE5760)=0; At<uintptr_t>(MissionRva)=0; At<uintptr_t>(GameOverRva)=0;
 }
+// Play time and late frames through the real frame, Disable All and host-expiry paths.
+void TimingReadoutIntegrationTests() {
+    At<unsigned>(0x9A98B0+0x2444)=120; At<float>(0x717484)=2;
+    TrainerFrame(); TrainerFrame();
+    Check(Valid(195) && shared.values[195]==2 && Valid(197) && shared.values[197]==2 && Valid(198) && shared.values[198]==2,
+          "connected frames publish play time and count late frames once each");
+    Request(1114,0); TrainerFrame();
+    Check(shared.resultCode==0 && Valid(198) && shared.values[198]==1,"Disable All restarts the late-frame count");
+    shared.hostHeartbeat=GetTickCount()-6000; TrainerFrame(); TrainerFrame();
+    Check(g_hostExpired && Valid(197) && !Valid(198),"an expired host stops and drops the late-frame count");
+    shared.hostHeartbeat=GetTickCount(); TrainerFrame();
+    Check(!g_hostExpired && Valid(198) && shared.values[198]==1,"a reconnected host counts again from zero");
+    for(LONG id : {1195L,1196L,1197L,1198L,1199L,1330L,1331L,1332L,1333L,1334L}) {
+        Request(id,1); TrainerFrame();
+        Check(shared.resultCode==1 && wcsstr(shared.resultText,L"Unsupported command") != nullptr,"read-only readout slots claim no command");
+    }
+    At<unsigned>(0x9A98B0+0x2444)=0; At<float>(0x717484)=0;
+}
 }
 int main() {
     g_base = reinterpret_cast<uintptr_t>(VirtualAlloc(nullptr, kImageSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
@@ -350,15 +368,16 @@ int main() {
           "rescue capabilities cover exactly the allocated protocol range");
     Check((shared.supportedCapabilities[3] & (uint64_t(0x1ffffff) << 16)) == (uint64_t(0x1ffffff) << 16) &&
           (shared.supportedCapabilities[3] & (uint64_t(0x1ff) << 48)) == (uint64_t(0x1ff) << 48) &&
-          !Supported(207) && !Supported(233) && !Supported(239) && !Supported(249),
+          !Supported(207) && Supported(233) && !Supported(234) && !Supported(239) && !Supported(249),
           "Mission including event setters and Camera occupy their allocated protocol ranges");
-    Check((shared.supportedCapabilities[4] & (uint64_t(0x3fffff) << 16)) == (uint64_t(0x3fffff) << 16) &&
-          !Supported(271) && !Supported(294),
-          "Damage tuning edits and diagnostics are exposed by the integrated bridge");
+    Check((shared.supportedCapabilities[4] & (uint64_t(0x3ffffff) << 16)) == (uint64_t(0x3ffffff) << 16) &&
+          !Supported(271) && !Supported(298),
+          "Damage tuning edits, diagnostics, enemy parameter readouts and reset are exposed by the integrated bridge");
     Check((shared.supportedCapabilities[4] & (uint64_t(7) << 48)) == (uint64_t(7) << 48) &&
           !Supported(303) && !Supported(307),
           "Display preview actions are exposed by the integrated bridge");
-    for(unsigned slot=320;slot<=329;++slot) Check(Supported(slot),"Gummi extra capability is integrated");
+    for(unsigned slot=195;slot<=199;++slot) Check(Supported(slot),"play time, frame timing and prize mode capability is integrated");
+    for(unsigned slot=320;slot<=334;++slot) Check(Supported(slot),"Gummi extra capability is integrated");
     for(unsigned slot=344;slot<=347;++slot) Check(Supported(slot),"Sora movement capability is integrated");
     for(unsigned slot=352;slot<=359;++slot) Check(Supported(slot),"Loot capability is integrated");
     for(unsigned slot=360;slot<=361;++slot) Check(Supported(slot),"Gummi projectile capability is integrated");
@@ -370,13 +389,13 @@ int main() {
     for(unsigned slot=431;slot<=438;++slot) Check(Supported(slot),"Window display capability is integrated");
     for(unsigned slot=447;slot<=455;++slot) Check(Supported(slot),"MSAA policy capability is integrated");
     for(unsigned slot=477;slot<=481;++slot) Check(Supported(slot),"checked mission counter actions and read-only combo capabilities are integrated");
-    for(unsigned slot=482;slot<=484;++slot) Check(Supported(slot),"scalar audio request observations are integrated");
+    Check(Supported(482) && Supported(483) && !Supported(484),"lethal-only guard toggle and guard mode follow; the next protocol slot stays reserved");
     Check(Supported(485)&&Supported(486)&&Supported(487),
         "Gummi special request, target HP reduction and heavy jumps occupy485..487");
     for(unsigned slot=488;slot<=492;++slot) Check(Supported(slot),"Drive Revert lock ownership capabilities are integrated");
     for(unsigned slot=493;slot<=498;++slot) Check(Supported(slot),"Actor contact readout capabilities are integrated");
     Check(!Supported(499),"adjacent capability499 remains reserved");
-    for(unsigned slot : {319u,330u,343u,348u,351u,362u,367u,374u,375u,419u,420u,421u,422u,423u,439u,446u}) Check(!Supported(slot),"adjacent unused slots remain reserved");
+    for(unsigned slot : {319u,335u,343u,348u,351u,362u,367u,374u,375u,419u,420u,421u,422u,423u,439u,446u}) Check(!Supported(slot),"adjacent unused slots remain reserved");
     Request(1432,0); TrainerFrame();
     Check(shared.resultCode!=0 && wcsstr(shared.resultText,L"renderer") && !Valid(433),"maximize dispatch rejects an absent renderer before callout");
     Request(1424,0); TrainerFrame();
@@ -400,6 +419,21 @@ int main() {
     Request(1226,30); TrainerFrame();
     Check(shared.responseSequence==shared.requestSequence && shared.resultCode!=0 && !At<uintptr_t>(0x2A0FF68) && !Valid(210),
           "Mission timer command is rejected without an active mission and publishes no invented clock value");
+    Request(1233,1); TrainerFrame();
+    Check(shared.responseSequence==shared.requestSequence && shared.resultCode==1 && wcsstr(shared.resultText,L"running mission timer") &&
+          !At<unsigned>(0xABB854) && Valid(233) && shared.values[233]==0,
+          "Mission clock freeze wire command is rejected without an active mission and publishes no held freeze");
+    // A held freeze with no current mission: the frame tick, Disable All, host
+    // expiry and the failure reset each clear only the trainer's private bit.
+    for(unsigned path=0;path<4;++path) {
+        mission_features::freeze.owned=true; At<unsigned>(0xABB854)=world_features::missionFreezeMask|2;
+        if(path==1) Request(1114,0);
+        if(path==2) shared.hostHeartbeat=GetTickCount()-6000;
+        if(path<3) TrainerFrame(); else BestEffortTrainerFailureReset();
+        Check(At<unsigned>(0xABB854)==2 && !mission_features::freeze.owned,"every bridge release path clears only the mission clock freeze bit");
+        shared.hostHeartbeat=GetTickCount();
+    }
+    At<unsigned>(0xABB854)=0; TrainerFrame();
     Request(1477,3); TrainerFrame();
     Check(shared.responseSequence==shared.requestSequence&&shared.resultCode==1&&wcsstr(shared.resultText,L"index 0, 1 or 2"),
           "counter delta wire command reaches index validation");
@@ -520,6 +554,7 @@ int main() {
     Check(c.player == actor && c.status == status && c.sceneReady, "fresh context resolves matching backlink");
     Check(PlayerLiving(c), "stable living player accepted");
     RescueTests(c);
+    TimingReadoutIntegrationTests();
     const uint32_t backlink = PlayerField<uint32_t>(status, 616);
     PlayerField<uint32_t>(status, 616) = 0;
     Check(MakeTrainerContext().player == 0, "missing backlink rejects actor/status pair");

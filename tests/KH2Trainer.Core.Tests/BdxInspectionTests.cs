@@ -131,6 +131,42 @@ internal static class BdxInspectionTests
             check(d.Instructions[0].Operands.StartsWith("1.25 (0x3FA00000)"),"BDX float formatting is invariant and preserves original bits"); }
         finally {CultureInfo.CurrentCulture=priorCulture;}
 
+        // Push address selector 3 targets script byte 16 + 2 * operand; PC 17 starts right after the Stop word.
+        static ushort[] Text(string text)
+        {
+            byte[] raw=[..Encoding.ASCII.GetBytes(text),0];Array.Resize(ref raw,(raw.Length+1)&~1);
+            return Enumerable.Range(0,raw.Length/2).Select(i=>BinaryPrimitives.ReadUInt16LittleEndian(raw.AsSpan(2*i))).ToArray();
+        }
+        d=BdxInspector.Inspect(Script([0x00E0,17,0x0049,..Text("leave")]));
+        check(d.Instructions[0].StoredText=="leave"&&d.Instructions[0].Operands=="script PC 17"&&d.Instructions[1].StoredText==null,
+            "BDX selector3 address shows NUL-terminated stored bytes as text without changing operands");
+        check(d.DecodedBytes==6&&d.UndecodedBytes==6,"BDX stored text stays undecoded data");
+        d=BdxInspector.Inspect(Script([0x00E0,17,0x0049,..Text(new string('a',63))]));
+        check(d.Instructions[0].StoredText?.Length==63,"BDX stored text accepts a terminator within 64 bytes");
+        d=BdxInspector.Inspect(Script([0x00E0,17,0x0049,..Text(new string('a',64))]));
+        check(d.Instructions[0].StoredText==null,"BDX stored text without a terminator in 64 bytes is not shown");
+        foreach(var (words,text) in new (ushort[],string)[] {
+            ([0x00E0,16,0x0049,..Text("leave")],"target is a decoded instruction"),
+            ([0x00E0,0,0x0049,..Text("leave")],"target is in the header"),
+            ([0x00E0,17,0x0049,..Text("")],"empty text"),
+            ([0x00E0,17,0x0049,..Text("le\tave")],"control byte"),
+            ([0x00E0,17,0x0049,0x656C,0x7661],"text reaches end of file without terminator"),
+            ([0x00E0,1000,0x0049,..Text("leave")],"target is outside the file"),
+            ([0x00F0,17,0x0049,..Text("leave")],"load value is not an address push"),
+            ([0x00A0,17,0x0049,..Text("leave")],"work selector is not a script address"),
+        })
+            check(BdxInspector.Inspect(Script(words)).Instructions[0].StoredText==null,"BDX stored text not shown when "+text);
+        d=BdxInspector.Inspect(ScriptWithEvents([(0,18),(1,22)],[0x00E0,21,0x0049,0x6162,0x0049],18));
+        check(d.Instructions.Count==3&&d.Instructions[0].StoredText==null,"BDX stored text cannot overlap a later decoded instruction");
+
+        check(BdxKnownEvents.All.Select(e=>e.Id).SequenceEqual(new[]{0,1,2,3,4,10,27})&&BdxKnownEvents.Find(5)==null&&BdxKnownEvents.Find(-1)==null,
+            "BDX known events cover only researched IDs");
+        check(BdxKnownEvents.All.All(e=>e.Title.Contains(", if ")&&e.Details.Contains("native call convention, not proof this handler runs")&&e.Evidence.Contains("-2026100")),
+            "BDX known event labels stay conditional and cite their evidence");
+        check(BdxKnownEvents.Find(10)!.Summary.Contains("message (@INT) and parameter (@INT)")&&BdxKnownEvents.Find(10)!.Summary.Contains("74")&&
+            BdxKnownEvents.Find(10)!.Summary.Contains("136 and 137")&&BdxKnownEvents.Find(27)!.Summary.Contains("record, ID, Actor")&&
+            BdxKnownEvents.Find(0)!.Summary.Contains("@ADR"),"BDX known events keep their operand conventions");
+
         string path=Path.Combine(workspace,"fixture.bdx");byte[] source=Script(0x008A,95,0x0049);await File.WriteAllBytesAsync(path,source);
         var reader=new AssetArchiveReader();var payload=reader.OpenLooseFile(path);
         d=await BdxInspector.ReadAsync(reader,payload);

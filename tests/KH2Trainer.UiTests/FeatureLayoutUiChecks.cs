@@ -126,6 +126,64 @@ internal static class FeatureLayoutUiChecks
         Check(Live(455) == "Resident", "Installed MSAA dispatch needs a readable status.");
         Check(Live(415).StartsWith("4294967295", StringComparison.Ordinal), "Unsigned listener priority must not become negative or lose precision.");
 
+        // Play time, frame timing, prize mode, enemy parameter, Gummi protection and lifetime readouts.
+        var readouts = new (string Id, int Slot, string Section, string Tab)[]
+        {
+            ("playtime.total", 195, "world", "Time & Field"), ("playtime.world", 196, "world", "Time & Field"),
+            ("timing.unscaled_delta", 197, "advanced", "Renderer"), ("timing.late_frames", 198, "advanced", "Renderer"),
+            ("loot.mickey_prize_mode", 199, "combat", "Loot"),
+            ("damage.target.param_id", 294, "combat", "Damage"), ("damage.target.param_level", 295, "combat", "Damage"),
+            ("damage.target.status_users", 296, "combat", "Damage"),
+            ("gummi.protection_timer", 330, "gummi", "Ship"), ("gummi.protection_active", 331, "gummi", "Ship"),
+            ("gummi.destroyed", 332, "gummi", "Ship"), ("gummi.attenuation_count", 333, "gummi", "Ship"),
+            ("gummi.attenuation_factor", 334, "gummi", "Ship"), ("gameplay.lifetime_observer", 471, "advanced", "Player control"),
+        };
+        foreach (var (id, slot, section, tab) in readouts)
+        {
+            var readout = catalog.SingleOrDefault(f => f.Id == id);
+            Check(readout is { Kind: FeatureKind.ReadOnly, CommandId: 0, Arguments.Count: 0, CanSaveInProfile: false, ChangesProgression: false } &&
+                readout.ValueSlot == slot && readout.CapabilitySlot == slot && catalog.Count(f => f.CapabilitySlot == slot || f.ValueSlot == slot) == 1,
+                "Readout missing, editable or sharing its slot: " + id);
+            Check(readout != null && CategoryLayout.Place(readout.Category) is var place && place.Section == section && place.Tab == tab,
+                "Readout placed outside its tab: " + id);
+        }
+        Check(catalog.SingleOrDefault(f => f.Id == "damage.target.reset") is
+            { Kind: FeatureKind.Action, CommandId: 1297, ValueSlot: -1, CapabilitySlot: 297, Arguments.Count: 0,
+              RequiresScene: true, CanSaveInProfile: false, ChangesProgression: false, Category: "Damage Tuning" } &&
+            catalog.Count(f => f.CapabilitySlot == 297) == 1, "Target damage reset must be one parameterless native action.");
+        string Format(string id, double value) => FeatureFormatting.Format(catalog.Single(f => f.Id == id), value);
+        Check(Format("playtime.total", 3661.5) == "1:01:01" && Format("playtime.total", 0) == "0:00:00" &&
+            Format("playtime.world", 59.99) == "0:00:59" && Format("playtime.world", 3599999) == "999:59:59",
+            "Play time must read as h:mm:ss, truncated to whole seconds and without wrapping hours.");
+        foreach (double invalid in new[] { -1, double.NaN, double.PositiveInfinity, 1e300 })
+            Check(Format("playtime.total", invalid) == "Unknown", "Invalid play time must not look like a measured value.");
+        Check(Format("timing.unscaled_delta", 2) == "2 ticks" && Format("timing.late_frames", 12) == "12 frames" &&
+            Format("gummi.attenuation_factor", 0.55) == "0.55 x" && Format("damage.target.param_id", 69) == "69",
+            "Numeric readouts keep their value and unit.");
+        foreach (string id in new[] { "loot.mickey_prize_mode", "gummi.protection_active", "gummi.destroyed" })
+        {
+            var flag = catalog.Single(f => f.Id == id);
+            Check(flag.Choices.Select(c => (c.Label, c.Value)).SequenceEqual(new[] { ("No", 0.0), ("Yes", 1.0) }) &&
+                FeatureFormatting.Format(flag, 0) == "No" && FeatureFormatting.Format(flag, 1) == "Yes", "Flag readouts need No/Yes labels: " + id);
+        }
+        var observer = catalog.Single(f => f.Id == "gameplay.lifetime_observer");
+        Check(observer.Choices.Select(c => (c.Label, c.Value)).SequenceEqual(new[] { ("Not installed", 0.0), ("Observing", 1.0), ("Fault", 2.0) }) &&
+            observer.Choices.All(c => FeatureFormatting.Format(observer, c.Value) == c.Label) && FeatureFormatting.Format(observer, 3) == "Unknown",
+            "Lifetime observer states need their catalog labels.");
+        // Guard mode labels follow the slot; its catalog entry ships with the lethal-only guard.
+        var guardMode = new FeatureDefinition { Id = "combat.damage_guard_mode", Category = "Combat automation", Name = "Damage guard mode",
+            Description = "Fixture", Kind = FeatureKind.ReadOnly, ValueSlot = 483, CapabilitySlot = 483, Maximum = 2 };
+        Check(new[] { 0.0, 1, 2, 3 }.Select(v => FeatureFormatting.Format(guardMode, v)).SequenceEqual(new[] { "Off", "Full", "Lethal only", "Unknown" }),
+            "Damage guard mode needs readable labels.");
+        var playTime = features.Single(f => f.Id == "playtime.total");
+        var playTimeSnapshot = new TrainerSnapshot { Connected = true, Status = 1, SceneReady = true };
+        playTimeSnapshot.Supported[195 / 64] |= 1UL << (195 % 64);
+        playTime.Update(playTimeSnapshot);
+        Check(playTime.LiveValue == "—", "Unpublished play time must not appear as zero.");
+        playTimeSnapshot.Valid[195 / 64] |= 1UL << (195 % 64); playTimeSnapshot.Values[195] = 3661.5;
+        playTime.Update(playTimeSnapshot);
+        Check(playTime.LiveValue == "1:01:01" && playTime.IsReadOnly && !playTime.ShowApplyButton, "The play time row must show h:mm:ss as a readout.");
+
         // Switches apply as soon as they are flipped and snap back when the game rejects them.
         var toggle = features.First(f => f.IsToggle && f.Definition.ValueSlot >= 0 && !f.Definition.RequiresScene);
         int toggleSlot = toggle.Definition.ValueSlot, toggleCapability = toggle.Definition.CapabilitySlot;

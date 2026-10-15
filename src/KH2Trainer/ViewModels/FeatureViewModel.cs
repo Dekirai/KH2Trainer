@@ -225,7 +225,10 @@ public static class FeatureFormatting
             462 => value switch { 0 => "Base", 1 => "Valor", 2 => "Wisdom", 3 => "Limit", 4 => "Master", 5 => "Final", 6 => "Antiform", 10 => "Dual-wield Roxas", 11 => "Rescue Mickey", _ => "Unknown" },
             169 => value switch { 0 => "Prototype", 1 => "RAW", _ => "Unknown" },
             170 => value switch { 0 => "Off", 1 => "Active", 2 => "Disabled", 3 => "Changed by game script", 4 => "Changed externally", 5 => "Player or scene changed", 6 => "Disconnected", 7 => "Game or mod took control", 8 => "Animation data unavailable", 9 => "Animation override unavailable", _ => "Unknown" },
-            179 or 183 or 229 or 246 => value == 1 ? "Yes" : "No",
+            195 or 196 => FormatDuration(value),
+            179 or 183 or 199 or 229 or 246 or 331 or 332 => value == 1 ? "Yes" : "No",
+            471 => value switch { 0 => "Not installed", 1 => "Observing", 2 => "Fault", _ => "Unknown" },
+            483 => value switch { 0 => "Off", 1 => "Full", 2 => "Lethal only", _ => "Unknown" },
             180 => value == 1 ? "Active" : "Inactive",
             211 => value switch { 0 => "Count up", 1 => "Count down", _ => "Unknown" },
             212 => value switch { 0 => "Stopped", 1 => "Armed", 2 => "Running", _ => "Unknown" },
@@ -237,6 +240,14 @@ public static class FeatureFormatting
         if (definition.Id == "player.form.id")
             return value switch { 0 => "Base Sora", 1 => "Valor", 2 => "Wisdom", 3 => "Limit", 4 => "Master", 5 => "Final", 6 => "Antiform", _ => value.ToString("0.###", CultureInfo.InvariantCulture) };
         return value.ToString("0.###", CultureInfo.InvariantCulture) + (definition.Unit.Length > 0 ? " " + definition.Unit : "");
+    }
+
+    /// <summary>Whole seconds as h:mm:ss; hours are not wrapped (the save clock stops at 999:59:59).</summary>
+    private static string FormatDuration(double value)
+    {
+        if (!double.IsFinite(value) || value < 0 || value > uint.MaxValue) return "Unknown";
+        long seconds = (long)Math.Floor(value);
+        return string.Create(CultureInfo.InvariantCulture, $"{seconds / 3600}:{seconds / 60 % 60:00}:{seconds % 60:00}");
     }
 
     private static string FormatColorState(double value)
