@@ -1,0 +1,123 @@
+{
+  "status": "accepted",
+  "reviewer": "review_bank3_extended",
+  "originalExeSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "sourcePins": {
+    "src/KH2Trainer.Bridge/MotionEntryPlan.h": {
+      "sha256": "1897771ca4c86932eb3a1193835f2507969f71ec921f6b28dac85894daa49bdc",
+      "bytes": 9239
+    },
+    "src/KH2Trainer.Bridge/MotionObserverSupport.h": {
+      "sha256": "6eed72919decbde5281375dfeff96e705f41ca8cf79c2f489526724748be65ee",
+      "bytes": 4885
+    },
+    "src/KH2Trainer.Bridge/MotionOriginalTrampoline.h": {
+      "sha256": "14b92147f8fe6ceb8dad50c0629f0a42f6679a8686d83a4379b8ad5367b6affa",
+      "bytes": 5484
+    },
+    "tests/KH2Trainer.Bridge.Tests/MotionEntryPlanTests.cpp": {
+      "sha256": "c0a3d1cd00cdcf391f918bb54a6a502ed3adbaa5ac4306f0be6648d25791f0b7",
+      "bytes": 13039
+    },
+    "tests/KH2Trainer.Bridge.Tests/MotionObserverTests.cpp": {
+      "sha256": "5d1d81e207005cbf683d7de87d5598f33cd1779298756b0b30b2466223cd7ba1",
+      "bytes": 16390
+    },
+    "tests/KH2Trainer.Bridge.Tests/MotionOriginalTrampolineTests.cpp": {
+      "sha256": "70c7ff5473da7b05b988e5260dd5c06b23d154ba7b98b18c5c0f29ed1c77f21c",
+      "bytes": 10026
+    }
+  },
+  "originalRecordSha256": "123200d7115d66d35f02485a83bb2f8b71838394124bca77d6865975ba1254a3",
+  "independentOriginalChecks": 38,
+  "independentOsUnwindChecks": 75,
+  "originalUnwindCases": 8,
+  "standalonePrefixUnwindCases": 3,
+  "wrongUnwindNegativeControls": 1,
+  "authorSuitesIndependentlyRebuilt": {
+    "MotionEntryPlanTests": 1842,
+    "MotionObserverTests": 691,
+    "MotionOriginalTrampolineTests": 119
+  },
+  "productionCompileWithoutTestHooks": "PASS",
+  "logSha256": {
+    "build-log.txt": "fda8b167455cdd5d6e112d66930f5a1c525b654cb1dd42f75cca4e099e3931c4",
+    "callback-policy-tests.txt": "87c81f333ae5de3e7f26d2e322902ae7c4c545238aa026a0eb7bdeb5cd3bea30",
+    "counterexample-build-log.txt": "3a58d5a9608be7b2d4f225f8b49372779b2ae58403cf593f156fbbcb7b08638c",
+    "entry-plan-tests.txt": "e976544a0d457365f855e634020ea2abadb6f8aa278bf886abbb7065a8d444e7",
+    "initial-observer-tests.txt": "ebf40d33c0720628bd2384960a0afb1f8e55fa4769622500298ca290442c7c99",
+    "initial-trampoline-tests.txt": "001e9f88894da8d7c64c5423fffd73716cc263b16739229dcad17b0f8459de2f",
+    "nested-counterexample.txt": "e662acd94188e65f127cb40bb1bb317bbfeb1468e6caa92d7595c81042313526",
+    "observer-tests.txt": "0c6888ebeed4321248896517b2b4faa2b139db13eb605334554109442139ac82",
+    "revised-build-log.txt": "3e4a00f5bbf2115e649e3d2151a57495feffd57dd4d707c0e2df317b83822b2b",
+    "trampoline-tests.txt": "001e9f88894da8d7c64c5423fffd73716cc263b16739229dcad17b0f8459de2f",
+    "unwind-tests.txt": "76bfd95b9b2a8fe5edef974d7016ee35b7cc2bac80aa5f15278fbd31e5074088"
+  },
+  "findings": [
+    {
+      "topic": "Original prefix and unwind",
+      "status": "accepted",
+      "evidence": "Complete 287-byte body, 86 decoded instructions, unique PE exception owner and 24 original unwind bytes. Standalone five-byte prefix saves RBX at RSP+8; the original full-prolog slot is RSP+80. OS restoration succeeds at all selected boundaries. Using full original metadata for the copied prefix fails the negative control."
+    },
+    {
+      "topic": "ABI and first write",
+      "status": "accepted",
+      "evidence": "RCX/EDX/XMM2/XMM3 arguments, AL result, direct R11 absence, initial native call at 3C8CF7, first direct context store at 3C8D0D and recursive call at 3C8DCC."
+    },
+    {
+      "topic": "Entry planner",
+      "status": "accepted",
+      "evidence": "Actual planner accepts the whole-body fingerprint independently extracted from the original. Exact prefix, continuation, runtime extent, unwind, displacement bounds, alias/failure immutability and instruction mapping reviewed."
+    },
+    {
+      "topic": "Typed wrapper",
+      "status": "accepted",
+      "evidence": "Corrected Before and normal After failures propagate, including nested native failures. After runs once on failed Before with zero ticket and incomplete flags; the original is skipped. Only secondary After exceptions during an existing unwind are contained to preserve the primary. Mixed ABI, LastError, recursion and sticky fault semantics were reviewed. Independent six-case regression passes 42 assertions; revised author suite independently rebuilt passes 691."
+    },
+    {
+      "topic": "Original image lifetime",
+      "status": "accepted",
+      "evidence": "RX transition, cache flush, dynamic unwind registration, cleanup failure retention and explicit process lifetime after Bind. The revised dependent trampoline suite passes 119 assertions and production compilation without test hooks succeeds. These headers are support code and are not included by TrainerBridge."
+    }
+  ],
+  "limits": [
+    "No game process, live context, IDB modification, hook installation, resource lifetime lease or gameplay feature was tested.",
+    "R11 justification is the Win64 convention plus complete local-body absence, not a guarantee about arbitrary custom hidden-register callees.",
+    "Own OS probe only reads original code/unwind bytes in non-executable private pages; it never calls an original game function.",
+    "Author trampoline fixture executes the real copied prefix and a declared typed replacement continuation, not the full original body.",
+    "Installer must serialize image lifecycle, retain callback/context/source lifetimes, preserve executable immutable continuation, establish thread admission/barriers and complete rollback/publication policy.",
+    "BeforeCompleted reports callback return, not successful Scale revoke. Sticky fault must be consumed by a future owner.",
+    "No complete Tiny/Giant or Motion resource-provider safety claim follows from these support headers.",
+    "The initial 535-check wrapper suite did not cover callback-reentrant original failures. Its positive result is historical only; the final independently rebuilt suite has 691 checks and is supplemented by six independent regression cases."
+  ],
+  "historicalFaultySourcePins": {
+    "src/KH2Trainer.Bridge/MotionObserverSupport.h": {
+      "sha256": "82f82dc7051764fa34d255de72ec7c35f7308423cbe56b0fb5dcf0d8b0a64375",
+      "bytes": 4114
+    },
+    "tests/KH2Trainer.Bridge.Tests/MotionObserverTests.cpp": {
+      "sha256": "11a8b56f91a4865516ce9187ecabab27f8d6df17909e4a43844a64d213612909",
+      "bytes": 11319
+    }
+  },
+  "independentCallbackPolicyChecks": 42,
+  "independentCallbackPolicyCases": 6,
+  "resolvedFindings": [
+    {
+      "priority": "high",
+      "topic": "Nested native SEH swallowed by outer callback catch",
+      "source": "src/KH2Trainer.Bridge/MotionObserverSupport.h",
+      "detail": "With the documented callback-reentrancy allowance, inner Select original SEH propagates through its own finally but is caught by outer Before/After __except(EXCEPTION_EXECUTE_HANDLER). Both independent cases return outer AL0x81 instead of exposing native code0xE0734211. Sticky Fault does not preserve native control flow.",
+      "evidence": "nested-counterexample.txt",
+      "evidenceSha256": "e662acd94188e65f127cb40bb1bb317bbfeb1468e6caa92d7595c81042313526",
+      "resolution": "The final header propagates Before/normal After exceptions and isolates only secondary After failures during an existing unwind. Both callback-reentrant native failures plus four further cases were independently retested. The historical header and counterexample are retained separately.",
+      "fixedHeaderSha256": "6eed72919decbde5281375dfeff96e705f41ca8cf79c2f489526724748be65ee"
+    }
+  ],
+  "blockers": [],
+  "reviewSequence": [
+    "Initial original/ABI/unwind inspection and independent rebuild: EntryPlan 1842, old wrapper 535, trampoline 119, production compile.",
+    "Root identified a callback-reentrancy gap; the reviewer independently reproduced swallowed inner native exceptions in Before and After. Acceptance was withheld.",
+    "Author amended the explicit policy. Reviewer read the source/test delta, rebuilt revised wrapper 691 and trampoline 119 plus production compile, and ran six independent policy cases with 42 passing assertions. Unchanged original, OS unwind and EntryPlan runs were retained."
+  ]
+}

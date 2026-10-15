@@ -5,39 +5,53 @@
   Each suite compiles one test source, which includes the bridge sources it checks,
   and runs it against synthetic memory. Some suites also compile the production
   variant of their feature to prove it builds without the test hooks.
-  Outputs go to bin\. Returns one object per suite and throws if any suite fails.
+  Outputs default to bin\. Returns one object per suite and throws if any suite fails.
 .PARAMETER LogDirectory
   Optional folder that receives one native-<suite>.txt log per suite.
 .PARAMETER Suite
   Optional suite names to run; all suites run by default.
+.PARAMETER OutputDirectory
+  Optional isolated folder for compiler outputs and test executables.
 #>
 param(
     [string]$LogDirectory,
-    [string[]]$Suite
+    [string[]]$Suite,
+    [string]$OutputDirectory
 )
 $ErrorActionPreference = 'Stop'
 
 # ProductionSource/ProductionDefine: extra compile-only check of the shipping code path.
 $suites = @(
     @{ Name = 'ActorLifetimeTests'; ProductionDefine = 'ACTOR_LIFETIME_PRODUCTION_COMPILE' }
+    @{ Name = 'ActorContactDiagnosticsTests'; Libraries = @('user32.lib') }
     @{ Name = 'ActorMovementGuardTests' }
     @{ Name = 'AudioGuardTests' }
+    @{ Name = 'AudioRequestGuardTests'; ProductionSource = '../../src/KH2Trainer.Bridge/TrainerBridge.cpp' }
     @{ Name = 'CameraExtraGuardTests' }
     @{ Name = 'CollisionGuardTests' }
     @{ Name = 'CombatGuardTests'; Libraries = @('user32.lib') }
     @{ Name = 'DamageTuningTests' }
     @{ Name = 'DisplayGuardTests'; ProductionSource = 'DisplayProductionCompile.cpp' }
     @{ Name = 'DriveGuardTests' }
+    @{ Name = 'DriveRevertBridgeTests'; Libraries = @('user32.lib') }
     @{ Name = 'GameplayStateGuardTests' }
     @{ Name = 'GummiEditorGuardTests' }
     @{ Name = 'GummiExtraGuardTests' }
     @{ Name = 'GummiGuardTests' }
     @{ Name = 'GummiHistoryGuardTests' }
     @{ Name = 'GummiProjectileGuardTests' }
+    @{ Name = 'GummiRequestBridgeTests'; Libraries = @('user32.lib') }
     @{ Name = 'LootGuardTests' }
     @{ Name = 'MissionEventGuardTests' }
     @{ Name = 'MissionGuardTests' }
     @{ Name = 'MotionGuardTests' }
+    @{ Name = 'MotionEntryPlanTests' }
+    @{ Name = 'MotionObserverTests' }
+    @{ Name = 'MotionOriginalTrampolineTests'; ProductionDefine = 'MOTION_ORIGINAL_PRODUCTION_COMPILE' }
+    @{ Name = 'MotionBreakpointRouterTests'; ProductionDefine = 'MOTION_BREAKPOINT_PRODUCTION_COMPILE' }
+    @{ Name = 'MotionObservationRuntimeTests'; ProductionDefine = 'MOTION_RUNTIME_PRODUCTION_COMPILE' }
+    @{ Name = 'MotionPayloadCopyTests'; ProductionDefine = 'MOTION_PAYLOAD_COPY_PRODUCTION_COMPILE' }
+    @{ Name = 'MotionReadGateTests'; ProductionDefine = 'MOTION_READ_GATE_PRODUCTION_COMPILE' }
     @{ Name = 'MovementTransactionTests' }
     @{ Name = 'PlayerBridgeTests'; Libraries = @('user32.lib') }
     @{ Name = 'PlayerHealthGuardTests'; Libraries = @('user32.lib') }
@@ -57,6 +71,7 @@ $suites = @(
     @{ Name = 'StatusRevisionLedgerTests' }
     @{ Name = 'StatusThreadDrainTests'; ProductionSource = 'StatusThreadDrainProductionCompile.cpp' }
     @{ Name = 'TargetingGuardTests' }
+    @{ Name = 'TrainerPerformanceTests'; Libraries = @('user32.lib') }
     @{ Name = 'WindowDisplayTests'; ProductionDefine = 'WINDOW_DISPLAY_PRODUCTION_COMPILE' }
     @{ Name = 'WorldGuardTests'; Libraries = @('user32.lib') }
 )
@@ -67,7 +82,7 @@ if ($Suite) {
 }
 
 $root = $PSScriptRoot
-$output = Join-Path $root 'bin'
+$output = if ($OutputDirectory) { [IO.Path]::GetFullPath($OutputDirectory) } else { Join-Path $root 'bin' }
 New-Item -ItemType Directory -Path $output -Force | Out-Null
 if ($LogDirectory) { New-Item -ItemType Directory -Path $LogDirectory -Force | Out-Null }
 

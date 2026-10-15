@@ -20,8 +20,8 @@ public sealed class ArgumentVm : Observable
     public IReadOnlyList<FeatureChoice> Choices { get; }
     public bool IsChoice => Choices.Count > 0;
     public bool IsNumber => !IsChoice;
-    /// <summary>Large catalogs (items, abilities) get a wider, searchable picker.</summary>
-    public double InputWidth => IsChoice ? Choices.Count > 24 ? 260 : 170 : 110;
+    /// <summary>Large catalogs and long labels get a wider, searchable picker.</summary>
+    public double InputWidth => IsChoice ? Choices.Count > 24 || Choices.Any(c => c.Label.Length > 22) ? 260 : 170 : 110;
     public string RangeText => $"{Definition.Minimum:g} – {Definition.Maximum:g}";
     private string valueText;
     public string ValueText { get => valueText; set => Set(ref valueText, value); }
@@ -209,6 +209,18 @@ public static class FeatureFormatting
             458 => FormatControlBlockers(value),
             459 => value == 1 ? "Controllable" : "Waiting",
             465 => FormatColorState(value),
+            484 => value switch
+            {
+                0 => "No sampled admission limit",
+                1 => "New requests inhibited",
+                2 => "Pool reserve reached",
+                3 => "New requests inhibited; pool reserve reached",
+                4 => "Per-pass limit reached",
+                5 => "New requests inhibited; per-pass limit reached",
+                6 => "Pool reserve reached; per-pass limit reached",
+                7 => "New requests inhibited; pool reserve reached; per-pass limit reached",
+                _ => "Unknown"
+            },
             460 => value switch { 0 => "Inactive", 1 => "Running", 2 => "Paused", 3 => "Closing", _ => "Unknown" },
             462 => value switch { 0 => "Base", 1 => "Valor", 2 => "Wisdom", 3 => "Limit", 4 => "Master", 5 => "Final", 6 => "Antiform", 10 => "Dual-wield Roxas", 11 => "Rescue Mickey", _ => "Unknown" },
             169 => value switch { 0 => "Prototype", 1 => "RAW", _ => "Unknown" },

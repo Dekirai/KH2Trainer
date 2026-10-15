@@ -1,0 +1,57 @@
+"""Read-only PE/IDA/source fingerprint and prefix/unwind check; no game/IDA use."""
+from pathlib import Path
+import json,hashlib,struct,re
+from capstone import Cs,CS_ARCH_X86,CS_MODE_64
+H=Path(__file__).resolve().parent
+R=next(p for p in H.parents if (p/'src/KH2Trainer.Bridge/MotionEntryPlan.h').is_file())
+P=Path(r'E:\SteamLibrary\steamapps\common\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-\KINGDOM HEARTS II FINAL MIX.exe')
+sha=lambda b:hashlib.sha256(b).hexdigest()
+b=P.read_bytes();assert sha(b)=='9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed'
+pe=struct.unpack_from('<I',b,60)[0];o=pe+24;z=struct.unpack_from('<H',b,pe+20)[0]
+ss=[struct.unpack_from('<4I',b,o+z+40*i+8) for i in range(struct.unpack_from('<H',b,pe+6)[0])]
+def read(r,n):
+ loc=[fo+r-va for vs,va,size,fo in ss if va<=r and r+n<=va+size]
+ assert len(loc)==1
+ return b[loc[0]:loc[0]+n]
+header=R/'src/KH2Trainer.Bridge/MotionEntryPlan.h';tests=R/'tests/KH2Trainer.Bridge.Tests/MotionEntryPlanTests.cpp'
+source=header.read_text(encoding='utf-8')
+array=re.search(r'Body3C8CD0\[\]\s*=\s*\{(.*?)\};',source,re.S).group(1)
+body=bytes(int(x,16) for x in re.findall(r'0x([0-9a-fA-F]{2})',array))
+e=R/'docs/research/motion-resource-binding-20261011/evidence.json'
+f=next(x for x in json.loads(e.read_bytes())['functions'] if x['addr']=='0x1403c8cd0')
+assert body==read(0x3c8cd0,287)==bytes.fromhex(f['originalBytes'])
+assert sha(body)=='7be995bb4bd05f399acb2ff1b0553ef2b36eeb5ed642a742a51432c7b458be1f'
+c=Cs(CS_ARCH_X86,CS_MODE_64);c.detail=True;instructions=list(c.disasm(body,0x1403c8cd0))
+assert sum(i.size for i in instructions)==287
+assert [hex(i.address)[2:] for i in instructions]==[x['addr'] for x in f['disassembly']['asm']['lines']]
+assert (instructions[0].mnemonic,instructions[0].op_str,instructions[0].size)==('mov','qword ptr [rsp + 8], rbx',5)
+assert instructions[1].address==0x1403c8cd5
+r11=[]
+for i in instructions:
+ reads,writes=i.regs_access()
+ if any(i.reg_name(x).startswith('r11') for x in reads+writes):r11.append(hex(i.address))
+assert not r11
+calls=[i for i in instructions if i.mnemonic=='call'];assert calls[0].address==0x1403c8cf7
+directory,size=struct.unpack_from('<II',b,o+112+3*8)
+rows=[]
+for k in range(0,size,12):
+ begin,end,unwind=struct.unpack('<III',read(directory+k,12))
+ if begin<=0x3c8cd0<end:rows.append((directory+k,begin,end,unwind))
+assert rows==[(0x2bb80e8,0x3c8cd0,0x3c8def,0x6e6434)]
+uw=read(0x6e6434,24)
+assert uw==bytes.fromhex('01 22 0a 00 22 78 02 00 14 68 03 00 0f 64 0b 00 0f 34 0a 00 0f 72 0b 70')
+# Original full prolog: PUSH RDI (8), SUB RSP,64, home-save RBX at entrySP+8.
+# Its full-frame SAVE_NONVOL slot is80=72+8. The copied prefix has no SUB/PUSH,
+# so its private unwind metadata must use slot8 and completion offset5.
+assert uw[16:20]==bytes.fromhex('0f 34 0a 00')
+assert 8+64+8==struct.unpack_from('<H',uw,18)[0]*8
+assert '{1,5,2,0,5,0x34,1,0},8' in source
+result={'status':'PASS','originalSha256':sha(b),'body':{'rva':'0x3c8cd0','bytes':len(body),'sha256':sha(body),'instructions':len(instructions)},
+ 'prefix':{'bytes':body[:5].hex(' '),'size':5,'continuationRva':'0x3c8cd5','boundaries':[0,5]},
+ 'r11':{'completeBodyReferences':r11,'firstCallRva':'0x3c8cf7','premise':'Win64 volatile scratch; no incoming R11 use in the complete pinned body. No callee ABI violation is modeled.'},
+ 'originalUnwind':{'runtimeRecordRva':'0x2bb80e8','beginRva':'0x3c8cd0','endRva':'0x3c8def','unwindRva':'0x6e6434','bytes':uw.hex(' ')},
+ 'plannedUnwind':{'bytes':'01 05 02 00 05 34 01 00','meaning':'RBX home-save at current RSP+8, completed copied offset5; no stack allocation or later original saves.'},
+ 'sourcePins':{str(x.relative_to(R)).replace('\\','/'):sha(x.read_bytes()) for x in (header,tests,e)},
+ 'limits':'Pure byte planner and isolated OS-unwind tests. No installed game route, actor readiness, thread admission, drain, observation or scale ownership proof.'}
+(H/'original-verification.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
+print(json.dumps(result))

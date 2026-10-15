@@ -1,0 +1,15 @@
+from pathlib import Path
+H=Path(__file__).resolve().parent
+p=H.parent/'review-audio-bank-retirement-20261011/review.py'
+s=p.read_text();s=s[s.index('class Memory:'):s.index('simulations=[]')]
+s=s.replace("  for root,forms in", "  if n.startswith('xmm'):return n,128\n  for root,forms in")
+s=s.replace("('mov','movabs','movzx')", "('mov','movabs','movzx','movups','movdqu','movdqa','movss')")
+s=s.replace("elif m=='movsxd':", "elif m in ('movsxd','movsx'):")
+s=s.replace("elif m in ('xor','and'", "elif m=='xorps':self.put(ops[0],i,self.val(ops[0],i)^self.val(ops[1],i))\n   elif m in ('xor','and'")
+s=s.replace("if m=='test':self.z=(x&y)==0", "if m=='test':self.z=(x&y)==0;self.lt=signed(x&y,bits)<0;self.below=False")
+s=s.replace("'ja','jb','jmp'", "'ja','jb','jae','jbe','js','jns','jmp'")
+s=s.replace("'jb':self.below,'jmp':True", "'jb':self.below,'jae':not self.below,'jbe':self.below or self.z,'js':self.lt,'jns':not self.lt,'jmp':True")
+s=s.replace("if take:nextpc=self.val(ops[0],i)", "if take:\n     nextpc=self.val(ops[0],i)\n     if m=='jmp' and nextpc in self.calls:self.setreg('rax',self.calls[nextpc](self));self.finished=True;return self")
+s=s.replace("elif m in ('sete','setne'):self.put(ops[0],i,int(self.z if m=='sete' else not self.z))", "elif m in ('sete','setne','setbe'):self.put(ops[0],i,int(self.below or self.z if m=='setbe' else self.z if m=='sete' else not self.z))")
+# This module receives a separately PE-verified instruction map from review.py.
+(H/'vm.py').write_text('"""Bounded instruction interpreter; synthetic memory/helper calls only."""\nfrom capstone.x86_const import X86_OP_REG,X86_OP_MEM,X86_OP_IMM,X86_REG_RIP\nBASE=0x140000000\nins={}\nimports={}\n'+s)

@@ -1,0 +1,1940 @@
+{
+  "summary": {
+    "cases": 60,
+    "instructionSteps": 15185,
+    "distinctInstructions": 1049,
+    "stubBoundaries": [
+      "CRT sqrtf and stack cookie",
+      "volume candidate collector1741C0/corrector174640/final segment173B30",
+      "16FEC0 wrapper moving/static/floor-query result effects",
+      "writer Ptr32 decode and optional native effect/virtual callees",
+      "caller171090 hit/result effect"
+    ]
+  },
+  "cases": [
+    {
+      "name": "empty candidates moves output yet returns false",
+      "entry": "0x1401752e0",
+      "steps": 370,
+      "returnRax": "0x0",
+      "output": [
+        11.0,
+        8.0,
+        4.0,
+        1.0
+      ],
+      "flags": 0,
+      "status": 0,
+      "collector": [
+        {
+          "category": 0,
+          "quantized": [
+            65516,
+            65506,
+            65509,
+            42,
+            32,
+            35
+          ],
+          "filters": [
+            15,
+            4,
+            1,
+            0
+          ]
+        }
+      ],
+      "correctionCalls": [],
+      "segmentCalls": []
+    },
+    {
+      "name": "empty candidates false despite incoming correction bit",
+      "entry": "0x1401752e0",
+      "steps": 370,
+      "returnRax": "0x0",
+      "output": [
+        11.0,
+        8.0,
+        4.0,
+        1.0
+      ],
+      "flags": 0,
+      "status": 4,
+      "collector": [
+        {
+          "category": 0,
+          "quantized": [
+            65516,
+            65506,
+            65509,
+            42,
+            32,
+            35
+          ],
+          "filters": [
+            15,
+            4,
+            1,
+            0
+          ]
+        }
+      ],
+      "correctionCalls": [],
+      "segmentCalls": []
+    },
+    {
+      "name": "ordinary candidates with no correction returns false",
+      "entry": "0x1401752e0",
+      "steps": 551,
+      "returnRax": "0x0",
+      "output": [
+        11.0,
+        8.0,
+        4.0,
+        1.0
+      ],
+      "flags": 0,
+      "status": 0,
+      "collector": [
+        {
+          "category": 0,
+          "quantized": [
+            65516,
+            65506,
+            65509,
+            42,
+            32,
+            35
+          ],
+          "filters": [
+            15,
+            4,
+            1,
+            0
+          ]
+        }
+      ],
+      "correctionCalls": [
+        {
+          "center": [
+            11.0,
+            1.0,
+            4.0,
+            1.0
+          ],
+          "radius": 20.0,
+          "state": "0x210000"
+        }
+      ],
+      "segmentCalls": [
+        [
+          1.0,
+          3.0,
+          3.0,
+          1.0,
+          11.0,
+          1.0,
+          4.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "incoming correction bit survives standalone call",
+      "entry": "0x1401752e0",
+      "steps": 551,
+      "returnRax": "0x1",
+      "output": [
+        11.0,
+        8.0,
+        4.0,
+        1.0
+      ],
+      "flags": 0,
+      "status": 4,
+      "collector": [
+        {
+          "category": 0,
+          "quantized": [
+            65516,
+            65506,
+            65509,
+            42,
+            32,
+            35
+          ],
+          "filters": [
+            15,
+            4,
+            1,
+            0
+          ]
+        }
+      ],
+      "correctionCalls": [
+        {
+          "center": [
+            11.0,
+            1.0,
+            4.0,
+            1.0
+          ],
+          "radius": 20.0,
+          "state": "0x210000"
+        }
+      ],
+      "segmentCalls": [
+        [
+          1.0,
+          3.0,
+          3.0,
+          1.0,
+          11.0,
+          1.0,
+          4.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "final segment hit restores original point and returns false",
+      "entry": "0x1401752e0",
+      "steps": 562,
+      "returnRax": "0x0",
+      "output": [
+        1.0,
+        10.0,
+        3.0,
+        1.0
+      ],
+      "flags": 0,
+      "status": 0,
+      "collector": [
+        {
+          "category": 0,
+          "quantized": [
+            65516,
+            65506,
+            65509,
+            42,
+            32,
+            35
+          ],
+          "filters": [
+            15,
+            4,
+            1,
+            0
+          ]
+        }
+      ],
+      "correctionCalls": [
+        {
+          "center": [
+            11.0,
+            1.0,
+            4.0,
+            1.0
+          ],
+          "radius": 20.0,
+          "state": "0x210000"
+        }
+      ],
+      "segmentCalls": [
+        [
+          1.0,
+          3.0,
+          3.0,
+          1.0,
+          11.0,
+          1.0,
+          4.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "correction minus1 restores prior substep and sets status",
+      "entry": "0x1401752e0",
+      "steps": 490,
+      "returnRax": "0x1",
+      "output": [
+        1.0,
+        10.0,
+        3.0,
+        1.0
+      ],
+      "flags": 0,
+      "status": 4,
+      "collector": [
+        {
+          "category": 0,
+          "quantized": [
+            65516,
+            65506,
+            65509,
+            42,
+            32,
+            35
+          ],
+          "filters": [
+            15,
+            4,
+            1,
+            0
+          ]
+        }
+      ],
+      "correctionCalls": [
+        {
+          "center": [
+            11.0,
+            1.0,
+            4.0,
+            1.0
+          ],
+          "radius": 20.0,
+          "state": "0x210000"
+        }
+      ],
+      "segmentCalls": []
+    },
+    {
+      "name": "positive correction retries through counter6",
+      "entry": "0x1401752e0",
+      "steps": 1069,
+      "returnRax": "0x1",
+      "output": [
+        11.0,
+        8.0,
+        4.0,
+        1.0
+      ],
+      "flags": 0,
+      "status": 4,
+      "collector": [
+        {
+          "category": 0,
+          "quantized": [
+            65516,
+            65506,
+            65509,
+            42,
+            32,
+            35
+          ],
+          "filters": [
+            15,
+            4,
+            1,
+            0
+          ]
+        }
+      ],
+      "correctionCalls": [
+        {
+          "center": [
+            11.0,
+            1.0,
+            4.0,
+            1.0
+          ],
+          "radius": 20.0,
+          "state": "0x210000"
+        },
+        {
+          "center": [
+            11.0,
+            1.0,
+            4.0,
+            1.0
+          ],
+          "radius": 20.0,
+          "state": "0x210000"
+        },
+        {
+          "center": [
+            11.0,
+            1.0,
+            4.0,
+            1.0
+          ],
+          "radius": 20.0,
+          "state": "0x210000"
+        },
+        {
+          "center": [
+            11.0,
+            1.0,
+            4.0,
+            1.0
+          ],
+          "radius": 20.0,
+          "state": "0x210000"
+        },
+        {
+          "center": [
+            11.0,
+            1.0,
+            4.0,
+            1.0
+          ],
+          "radius": 20.0,
+          "state": "0x210000"
+        },
+        {
+          "center": [
+            11.0,
+            1.0,
+            4.0,
+            1.0
+          ],
+          "radius": 20.0,
+          "state": "0x210000"
+        }
+      ],
+      "segmentCalls": [
+        [
+          1.0,
+          3.0,
+          3.0,
+          1.0,
+          11.0,
+          1.0,
+          4.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "category6 rewrites mode and skips final segment",
+      "entry": "0x1401752e0",
+      "steps": 483,
+      "returnRax": "0x0",
+      "output": [
+        11.0,
+        8.0,
+        4.0,
+        1.0
+      ],
+      "flags": 52,
+      "status": 0,
+      "collector": [
+        {
+          "category": 6,
+          "quantized": [
+            65516,
+            65506,
+            65509,
+            42,
+            32,
+            35
+          ],
+          "filters": [
+            15,
+            4,
+            1,
+            0
+          ]
+        }
+      ],
+      "correctionCalls": [
+        {
+          "center": [
+            11.0,
+            1.0,
+            4.0,
+            1.0
+          ],
+          "radius": 20.0,
+          "state": "0x210000"
+        }
+      ],
+      "segmentCalls": []
+    },
+    {
+      "name": "radius4 splits length10 into3 steps",
+      "entry": "0x1401752e0",
+      "steps": 757,
+      "returnRax": "0x0",
+      "output": [
+        10.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "flags": 0,
+      "status": 0,
+      "collector": [
+        {
+          "category": 0,
+          "quantized": [
+            65535,
+            65529,
+            65529,
+            17,
+            7,
+            7
+          ],
+          "filters": [
+            15,
+            4,
+            1,
+            0
+          ]
+        }
+      ],
+      "correctionCalls": [
+        {
+          "center": [
+            3.3333334922790527,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "radius": 4.0,
+          "state": "0x210000"
+        },
+        {
+          "center": [
+            6.6666669845581055,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "radius": 4.0,
+          "state": "0x210000"
+        },
+        {
+          "center": [
+            10.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "radius": 4.0,
+          "state": "0x210000"
+        }
+      ],
+      "segmentCalls": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          10.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "affine translation roundtrip keeps world target",
+      "entry": "0x1401752e0",
+      "steps": 696,
+      "returnRax": "0x0",
+      "output": [
+        11.0,
+        8.0,
+        4.0,
+        1.0
+      ],
+      "flags": 0,
+      "status": 0,
+      "collector": [
+        {
+          "category": 0,
+          "quantized": [
+            65496,
+            65476,
+            65509,
+            22,
+            2,
+            35
+          ],
+          "filters": [
+            15,
+            4,
+            1,
+            0
+          ]
+        }
+      ],
+      "correctionCalls": [],
+      "segmentCalls": []
+    },
+    {
+      "name": "inconsistent matrix pair reports false with displaced output",
+      "entry": "0x1401752e0",
+      "steps": 696,
+      "returnRax": "0x0",
+      "output": [
+        111.0,
+        8.0,
+        4.0,
+        1.0
+      ],
+      "flags": 0,
+      "status": 0,
+      "collector": [
+        {
+          "category": 0,
+          "quantized": [
+            65516,
+            65506,
+            65509,
+            42,
+            32,
+            35
+          ],
+          "filters": [
+            15,
+            4,
+            1,
+            0
+          ]
+        }
+      ],
+      "correctionCalls": [],
+      "segmentCalls": []
+    },
+    {
+      "name": "startW0 changes local displacement and substep count",
+      "entry": "0x1401752e0",
+      "steps": 988,
+      "returnRax": "0x0",
+      "output": [
+        11.0,
+        8.0,
+        4.0,
+        1.0
+      ],
+      "flags": 0,
+      "status": 0,
+      "collector": [
+        {
+          "category": 0,
+          "quantized": [
+            65496,
+            65476,
+            65509,
+            22,
+            4,
+            35
+          ],
+          "filters": [
+            15,
+            4,
+            1,
+            0
+          ]
+        }
+      ],
+      "correctionCalls": [
+        {
+          "center": [
+            -4.0,
+            -13.0,
+            3.5,
+            0.5
+          ],
+          "radius": 20.0,
+          "state": "0x210000"
+        },
+        {
+          "center": [
+            -9.0,
+            -29.0,
+            4.0,
+            1.0
+          ],
+          "radius": 20.0,
+          "state": "0x210000"
+        }
+      ],
+      "segmentCalls": [
+        [
+          1.0,
+          3.0,
+          3.0,
+          0.0,
+          11.0,
+          1.0,
+          4.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "zero radius conversion skips step loop and retains old output",
+      "entry": "0x1401752e0",
+      "steps": 468,
+      "returnRax": "0x0",
+      "output": [
+        99.0,
+        105.0,
+        97.0,
+        96.0
+      ],
+      "flags": 0,
+      "status": 0,
+      "collector": [
+        {
+          "category": 0,
+          "quantized": [
+            0,
+            0,
+            2,
+            12,
+            4,
+            5
+          ],
+          "filters": [
+            15,
+            4,
+            1,
+            0
+          ]
+        }
+      ],
+      "correctionCalls": [],
+      "segmentCalls": [
+        [
+          1.0,
+          3.0,
+          3.0,
+          1.0,
+          99.0,
+          98.0,
+          97.0,
+          96.0
+        ]
+      ]
+    },
+    {
+      "name": "matrix scale does not rescale radius passed to corrector",
+      "entry": "0x1401752e0",
+      "steps": 992,
+      "returnRax": "0x0",
+      "output": [
+        0.0,
+        20.0,
+        0.0,
+        1.0
+      ],
+      "flags": 0,
+      "status": 0,
+      "collector": [
+        {
+          "category": 0,
+          "quantized": [
+            65520,
+            65530,
+            65520,
+            16,
+            26,
+            16
+          ],
+          "filters": [
+            15,
+            4,
+            1,
+            0
+          ]
+        }
+      ],
+      "correctionCalls": [
+        {
+          "center": [
+            0.0,
+            5.0,
+            0.0,
+            1.0
+          ],
+          "radius": 10.0,
+          "state": "0x210000"
+        },
+        {
+          "center": [
+            0.0,
+            10.0,
+            0.0,
+            1.0
+          ],
+          "radius": 10.0,
+          "state": "0x210000"
+        }
+      ],
+      "segmentCalls": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          20.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "wrapper moving0 secondFalse measureFalse",
+      "entry": "0x14016fec0",
+      "steps": 40,
+      "returnRax": "0x0",
+      "order": [
+        "moving",
+        "static",
+        "floor",
+        "fallback"
+      ],
+      "status": 251
+    },
+    {
+      "name": "wrapper moving0 secondFalse measureTrue",
+      "entry": "0x14016fec0",
+      "steps": 42,
+      "returnRax": "0x0",
+      "order": [
+        "moving",
+        "static",
+        "floor",
+        "fallback"
+      ],
+      "status": 249
+    },
+    {
+      "name": "wrapper moving0 secondTrue measureFalse",
+      "entry": "0x14016fec0",
+      "steps": 73,
+      "returnRax": "0x1",
+      "order": [
+        "moving",
+        "static",
+        "floor",
+        "static"
+      ],
+      "status": 251
+    },
+    {
+      "name": "wrapper moving0 secondTrue measureTrue",
+      "entry": "0x14016fec0",
+      "steps": 75,
+      "returnRax": "0x1",
+      "order": [
+        "moving",
+        "static",
+        "floor",
+        "static"
+      ],
+      "status": 249
+    },
+    {
+      "name": "wrapper moving1 secondFalse measureFalse",
+      "entry": "0x14016fec0",
+      "steps": 40,
+      "returnRax": "0x1",
+      "order": [
+        "moving",
+        "static",
+        "floor",
+        "fallback"
+      ],
+      "status": 251
+    },
+    {
+      "name": "wrapper moving1 secondFalse measureTrue",
+      "entry": "0x14016fec0",
+      "steps": 42,
+      "returnRax": "0x1",
+      "order": [
+        "moving",
+        "static",
+        "floor",
+        "fallback"
+      ],
+      "status": 249
+    },
+    {
+      "name": "wrapper moving1 secondTrue measureFalse",
+      "entry": "0x14016fec0",
+      "steps": 73,
+      "returnRax": "0x1",
+      "order": [
+        "moving",
+        "static",
+        "floor",
+        "static"
+      ],
+      "status": 251
+    },
+    {
+      "name": "wrapper moving1 secondTrue measureTrue",
+      "entry": "0x14016fec0",
+      "steps": 75,
+      "returnRax": "0x1",
+      "order": [
+        "moving",
+        "static",
+        "floor",
+        "static"
+      ],
+      "status": 249
+    },
+    {
+      "name": "metadata normal matrix excludes translation and normalizes scale0",
+      "entry": "0x140173500",
+      "steps": 188,
+      "returnRax": "0x260000",
+      "output": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "metadata normal matrix excludes translation and normalizes scale2",
+      "entry": "0x140173500",
+      "steps": 197,
+      "returnRax": "0x260000",
+      "output": [
+        0.0,
+        1.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "writer attribute0 movingFalse flags0",
+      "entry": "0x1403d1960",
+      "steps": 160,
+      "returnRax": "0xabcd",
+      "flags": 8,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": [
+        {
+          "name": "virtual+216",
+          "args": [
+            "0x330000",
+            "0x320000",
+            "0x210000",
+            "0x340000"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 8
+        }
+      ]
+    },
+    {
+      "name": "writer attribute0 movingFalse flags100",
+      "entry": "0x1403d1960",
+      "steps": 150,
+      "returnRax": "0x1",
+      "flags": 264,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer attribute0 movingFalse flags300",
+      "entry": "0x1403d1960",
+      "steps": 150,
+      "returnRax": "0x3",
+      "flags": 776,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer attribute0 movingTrue flags0",
+      "entry": "0x1403d1960",
+      "steps": 138,
+      "returnRax": "0xabcd",
+      "flags": 8,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": [
+        {
+          "name": "virtual+216",
+          "args": [
+            "0x330000",
+            "0x320000",
+            "0x210000",
+            "0x340000"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 8
+        }
+      ]
+    },
+    {
+      "name": "writer attribute0 movingTrue flags100",
+      "entry": "0x1403d1960",
+      "steps": 128,
+      "returnRax": "0x1",
+      "flags": 264,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer attribute0 movingTrue flags300",
+      "entry": "0x1403d1960",
+      "steps": 128,
+      "returnRax": "0x3",
+      "flags": 776,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer attribute1 movingFalse flags0",
+      "entry": "0x1403d1960",
+      "steps": 159,
+      "returnRax": "0xabcd",
+      "flags": 16,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": [
+        {
+          "name": "virtual+216",
+          "args": [
+            "0x330000",
+            "0x320000",
+            "0x210000",
+            "0x340000"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 16
+        }
+      ]
+    },
+    {
+      "name": "writer attribute1 movingFalse flags100",
+      "entry": "0x1403d1960",
+      "steps": 149,
+      "returnRax": "0x1",
+      "flags": 272,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer attribute1 movingFalse flags300",
+      "entry": "0x1403d1960",
+      "steps": 149,
+      "returnRax": "0x3",
+      "flags": 784,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer attribute1 movingTrue flags0",
+      "entry": "0x1403d1960",
+      "steps": 137,
+      "returnRax": "0xabcd",
+      "flags": 16,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": [
+        {
+          "name": "virtual+216",
+          "args": [
+            "0x330000",
+            "0x320000",
+            "0x210000",
+            "0x340000"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 16
+        }
+      ]
+    },
+    {
+      "name": "writer attribute1 movingTrue flags100",
+      "entry": "0x1403d1960",
+      "steps": 127,
+      "returnRax": "0x1",
+      "flags": 272,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer attribute1 movingTrue flags300",
+      "entry": "0x1403d1960",
+      "steps": 127,
+      "returnRax": "0x3",
+      "flags": 784,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer attribute2 movingFalse flags0",
+      "entry": "0x1403d1960",
+      "steps": 160,
+      "returnRax": "0xabcd",
+      "flags": 8,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": [
+        {
+          "name": "virtual+216",
+          "args": [
+            "0x330000",
+            "0x320000",
+            "0x210000",
+            "0x340000"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 8
+        }
+      ]
+    },
+    {
+      "name": "writer attribute2 movingFalse flags100",
+      "entry": "0x1403d1960",
+      "steps": 150,
+      "returnRax": "0x1",
+      "flags": 264,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer attribute2 movingFalse flags300",
+      "entry": "0x1403d1960",
+      "steps": 150,
+      "returnRax": "0x3",
+      "flags": 776,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer attribute2 movingTrue flags0",
+      "entry": "0x1403d1960",
+      "steps": 138,
+      "returnRax": "0xabcd",
+      "flags": 8,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": [
+        {
+          "name": "virtual+216",
+          "args": [
+            "0x330000",
+            "0x320000",
+            "0x210000",
+            "0x340000"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 8
+        }
+      ]
+    },
+    {
+      "name": "writer attribute2 movingTrue flags100",
+      "entry": "0x1403d1960",
+      "steps": 128,
+      "returnRax": "0x1",
+      "flags": 264,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer attribute2 movingTrue flags300",
+      "entry": "0x1403d1960",
+      "steps": 128,
+      "returnRax": "0x3",
+      "flags": 776,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer attribute15 movingFalse flags0",
+      "entry": "0x1403d1960",
+      "steps": 160,
+      "returnRax": "0xabcd",
+      "flags": 8,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": [
+        {
+          "name": "virtual+216",
+          "args": [
+            "0x330000",
+            "0x320000",
+            "0x210000",
+            "0x340000"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 8
+        }
+      ]
+    },
+    {
+      "name": "writer attribute15 movingFalse flags100",
+      "entry": "0x1403d1960",
+      "steps": 150,
+      "returnRax": "0x1",
+      "flags": 264,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer attribute15 movingFalse flags300",
+      "entry": "0x1403d1960",
+      "steps": 150,
+      "returnRax": "0x3",
+      "flags": 776,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer attribute15 movingTrue flags0",
+      "entry": "0x1403d1960",
+      "steps": 138,
+      "returnRax": "0xabcd",
+      "flags": 8,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": [
+        {
+          "name": "virtual+216",
+          "args": [
+            "0x330000",
+            "0x320000",
+            "0x210000",
+            "0x340000"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 8
+        }
+      ]
+    },
+    {
+      "name": "writer attribute15 movingTrue flags100",
+      "entry": "0x1403d1960",
+      "steps": 128,
+      "returnRax": "0x1",
+      "flags": 264,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer attribute15 movingTrue flags300",
+      "entry": "0x1403d1960",
+      "steps": 128,
+      "returnRax": "0x3",
+      "flags": 776,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer attribute17 movingFalse flags0",
+      "entry": "0x1403d1960",
+      "steps": 159,
+      "returnRax": "0xabcd",
+      "flags": 16,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": [
+        {
+          "name": "virtual+216",
+          "args": [
+            "0x330000",
+            "0x320000",
+            "0x210000",
+            "0x340000"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 16
+        }
+      ]
+    },
+    {
+      "name": "writer attribute17 movingFalse flags100",
+      "entry": "0x1403d1960",
+      "steps": 149,
+      "returnRax": "0x1",
+      "flags": 272,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer attribute17 movingFalse flags300",
+      "entry": "0x1403d1960",
+      "steps": 149,
+      "returnRax": "0x3",
+      "flags": 784,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer attribute17 movingTrue flags0",
+      "entry": "0x1403d1960",
+      "steps": 137,
+      "returnRax": "0xabcd",
+      "flags": 16,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": [
+        {
+          "name": "virtual+216",
+          "args": [
+            "0x330000",
+            "0x320000",
+            "0x210000",
+            "0x340000"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 16
+        }
+      ]
+    },
+    {
+      "name": "writer attribute17 movingTrue flags100",
+      "entry": "0x1403d1960",
+      "steps": 127,
+      "returnRax": "0x1",
+      "flags": 272,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer attribute17 movingTrue flags300",
+      "entry": "0x1403d1960",
+      "steps": 127,
+      "returnRax": "0x3",
+      "flags": 784,
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ],
+      "effects": []
+    },
+    {
+      "name": "writer optional effects returnFalse kind1",
+      "entry": "0x1403d1960",
+      "steps": 169,
+      "returnRax": "0x0",
+      "effects": [
+        {
+          "name": "optional-create",
+          "args": [
+            "0x300000",
+            "0x200000100",
+            "0x260000",
+            "0x1"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 16
+        },
+        {
+          "name": "owner-position-access",
+          "args": [
+            "0x310000",
+            "0x200000100",
+            "0x260000",
+            "0x1"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 16
+        },
+        {
+          "name": "owner-notification",
+          "args": [
+            "0x310000",
+            "0x7a12a",
+            "0x260000",
+            "0x1"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 16
+        },
+        {
+          "name": "virtual+216",
+          "args": [
+            "0x330000",
+            "0x320000",
+            "0x210000",
+            "0x340000"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 16
+        }
+      ],
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ]
+    },
+    {
+      "name": "writer optional effects returnTrue kind1",
+      "entry": "0x1403d1960",
+      "steps": 192,
+      "returnRax": "0x0",
+      "effects": [
+        {
+          "name": "optional-create",
+          "args": [
+            "0x300000",
+            "0x200000100",
+            "0x260000",
+            "0x1"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 16
+        },
+        {
+          "name": "orientation-conversion",
+          "args": [
+            "0x8ffff0",
+            "0x8fffe0",
+            "0x260000",
+            "0x1"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 16
+        },
+        {
+          "name": "orientation-destination",
+          "args": [
+            "0x350000",
+            "0x8fffe0",
+            "0x260000",
+            "0x1"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 16
+        },
+        {
+          "name": "spawn-finalize",
+          "args": [
+            "0x350000",
+            "0x260000",
+            "0x260000",
+            "0x1"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 16
+        },
+        {
+          "name": "owner-position-access",
+          "args": [
+            "0x310000",
+            "0x260000",
+            "0x260000",
+            "0x1"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 16
+        },
+        {
+          "name": "owner-notification",
+          "args": [
+            "0x310000",
+            "0x7a12a",
+            "0x260000",
+            "0x1"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 16
+        },
+        {
+          "name": "virtual+216",
+          "args": [
+            "0x330000",
+            "0x320000",
+            "0x210000",
+            "0x340000"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 16
+        }
+      ],
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ]
+    },
+    {
+      "name": "writer optional effects returnFalse kind2",
+      "entry": "0x1403d1960",
+      "steps": 170,
+      "returnRax": "0x0",
+      "effects": [
+        {
+          "name": "optional-create",
+          "args": [
+            "0x300000",
+            "0x200000002",
+            "0x260000",
+            "0x1"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 8
+        },
+        {
+          "name": "owner-position-access",
+          "args": [
+            "0x310000",
+            "0x200000002",
+            "0x260000",
+            "0x1"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 8
+        },
+        {
+          "name": "owner-notification",
+          "args": [
+            "0x310000",
+            "0x7a12a",
+            "0x260000",
+            "0x1"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 8
+        },
+        {
+          "name": "virtual+216",
+          "args": [
+            "0x330000",
+            "0x320000",
+            "0x210000",
+            "0x340000"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 8
+        }
+      ],
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ]
+    },
+    {
+      "name": "writer optional effects returnTrue kind2",
+      "entry": "0x1403d1960",
+      "steps": 193,
+      "returnRax": "0x0",
+      "effects": [
+        {
+          "name": "optional-create",
+          "args": [
+            "0x300000",
+            "0x200000002",
+            "0x260000",
+            "0x1"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 8
+        },
+        {
+          "name": "orientation-conversion",
+          "args": [
+            "0x8ffff0",
+            "0x8fffe0",
+            "0x260000",
+            "0x1"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 8
+        },
+        {
+          "name": "orientation-destination",
+          "args": [
+            "0x350000",
+            "0x8fffe0",
+            "0x260000",
+            "0x1"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 8
+        },
+        {
+          "name": "spawn-finalize",
+          "args": [
+            "0x350000",
+            "0x260000",
+            "0x260000",
+            "0x1"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 8
+        },
+        {
+          "name": "owner-position-access",
+          "args": [
+            "0x310000",
+            "0x260000",
+            "0x260000",
+            "0x1"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 8
+        },
+        {
+          "name": "owner-notification",
+          "args": [
+            "0x310000",
+            "0x7a12a",
+            "0x260000",
+            "0x1"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 8
+        },
+        {
+          "name": "virtual+216",
+          "args": [
+            "0x330000",
+            "0x320000",
+            "0x210000",
+            "0x340000"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 8
+        }
+      ],
+      "point": [
+        7.0,
+        8.0,
+        9.0,
+        4.0
+      ]
+    },
+    {
+      "name": "caller returns its own Boolean queryFalse",
+      "entry": "0x1403d0bb0",
+      "steps": 77,
+      "returnRax": "0x290000",
+      "effects": []
+    },
+    {
+      "name": "caller returns its own Boolean queryTrue",
+      "entry": "0x1403d0bb0",
+      "steps": 238,
+      "returnRax": "0x1",
+      "effects": [
+        {
+          "name": "virtual+216",
+          "args": [
+            "0x330000",
+            "0x320000",
+            "0x210000",
+            "0x340000"
+          ],
+          "storedPoint": [
+            7.0,
+            8.0,
+            9.0,
+            4.0
+          ],
+          "flags": 16
+        }
+      ]
+    }
+  ]
+}

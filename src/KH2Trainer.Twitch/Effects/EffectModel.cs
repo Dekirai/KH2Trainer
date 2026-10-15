@@ -16,6 +16,8 @@ public interface IGameControl
     MovementSnapshot Movement => MovementSnapshot.Unavailable;
     /// <summary>Effective guard and owner decoded together with its actor identity.</summary>
     DamageGuardSnapshot DamageGuard => DamageGuardSnapshot.Unavailable;
+    /// <summary>Command-table ownership and its independent bridge identity from one fresh publication.</summary>
+    DriveRevertLockSnapshot DriveRevertLock => DriveRevertLockSnapshot.Unavailable;
     /// <summary>Exact targeting pair captured together; older adapters fail closed.</summary>
     LockOnPairSnapshot LockOnPair => LockOnPairSnapshot.Unavailable;
     MovementOperationHandle? PendingMovement => null;
@@ -115,6 +117,8 @@ public sealed class EffectDefinition
     /// <summary>Trainer features the effect uses; all must be available for it to start.</summary>
     public required IReadOnlyList<string> Features { get; init; }
     public Func<EffectContext, Readiness>? Check { get; init; }
+    /// <summary>Admission preview when a particular running effect will first release its ownership.</summary>
+    public Func<EffectContext, EffectContext, Readiness>? CheckAfterRelease { get; init; }
     /// <summary>Read-only ongoing usefulness check. Unavailable samples pause time, sustain and extensions;
     /// unlike the start check, this must allow the effect's own applied values. Cleanup does not use it.</summary>
     public Func<EffectContext, Readiness>? ActiveCheck { get; init; }
@@ -164,6 +168,7 @@ public sealed class EffectContext
     private MovementEffectLease? movementLease;
     private DamageGuardEffectLease? damageGuardLease;
     private LockOnPairEffectLease? lockOnPairLease;
+    private DriveRevertEffectLease? driveRevertLease;
 
     public EffectContext(EffectDefinition definition, Redemption redemption, int durationSeconds, int amount,
         IGameControl game, FeatureMap features, Random random, Func<TimeSpan, Task> delay)
@@ -225,9 +230,27 @@ public sealed class EffectContext
         return Readiness.Wait("Waiting for player control (" + blockers + ")");
     }
     /// <summary>Values this effect still has to put back because an earlier restore was rejected.</summary>
-    public bool HasPendingRestores => owned.Any(o => o.Restore) || movementLease?.PendingCleanup == true || damageGuardLease?.PendingCleanup == true || lockOnPairLease?.PendingCleanup == true;
+    public bool HasPendingRestores => owned.Any(o => o.Restore) || movementLease?.PendingCleanup == true || damageGuardLease?.PendingCleanup == true || lockOnPairLease?.PendingCleanup == true || HasDriveRevertCleanup;
     internal bool HasActorLease => movementLease != null || damageGuardLease != null;
-    internal bool HasDurableCleanup => HasActorLease || lockOnPairLease?.PendingCleanup == true;
+    internal bool HasDriveRevertCleanup => driveRevertLease?.PendingCleanup == true;
+    internal bool HasDurableCleanup => HasActorLease || lockOnPairLease?.PendingCleanup == true || HasDriveRevertCleanup;
+    internal Readiness DriveRevertStartReadiness(EffectContext? releasing = null) => DriveRevertEffectLease.StartReadiness(game, releasing?.driveRevertLease);
+    internal Readiness DriveRevertActiveReadiness => driveRevertLease?.Readiness ?? Readiness.Wait("Waiting for a voluntary Revert lock");
+    internal EffectProgress DriveRevertProgress => driveRevertLease?.ObserveProgress(Established) ?? EffectProgress.Running;
+    internal bool DriveRevertOwnershipLost => driveRevertLease?.OwnershipLost == true;
+    internal async Task StartDriveRevertLockAsync()
+    {
+        RequireControl();
+        driveRevertLease = new(game);
+        await driveRevertLease.AcquireAsync();
+        if (!await WaitUntilAsync(driveRevertLease.Confirm, TimeSpan.FromSeconds(2)))
+            throw new EffectDeferredException("The game has not confirmed this reward's voluntary Revert lock.");
+    }
+    internal async Task ReleaseDriveRevertLockAsync()
+    {
+        if (driveRevertLease == null) return;
+        await driveRevertLease.ReleaseAsync();
+    }
     internal Readiness LockOnStartReadiness(float scale) => game.LockOnPair.CanApply(scale) ? Readiness.Ready :
         Readiness.Wait("Waiting for both current lock-on settings and their native default");
     // A fresh foreign pair reaches the read-only monitor before any duration is charged.
@@ -337,7 +360,7 @@ public sealed class EffectContext
         foreach (var value in owned.Where(o => o.Sustain))
         {
             if (ControlReadiness().Kind != ReadinessKind.Ready) return;
-            if (!game.Supports(value.Feature.CapabilitySlot) || !game.TryRead(value.Feature.ValueSlot, out double live) || !double.IsFinite(live) || Near(live, value.Applied)) continue;
+            if (!game.Supports(value.Feature.CapabilitySlot) || !game.TryRead(value.Feature.ValueSlot, out double live) || !double.IsFinite(live) || OwnedValueMatches(value.Feature, live, value.Applied)) continue;
             // A script can change a later value while an earlier command is awaited.
             // Never overwrite an original that this feature could not restore.
             if (value.Restore && !value.Feature.IsValidValue(live)) continue;
@@ -357,6 +380,11 @@ public sealed class EffectContext
     public async Task<int> RestoreAsync()
     {
         int failures = 0;
+        await ReleaseDriveRevertLockAsync();
+        // A proven different bridge or owner invalidates this old form's timer restore.
+        // Ordinary owner zero after release does not imply a replacement and still restores normally.
+        if (driveRevertLease?.ForeignIdentity == true) owned.RemoveAll(value => value.Feature.Id == "combat.formtimer");
+        if (HasDriveRevertCleanup) failures++;
         if (lockOnPairLease != null)
         {
             try { await lockOnPairLease.RestoreAsync(this); }
@@ -383,7 +411,7 @@ public sealed class EffectContext
             double? live = Read(value.Feature.Id);
             if (value.Feature.ValueSlot >= 0 && live is null) { failures++; break; }
             // Not owned any more: the game, a script or the streamer changed it since.
-            if (original is null || live is double observed && !Near(observed, value.Applied))
+            if (original is null || live is double observed && !OwnedValueMatches(value.Feature, observed, value.Applied))
             {
                 owned.RemoveAt(i);
                 continue;
@@ -436,6 +464,11 @@ public sealed class EffectContext
         if (target != stock) await RunAsync("set-item-stock", itemId, target);
         return target - stock;
     }
+
+    // Brightness snapshots recover exact integer setter inputs. A relative
+    // tolerance at 5000 would mistake several other valid levels for ours.
+    private static bool OwnedValueMatches(FeatureDefinition feature, double observed, double applied) =>
+        feature.Id == "display.brightness_preview" ? observed == applied : Near(observed, applied);
 
     internal static bool Near(double a, double b) => Math.Abs(a - b) <= Math.Max(0.01, Math.Abs(b) * 0.001);
 }

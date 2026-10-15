@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "study": "motion-production-gap-20261013",
+  "scope": "Six bounded native claims normalized from the frozen reviewed scheduler supplement; no new capture or production admission proof.",
+  "claims": [
+    {
+      "addr": "0x1403a09c0",
+      "Finding": "For input -1, the complete body first invokes 15EC70 with worker entry 3A0C60, then registers a task by calling 14F770 with manager = [global 9BA888], flags 0, priority 0x61A80 and callback 3A0790. Worker setup and task registration are separate calls in this selected initialization branch.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a09c0]",
+        "evidence.json#functions[addr=0x14014f770]",
+        "evidence.zip"
+      ],
+      "Limitations": "The worker implementation, all initialization callers, allocation failure, repeated registration and later task or manager mutation are not closed. Registration alone does not give a read scope or a thread/lifetime guarantee."
+    },
+    {
+      "addr": "0x14014f770",
+      "Finding": "The selected registration body allocates 152 bytes and stores callback arg 4 at task+0, manager at+88, flags arg 2 at+96, signed priority arg 3 at+100 and null context at+112. It inserts the task into the manager head+16/tail+24 list using task next+120/previous+128 and the local signed-priority comparison. This supplies the null-context premise for the newly registered request-consumer task.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14014f770]",
+        "evidence.json#functions[addr=0x1403a09c0]"
+      ],
+      "Limitations": "A successful valid allocation and list are assumed. No local allocation-failure safety, permanent callback/context values, uniqueness of registration, concurrent list safety or all future task mutations are established."
+    },
+    {
+      "addr": "0x14014fc20",
+      "Finding": "This complete wrapper sets EDX = 0 and R8D = 0 and tail-jumps to 14FD60 with the original manager argument. In that dispatcher's (task.flags & mask)==value selection, zero mask and zero value select every visited linked task regardless of its flags.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14014fc20]",
+        "evidence.json#functions[addr=0x14014fd60]"
+      ],
+      "Limitations": "Selection is not proof that every task executes: list/callback mutation, exceptions, nonreturning callbacks and task-context behavior remain separate conditions."
+    },
+    {
+      "addr": "0x14014fd60",
+      "Finding": "For a selected task whose QWORD+112 is null, this body sets RCX = task and directly calls QWORD[task] before continuing dispatch. A nonnull+112 instead enters the distinct fiber/context path. With the same manager and unchanged linked callback/context established by 3A09C0 and 14F770, request callback 3A0790 therefore executes synchronously inside that dispatch invocation.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14014fd60]",
+        "evidence.json#functions[addr=0x1403a09c0]",
+        "evidence.json#functions[addr=0x14014f770]",
+        "evidence.json#functions[addr=0x14014fc20]"
+      ],
+      "Limitations": "Conditional local call order only. This does not prove all callers use one thread, close the fiber path, preserve the manager/task forever, exclude a worker, or provide resource memory ownership."
+    },
+    {
+      "addr": "0x14014eb70",
+      "Finding": "The complete update body calls 14FC20 with the manager currently loaded from global 9BA888 at 14ECD2/14ECD9. Its counter update and return-value decision follow that call. When this is the same unchanged manager and direct request task described in the registration/dispatch claims and all calls return normally, the 3A0790 call returns before 14FD60 and this update body return.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14014eb70]",
+        "evidence.json#functions[addr=0x14014fc20]",
+        "evidence.json#functions[addr=0x14014fd60]",
+        "evidence.json#functions[addr=0x1403a09c0]"
+      ],
+      "Limitations": "The same-global-slot observation does not prove the same instance across time without the stated premise. No universal scheduler thread, empty request queue or production Motion read admission follows. The source-level HookedUpdate/OnFrame relation remains separately documented in the frozen source review."
+    },
+    {
+      "addr": "0x1403a0790",
+      "Finding": "The consumer traverses the request list, processing only records with DWORD + 4 == 2. In the ordinary type 1 branch, a nonzero unsigned size at+80 leads to 3A6840(QWORD request+56) before the optional callback at+64 is invoked with payload,size,arg+72; zero size clears payload first. Unlink, next-link clearing and manager virtual+16 release occur after the callback path. Records with state != 2 are skipped, and the signed App+4752 comparison can end the loop early.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a0790]",
+        "evidence.zip"
+      ],
+      "Limitations": "The size comparison is unsigned against zero. Valid serial list structure and normal callback return are assumed. Callback reentrancy and new requests, the worker, fixup internals, all writers, and allocator lifetime remain outside this claim. Consumer return does not prove a drained queue or a safe production payload read."
+    }
+  ],
+  "archive": "evidence.zip",
+  "provenance": "provenance.json",
+  "completeSemanticAnalysis": false
+}

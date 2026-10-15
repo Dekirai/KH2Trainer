@@ -5,6 +5,10 @@
 namespace display_preview {
 constexpr uintptr_t ObjectRva=0x8A0970, VtableRva=0x5A9028, EpochRva=0x8AEEF0;
 constexpr uintptr_t AppRva=0x79CF00, FieldsRva=0x715364, MutexOffset=30848;
+// The menu stops at50, but the verified signed-short preview setter does not
+// clamp.5000 gives adjustment100 and inverse gamma2.2/102.2, without touching
+// saved settings. Keep the loaded-menu validation separate below.
+constexpr int MinimumBrightness=-50,MaximumBrightness=5000;
 constexpr BYTE BrightnessCode[]={0x0f,0xbf,0xc1,0x66,0x0f,0x6e,0xc0,0x0f,0x5b,0xc0,0xf3,0x0f,0x5e,0x05,0x7a,0xf1,0x0a,0x00,0xe9,0x09,0x07,0xc2,0xff};
 constexpr BYTE ColorCode[]={0x0f,0xb7,0xc2,0x66,0x85,0xc9,0x75,0x0d,0x33,0xc0,0x0f,0xbf,0xc9,0x0f,0xbf,0xd0,0xe9,0xfb,0xfa,0xc1,0xff,0x66,0x83,0xf8,0x01,0x7d,0x10,0xb8,0x01,0x00,0x00,0x00,0x0f,0xbf,0xc9,0x0f,0xbf,0xd0,0xe9,0xe5,0xfa,0xc1,0xff,0x66,0x83,0xf8,0x0a,0x7e,0x05,0xb8,0x0a,0x00,0x00,0x00,0x0f,0xbf,0xd0,0x0f,0xbf,0xc9,0xe9,0xcf,0xfa,0xc1,0xff};
 constexpr BYTE GammaCode[]={0x48,0x83,0xec,0x38,0x0f,0x29,0x74,0x24,0x20,0x0f,0x28,0xf0,0xe8,0x7f,0x58,0xff,0xff,0xf3,0x0f,0x10,0x0d,0xdb,0x33,0x48,0x00,0xf3,0x0f,0x11,0xb0,0xcc,0x02,0x00,0x00,0xf3,0x0f,0x58,0xf1,0xf3,0x0f,0x5e,0xce,0x0f,0x28,0x74,0x24,0x20,0xf3,0x0f,0x11,0x88,0x40,0x5b,0x00,0x00,0x48,0x83,0xc4,0x38,0xc3};
@@ -17,7 +21,7 @@ using BrightnessFn=void (__fastcall*)(int16_t);
 using ColorFn=void (__fastcall*)(int16_t,int16_t);
 bool faulted=false; // an unsuccessful unlock leaves ownership uncertain
 #ifdef KH2_DISPLAY_TESTS
-MutexFn testLock=nullptr, testUnlock=nullptr;
+MutexFn testLock=nullptr, testUnlock=nullptr, testTryLock=nullptr;
 BrightnessFn testBrightness=nullptr; ColorFn testColor=nullptr;
 bool testRuntimeAvailable=true;
 #endif
@@ -38,11 +42,11 @@ bool CodeReady() {
         Range(g_base+0x5B532C,4) && Field<float>(g_base+0x5B532C)==50.0f &&
         Range(g_base+0x5A9CB4,4) && Field<float>(g_base+0x5A9CB4)==2.2f;
 }
-bool Runtime(MutexFn& lock,MutexFn& unlock) {
+bool Runtime(MutexFn& lock,MutexFn& unlock,MutexFn& tryLock) {
     if(!Range(g_base+0x57B450,16)) return false;
 #ifdef KH2_DISPLAY_TESTS
     if(!testRuntimeAvailable) return false;
-    lock=testLock; unlock=testUnlock;
+    lock=testLock; unlock=testUnlock; tryLock=testTryLock;
 #else
     // Use the runtime already referenced by the game's import table, not our
     // statically linked CRT. Resolve exact exports before trusting the IAT.
@@ -50,6 +54,7 @@ bool Runtime(MutexFn& lock,MutexFn& unlock) {
     if(!runtime) return false;
     lock=reinterpret_cast<MutexFn>(GetProcAddress(runtime,"_Mtx_lock"));
     unlock=reinterpret_cast<MutexFn>(GetProcAddress(runtime,"_Mtx_unlock"));
+    tryLock=reinterpret_cast<MutexFn>(GetProcAddress(runtime,"_Mtx_trylock"));
 #endif
     return lock && unlock && Field<uintptr_t>(g_base+0x57B458)==reinterpret_cast<uintptr_t>(lock) &&
         Field<uintptr_t>(g_base+0x57B450)==reinterpret_cast<uintptr_t>(unlock);
@@ -57,7 +62,7 @@ bool Runtime(MutexFn& lock,MutexFn& unlock) {
 struct Lease {
     uintptr_t object=0,app=0,device=0,root=0;
     HANDLE appThread=nullptr,timingThread=nullptr;
-    MutexFn lock=nullptr,unlock=nullptr;
+    MutexFn lock=nullptr,unlock=nullptr,tryLock=nullptr;
 };
 bool Ready(const TrainerContext& c,Lease& l) {
     if(!ThreadReady(c) || !CodeReady() || !Range(g_base+AppRva,8) ||
@@ -81,12 +86,23 @@ bool Ready(const TrainerContext& c,Lease& l) {
         GetThreadId(l.timingThread)!=g_gameThread &&
         GetProcessIdOfThread(l.timingThread)==GetCurrentProcessId() &&
         GetExitCodeThread(l.timingThread,&timingExit) && timingExit==STILL_ACTIVE &&
-        Runtime(l.lock,l.unlock);
+        Runtime(l.lock,l.unlock,l.tryLock);
 }
 bool Same(const Lease& a,const Lease& b) {
     return a.object==b.object && a.app==b.app && a.device==b.device && a.root==b.root &&
         a.appThread==b.appThread && a.timingThread==b.timingThread &&
-        a.lock==b.lock && a.unlock==b.unlock;
+        a.lock==b.lock && a.unlock==b.unlock && a.tryLock==b.tryLock;
+}
+int TryLock(const Lease& l) {
+    // The original renderer constructor at RVA 0x10AA2D initializes this
+    // mutex with type 2 (_Mtx_try). For that type, the game runtime's trylock
+    // returns immediately when busy. Never fall back to the waiting lock.
+    // A missing optional export affects observations, not user commands.
+    if(!l.tryLock)return -1;
+    int value=-1;
+    __try { value=l.tryLock(reinterpret_cast<void*>(l.object+MutexOffset)); }
+    __finally { if(AbnormalTermination())faulted=true; }
+    return value;
 }
 bool ColorPair(int type,int severity) {
     return type>=0 && type<=3 && (type==0?severity==0:(severity>=1&&severity<=10));
@@ -104,7 +120,7 @@ struct Plan {
 bool Arguments(unsigned slot,const double* args,Plan& p) {
     if(slot!=305 && !args) return false;
     if(slot==304) {
-        if(!IsInteger(args[0],-50,50)) return false;
+        if(!IsInteger(args[0],MinimumBrightness,MaximumBrightness)) return false;
         p.brightness=true; p.level=static_cast<int16_t>(args[0]);
     } else if(slot==306) {
         if(!IsInteger(args[0],0,3) || !IsInteger(args[1],1,10)) return false;
@@ -206,20 +222,33 @@ void DisplaySnapshot(const TrainerContext& c) {
     Lease before{};
     if(!Ready(c,before)) return;
     void* const mutex=reinterpret_cast<void*>(before.object+MutexOffset);
-    if(before.lock(mutex)!=0) return;
+    if(TryLock(before)!=0) return;
     bool valid=false,colorValid=false; double value=0,colorValue=0; int unlockResult=0;
     __try {
         Lease current{};
         if(Ready(c,current) && Same(before,current)) {
             const float adjustment=Field<float>(current.object,716);
-            if(isfinite(adjustment) && adjustment>=-1.0f && adjustment<=1.0f) {
-                value=static_cast<double>(adjustment)*50.0; valid=true;
+            if(isfinite(adjustment) && adjustment>=MinimumBrightness/50.0f && adjustment<=MaximumBrightness/50.0f) {
+                // Recover the exact signed-short input. Multiplying the native
+                // float by50 alone can yield17.0000001788 and break a later
+                // integer-only restore. Reject unrelated fractional settings
+                // instead of publishing an original the setter cannot restore.
+                const double level=round(static_cast<double>(adjustment)*50.0);
+                if(IsInteger(level,MinimumBrightness,MaximumBrightness) &&
+                   static_cast<float>(level)/50.0f==adjustment) {
+                    value=level; valid=true;
+                }
             }
             int type=0,severity=0;
             colorValid=CurrentColor(current.object,type,severity);
             if(colorValid) colorValue=type*16+severity;
         }
-    } __finally { unlockResult=before.unlock(mutex); }
+    } __finally {
+        if(AbnormalTermination())faulted=true;
+        bool released=false;
+        __try { unlockResult=before.unlock(mutex);released=unlockResult==0; }
+        __finally { if(!released)faulted=true; }
+    }
     if(unlockResult!=0) faulted=true;
     else {
         if(valid) SnapshotValue(304,value);

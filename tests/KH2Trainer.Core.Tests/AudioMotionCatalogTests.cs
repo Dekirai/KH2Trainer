@@ -11,20 +11,22 @@ internal static class AudioMotionCatalogTests
         string[] motionIds = ["motion.speed", "motion.override", "motion.actual_speed", "motion.frame", "motion.duration",
             "motion.logical_id", "motion.resolved_id", "motion.blend_duration", "motion.blend_target", "motion.format", "motion.state"];
         string[] driveIds = ["drive.trigger", "drive.revert", "drive.requested", "drive.phase", "drive.cancel", "drive.result"];
-        bool complete = audioIds.Concat(motionIds).Concat(driveIds).All(byId.ContainsKey);
+        string[] requestIds = ["audio.requests.free", "audio.requests.interval", "audio.requests.gates"];
+        bool complete = audioIds.Concat(motionIds).Concat(driveIds).Concat(requestIds).All(byId.ContainsKey);
         check(complete, "packaged catalog contains every final Audio, Motion and Forced-Drive feature ID");
         if (!complete) return; // Report missing catalog entries without masking the failure with a lookup exception.
 
         var audio = audioIds.Select(id => byId[id]).ToArray();
         var motion = motionIds.Select(id => byId[id]).ToArray();
         var drive = driveIds.Select(id => byId[id]).ToArray();
-        var domains = audio.Concat(motion).ToArray();
+        var requests = requestIds.Select(id => byId[id]).ToArray();
+        var domains = audio.Concat(motion).Concat(requests).ToArray();
         check(audio.Select(f => f.CapabilitySlot).SequenceEqual(Enumerable.Range(144, 16)) &&
             motion.Select(f => f.CapabilitySlot).SequenceEqual(Enumerable.Range(160, 11)) &&
             domains.All(f => catalog.Count(other => other.CapabilitySlot == f.CapabilitySlot) == 1),
             "Audio and Motion retain their exact non-overlapping native slots 144 through 170");
         check(catalog.Where(f => f.Id.StartsWith("audio.", StringComparison.Ordinal) || f.Id.StartsWith("motion.", StringComparison.Ordinal))
-            .Select(f => f.Id).Order().SequenceEqual(audioIds.Concat(motionIds).Order()),
+            .Select(f => f.Id).Order().SequenceEqual(audioIds.Concat(motionIds).Concat(requestIds).Order()),
             "packaged Audio and Motion domains contain no unexpected controls outside the supported contract");
         check(domains.All(f => !f.ChangesProgression && f.Arguments.Count == 0) &&
             domains.Where(f => f.Kind != FeatureKind.ReadOnly).All(f => f.CommandId == 1000 + f.CapabilitySlot),
@@ -46,6 +48,16 @@ internal static class AudioMotionCatalogTests
         check(Enumerable.Range(0, 9).All(i => byId[$"audio.bus.current{i}"] is { Unit: "%" } f && f.IsValidValue(125)) &&
             byId["audio.available"] is { Minimum: 0, Maximum: 1 },
             "native bus diagnostics can report levels above the trainer mix range and availability remains binary");
+
+        check(requests.Select(f => f.CapabilitySlot).SequenceEqual(new[] { 482, 483, 484 }) &&
+            requests.All(f => catalog.Count(other => other.CapabilitySlot == f.CapabilitySlot) == 1 &&
+                f is { Category: "Audio Requests", Kind: FeatureKind.ReadOnly, CommandId: 0, RequiresScene: false,
+                    ChangesProgression: false, CanSaveInProfile: false, Minimum: 0, Step: 1 } && f.ValueSlot == f.CapabilitySlot),
+            "request diagnostics have unique scalar slots, no commands or scene/progression/profile dependency");
+        check(requests.Select(f => f.Maximum).SequenceEqual(new[] { 80d, 25d, 7d }) &&
+            requests.All(f => f.IsValidValue(0) && f.IsValidValue(f.Maximum) && !f.IsValidValue(-1) &&
+                !f.IsValidValue(f.Maximum + 1) && !f.IsValidValue(double.NaN)),
+            "request observations preserve the native pool, pass-counter and three-bit ranges");
 
         check(motion.All(f => f.Category == "Animation" && !f.CanSaveInProfile),
             "all Motion controls share the Animation category and exclude actor leases from profiles");

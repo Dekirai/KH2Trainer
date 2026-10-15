@@ -1,0 +1,640 @@
+{
+  "schema": 1,
+  "Domain": "native",
+  "scope": "Exact key/path normalization of already reviewed lowercase author claims. No new findings; uppercase producer claims stay in their original report.",
+  "claims": [
+    {
+      "addr": "0x140078b50",
+      "Finding": "The release wrapper takes the global audio lock. In nonforced mode an existing LayoutManager predicate at virtual+384 must succeed before driver deletion at virtual+56. Forced mode skips that initial layout gate. If the driver is absent after passing the gate, the wrapper returns true.",
+      "Limitations": "A true return is this branch result, not proof that all external borrowers are quiescent. Alternative driver/layout implementations and concurrent lifecycle changes remain outside closure.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140078b50]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json",
+        "docs/research/audio-bank-retirement-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x140078be0",
+      "Finding": "The eligibility wrapper returns true when either driver or layout is missing. With both present it requires the driver predicate and then layout+384. The concrete SoundDriver branch inlines the selected bank/player/reference/stream conditions.",
+      "Limitations": "Missing infrastructure is not equivalent to completed destruction or safe release of a borrowed payload. No resource lifetime proof follows from this bool.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140078be0]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140091d00]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14006b1d0]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json",
+        "docs/research/audio-bank-retirement-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x140091d00",
+      "Finding": "Concrete driver eligibility accepts a missing handle lookup. For a present bank it requires no player for which virtual+656 matches the bank and virtual+632 returns false, signed WORD(bank+52)<=0, and either flag+128 bit3 clear, virtual type+8 equal3, or stream predicate0986A0 false.",
+      "Limitations": "The WORD is consumed as signed. Helper validity, all counter writers, live states and complete virtual-method contracts are not established by this expression.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140091d00]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14009a780]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x1400986a0]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14009f9d0]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json",
+        "docs/research/audio-bank-retirement-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x140091a70",
+      "Finding": "Concrete driver deletion optionally stops matching players and layout records first when force is nonzero. It then performs a fresh bank lookup and the same player/signed-reference/stream gates; only the eligible present-bank path calls08A570. A missing lookup returns true. Force does not bypass these final driver gates.",
+      "Limitations": "Stop/retire virtual operations are only partially expanded. Effects before a later false result are not rolled back. No universal forced-delete or eventual progress guarantee.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140091a70]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14009a780]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14008a570]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json",
+        "docs/research/audio-bank-retirement-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x14009a780",
+      "Finding": "The player predicate traverses the global player list and returns true on a player whose virtual+656 matches the bank and whose virtual+632 returns false. No such captured match returns false.",
+      "Limitations": "The vtable slots are intentionally described by their predicates; this is not a proof of every player implementation or every external SCD reader.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14009a780]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json"
+      ]
+    },
+    {
+      "addr": "0x1400986a0",
+      "Finding": "The stream busy predicate is true for any matching pending request. Otherwise a matching active request is busy when state+24==1 or its reader virtual+16 returns false. Unmatched or absent active requests do not block it.",
+      "Limitations": "The stream-manager global is dereferenced without a local null guard. State reachability and reader synchronization are not established.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x1400986a0]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json",
+        "docs/research/audio-bank-retirement-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400981c0",
+      "Finding": "Cancellation removes every matching pending request from its list, clears node links, decrements the pending count, writes request+28=-1 and returns those nodes to the request pool. A matching active request is marked+36=1 before the return decision. For that active request success requires state+24==0 and reader virtual+16 true; any nonzero state returns false.",
+      "Limitations": "False can accompany completed pending cancellations and a newly marked active request. For abstract state2 with reader=true,0986A0 can be false while this cancellation is false. This is a model distinction, not an observed reachable game state.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x1400981c0]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x1400986a0]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json",
+        "docs/research/audio-bank-retirement-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x14008a570",
+      "Finding": "The bank remover validates the computed slot handle. For flag-bit3 banks it removes a matching bank from the stream list and may clear flag0x20 for virtual type3 before invoking0981C0. A false cancellation returns false without restoring the stream-list change. Only after cancellation succeeds does it unlink the hash node and main bank list, free a nonzero auxiliary virtual+232 result, call the bank destructor with flag0 and return the bank object to the pool.",
+      "Limitations": "Cleanup is not transactional. No local high-index pool bound is present here. Valid initialized list offsets/objects and no interfering mutation are required for these list effects; external allocator and subclass destructor closure is incomplete.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14008a570]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x1400981c0]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14008c250]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14009f910]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x1400a1710]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json",
+        "docs/research/audio-bank-retirement-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x14009fa70",
+      "Finding": "ActualBank virtual destructor09FA70 resets its vtable to Bank. With deletion flags0, as supplied by08A570, it returns without freeing the object or touching the retained SCD pointer+8. Object deallocation is conditional on flag bit0. Auxiliary+40 is a separate virtual accessor and custom-free path in the remover.",
+      "Limitations": "No ownership claim is generalized to ToolBank, StreamBankEx or other subclasses. The captured0A1710 allocator manipulates allocation metadata; its entire lifetime and synchronization contract is not proven.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14009fa70]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14009f910]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14008a570]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x1400a1710]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json"
+      ]
+    },
+    {
+      "addr": "0x140136060",
+      "Finding": "BankEntry destruction waits while transfer+108 is nonzero, then repeatedly attempts078B50(handle,0), issues a zero-duration stop07D3F0 on failure and sleeps. The second loop also ends if transfer+108 becomes nonzero again. Mode+112==2 skips both aligned_free(payload+88) and clearing that field.",
+      "Limitations": "Repeated polling gives no termination or global quiescence guarantee. This reaffirms the prior mode2 borrowed-payload result; it does not close resource/actor/request lifetime ordering or all lower-audio users.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140136060]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140078b50]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140079c10]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14007d3f0]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14007d3a0]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json",
+        "docs/research/audio-bank-retirement-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x14007d3f0",
+      "Finding": "A bank controller stop converts its duration, resolves the bank handle and asks09D460 to stop matching players; it then invokes layout virtual+200 for the same handle.09D460 uses player bank-match+656 and stop+32, with the nonzero-duration flag path through virtual+104.",
+      "Limitations": "A stop request is not a direct BankEntry or replacement-payload free. Duration overflow/general float-conversion semantics and all stop implementations are unexpanded.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14007d3f0]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14009d460]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x1400b9030]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x1400bdec0]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140079c10]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140093330]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json"
+      ]
+    },
+    {
+      "addr": "0x14006b1d0",
+      "Finding": "Concrete LayoutManager eligibility scans page records and returns false if a record payload+60 equals the requested bank handle; otherwise it returns true. The concrete virtual+384 cell resolves to this body.",
+      "Limitations": "Absence from the selected lists is not proof that all playback, callback or external readers are finished. Valid page/list structures and stable lock contracts are premises.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14006b1d0]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140069e20]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json"
+      ]
+    },
+    {
+      "addr": "0x14006d910",
+      "Finding": "Concrete LayoutManager stop visits pages and calls039D30. Matching records receive duration+80 and flag+76=0, invoke their destructor according to page allocation mode, then unlink and recycle their record nodes.",
+      "Limitations": "The called record destructor and all downstream sound effects are not closed. The list/allocator structures must be intact; no general safe hot-reload follows.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14006d910]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140039d30]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json"
+      ]
+    },
+    {
+      "addr": "0x140088fc0",
+      "Finding": "Bank lookup derives a pool index from handle>>20, then checks a main-list owner marker and exact handle equality. It returns the raw bank pointer after releasing its internal lock. There is no explicit upper index bound in this captured body before address computation and dereferences.",
+      "Limitations": "Callers may impose valid-handle bounds or hold wider locks; their complete contract is not proven. This is not a live invalid-handle crash or a usable resource lease.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140088fc0]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json"
+      ]
+    },
+    {
+      "addr": "0x140088f20",
+      "Finding": "Generation allocation increments the low20 counter, wraps to1 at0x100000 and, after a wrap has been recorded, skips low20 values currently present in the live bank list. A previously retired generation can be reused.",
+      "Limitations": "Live-list avoidance does not provide an eternal stale-handle/ABA guarantee. No complete counter-wrap epoch invariant or termination under full occupancy is established.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140088f20]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140089390]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json",
+        "docs/research/audio-bank-retirement-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x140089390",
+      "Finding": "The in-memory bank factory pops its free-list head before checking SEDB, unsigned version<=4 and SSCF. The selected rejecting header paths return0 without a free-head restoration in this body. Generation is allocated after the first two tests and before SSCF. ActualBank mode stores the input SCD at+8; ToolBank takes a different branch. The header gate admits version0, although09FBD0 asserts outside versions1..4.",
+      "Limitations": "The free-list observation assumes a nonempty intact pool, readable input and no external intervening writer. It is a body-local resource-consumption condition, not a live leak/exploit reproduction or full malformed-input safety proof. Accepted header gates do not imply successful initialization.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140089390]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140078810]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140088f20]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14009fbd0]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json",
+        "docs/research/audio-bank-retirement-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x140089c90",
+      "Finding": "The StreamBankEx factory is a separate path: it initially sets inherited payload+8 and+40 toNULL, retains external inputs at+168/+192/+200 with size/state at+208, installs StreamBankEx/adapter vtables, sets flag bit3 and links the bank into the main bank list. It does not use the same immediate SEDB/SSCF header gate as089390.",
+      "Limitations": "No complete stream parser, reader ownership, allocation failure or subclass teardown contract is inferred. This contrast prevents applying ActualBank conclusions to every bank.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140089c90]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x1400919e0]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json"
+      ]
+    },
+    {
+      "addr": "0x1400ba4a0",
+      "Finding": "BA4A0/BA4B0 are direct WORD+52 increment/decrement primitives. Each performs a16-bit update without a local saturation or overflow/underflow check. Signed-positive consumers therefore treat0x8000 and0xffff as nonpositive.",
+      "Limitations": "Wrap examples are machine-width arithmetic, not proof that an actual game reference count reaches those values. Caller balance, locking and all writers remain open.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x1400ba4a0]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x1400ba4b0]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140091d00]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json",
+        "docs/research/audio-bank-retirement-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400bb050",
+      "Finding": "The selected RootSound admission path obtains bank IDs from signed WORD entries at sound+540, searches matching bank+28 and increments bank WORD+52 if found. Its destructorBB250 performs matching decrements. Both update sites are direct WORD instructions without a local range check.",
+      "Limitations": "The paired sites are concrete additional writers, not a complete balanced-reference proof. Earlier admission gates, other virtuals, signed bank-ID semantics and concurrent ownership remain bounded.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x1400bb050]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x1400bb250]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x1400ba4a0]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x1400ba4b0]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json",
+        "docs/research/audio-bank-retirement-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x140091250",
+      "Finding": "The selected constructors install SoundDriver and LayoutManager vtables whose original data cells bind driver deletion/eligibility to091A70/091D00 and layout stop/eligibility to06D910/06B1D0. SoundSystem CreateCore076F20 provides concrete constructor/publication witnesses for the driver/layout globals.",
+      "Limitations": "A constructor witness and static vtable cells identify this implementation path; they do not prove its live presence for every run. Other factory branches and virtual implementations remain possible.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140091250]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140069e20]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140076f20]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json"
+      ]
+    },
+    {
+      "addr": "0x1400889b0",
+      "Finding": "The SoundDriver initializer sets main-list node offset56, stream-list offset80 and all64 hash-bucket node offsets104. The64 bucket stores are two passes of32 unrolled immediate stores. This supplies an initializer witness for selected list layouts.",
+      "Limitations": "Offsets must remain initialized and list objects intact and nonoverlapping. Other writes and concurrency are not excluded. Current study reuses08C1A0 explicitly from the accepted prior study.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x1400889b0]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140091250]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14008c250]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json"
+      ]
+    },
+    {
+      "addr": "0x14009fbd0",
+      "Finding": "On the captured ActualBank path, initialization retains the SCD, computes sequence offsets and writes byte+15=0xff through virtual09FD20 for each sequence when flag bit3 is clear. Payload+8 and NULL auxiliary+40 survive08C1A0 only under retained bucket offsets104, valid disjoint bank/list objects and no intervening relevant-field mutation.09FD20 uses signed index comparison and signed DWORD relative offsets.",
+      "Limitations": "This repeats a conditional prior finding to connect admission and retirement. Writable valid SCD layout is required; no overall payload-size check, all-writers exclusion or live mutation witness is supplied.",
+      "Evidence": [
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14009fbd0]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x14009fd20]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x1400889b0]",
+        "docs/research/audio-bank-retirement-20261011/evidence.json#functions[addr=0x140089390]",
+        "docs/research/audio-bank-retirement-20261011/verification.json",
+        "docs/research/audio-bank-retirement-20261011/evidence.json"
+      ]
+    },
+    {
+      "addr": "0x14012eea0",
+      "Finding": "For nonzero address, the first list record with unsigned start=QWORD+1624 <= address < (start+zero-extended DWORD+1600) is selected. If supplied, the caller callback receives that record before a tail call12E460(record,0). This wrapper does not test ResourceEntry+1604 or wait for audio eligibility.",
+      "Limitations": "Intact list/readable records and no intervening mutation are premises. Addition is machine-width; no wrap validation.12E460 may invoke its own registered callback; NULL supplied callback does not suppress that separate callback. No global absence of external protection.",
+      "Evidence": [
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x14012eea0]",
+        "docs/research/voice-resource-teardown-20261011/dependencies.json#functions[addr=0x14012e460]"
+      ]
+    },
+    {
+      "addr": "0x14012ef30",
+      "Finding": "Repeatedly calls12E100(start,end), then12E460(record,flag), until lookup returns zero. There is no local ResourceEntry+1604 test in either this wrapper or12E460.",
+      "Limitations": "Termination depends on callbacks/destruction actually removing matching records and no external changes. No claim that arbitrary input addresses are safe.",
+      "Evidence": [
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x14012ef30]",
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x14012e100]",
+        "docs/research/voice-resource-teardown-20261011/dependencies.json#functions[addr=0x14012e460]"
+      ]
+    },
+    {
+      "addr": "0x14012e100",
+      "Finding": "Uses exact endpoint equality or four strict endpoint-inside comparisons. Adjacent nonoverlapping normal intervals are rejected. An empty query point strictly inside a nonempty record can match; this is not interchangeable with a generic half-open interval-overlap utility.",
+      "Limitations": "Unsigned64 address arithmetic and zero-extended32 length. Boundary, degenerate and wrap examples are synthetic arithmetic tests, not evidence that runtime records assume those states.",
+      "Evidence": [
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x14012e100]"
+      ]
+    },
+    {
+      "addr": "0x14012ef80",
+      "Finding": "This separate list sweep skips a record when DWORD+1604 is nonzero. For zero it optionally invokes dispatch[index+1612].callback+24, unlinks from the global list, then invokes record virtual+0 with flags1.",
+      "Limitations": "The complete meaning and all writers of+1604 are not established here. It must not be called an audio lease/refcount merely because it gates this sweep. Virtual calls/callbacks may have further effects.",
+      "Evidence": [
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x14012ef80]",
+        "docs/research/voice-resource-teardown-20261011/dependencies.json#functions[addr=0x14012e460]",
+        "docs/research/voice-resource-teardown-20261011/dependencies.json#functions[addr=0x14012d8e0]",
+        "docs/research/voice-resource-teardown-20261011/dependencies.json#functions[addr=0x140129d30]"
+      ]
+    },
+    {
+      "addr": "0x1403a62b0",
+      "Finding": "For nonzero-size, nonalias BAR records, type34 dispatches1DE5C0 on the decoded wrapper pointer; types1/17/20/30/46 recurse. Type48 has no such case in the captured46-type map.1DE5C0 matches request+24 by exact pointer and request+53==6, calls1DE320, then for matching ORIGIN data invalidates group2 by DWORD+12.",
+      "Limitations": "No matching request means that helper does not reach its ORIGIN invalidation. Stop marks request+52=4; it neither proves synchronous backend quiescence nor establishes all callers/aliases.",
+      "Evidence": [
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x1403a62b0]",
+        "docs/research/voice-resource-teardown-20261011/dependencies.json#functions[addr=0x1401de5c0]",
+        "docs/research/voice-resource-teardown-20261011/dependencies.json#functions[addr=0x1401de320]"
+      ]
+    },
+    {
+      "addr": "0x1403a6120",
+      "Finding": "Relocation first updates each nonzero-size BAR record pointer using the base delta. A nonalias type34 then passes the new decoded pointer to1DE5C0. It does not rebind old request+24 pointers. The same selected recursive types are present.",
+      "Limitations": "Pointer decoding validity, nested data bounds and external request management remain premises. Type48 is outside this46-case map. No safety claim for arbitrary BAR data.",
+      "Evidence": [
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x1403a6120]",
+        "docs/research/voice-resource-teardown-20261011/dependencies.json#functions[addr=0x1401de5c0]"
+      ]
+    },
+    {
+      "addr": "0x14039e690",
+      "Finding": "On the selected existing-payload/nonzero-size path:3A62B0(oldBAR), optional matching ResourceEntry update(+16 and+1624) plus ReplaceEntry auxiliary+112 target+128 delta, direction-aware16-byte payload copies when old!=new,3A6120(newBAR),39E900. This supplies concrete pre-copy and post-copy type34 stop passes.",
+      "Limitations": "Refines prior relocation research; this body is a fresh recapture, not new coverage. Overlap/reload branches and callbacks differ. Aligned size/readable bounds, exact pointer matching and serialized use are required; no global safe hot-reload guarantee.",
+      "Evidence": [
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x14039e690]",
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x1403a62b0]",
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x1403a6120]"
+      ]
+    },
+    {
+      "addr": "0x14039d010",
+      "Finding": "Scans for DWORD+72==requested code. If flag DWORD+68 bit1 is clear, only byte+1==3 takes BAR release3A6A10(payload+88,1), then39E2A0 and manager virtual+16. Flag bit1 set takes unlink/free without that BAR release. The body has no WORD+2 counter gate.",
+      "Limitations": "Intact list and manager contract assumed. This is not a proof that callers legitimately pass a code while users still exist or that counter gating is absent elsewhere.",
+      "Evidence": [
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x14039d010]",
+        "docs/research/voice-resource-teardown-20261011/dependencies.json#functions[addr=0x1403a6a10]"
+      ]
+    },
+    {
+      "addr": "0x1403e90e0",
+      "Finding": "Captures old Actor+2336 before the switch. Mode0 sets Actor+2488 bit0x10 and yields until3BFB70 says the old pointer is absent from the Actor list, then yields once with argument1. Mode1 instead calls descriptor virtual+328; other nonzero modes skip both local branches. The common suffix calls39D010(code),code+1,code+2 before3CD980(context,oldBuffer,...).",
+      "Limitations": "List absence is not an eternal no-reuse/ABA or audio-completion guarantee. Mode1 virtual target and caller mode invariants remain open. The old buffer is held as a raw register value across yields; no separate retain is visible in this body.",
+      "Evidence": [
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x1403e90e0]",
+        "docs/research/voice-resource-teardown-20261011/dependencies.json#functions[addr=0x1403bfb70]",
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x14039d010]",
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x1403cd980]"
+      ]
+    },
+    {
+      "addr": "0x1403cd980",
+      "Finding": "Waits by yielding while global2A244D8 is nonzero, writes the supplied context there, clears a matching cache-used bit, calls3CDE50(newId,oldBuffer), then12EEA0(oldBuffer,NULL), then clears global2A244D8.",
+      "Limitations": "Plain loads/stores are not a demonstrated mutex or cross-thread exclusion. Normal call-return order only; no progress proof. The NULL caller callback still permits12E460 registered callbacks.",
+      "Evidence": [
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x1403cd980]",
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x1403cde50]",
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x14012eea0]"
+      ]
+    },
+    {
+      "addr": "0x1403cde50",
+      "Finding": "For valid helper result and WORD+76 in1..15, searches three cache rows by two keys. A match marks used and returns. Otherwise selects the first clear used-bit among three rows, writes its keys, constructs the regional battle-voice path, requests loading via3A0B30 with3CDDF0 callback, sets context+24=1, and yields until that marker clears.",
+      "Limitations": "After all three searched rows are marked used and no key matches, the local index advances to3 and is used without a local rejection. Physical cache allocation, reserved fallback-row intent and live reachability are not established: no out-of-bounds/crash claim. Callback ordering relative to setting the wait marker is external.",
+      "Evidence": [
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x1403cde50]"
+      ]
+    },
+    {
+      "addr": "0x1403cddf0",
+      "Finding": "With nonzero second argument,3CDDF0 forwards buffer,length,slot and3CE030 callback through1DF0E0, which selects type3 at1E03E0. With zero it clears current global context+24 directly.3CE030 also clears that field when the global is nonzero.",
+      "Limitations": "No full1E03E0/request lifecycle or completion guarantee is derived. The callback targets a global current context, without an identity check visible in these small bodies. ABI inferred from actual registers, not the decompiler int width for pointers.",
+      "Evidence": [
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x1403cddf0]",
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x1401df0e0]",
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x1403ce030]"
+      ]
+    },
+    {
+      "addr": "0x1401df3c0",
+      "Finding": "Calls1363B0(key,1),13B2E0(key,buffer,length,group1,mode0), then12EF30(buffer,buffer+signExtendedLength,0). It preserves registration return value but does not condition retirement on success.",
+      "Limitations": "Mode0 contract is prior work; current claim is call order and mode argument, not proof of native worker completion. Signed length can produce nonstandard ranges; only bounded synthetic arithmetic considered.",
+      "Evidence": [
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x1401df3c0]",
+        "docs/research/voice-resource-teardown-20261011/dependencies.json#functions[addr=0x14013b2e0]",
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x14012ef30]"
+      ]
+    },
+    {
+      "addr": "0x1401df7b0",
+      "Finding": "ORIGIN with nonzero payload+32 uses13B2E0(group2,mode0). SeBlock resolves a replacement, registers its+96 payload using mode0, then aligned-frees nonzero+96 and clears it, regardless of returned status. The ordinary branch chooses mode1 only for unsigned(key-20)<=1, otherwise mode0, then retires matching source ranges. This differs from1DFD70 ORIGIN voice mode2.",
+      "Limitations": "No general validity/size/allocator/asynchronous-safety proof. SeBlock lookup remains a dependency boundary. ORIGIN branch does not itself free wrapper+32. Native success/failure behavior was not exercised.",
+      "Evidence": [
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x1401df7b0]",
+        "docs/research/voice-resource-teardown-20261011/dependencies.json#functions[addr=0x1401dfd70]",
+        "docs/research/voice-resource-teardown-20261011/dependencies.json#functions[addr=0x14013b2e0]",
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x14012ef30]"
+      ]
+    },
+    {
+      "addr": "0x1403e61e0",
+      "Finding": "Previously captured BTLNPC destructor4069C0 calls base Voice destructor3CD8E0 on Actor+3000 before3B3D60.3B3D60 calls3E61E0 on Actor+2320. That releases its nonnull+16/+24/+32 resource pointers through39DA10 then clears them. Voice destructor stops a nonzero handle via1DE500 and clears its handle before this resource step.",
+      "Limitations": "This composes direct local call order, assuming normal returns and the selected concrete destructor. Request marking/backend stopping is not BankEntry destruction; other actor types, bulk cleanup and callbacks remain outside this chain.",
+      "Evidence": [
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x1403e61e0]",
+        "docs/research/voice-resource-teardown-20261011/dependencies.json#functions[addr=0x1404069c0]",
+        "docs/research/voice-resource-teardown-20261011/dependencies.json#functions[addr=0x1403cd8e0]",
+        "docs/research/voice-resource-teardown-20261011/dependencies.json#functions[addr=0x1403b3d60]",
+        "docs/research/voice-resource-teardown-20261011/dependencies.json#functions[addr=0x1401de500]",
+        "docs/research/voice-resource-teardown-20261011/dependencies.json#functions[addr=0x1401de320]",
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x14039da10]"
+      ]
+    },
+    {
+      "addr": "0x14039da10",
+      "Finding": "Finds the first resource record whose payload+88 equals the input, then adds0xffff to WORD+2. No local underflow guard. The no-match path retains RAX=0 and has the same WORD[RAX+2] add.",
+      "Limitations": "Only a body-local precondition: valid matching resource is required. No claim that the no-match path or counter wrap occurs in normal play. This resource-list WORD is distinct from audio-bank WORD+52 and ResourceEntry DWORD+1604.",
+      "Evidence": [
+        "docs/research/voice-resource-teardown-20261011/evidence.json#functions[addr=0x14039da10]"
+      ]
+    },
+    {
+      "addr": "0x14007c540",
+      "Finding": "The varargs formatting wrapper passes SIZE_MAX as the output count to __stdio_common_vsprintf. With the reused serializer call using literal ORIGIN, this writes six characters plus NUL, preserving bytes7..11 of the previously copied header.",
+      "Limitations": "The seven-byte result relies on the exact literal/no-format-arguments call in reused36D8B0; this wrapper is not a bounded string writer.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x14007c540]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x14009fdb0",
+      "Finding": "ActualBank virtual+32 reads count WORD+154, defaults index>=count to0 using a signed comparison, and returns payload+signedDWORD(offsetTable+4*selected), with table base DWORD+140.",
+      "Limitations": "Negative indexes pass the signed comparison. Count0 still selects0. No file-size or offset validation occurs in this body; tableB is called a track table only from the captured09FEE0/B78F0 consumer.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x14009fdb0]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x14009fde0",
+      "Finding": "ActualBank virtual+40 implements local tableC lookup using WORD+156 and DWORD+144, plus bit0x8000 delegation through another bank and bit0x4000 local stripping. The latter branches use signed fallback-to-zero indexes.",
+      "Limitations": "The 0x8000 path assumes a driver pointer. A null remote lookup falls back locally without clearing that flag. Other driver virtual implementations and tableC payload semantics are not established.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x14009fde0]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x14009fea0",
+      "Finding": "ActualBank virtual+48 selects a sequence index with the signed count+152 comparison. Auxiliary mode returns aux+164*index+32; raw mode returns payload+signedDWORD at the table addressed by DWORD+148.",
+      "Limitations": "No selected span, object lifetime, zero-count or negative-index check is supplied here. The128-byte auxiliary record size comes from the separately captured snapshot copy.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x14009fea0]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x14009fee0",
+      "Finding": "The duration-like float reader first reads DWORD at aux+164*index+160, otherwise optional sequence section0x2000 +4. Both are zero-extended32-bit values converted via signed64-bit CVTSI2SS and scaled by single-precision0.001. Without that metadata it takes the maximum of zero and the B78F0 values over sequence track references.",
+      "Limitations": "Decompiler double/signed-int types are misleading here. The fallback accumulator is signed32-bit while metadata is unsigned32-bit. This is a calculation over descriptors, not proof of audible duration or successful loading.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x14009fee0]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400a0010",
+      "Finding": "Find-index reduces unsigned input modulo1000 and returns the first sequence whose WORD+12 matches, or UINT32_MAX. Auxiliary entries use164-byte stride. Raw flag0x40 mode optionally obtains backend payload via virtual+56/+8 before search and calls virtual+64 afterward.",
+      "Limitations": "The virtual+24 result is dereferenced without a null check. Backend validity/lifetime and semantic completeness of the lock/unlock interface are not established; this is not a safe ID validation entry point.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x1400a0010]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400a0110",
+      "Finding": "Find-sequence uses the same unsigned modulo1000 first-match search. It returns the auxiliary sequence pointer or the raw virtual+24 pointer; raw flag0x40 processing calls backend virtual+64 before returning the saved pointer.",
+      "Limitations": "The returned raw pointer has no new ownership established by this body. Full synchronization and backend virtual contracts are outside the study.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x1400a0110]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400a0230",
+      "Finding": "Find-auxiliary reduces the key modulo1000, finds a sequence WORD+12, and returns aux+164*index+32 or raw virtual+48(index). Raw flag0x40 processing performs backend virtual+64 before returning.",
+      "Limitations": "The32-byte offset is within the compact record, not a serialized file header. Borrowed pointer lifetime and every backend are unresolved.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x1400a0230]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400a0380",
+      "Finding": "The concrete sequence-count getter returns zero-extended WORD at ActualBank+152.",
+      "Limitations": "It does not check object identity, readability, current loading state or table integrity.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x1400a0380]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400a0390",
+      "Finding": "Snapshot construction copies32 bytes of each sequence and128 bytes of its auxiliary record into164-byte records, overwrites byte15 with0xff and stores optional section0x2000 DWORD+4 at record+160, default0. It finally publishes aux=output and payload=0, including the zero-count branch.",
+      "Limitations": "There is no output capacity check or free of the previous payload in this body. A cached duration0 is not the fallback track scanner result. Input/output overlap and source mutation are not proven safe.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x1400a0390]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400a04b0",
+      "Finding": "Rebind calls08C250 to unlink the current hash entry, stores the new pointer in bank+8 and invokes the concrete object virtual+16 initializer.",
+      "Limitations": "No payload free, size validation or ownership transfer is established by this body. Reinitialization may mutate sequence cache bytes through09FBD0; this is not an offline validation API.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x1400a04b0]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400a4340",
+      "Finding": "The optional0x2000 section starts after version-sized basic data and enabled0x100,0x400,0x800,0x8000 sections. Section lengths come respectively from DWORD+0, BYTE+0, BYTE+1 and WORD+2. Its absence returns0.",
+      "Limitations": "Offsets accumulate in32-bit registers and then zero-extend. No source extents or arithmetic overflow checks are provided here. A present section pointer does not establish that its duration field is readable.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x1400a4340]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400a45b0",
+      "Finding": "The sequence-entry getter rejects an unsigned byte index >=sequence byte0, sums enabled optional section lengths including version4 extended+4, and chooses8-byte stride for kind2,4,12; all other byte kinds use4-byte stride.",
+      "Limitations": "The stride set is derived from the AL mask/exception and exhaustively modeled for256 kinds. It is not a type enumeration or proof that all such formats occur in retail data.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x1400a45b0]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400b78f0",
+      "Finding": "The duration scanner dispatches64 WORD opcodes through a13-target table. Opcode3 adds DWORD to a wrapping signed32 accumulator; opcodes0,14,16,53 return float(accumulator)*0.001. Unknown or designated-default opcodes return0. Fixed and variable handlers advance a wrapping signed32 cursor.",
+      "Limitations": "No input length or iteration limit is passed. Signed fields in cases61/63 permit nonprogressing or backwards arithmetic in synthetic data. This is not a full audio bytecode decoder, loop-duration resolver or observed retail crash.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x1400b78f0]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x14008abd0",
+      "Finding": "Under the selected sound critical section, the getter walks the native bank list and returns the first bank+32 handle with flag+128 bit0 set, else0.09FDE0 uses this handle on its concrete SoundDriver delegation path.",
+      "Limitations": "This is first-match list order, not an exclusive singleton or lifetime lease. It does not retain the selected bank.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x14008abd0]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400a4080",
+      "Finding": "SoundBasicDesc size is8 for version1,16 for versions2/3 and32 for version4. Other unsigned version values call the SCD Version assertion callback and return0 if that callback returns.",
+      "Limitations": "This header size is distinct from the ScdHeader size used for top-level offset tables. The assertion callback may not return; unsupported versions are not valid merely because a fallback0 is present.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x1400a4080]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400a4180",
+      "Finding": "Optional section0x400 is present when flags DWORD+4 bit0x400 is set and starts after basic data plus the optional0x100 DWORD length.",
+      "Limitations": "The caller must supply a readable descriptor; there is no initial null or extent check. Other uses of the returned section are not fully decoded.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x1400a4180]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400a4210",
+      "Finding": "Optional section0x800 returns0 for a null sequence or absent flag. Its offset includes basic data, optional0x100 DWORD length and optional0x400 BYTE+0 length.",
+      "Limitations": "The null guard applies only to this helper; a nonnull pointer and every declared length remain unvalidated.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x1400a4210]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400a42a0",
+      "Finding": "Optional section0x8000 begins after basic data and sections0x100,0x400,0x800, with length fields DWORD+0,BYTE+0,BYTE+1. An absent flag returns0.",
+      "Limitations": "This helper has no initial null guard or bounds validation; calculations retain the native32-bit wrap behavior.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x1400a42a0]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400a4410",
+      "Finding": "The extended section is present only when version>=4 and byte(sequence+16) bit0 is set. It follows basic data and all enabled0x100,0x400,0x800,0x8000,0x2000 sections. A45B0 adds its DWORD+4 to locate entries.",
+      "Limitations": "Version>=4 is only this local predicate. Unsupported version values still reach the basic-size assertion helper. No complete format validity or exact meaning of the extended record is claimed.",
+      "Evidence": [
+        "docs/research/audio-bank-format-20261011/evidence.json#functions[addr=0x1400a4410]",
+        "docs/research/audio-bank-format-20261011/anchors.json",
+        "docs/research/audio-bank-format-20261011/model-results.json"
+      ]
+    }
+  ]
+}

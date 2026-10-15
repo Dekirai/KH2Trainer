@@ -159,7 +159,7 @@ if (args.Length > 0)
         "runtime damage bytes are bounded, explicit edits while base limits remain diagnostics");
     var display = real.Where(f=>f.CapabilitySlot is >= 304 and <= 306).ToArray();
     Check(display.Length==3 && display.All(f=>!f.RequiresScene && !f.ChangesProgression) &&
-        display.Single(f=>f.CapabilitySlot==304) is {Kind:FeatureKind.Number, Minimum:-50,Maximum:50,CanSaveInProfile:true} &&
+        display.Single(f=>f.CapabilitySlot==304) is {Kind:FeatureKind.Number, Minimum:-50,Maximum:5000,CanSaveInProfile:true} &&
         display.Where(f=>f.CapabilitySlot!=304).All(f=>f.Kind==FeatureKind.Action && !f.CanSaveInProfile),
         "display previews expose one bounded profile setting and two explicit actions without save writes");
     Check(display.Single(f=>f.CapabilitySlot==306).Arguments.Select(a=>(a.Minimum,a.Maximum)).SequenceEqual(new[]{(0.0,3.0),(1.0,10.0)}),
@@ -187,6 +187,7 @@ if (args.Length > 0)
         gummiExtra.Take(3).All(f=>f.Kind==FeatureKind.Number) && gummiExtra[3].Kind==FeatureKind.Action &&
         gummiExtra.Skip(4).All(f=>f.Kind==FeatureKind.ReadOnly && f.CommandId==0),
         "Gummi extras use independent module gates and separate runtime edits from diagnostics");
+    GummiRequestCatalogTests.Run(real, workspace, Check);
     BinaryDiagnosticTests.Run(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(args[0]))!,"runtime_diagnostics.json"),Check);
     var targeting = real.Where(f=>f.CapabilitySlot is >=368 and <=373).OrderBy(f=>f.CapabilitySlot).ToArray();
     Check(targeting.Length==6 && targeting.All(f=>f.RequiresScene && !f.CanSaveInProfile && !f.ChangesProgression) &&
@@ -204,12 +205,14 @@ if (args.Length > 0)
         collision.All(f=>!f.ChangesProgression),"body-separation control is distinct from fifteen cached collision diagnostics");
     Round5CatalogTests.Run(real, Check);
     Round7CatalogTests.Run(real, Check);
+    ActorContactCatalogTests.Run(real, Check);
     Console.WriteLine($"Validated {real.Count} real feature definitions.");
 }
 GameplayStateTests.Run(Check);
 MotionPayloadTests.Run(Check);
 await MovementProtocolTests.RunAsync(Check);
 await AssetExplorerTests.RunAsync(workspace, Check);
+await AudioBankInspectionTests.RunAsync(workspace, Check);
 await EffectiveAssetReaderTests.RunAsync(workspace, Check);
 await AssetFingerprintTests.RunAsync(workspace, Check);
 await BdxInspectionTests.RunAsync(workspace, Check);

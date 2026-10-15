@@ -1,0 +1,653 @@
+[
+  {
+    "addr": "0x14036daf7",
+    "bytes": "e87432e7ff",
+    "mnemonic": "call",
+    "operands": "0x1401e0d70",
+    "meaning": "Producer reads original SeBlock WORD metadata through 1E0D70."
+  },
+  {
+    "addr": "0x14036db0f",
+    "bytes": "895c2454",
+    "mnemonic": "mov",
+    "operands": "dword ptr [rsp + 0x54], ebx",
+    "meaning": "Producer stores extracted metadata at ORIGIN+12."
+  },
+  {
+    "addr": "0x14036db4e",
+    "bytes": "c744245400000000",
+    "mnemonic": "mov",
+    "operands": "dword ptr [rsp + 0x54], 0",
+    "meaning": "VAG/IopVoice producer stores zero at ORIGIN+12."
+  },
+  {
+    "addr": "0x14036db65",
+    "bytes": "4889442468",
+    "mnemonic": "mov",
+    "operands": "qword ptr [rsp + 0x68], rax",
+    "meaning": "Producer clears the third 16-byte block before filename copy."
+  },
+  {
+    "addr": "0x14036db85",
+    "bytes": "ff1525df2000",
+    "mnemonic": "call",
+    "operands": "qword ptr [rip + 0x20df25]",
+    "meaning": "Producer copies extension-stripped name with computed, unchecked count."
+  },
+  {
+    "addr": "0x14036db9a",
+    "bytes": "41b830000000",
+    "mnemonic": "mov",
+    "operands": "r8d, 0x30",
+    "meaning": "Producer emits a 48-byte wrapper."
+  },
+  {
+    "addr": "0x14036e486",
+    "bytes": "4889442460",
+    "mnemonic": "mov",
+    "operands": "qword ptr [rsp + 0x60], rax",
+    "meaning": "Importer opens original path for write."
+  },
+  {
+    "addr": "0x14036e572",
+    "bytes": "e839f3ffff",
+    "mnemonic": "call",
+    "operands": "0x14036d8b0",
+    "meaning": "Importer calls the ORIGIN producer."
+  },
+  {
+    "addr": "0x1401e0dad",
+    "bytes": "8b430c",
+    "mnemonic": "mov",
+    "operands": "eax, dword ptr [rbx + 0xc]",
+    "meaning": "ORIGIN metadata reader reads DWORD+12."
+  },
+  {
+    "addr": "0x1401e0e5b",
+    "bytes": "0fb74336",
+    "mnemonic": "movzx",
+    "operands": "eax, word ptr [rbx + 0x36]",
+    "meaning": "SEDBSSCF reader reads unsigned WORD+54."
+  },
+  {
+    "addr": "0x1401e0e6a",
+    "bytes": "0fbf4308",
+    "mnemonic": "movsx",
+    "operands": "eax, word ptr [rbx + 8]",
+    "meaning": "Other formats reader sign-extends WORD+8."
+  },
+  {
+    "addr": "0x1403a6519",
+    "bytes": "0f85c1020000",
+    "mnemonic": "jne",
+    "operands": "0x1403a67e0",
+    "meaning": "Already-decoded BAR+8 bypasses prepare."
+  },
+  {
+    "addr": "0x1403a65eb",
+    "bytes": "0fb745f8",
+    "mnemonic": "movzx",
+    "operands": "eax, word ptr [rbp - 8]",
+    "meaning": "Prepare reads entry type WORD."
+  },
+  {
+    "addr": "0x1403a65fc",
+    "bytes": "0fb684010c683a00",
+    "mnemonic": "movzx",
+    "operands": "eax, byte ptr [rcx + rax + 0x3a680c]",
+    "meaning": "Prepare maps type through 48-byte selector table."
+  },
+  {
+    "addr": "0x1403a6674",
+    "bytes": "833d55693f0000",
+    "mnemonic": "cmp",
+    "operands": "dword ptr [rip + 0x3f6955], 0",
+    "meaning": "Replacement-disabled gate."
+  },
+  {
+    "addr": "0x1403a673a",
+    "bytes": "e8015ecdff",
+    "mnemonic": "call",
+    "operands": "0x14007c540",
+    "meaning": "Formats basename.win32.scd."
+  },
+  {
+    "addr": "0x1403a6757",
+    "bytes": "4c0f44cb",
+    "mnemonic": "cmove",
+    "operands": "r9, rbx",
+    "meaning": "Package mode3 selects embedded name instead."
+  },
+  {
+    "addr": "0x1403a6763",
+    "bytes": "e8e873d8ff",
+    "mnemonic": "call",
+    "operands": "0x14012db50",
+    "meaning": "Lookup of already-loaded replacement by exact name."
+  },
+  {
+    "addr": "0x1403a676f",
+    "bytes": "488b4860",
+    "mnemonic": "mov",
+    "operands": "rcx, qword ptr [rax + 0x60]",
+    "meaning": "Load replacement payload QWORD+96."
+  },
+  {
+    "addr": "0x1403a6773",
+    "bytes": "48894e20",
+    "mnemonic": "mov",
+    "operands": "qword ptr [rsi + 0x20], rcx",
+    "meaning": "Store ORIGIN payload QWORD+32."
+  },
+  {
+    "addr": "0x1403a6777",
+    "bytes": "8b4050",
+    "mnemonic": "mov",
+    "operands": "eax, dword ptr [rax + 0x50]",
+    "meaning": "Load replacement DWORD+80."
+  },
+  {
+    "addr": "0x1403a677a",
+    "bytes": "894628",
+    "mnemonic": "mov",
+    "operands": "dword ptr [rsi + 0x28], eax",
+    "meaning": "Store ORIGIN payload-size DWORD+40."
+  },
+  {
+    "addr": "0x1403a677d",
+    "bytes": "885e1f",
+    "mnemonic": "mov",
+    "operands": "byte ptr [rsi + 0x1f], bl",
+    "meaning": "Successful lookup terminates name at wrapper+31."
+  },
+  {
+    "addr": "0x1403a6782",
+    "bytes": "48895e20",
+    "mnemonic": "mov",
+    "operands": "qword ptr [rsi + 0x20], rbx",
+    "meaning": "Missing replacement clears payload pointer."
+  },
+  {
+    "addr": "0x1403a6786",
+    "bytes": "895e28",
+    "mnemonic": "mov",
+    "operands": "dword ptr [rsi + 0x28], ebx",
+    "meaning": "Missing replacement clears payload size."
+  },
+  {
+    "addr": "0x14012db50",
+    "bytes": "4c8b9170060000",
+    "mnemonic": "mov",
+    "operands": "r10, qword ptr [rcx + 0x670]",
+    "meaning": "ResourceEntry replacement-list head is QWORD+1648."
+  },
+  {
+    "addr": "0x14012db88",
+    "bytes": "2bd1",
+    "mnemonic": "sub",
+    "operands": "edx, ecx",
+    "meaning": "Exact byte comparison of requested and stored names."
+  },
+  {
+    "addr": "0x14012d13f",
+    "bytes": "44895150",
+    "mnemonic": "mov",
+    "operands": "dword ptr [rcx + 0x50], r10d",
+    "meaning": "Constructor stores replacement size at+80."
+  },
+  {
+    "addr": "0x14012d143",
+    "bytes": "4c897160",
+    "mnemonic": "mov",
+    "operands": "qword ptr [rcx + 0x60], r14",
+    "meaning": "Constructor stores owned replacement allocation at+96."
+  },
+  {
+    "addr": "0x14012cd5a",
+    "bytes": "44894950",
+    "mnemonic": "mov",
+    "operands": "dword ptr [rcx + 0x50], r9d",
+    "meaning": "Alternate constructor retains supplied replacement size."
+  },
+  {
+    "addr": "0x14012cd5e",
+    "bytes": "4c895160",
+    "mnemonic": "mov",
+    "operands": "qword ptr [rcx + 0x60], r10",
+    "meaning": "Alternate constructor retains supplied replacement pointer."
+  },
+  {
+    "addr": "0x1403a0d76",
+    "bytes": "e875570000",
+    "mnemonic": "call",
+    "operands": "0x1403a64f0",
+    "meaning": "Worker prepares the BAR before status2 publication."
+  },
+  {
+    "addr": "0x1403a0d7b",
+    "bytes": "c7430402000000",
+    "mnemonic": "mov",
+    "operands": "dword ptr [rbx + 4], 2",
+    "meaning": "Worker writes status2 after prepare returns."
+  },
+  {
+    "addr": "0x1403daa88",
+    "bytes": "e893b9fcff",
+    "mnemonic": "call",
+    "operands": "0x1403a6420",
+    "meaning": "BTLOBJ constructor selects BAR type34."
+  },
+  {
+    "addr": "0x1403daac4",
+    "bytes": "49894620",
+    "mnemonic": "mov",
+    "operands": "qword ptr [r14 + 0x20], rax",
+    "meaning": "VOICE_EE stores decoded BAR payload as component+32."
+  },
+  {
+    "addr": "0x1403daad5",
+    "bytes": "8987b40b0000",
+    "mnemonic": "mov",
+    "operands": "dword ptr [rdi + 0xbb4], eax",
+    "meaning": "Actor+2996 binding publication."
+  },
+  {
+    "addr": "0x1403ce560",
+    "bytes": "448b4918",
+    "mnemonic": "mov",
+    "operands": "r9d, dword ptr [rcx + 0x18]",
+    "meaning": "VOICE_EE forwards component+32 resource."
+  },
+  {
+    "addr": "0x1401de2f6",
+    "bytes": "4c897318",
+    "mnemonic": "mov",
+    "operands": "qword ptr [rbx + 0x18], r14",
+    "meaning": "Request retains the resource QWORD at+24."
+  },
+  {
+    "addr": "0x1401dfdc5",
+    "bytes": "488b7b20",
+    "mnemonic": "mov",
+    "operands": "rdi, qword ptr [rbx + 0x20]",
+    "meaning": "ORIGIN Start reads payload+32."
+  },
+  {
+    "addr": "0x1401dfdcc",
+    "bytes": "741b",
+    "mnemonic": "je",
+    "operands": "0x1401dfde9",
+    "meaning": "Null payload returns before key overwrite/registration."
+  },
+  {
+    "addr": "0x1401dfdd2",
+    "bytes": "897b0c",
+    "mnemonic": "mov",
+    "operands": "dword ptr [rbx + 0xc], edi",
+    "meaning": "ORIGIN Start overwrites DWORD+12 with low32 payload."
+  },
+  {
+    "addr": "0x1401dfdd7",
+    "bytes": "e8d465f5ff",
+    "mnemonic": "call",
+    "operands": "0x1401363b0",
+    "meaning": "ORIGIN Start invalidates previous bank for key/group2."
+  },
+  {
+    "addr": "0x1401dfe25",
+    "bytes": "c744242002000000",
+    "mnemonic": "mov",
+    "operands": "dword ptr [rsp + 0x20], 2",
+    "meaning": "Start supplies registration mode2."
+  },
+  {
+    "addr": "0x14013b3ce",
+    "bytes": "48897758",
+    "mnemonic": "mov",
+    "operands": "qword ptr [rdi + 0x58], rsi",
+    "meaning": "BankEntry retains supplied payload QWORD+88."
+  },
+  {
+    "addr": "0x14013b3d9",
+    "bytes": "894770",
+    "mnemonic": "mov",
+    "operands": "dword ptr [rdi + 0x70], eax",
+    "meaning": "BankEntry stores registration mode DWORD+112."
+  },
+  {
+    "addr": "0x14013b3de",
+    "bytes": "7528",
+    "mnemonic": "jne",
+    "operands": "0x14013b408",
+    "meaning": "Any nonzero mode selects synchronous path."
+  },
+  {
+    "addr": "0x14013b410",
+    "bytes": "e8fbd3f3ff",
+    "mnemonic": "call",
+    "operands": "0x140078810",
+    "meaning": "Synchronous registration passes payload to078810."
+  },
+  {
+    "addr": "0x14013b427",
+    "bytes": "e8942af4ff",
+    "mnemonic": "call",
+    "operands": "0x14007dec0",
+    "meaning": "Bank-existence query result is ignored."
+  },
+  {
+    "addr": "0x14013c279",
+    "bytes": "ff1521f54300",
+    "mnemonic": "call",
+    "operands": "qword ptr [rip + 0x43f521]",
+    "meaning": "Mode0 transfer allocates a replacement buffer."
+  },
+  {
+    "addr": "0x14013c29d",
+    "bytes": "e8be573300",
+    "mnemonic": "call",
+    "operands": "0x140471a60",
+    "meaning": "Transfer copies payload before lower registration."
+  },
+  {
+    "addr": "0x14013643e",
+    "bytes": "7576",
+    "mnemonic": "jne",
+    "operands": "0x1401364b6",
+    "meaning": "Invalidator compares matching SoundRecord group."
+  },
+  {
+    "addr": "0x1401364d0",
+    "bytes": "c74648ffff0000",
+    "mnemonic": "mov",
+    "operands": "dword ptr [rsi + 0x48], 0xffff",
+    "meaning": "Invalidator marks matching BankEntry key asFFFF."
+  },
+  {
+    "addr": "0x14013c5b0",
+    "bytes": "817b48ffff0000",
+    "mnemonic": "cmp",
+    "operands": "dword ptr [rbx + 0x48], 0xffff",
+    "meaning": "Bank collector recognizes DWORD FFFF marker."
+  },
+  {
+    "addr": "0x14013c5bc",
+    "bytes": "e81fc6f3ff",
+    "mnemonic": "call",
+    "operands": "0x140078be0",
+    "meaning": "Collector additionally queries lower bank retirement predicate."
+  },
+  {
+    "addr": "0x14013c626",
+    "bytes": "ff10",
+    "mnemonic": "call",
+    "operands": "qword ptr [rax]",
+    "meaning": "Collector calls selected bank deleting destructor."
+  },
+  {
+    "addr": "0x1401360a5",
+    "bytes": "e8f678fcff",
+    "mnemonic": "call",
+    "operands": "0x1400fd9a0",
+    "meaning": "Deleting destructor can wait for transfer completion."
+  },
+  {
+    "addr": "0x1401360fd",
+    "bytes": "7414",
+    "mnemonic": "je",
+    "operands": "0x140136113",
+    "meaning": "Mode2 bypasses payload free and pointer clearing."
+  },
+  {
+    "addr": "0x140136108",
+    "bytes": "ff157a564400",
+    "mnemonic": "call",
+    "operands": "qword ptr [rip + 0x44567a]",
+    "meaning": "Other modes free the retained bank payload."
+  },
+  {
+    "addr": "0x1403a6acf",
+    "bytes": "410fb68c0c086c3a00",
+    "mnemonic": "movzx",
+    "operands": "ecx, byte ptr [r12 + rcx + 0x3a6c08]",
+    "meaning": "Release uses a different 48-byte type selector."
+  },
+  {
+    "addr": "0x1403a6b45",
+    "bytes": "418b490c",
+    "mnemonic": "mov",
+    "operands": "ecx, dword ptr [r9 + 0xc]",
+    "meaning": "BAR cleanup reads ORIGIN DWORD+12."
+  },
+  {
+    "addr": "0x1403a6b4b",
+    "bytes": "740a",
+    "mnemonic": "je",
+    "operands": "0x1403a6b57",
+    "meaning": "Zero ORIGIN key skips bank invalidation."
+  },
+  {
+    "addr": "0x1403a6b52",
+    "bytes": "e859f8d8ff",
+    "mnemonic": "call",
+    "operands": "0x1401363b0",
+    "meaning": "BAR cleanup invalidates matching bank before owner release."
+  },
+  {
+    "addr": "0x1403a6bb5",
+    "bytes": "e8a678d8ff",
+    "mnemonic": "call",
+    "operands": "0x14012e460",
+    "meaning": "BAR cleanup retires ResourceEntry after per-entry cleanup."
+  },
+  {
+    "addr": "0x14012e58c",
+    "bytes": "ff10",
+    "mnemonic": "call",
+    "operands": "qword ptr [rax]",
+    "meaning": "ResourceEntry retirement invokes deleting virtual target."
+  },
+  {
+    "addr": "0x14012d987",
+    "bytes": "4c8b00",
+    "mnemonic": "mov",
+    "operands": "r8, qword ptr [rax]",
+    "meaning": "ResourceEntry destructor invokes replacement deleting target."
+  },
+  {
+    "addr": "0x140129d52",
+    "bytes": "ff15301a4500",
+    "mnemonic": "call",
+    "operands": "qword ptr [rip + 0x451a30]",
+    "meaning": "ReplaceEntry frees retained payload through aligned_free."
+  },
+  {
+    "addr": "0x140129d58",
+    "bytes": "48c7436000000000",
+    "mnemonic": "mov",
+    "operands": "qword ptr [rbx + 0x60], 0",
+    "meaning": "ReplaceEntry clears only its own payload pointer."
+  },
+  {
+    "addr": "0x1401de43b",
+    "bytes": "e8707ff5ff",
+    "mnemonic": "call",
+    "operands": "0x1401363b0",
+    "meaning": "Bulk EE stop invalidates ORIGIN key after request stop."
+  },
+  {
+    "addr": "0x1401de639",
+    "bytes": "e8727df5ff",
+    "mnemonic": "call",
+    "operands": "0x1401363b0",
+    "meaning": "Resource-selected EE stop invalidates matching ORIGIN key."
+  },
+  {
+    "addr": "0x1400894d2",
+    "bytes": "4c897308",
+    "mnemonic": "mov",
+    "operands": "qword ptr [rbx + 8], r14",
+    "meaning": "ActualBank stores supplied payload as base+8."
+  },
+  {
+    "addr": "0x14008951d",
+    "bytes": "48897b28",
+    "mnemonic": "mov",
+    "operands": "qword ptr [rbx + 0x28], rdi",
+    "meaning": "ActualBank starts with alternate sequence storage NULL."
+  },
+  {
+    "addr": "0x140089528",
+    "bytes": "488903",
+    "mnemonic": "mov",
+    "operands": "qword ptr [rbx], rax",
+    "meaning": "Constructed runtime type is ActualBank."
+  },
+  {
+    "addr": "0x1400896a9",
+    "bytes": "ff5010",
+    "mnemonic": "call",
+    "operands": "qword ptr [rax + 0x10]",
+    "meaning": "Driver invokes concrete ActualBank initialization vtable+16."
+  },
+  {
+    "addr": "0x14009fbf3",
+    "bytes": "440fb7750e",
+    "mnemonic": "movzx",
+    "operands": "r14d, word ptr [rbp + 0xe]",
+    "meaning": "ActualBank reads a WORD header displacement from payload+14."
+  },
+  {
+    "addr": "0x14009fc6f",
+    "bytes": "898388000000",
+    "mnemonic": "mov",
+    "operands": "dword ptr [rbx + 0x88], eax",
+    "meaning": "Sequence table displacement is retained at bank+136."
+  },
+  {
+    "addr": "0x14009fc97",
+    "bytes": "48897b28",
+    "mnemonic": "mov",
+    "operands": "qword ptr [rbx + 0x28], rdi",
+    "meaning": "Initializer sets alternate sequence storage to NULL."
+  },
+  {
+    "addr": "0x14009fcad",
+    "bytes": "752d",
+    "mnemonic": "jne",
+    "operands": "0x14009fcdc",
+    "meaning": "Flag8 skips sequence marker writes."
+  },
+  {
+    "addr": "0x14009fcc8",
+    "bytes": "ff5018",
+    "mnemonic": "call",
+    "operands": "qword ptr [rax + 0x18]",
+    "meaning": "Initializer resolves each sequence via vtable+24."
+  },
+  {
+    "addr": "0x14009fccd",
+    "bytes": "c6400fff",
+    "mnemonic": "mov",
+    "operands": "byte ptr [rax + 0xf], 0xff",
+    "meaning": "Initializer writes FF to sequence+15 in supplied payload."
+  },
+  {
+    "addr": "0x14009fd39",
+    "bytes": "440f4cc2",
+    "mnemonic": "cmovl",
+    "operands": "r8d, edx",
+    "meaning": "Sequence helper compares signed index against zero-extended count."
+  },
+  {
+    "addr": "0x14009fd9a",
+    "bytes": "486304b9",
+    "mnemonic": "movsxd",
+    "operands": "rax, dword ptr [rcx + rdi*4]",
+    "meaning": "Sequence offsets are signed DWORDs in supplied payload."
+  },
+  {
+    "addr": "0x14009fd9e",
+    "bytes": "48034308",
+    "mnemonic": "add",
+    "operands": "rax, qword ptr [rbx + 8]",
+    "meaning": "Resolved sequence pointer is payload base plus signed offset."
+  },
+  {
+    "addr": "0x140089012",
+    "bytes": "7402",
+    "mnemonic": "je",
+    "operands": "0x140089016",
+    "meaning": "Driver-handle lookup checks recorded handle as well as list membership."
+  },
+  {
+    "addr": "0x1400889f9",
+    "bytes": "488d055089af02",
+    "mnemonic": "lea",
+    "operands": "rax, [rip + 0x2af8950]",
+    "meaning": "Bucket initializer starts at first bucket+16."
+  },
+  {
+    "addr": "0x140088a3a",
+    "bytes": "48c7400868000000",
+    "mnemonic": "mov",
+    "operands": "qword ptr [rax + 8], 0x68",
+    "meaning": "Each bucket node offset is initialized to104."
+  },
+  {
+    "addr": "0x140088dce",
+    "bytes": "48c780e803000068000000",
+    "mnemonic": "mov",
+    "operands": "qword ptr [rax + 0x3e8], 0x68",
+    "meaning": "Last unrolled node-offset store for the group of32 buckets."
+  },
+  {
+    "addr": "0x140088dd9",
+    "bytes": "480500040000",
+    "mnemonic": "add",
+    "operands": "rax, 0x400",
+    "meaning": "Initializer advances to the next32 buckets."
+  },
+  {
+    "addr": "0x140088de2",
+    "bytes": "0f8c48fcffff",
+    "mnemonic": "jl",
+    "operands": "0x140088a30",
+    "meaning": "Initializer repeats until all64 buckets are initialized."
+  },
+  {
+    "addr": "0x1400913a6",
+    "bytes": "e80576ffff",
+    "mnemonic": "call",
+    "operands": "0x1400889b0",
+    "meaning": "SoundDriver constructor calls the bucket initializer."
+  },
+  {
+    "addr": "0x14008c1e3",
+    "bytes": "488b4a18",
+    "mnemonic": "mov",
+    "operands": "rcx, qword ptr [rdx + 0x18]",
+    "meaning": "Insertion reads node offset from the selected bucket+24."
+  },
+  {
+    "addr": "0x14008c1f4",
+    "bytes": "48895110",
+    "mnemonic": "mov",
+    "operands": "qword ptr [rcx + 0x10], rdx",
+    "meaning": "Insertion stores bucket owner at node+16."
+  },
+  {
+    "addr": "0x14008c202",
+    "bytes": "48894108",
+    "mnemonic": "mov",
+    "operands": "qword ptr [rcx + 8], rax",
+    "meaning": "Insertion clears node next+8."
+  },
+  {
+    "addr": "0x14008c20e",
+    "bytes": "48895c0108",
+    "mnemonic": "mov",
+    "operands": "qword ptr [rcx + rax + 8], rbx",
+    "meaning": "Insertion links previous tail through the same node offset."
+  }
+]

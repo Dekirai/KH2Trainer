@@ -1,0 +1,192 @@
+{
+  "status": "ACCEPTED_BOUNDED_INDEPENDENT_REVIEW",
+  "studyManifestSha256": "66f8724f2eacc3a959888c046ceb00a6e1422709600eb4dc33868cd83a47b18b",
+  "studyEvidenceSha256": "52b32d761cc2ff346e7f32826d19fffa5d273295cddb32ac785a757dbacb925c",
+  "studyPath": "artifacts/voice-resource-teardown-20261011",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "openBlockers": [],
+  "independentChecks": 11754,
+  "completeOriginalBodies": 35,
+  "freshCaptureBodies": 19,
+  "explicitReusedBodies": 16,
+  "freshCaptureAlreadyInPriorEvidence": 5,
+  "originalBytes": 8163,
+  "freshBytes": 3837,
+  "freshInstructions": 1011,
+  "semanticAnchors": 140,
+  "originalSwitchCases": 92,
+  "independentInstructionSimulationCases": 1914,
+  "independentSimulationGroups": {
+    "actor-resource-release": 8,
+    "bar-scanners": 816,
+    "cache-match-vacancy": 32,
+    "exact-pointer-stop": 72,
+    "group1-handoff": 40,
+    "point-retirement": 60,
+    "range-list": 832,
+    "sweep": 54
+  },
+  "authorVerifierReproduced": true,
+  "authorIntegrationCheckReproduced": true,
+  "authorModelCases": 1260,
+  "authorModelCasesAreNotIndependentSimulationCount": true,
+  "transportDelta": {
+    "checks": 335,
+    "oldEvidenceAndDependenciesByteExactReconstruction": true,
+    "semanticFieldsUnchanged": true,
+    "changedSelectors": 18,
+    "resolvedReferences": 46,
+    "parserSha256": "546d0defdacd8857d7f2461283516348ca28776d13e253d8d954ad43622cc1b2",
+    "portableDocsRoot": true
+  },
+  "docsCopyByteIdenticalAtReview": true,
+  "claimReviews": [
+    {
+      "address": "0x14012eea0",
+      "title": "Point-selected retirement",
+      "status": "ACCEPTED_BOUNDED",
+      "review": "Original unsigned point predicate, callback then tail retirement, and absent local +1604 gate. Own full-function cases exercise zero address and field values. Registered internal callback remains possible."
+    },
+    {
+      "address": "0x14012ef30",
+      "title": "Range-selected retirement",
+      "status": "ACCEPTED_BOUNDED",
+      "review": "Complete wrapper repeats range lookup and direct retirement. Progress depends on callbacks and list removal; no termination guarantee is added."
+    },
+    {
+      "address": "0x14012e100",
+      "title": "Exact range predicate",
+      "status": "ACCEPTED_BOUNDED",
+      "review": "All original comparison instructions reviewed. Own full traversal cases include first-match ordering, adjacency, empty/reversed queries and modulo address sums; expected predicate is independently expressed."
+    },
+    {
+      "address": "0x14012ef80",
+      "title": "Zero-gated sweep differs from forced retirement",
+      "status": "ACCEPTED_BOUNDED",
+      "review": "Own full native sweep simulations check gate, callback, unlink/destructor order and resulting list. Meaning/all writers of +1604 remain unproved."
+    },
+    {
+      "address": "0x1403a62b0",
+      "title": "Pre-copy Voice stop",
+      "status": "ACCEPTED_BOUNDED",
+      "review": "All original jump-table bytes and 46 type selectors verified. Own pre/post scanner plus actual request-stop body simulations distinguish alias low bit, zero size, type34 and exact pointer."
+    },
+    {
+      "address": "0x1403a6120",
+      "title": "Post-copy Voice stop uses relocated pointer",
+      "status": "ACCEPTED_BOUNDED",
+      "review": "Original post-copy pointer update precedes alias/type gate. Own exact-pointer models also verify request+24 stays unchanged; relocated calls do not rebind old requests."
+    },
+    {
+      "address": "0x14039e690",
+      "title": "Local relocation order",
+      "status": "ACCEPTED_BOUNDED",
+      "review": "Complete original body manually reviewed for selected old-payload path. No simulation of all overlap/reload branches, no readable-bounds or reload-safety claim."
+    },
+    {
+      "address": "0x14039d010",
+      "title": "Resource code retirement",
+      "status": "ACCEPTED_BOUNDED",
+      "review": "Complete original code-selector body manually reviewed for flag bit1, byte+1==3 and release/unlink order. Counter gating elsewhere remains open."
+    },
+    {
+      "address": "0x1403e90e0",
+      "title": "Actor switch order is mode-dependent",
+      "status": "ACCEPTED_BOUNDED",
+      "review": "Complete original actor-switch body manually reviewed. Mode0 list/yield, mode1 virtual call and common three retire calls differ as stated. No scheduling, ABA or caller-mode proof."
+    },
+    {
+      "address": "0x1403cd980",
+      "title": "Voice replacement before containing-resource retirement",
+      "status": "ACCEPTED_BOUNDED",
+      "review": "Original context-global loads/stores, cache bit update and replacement-before-retirement order inspected. Plain stores do not prove thread exclusion or eventual completion."
+    },
+    {
+      "address": "0x1403cde50",
+      "title": "Three searched cache rows and completion marker",
+      "status": "ACCEPTED_BOUNDED",
+      "review": "Own original-instruction cache-selection cases check all eight used masks and all selected matches including index3 fallthrough. Physical array extent and live feasibility remain unknown."
+    },
+    {
+      "address": "0x1403cddf0",
+      "title": "Callback bridge and marker-clear witness",
+      "status": "ACCEPTED_BOUNDED",
+      "review": "Small callback bodies inspected at actual register widths. Forwarding selects type3 and marker clearing uses current global context without a visible identity check. No request-completion proof."
+    },
+    {
+      "address": "0x1401df3c0",
+      "title": "Group1 copy-mode handoff before range retirement",
+      "status": "ACCEPTED_BOUNDED",
+      "review": "Own full body simulations check group1 mode0, key/length argument widths, signed range end and retirement for registration return0 and1."
+    },
+    {
+      "address": "0x1401df7b0",
+      "title": "Group2 ownership branches differ from borrowed voice",
+      "status": "ACCEPTED_BOUNDED",
+      "review": "Complete original group2 body manually reviewed for ORIGIN, SeBlock and ordinary branches. Mode1 applies only keys20/21; free/retirement is not status-gated. The backend and allocator are explicit dependencies."
+    },
+    {
+      "address": "0x1403e61e0",
+      "title": "Actor Voice stop precedes local resource decrements",
+      "status": "ACCEPTED_BOUNDED",
+      "review": "Selected concrete BTLNPC destructor and base calls reviewed in their pinned complete originals. Own three-pointer release cases verify calls before pointer clearing. Stop/state marking remains distinct from BankEntry destruction."
+    },
+    {
+      "address": "0x14039da10",
+      "title": "Local resource counter decrement has no floor check",
+      "status": "ACCEPTED_BOUNDED",
+      "review": "Complete original matching loop and both WORD add sites inspected. No-match computes address2 and wrap is arithmetic; no actual invalid write or normal-play reachability is claimed."
+    }
+  ],
+  "method": [
+    "Independent PE section mapping and SHA identity; every byte of all35 bodies compared to original PE.",
+    "Capstone boundary/operand decode independent of IDA and author model; original ASM page joins, terminal cursors, selected raw data cells and both entire jump maps checked.",
+    "Selected original instructions interpreted over synthetic sparse memory and explicit helper-return stubs; no original native code executed. The generic VM is reviewer-authored and separate from the author model.",
+    "Manual path review for all16 claims, including bodies not instruction-simulated; transport delta reconstructs entire old evidence/dependencies and original report byte-for-byte.",
+    "Existing coverage parser helpers reused unchanged only to test integration acceptance; this does not count as an independent parser implementation."
+  ],
+  "limitations": [
+    "Instruction models use synthetic helper results and intact fixture lists; they do not establish actual allocations, live feasibility or ABI volatile-register clobber behavior.",
+    "The small interpreter implements only selected opcodes/flags. Unknown calls/opcodes fail. Selected paths do not consume unmodelled INC/DEC arithmetic flags; no general x64 emulator claim.",
+    "No execution of game, native functions, playback, callbacks, scheduler, IDB mutation or asset/product changes.",
+    "No complete-analysis, all-writer, global lifetime/ownership, mutex, ABA, race freedom, forward-progress, cache-extent or crash-safety guarantee.",
+    "Local handoff order does not demonstrate asynchronous backend completion. Conditional source bounds and original study premises remain required."
+  ],
+  "openResearchQuestions": [
+    "Complete resource callback table provenance and all relevant writers of ResourceEntry+1604.",
+    "Mode1 virtual+328 target, caller modes and same-address Actor reuse across yields.",
+    "Physical battle-voice cache extent/fallback-slot3 intent and callback scheduling for1E03E0.",
+    "Global serialization between Actor stop, EE request sweep, ResourceEntry buffer free and deferred BankEntry destruction.",
+    "All BAR type48 users, all ORIGIN wrapper aliases and all buffer-owning paths."
+  ],
+  "reviewFiles": {
+    "review.py": {
+      "sha256": "edcbb8bc02f21b6dccd7ce1f1c68cd31f3cc13c7b39893f476894ee61e8b5cab",
+      "bytes": 15879
+    },
+    "vm.py": {
+      "sha256": "379fff9925a7898ef9f61af3ef0e5e315b9278fadd3b43c14f7df1a96b0ca52a",
+      "bytes": 5171
+    },
+    "integration_delta.py": {
+      "sha256": "7164a7540cff5dd83573a5f8ca6002388c0de8aaba29a3618314a7c4caa56ea6",
+      "bytes": 6802
+    },
+    "checks.json": {
+      "sha256": "5f0006981f9f690b5b66209ca8fd6da39c82fe3b240bedcb0fbda2c83ce61795",
+      "bytes": 456008
+    },
+    "integration-delta.json": {
+      "sha256": "0fd2d581f0e39d60c442327341d22621377784467bb2f1552353954f5f22ba7f",
+      "bytes": 1920
+    },
+    "reproduction.json": {
+      "sha256": "ac7f09f90fc86bc50d23c7390d9e346c192ec6e3e8550f3864f6f75f29ecdaf1",
+      "bytes": 4200
+    },
+    "finish_review.py": {
+      "sha256": "aa8442fe9913bd73b8ca2104f1616276a7ba1f4fba6e73e4bfbe444f0d9edf2f",
+      "bytes": 10011
+    }
+  }
+}

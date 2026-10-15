@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "status": "accepted",
+  "scope": "Independent original-PE and fresh IDA instruction review of the proposed Revert command-availability mask; no product implementation or lifetime acceptance.",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "counts": {
+    "functions": 4,
+    "instructions": 342,
+    "instructionBytes": 1385,
+    "extentBytes": 1551,
+    "noninstructionBytes": 166
+  },
+  "sourceProvenance": {
+    "reviewerSession": "c6a23154, unreachable; no reopen attempted",
+    "captureProvider": "Root existing IDA worker28e14b48/PID71984; root-capture/idb_list.json; original full bytes independently checked here",
+    "reuse": "These known functions are freshly recaptured for verification. No claim of four newly discovered functions or closed global callgraph."
+  },
+  "claims": [
+    {
+      "rva": "0x3B6CB0",
+      "claim": "RCX is the initial command row and EDX the form index. The body follows row WORD+2 through3B68B0 until WORD+0 equals WORD+2; only the resulting root WORD+44 is zero-extended and tested with register BT32, returning the carry bit in AL.",
+      "limits": "No null, cycle or explicit depth guard exists in this body. This is conditional on valid rows and lookup results."
+    },
+    {
+      "rva": "0x3B68B0",
+      "claim": "The resolver uses table global2A161E8, rows at table+8, signed DWORD count+4 extended to R8 and row stride48. Both lookups call IAT57BB80. A row with WORD+2=2 and WORD+0!=2 is remapped via3C5900(signed WORD+4) and a second lookup.",
+      "limits": "The indirect-call name bsearch is supplied by the captured IDA decompile; this review independently proves its IAT address and ABI operands. The resolver does not null-check the first returned row or bound a negative count."
+    },
+    {
+      "rva": "0x401D60",
+      "claim": "In the common ending path, after3B6CF0, a nonnull admitted actor supplies DWORD+3552 as the form index to3B6CB0. A nonzero AL immediately selects return5. Type5 resolves through the original inline switch data to401F3D before reaching this ending path.",
+      "limits": "The meaning is native command availability for this examined path. Other admission predicates and downstream consumers remain in force."
+    },
+    {
+      "rva": "0x405440",
+      "claim": "Command WORD+2=5 takes4054ED: EDX=0, RCX remains the actor,40CE60 is called, and actor DWORD+288 is ORed with0x100. This local dispatch branch has no3B6CB0 availability call.",
+      "limits": "Masking availability cannot itself stop a direct40CE60 call or an already-dispatched action; the callee and all forced/scripted reverts are outside this review."
+    },
+    {
+      "rva": "0x3B6CD5",
+      "claim": "For form indices1..6, root WORD+44 OR0x7E makes the tested bit true. Bits outside0x7E are preserved by that proposed OR. Form0,7 and12 are not blocked by that mask alone.",
+      "limits": "0x7E is the proposed conservative trainer policy. Register BT uses the index modulo32; this is not admission for arbitrary form values or proof that a runtime row with id5/kind5 remains alive."
+    }
+  ],
+  "openBlockers": [],
+  "integrationRequirements": [
+    "Validate the intended row is id5/kind5 and validate the bounded table before modifying WORD+44.",
+    "Retained pointer lifetime, native writers, replacement/load/restore behavior and token ownership require the separate owner review.",
+    "Do not describe the mask as manual-menu-only: existing context decompiles405320/404A40 show Status+436<=0 paths through3A9EA0, whose401D60<4 check can also be rejected. These three context bodies are not part of this four-body ASM review; resolve the intended natural-expiry policy separately.",
+    "Direct scripted/forced calls and already dispatched actions are not blocked by the reviewed availability branch alone.",
+    "Restrict form indices to the intended supported forms; neither the native lookup nor BT supplies that policy."
+  ],
+  "checks": [
+    "Full original SHA and four extent byte comparisons;342 independent Capstone decodes against complete IDA heads.",
+    "32 exact semantic instruction anchors; two resolver IAT targets and two table-global RIP targets.",
+    "Original inline switch entry for kind5;15 declared arithmetic boundary cases, no native execution."
+  ],
+  "methodLimits": [
+    "No complete lifetime, concurrent writer, native save or hook safety proof.",
+    "Captured401D60 count186 includes183 actual instructions plus align/dd/db directives. The166 noninstruction bytes are retained separately.",
+    "405440 spans three PE RUNTIME_FUNCTION records; its491-byte full IDA body is checked, not only the initial269-byte runtime range.",
+    "No game, GUI, process attachment, injection, DB mutation or executable native probe performed."
+  ]
+}

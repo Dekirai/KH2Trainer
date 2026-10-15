@@ -9,6 +9,7 @@
 #include <string.h>
 #include <initializer_list>
 #include <limits>
+#include "../../src/KH2Trainer.Bridge/DevToolsProtocol.h"
 // Fake memory and callbacks only: never opens the game or calls game code.
 namespace {
 uintptr_t g_base=0;
@@ -82,7 +83,11 @@ TrainerContext Context() { return {g_base,At<uintptr_t>(0x2A105D0),g_base+status
 void Setup() {
     ZeroMemory(reinterpret_cast<void*>(g_base),0x2C00000);
     ZeroMemory(&shared,sizeof(shared));
+    g_shared=&shared;
     begins=0; queueWorks=true; ZeroMemory(calls,sizeof(calls)); fakeNow=100000; drive_features::queue={};
+    drive_features::revert_lock::lease={};drive_features::revert_lock::bridge=0;drive_features::revert_lock::bridgeBase=0;
+    drive_features::revert_lock::randomAttempted=false;drive_features::revert_lock::testRandom=true;
+    drive_features::revert_lock::testInstance=0xB6A14CD2073985EFULL;drive_features::revert_lock::testScans=0;
     g_disabled=0; g_gameThread=GetCurrentThreadId();
     shared.hostHeartbeat=GetTickCount();
     memcpy(reinterpret_cast<void*>(g_base+0x40CE60),drive_features::kBeginBytes,sizeof(drive_features::kBeginBytes));
@@ -201,6 +206,142 @@ void QueueFrom(unsigned current,unsigned target) { Setup(); SetForm(current); co
 void AssertStopped(drive_features::Outcome outcome,unsigned expectedCalls,const char* label) {
     Check(drive_features::queue.phase==drive_features::Idle && drive_features::queue.outcome==outcome && begins==expectedCalls,label);
     CompleteNative(0); Tick(); Check(begins==expectedCalls,"stopped trainer queue never restarts after native completion");
+}
+constexpr uintptr_t lockBar=0x2A30000,lockTable=lockBar+0x2400,lockRow=lockTable+8+48;
+constexpr uint64_t lockOwner=0xF123456789ABCDEFULL;
+void LockFixture() {
+    Setup();
+    for(const auto& pin:drive_features::revert_lock::kPins)memcpy(reinterpret_cast<void*>(g_base+pin.rva),pin.bytes,pin.size);
+    memcpy(reinterpret_cast<void*>(g_base+lockBar-16),reinterpret_cast<void*>(g_base+0x16EFF0),0x3010);
+    At<uintptr_t>(0x2AE5E50)=g_base+lockBar;At<uint32_t>(lockBar+8)=static_cast<uint32_t>(lockBar);At<int>(lockBar+4)=4;
+    At<uint32_t>(lockBar+24)=static_cast<uint32_t>(lockBar+0x1000);
+    At<uint32_t>(lockBar+40)=static_cast<uint32_t>(lockBar+0x2000);
+    At<uint32_t>(lockBar+56)=static_cast<uint32_t>(lockBar+0x2100);
+    At<uintptr_t>(0x2AE5A38)=g_base+lockBar+0x1000;At<uintptr_t>(0x2AE5A40)=g_base+lockBar+0x2000;
+    At<uintptr_t>(0x2AE5798)=g_base+lockBar+0x2100;
+    At<uint16_t>(lockBar+64)=2;At<uint32_t>(lockBar+68)=0x00646D63;
+    At<uint32_t>(lockBar+72)=static_cast<uint32_t>(lockTable);At<uint32_t>(lockBar+76)=152;
+    At<uintptr_t>(0x2A161E8)=g_base+lockTable;At<int>(lockTable+4)=3;
+    for(unsigned i=0;i<3;++i) {const unsigned id=i==0?0:i==1?5:13;At<uint16_t>(lockTable+8+48*i)=static_cast<uint16_t>(id);At<uint16_t>(lockTable+10+48*i)=static_cast<uint16_t>(id);}
+    DriveSnapshot(Context());
+}
+TrainerResult Lock(unsigned operation=1,uint64_t owner=lockOwner,uint64_t bridge=0,const TrainerContext* supplied=nullptr) {
+    if(!bridge)bridge=drive_features::revert_lock::testInstance;
+    const double args[8]={double(operation),double(uint32_t(owner)),double(uint32_t(owner>>32)),double(uint32_t(bridge)),double(uint32_t(bridge>>32))};
+    TrainerResult result{};Check(DriveHandle(supplied?*supplied:Context(),488,args,result),"owned Revert command routed");return result;
+}
+void RunRevertLockTests() {
+    namespace rl=drive_features::revert_lock;
+    LockFixture();Check(rl::bridge==rl::testInstance && shared.values[488]==0 && shared.values[491]==uint32_t(rl::bridge) &&
+        shared.values[492]==uint32_t(rl::bridge>>32),"independent bridge nonce publishes exact halves before acquire");
+    Check(rl::testScans==0,"idle snapshot has no command table scan");
+    DriveTick(Context());DriveReset(Context());Check(rl::testScans==0,"idle tick and reset have no table scan");
+    BYTE expected[0x3000];memcpy(expected,reinterpret_cast<void*>(g_base+lockBar),sizeof(expected));
+    const uint16_t mask=0x7E;memcpy(expected+lockRow-lockBar+44,&mask,2);
+    Check(!Lock().code&&rl::lease.state==1&&rl::lease.owner==lockOwner,"acquire succeeds before initial transformation");
+    Check(!memcmp(expected,reinterpret_cast<void*>(g_base+lockBar),sizeof(expected))&&!begins,"acquire changes only root command form mask with no native transition call");
+    Check(!Lock().code&&At<uint16_t>(lockRow+44)==0x7E,"same owner acquire is idempotent");
+    Check(Lock(1,lockOwner+1).code&&!Lock(0,lockOwner+1).code&&rl::lease.owner==lockOwner&&At<uint16_t>(lockRow+44)==0x7E,"other owner cannot acquire; its release is an idempotent no-op");
+    Check(Lock(0,lockOwner,rl::bridge+1).code&&At<uint16_t>(lockRow+44)==0x7E,"foreign bridge cannot release");
+    DriveSnapshot(Context());Check(shared.values[488]==1&&shared.values[489]==uint32_t(lockOwner&UINT32_MAX)&&shared.values[490]==uint32_t(lockOwner>>32),"effective state and exact owner halves published");
+    Check(!Lock(0).code&&!rl::lease.state&&At<uint16_t>(lockRow+44)==0,"owner release restores own mask bits");
+    Check(!Lock(0).code,"release of an absent lock is idempotent");
+    for(uint16_t prior:{uint16_t(0x8001),uint16_t(0x8023),uint16_t(0x7E)}) {
+        LockFixture();At<uint16_t>(lockRow+44)=prior;Check(!Lock().code,"pre-existing form restrictions accepted");
+        Check(!Lock(0).code&&At<uint16_t>(lockRow+44)==prior,"release preserves pre-existing restrictions and unrelated bits");
+    }
+    // All normal forced transitions still bypass the menu availability mask.
+    LockFixture();Check(!Lock().code&&!Execute(122,5).code,"lock precedes requested native form");
+    CompleteNative(5);Tick();Check(rl::lease.state==1&&drive_features::queue.outcome==drive_features::Completed,"lock survives expected Actor replacement");
+    Check(!Execute(123,0).code&&begins==2,"trainer end-revert can still call native transition");
+    CompleteNative(0);Tick();Check(!Lock(0).code&&!rl::lease.state,"end-revert and release complete without retained Actor pointer");
+    // Cleanup is valid without a player or host, and is independent of disable.
+    for(unsigned failure=0;failure<4;++failure) {
+        LockFixture();Check(!Lock().code,"cleanup fixture acquired");
+        if(failure==0)shared.hostHeartbeat=0;
+        if(failure==1)g_disabled=1;
+        if(failure==2)g_shared=nullptr;
+        if(failure==3) {shared.hostHeartbeat=fakeNow-5001;At<uintptr_t>(0x2A105D0)=0;}
+        Tick();Check(!rl::lease.state&&At<uint16_t>(lockRow+44)==0,"native tick releases despite expired/disconnected/disabled host and missing player");
+    }
+    LockFixture();Check(!Lock().code,"readonly retry fixture acquired");DWORD old=0,unused=0;
+    Check(VirtualProtect(reinterpret_cast<void*>(g_base+lockTable),4096,PAGE_READONLY,&old)!=FALSE,"actual readonly command page");
+    auto noPlayer=TrainerContext{g_base,0,0,false};shared.hostHeartbeat=0;g_disabled=1;
+    Check(!Lock(0,lockOwner,0,&noPlayer).code&&rl::lease.state==2&&At<uint16_t>(lockRow+44)==0x7E,"readonly matching table retains pending owner");
+    DriveSnapshot(noPlayer);Check(shared.values[488]==2&&shared.values[489]==uint32_t(lockOwner&UINT32_MAX),"pending cleanup remains visible");
+    Check(VirtualProtect(reinterpret_cast<void*>(g_base+lockTable),4096,old,&unused)!=FALSE,"restore writable command page");
+    DriveTick(noPlayer);Check(!rl::lease.state&&At<uint16_t>(lockRow+44)==0,"later frame retries cleanup without host or player");
+    LockFixture();Check(!Lock().code,"unreadable retry fixture acquired");
+    Check(VirtualProtect(reinterpret_cast<void*>(g_base+lockTable),4096,PAGE_NOACCESS,&old)!=FALSE,"unreadable command page");
+    DriveReset(Context());Check(rl::lease.state==2,"unreadable binding retains pending cleanup");
+    VirtualProtect(reinterpret_cast<void*>(g_base+lockTable),4096,old,&unused);Tick();Check(!rl::lease.state&&At<uint16_t>(lockRow+44)==0,"readability recovery permits owned cleanup");
+    LockFixture();Check(!Lock().code,"thread retry fixture acquired");++g_gameThread;DriveReset(noPlayer);
+    Check(rl::lease.state==2&&At<uint16_t>(lockRow+44)==0x7E,"wrong thread cannot restore");
+    g_gameThread=GetCurrentThreadId();Tick();Check(!rl::lease.state&&At<uint16_t>(lockRow+44)==0,"correct update thread performs pending restore");
+    LockFixture();Check(!Lock().code,"temporarily missing binding fixture acquired");
+    At<uintptr_t>(0x2A161E8)=0;DriveReset(noPlayer);
+    Check(rl::lease.state==2&&rl::lease.owner==lockOwner&&At<uint16_t>(lockRow+44)==0x7E,"missing current table never restores through a retained pointer or forgets cleanup");
+    At<uintptr_t>(0x2A161E8)=g_base+lockTable;shared.hostHeartbeat=0;DriveTick(noPlayer);
+    Check(!rl::lease.state&&At<uint16_t>(lockRow+44)==0,"same verified table restoration retries after binding and host loss");
+    LockFixture();Check(!Lock().code,"scene gap fixture acquired");
+    At<uintptr_t>(0x2A105D0)=0;At<int>(0x716884)=2;DriveTick(noPlayer);DriveSnapshot(noPlayer);
+    Check(rl::lease.state==1&&shared.values[488]==1&&At<uint16_t>(lockRow+44)==0x7E,"temporary player and scene loss do not release a fresh host's table lock");
+    Check(!Lock(0,lockOwner,0,&noPlayer).code&&!rl::lease.state&&At<uint16_t>(lockRow+44)==0,"owner can release while scene is paused and player unavailable");
+    // Never restore or silently reapply across external changes.
+    for(unsigned field:{44u,12u}) {
+        LockFixture();Check(!Lock().code,"foreign mutation fixture acquired");At<uint16_t>(lockRow+field)^=0x8000;
+        BYTE before[48];memcpy(before,reinterpret_cast<void*>(g_base+lockRow),48);
+        Check(Lock().code&&!rl::lease.state&&!memcmp(before,reinterpret_cast<void*>(g_base+lockRow),48),"idempotent acquire cannot reacquire over a detected foreign replacement");
+    }
+    LockFixture();Check(!Lock().code,"table replacement fixture acquired");
+    memcpy(reinterpret_cast<void*>(g_base+lockTable+0x400),reinterpret_cast<void*>(g_base+lockTable),152);
+    At<uintptr_t>(0x2A161E8)=g_base+lockTable+0x400;At<uint32_t>(lockBar+72)=static_cast<uint32_t>(lockTable+0x400);
+    At<uint16_t>(lockRow+0x400+44)=0x2000;DriveReset(noPlayer);
+    Check(!rl::lease.state&&At<uint16_t>(lockRow+44)==0x7E&&At<uint16_t>(lockRow+0x400+44)==0x2000,"rebound table never causes a write through either retained or replacement row");
+    for(unsigned gate=0;gate<15;++gate) {
+        LockFixture();
+        switch(gate) {
+        case 0: At<uintptr_t>(0x2A161E8)=0;break;
+        case 1: At<int>(lockTable+4)=0;break;
+        case 2: At<int>(lockTable+4)=4;break;
+        case 3: At<uint16_t>(lockTable+8+96)=5;break;
+        case 4: At<uint16_t>(lockTable+8+96)=4;break;
+        case 5: At<uint16_t>(lockRow)=4;break;
+        case 6: At<uint16_t>(lockRow+2)=7;break;
+        case 7: At<unsigned>(lockBar-16)=0x7FFFFFFF;break;
+        case 8: At<unsigned>(lockBar-12)=0;break;
+        case 9: At<uint32_t>(lockBar+8)=0;break;
+        case 10: At<unsigned>(lockBar+76)=151;break;
+        case 11: At<uintptr_t>(0x2AE5E50)=g_base+0x16F000;break;
+        case 12: At<int>(0x716884)=2;break;
+        case 13: shared.hostHeartbeat=0;break;
+        case 14: ++g_gameThread;break;
+        }
+        const auto before=At<uint16_t>(lockRow+44);Check(Lock().code&&!rl::lease.state&&At<uint16_t>(lockRow+44)==before,"malformed table, external arena, wrong scene/thread or stale host rejects without stores");
+    }
+    for(const auto& pin:rl::kPins) {
+        LockFixture();At<BYTE>(pin.rva)^=1;Check(Lock().code&&At<uint16_t>(lockRow+44)==0,"each required native code body is pinned");
+    }
+    LockFixture();rl::bridge=0;rl::randomAttempted=false;rl::testRandom=false;
+    DriveSnapshot(Context());Check(shared.values[491]==0&&shared.values[492]==0&&Lock().code,"random nonce failure is closed and observable");
+    for(unsigned index=0;index<8;++index) {
+        LockFixture();double args[8]={1,double(uint32_t(lockOwner&UINT32_MAX)),double(uint32_t(lockOwner>>32)),double(uint32_t(rl::bridge)),double(uint32_t(rl::bridge>>32))};
+        args[index]=index==0?2:index<5?-1:1;TrainerResult result{};
+        Check(DriveHandle(Context(),488,args,result)&&result.code==2&&At<uint16_t>(lockRow+44)==0,"operation, identity halves and reserved tail are validated");
+    }
+    LockFixture();for(double bad:{.5,std::numeric_limits<double>::quiet_NaN(),std::numeric_limits<double>::infinity(),4294967296.}) {
+        double args[8]={1,bad,1,double(uint32_t(rl::bridge)),double(uint32_t(rl::bridge>>32))};TrainerResult result{};
+        Check(DriveHandle(Context(),488,args,result)&&result.code==2&&At<uint16_t>(lockRow+44)==0,"identity halves require exact finite uint32");
+    }
+    TrainerResult result{};Check(DriveHandle(Context(),488,nullptr,result)&&result.code==2,"missing lock args rejected");
+    for(unsigned missing=0;missing<2;++missing) {
+        LockFixture();double args[8]={1,1,0,double(uint32_t(rl::bridge)),double(uint32_t(rl::bridge>>32))};
+        args[missing?3:1]=args[missing?4:2]=0;
+        Check(DriveHandle(Context(),488,args,result)&&result.code==2&&!rl::lease.state,"zero owner or bridge identity is rejected");
+    }
+    for(unsigned slot=489;slot<=492;++slot)Check(DriveHandle(Context(),slot,nullptr,result)&&result.code!=0,"lock observation commands explicitly rejected");
+    DriveCapabilities();uint64_t expectedCaps[8]{};expectedCaps[1]=uint64_t(0x3F)<<58;expectedCaps[7]=uint64_t(0x1F)<<40;
+    Check(!memcmp(expectedCaps,shared.supported,sizeof(expectedCaps)),"Drive capability roster includes only122..127 and488..492");
 }
 }
 #include "DriveWeaponTests.cpp"
@@ -347,6 +488,7 @@ int main() {
     RunWeaponTests();
     RunSkeletonTests();
     RunPlayerRoleTests();
+    RunRevertLockTests();
     printf("Drive guard tests: %u checks, %u failures\n",checks,failures);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE); return failures?1:0;
 }

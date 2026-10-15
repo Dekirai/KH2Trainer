@@ -1,0 +1,68 @@
+{
+  "addr": "0x1403CF830",
+  "code": "// Static analysis (SHA256 9002b2de...49ed). Analysis label: kh2_Attack_Construct. YS::ATTACK constructor; binds parameter data and encoded actor links.\n_DWORD *__fastcall kh2_Attack_Construct(_DWORD *a1, _DWORD *a2, void *a3, int a4, int a5, int a6, int a7)\n{\n  int v11; // eax\n  _DWORD *v12; // rcx\n  int v13; // eax\n  __int64 v14; // rax\n  _DWORD *v15; // rax\n  char v16; // dl\n  int v17; // ecx\n  char v18; // r8\n  int v19; // ecx\n  char v20; // al\n  char v21; // dl\n  char v22; // cl\n  void *v23; // rcx\n  unsigned __int8 v24; // cl\n  int v25; // eax\n  unsigned int v26; // ecx\n  _DWORD *v27; // rax\n  _DWORD *v28; // rax\n\n  *(_QWORD *)a1 = &YS::ATTACK::`vftable'; /*0x1403cf852*/\n  a1[2] = 0; /*0x1403cf858*/\n  a1[3] = kh2_Ptr32_EncodeNullable(a2); /*0x1403cf870*/\n  a1[4] = kh2_Ptr32_EncodeNullable(a2); /*0x1403cf87b*/\n  a1[5] = kh2_Ptr32_EncodeNullable(a3); /*0x1403cf88c*/\n  a1[6] = a4; /*0x1403cf88f*/\n  a1[7] = a5; /*0x1403cf892*/\n  if ( a6 >= 0 ) /*0x1403cf898*/\n    v11 = a6; /*0x1403cf8a1*/\n  else\n    v11 = sub_1403CF400(); /*0x1403cf89a*/\n  a1[8] = v11; /*0x1403cf8a6*/\n  v12 = a2 + 32; /*0x1403cf8a9*/\n  if ( !a2 ) /*0x1403cf8b0*/\n    v12 = nullptr; /*0x1403cf8b0*/\n  a1[10] = kh2_Ptr32_EncodeNullable(v12); /*0x1403cf8bc*/\n  *((_QWORD *)a1 + 6) = kh2_AttackParams_Find(a4, a5); /*0x1403cf8ca*/\n  sub_1403CF0F0(a1 + 15, 0); /*0x1403cf8d0*/\n  a1[36] = kh2_Ptr32_EncodeNullable(nullptr); /*0x1403cf8df*/\n  a1[37] = kh2_Ptr32_EncodeNullable(a2); /*0x1403cf8ec*/\n  a1[38] = kh2_Ptr32_EncodeNullable(nullptr); /*0x1403cf8f9*/\n  a1[41] = kh2_Ptr32_EncodeNullable(nullptr); /*0x1403cf904*/\n  *((_BYTE *)a1 + 176) = 0; /*0x1403cf90a*/\n  *((_QWORD *)a1 + 23) = 0; /*0x1403cf911*/\n  a1[45] = 0; /*0x1403cf918*/\n  a1[48] = 1065353216; /*0x1403cf91f*/\n  if ( (unsigned int)sub_1403D0260(*((_QWORD *)a1 + 6)) ) /*0x1403cf92d*/\n  {\n    if ( a2 ) /*0x1403cf939*/\n    {\n      if ( a2[311] == 2 ) /*0x1403cf942*/\n      {\n        sub_1403B5B20(a2); /*0x1403cf947*/\n        if ( v13 == 4010 ) /*0x1403cf951*/\n          sub_1403B5790(a2); /*0x1403cf956*/\n      }\n    }\n  }\n  if ( a6 >= 0 ) /*0x1403cf95d*/\n    a1[2] |= 0x400u; /*0x1403cf95f*/\n  v14 = *((_QWORD *)a1 + 6); /*0x1403cf966*/\n  if ( !*(_BYTE *)(v14 + 8) ) /*0x1403cf96a*/\n  {\n    if ( kh2_Ptr32_DecodeNullable(a1[4]) ) /*0x1403cf973*/\n    {\n      v15 = kh2_Ptr32_DecodeNullable(a1[4]); /*0x1403cf980*/\n      v16 = 4; /*0x1403cf985*/\n      v17 = v15[311]; /*0x1403cf98a*/\n      if ( v17 != 3 ) /*0x1403cf99b*/\n        v16 = v17; /*0x1403cf99b*/\n      v18 = v16; /*0x1403cf99e*/\n      v19 = (1 << v16) | 1; /*0x1403cf9a2*/\n      goto LABEL_24; /*0x1403cf9a6*/\n    }\n    v14 = *((_QWORD *)a1 + 6); /*0x1403cf9a8*/\n  }\n  if ( *(_BYTE *)(v14 + 8) == 1 ) /*0x1403cf9b0*/\n  {\n    a1[4] = kh2_Ptr32_EncodeNullable(qword_142A105D0); /*0x1403cf9be*/\n    v14 = *((_QWORD *)a1 + 6); /*0x1403cf9c1*/\n  }\n  v20 = *(_BYTE *)(v14 + 8); /*0x1403cf9c5*/\n  v21 = 4; /*0x1403cf9c9*/\n  if ( v20 != 3 ) /*0x1403cf9d5*/\n    v21 = v20; /*0x1403cf9d5*/\n  v18 = v21; /*0x1403cf9db*/\n  v19 = (1 << v21) | 1; /*0x1403cf9df*/\nLABEL_24:\n  *((_BYTE *)a1 + 56) = v18; /*0x1403cf9e2*/\n  *((_BYTE *)a1 + 57) = ~(_BYTE)v19; /*0x1403cf9e8*/\n  v22 = *(_BYTE *)(*((_QWORD *)a1 + 6) + 18LL); /*0x1403cf9ef*/\n  if ( (v22 & 2) != 0 ) /*0x1403cf9f6*/\n  {\n    v23 = (void *)sub_1403D8A40(); /*0x1403cf9fd*/\n  }\n  else\n  {\n    if ( (v22 & 8) == 0 ) /*0x1403cfa05*/\n      goto LABEL_29; /*0x1403cfa05*/\n    kh2_Ptr32_DecodeNullable(a1[4]); /*0x1403cfa0a*/\n    v23 = (void *)(*((_QWORD *)kh2_Ptr32_DecodeNullable(a1[4]) + 86) + 128LL); /*0x1403cfa1e*/\n  }\n  a1[10] = kh2_Ptr32_EncodeNullable(v23); /*0x1403cfa27*/\nLABEL_29:\n  v24 = *(_BYTE *)(*((_QWORD *)a1 + 6) + 44LL); /*0x1403cfa2a*/\n  if ( v24 ) /*0x1403cfa34*/\n  {\n    v25 = v24; /*0x1403cfa45*/\n  }\n  else\n  {\n    v25 = a7; /*0x1403cfa36*/\n    if ( a7 < 0 ) /*0x1403cfa3c*/\n      v25 = sub_1403CF490(); /*0x1403cfa3e*/\n  }\n  v26 = a1[3]; /*0x1403cfa48*/\n  a1[9] = v25; /*0x1403cfa4b*/\n  if ( kh2_Ptr32_DecodeNullable(v26) ) /*0x1403cfa4e*/\n  {\n    v27 = kh2_Ptr32_DecodeNullable(a1[3]); /*0x1403cfa5b*/\n    ++v27[366]; /*0x1403cfa60*/\n  }\n  if ( kh2_Ptr32_DecodeNullable(a1[5]) ) /*0x1403cfa69*/\n  {\n    v28 = kh2_Ptr32_DecodeNullable(a1[5]); /*0x1403cfa76*/\n    ++v28[366]; /*0x1403cfa7b*/\n  }\n  if ( qword_142A24B48 ) /*0x1403cfa88*/\n  {\n    *(_DWORD *)(qword_142A24B48 + 196) = kh2_Ptr32_EncodeNullable(a1); /*0x1403cfab6*/\n    a1[49] = kh2_Ptr32_EncodeNullable(nullptr); /*0x1403cfac3*/\n    qword_142A24B48 = (__int64)a1; /*0x1403cfac9*/\n  }\n  else\n  {\n    qword_142A24B48 = (__int64)a1; /*0x1403cfa8c*/\n    qword_142A24B40 = (__int64)a1; /*0x1403cfa93*/\n    a1[49] = kh2_Ptr32_EncodeNullable(nullptr); /*0x1403cfa9f*/\n  }\n  return a1; /*0x1403cfad0*/\n}",
+  "line_count": 143,
+  "total_lines": 143,
+  "truncated": false,
+  "cursor": {
+    "done": true
+  },
+  "refs": [
+    {
+      "addr": "0x1405c5e78",
+      "name": "??_7ATTACK@YS@@6B@"
+    },
+    {
+      "addr": "0x1404ad240",
+      "name": "kh2_Ptr32_EncodeNullable"
+    },
+    {
+      "addr": "0x1403cf400",
+      "name": "sub_1403CF400"
+    },
+    {
+      "addr": "0x1403eafc0",
+      "name": "kh2_AttackParams_Find"
+    },
+    {
+      "addr": "0x1403cf0f0",
+      "name": "sub_1403CF0F0"
+    },
+    {
+      "addr": "0x1403b5b20",
+      "name": "sub_1403B5B20"
+    },
+    {
+      "addr": "0x1403b5790",
+      "name": "sub_1403B5790"
+    },
+    {
+      "addr": "0x1403d0260",
+      "name": "sub_1403D0260"
+    },
+    {
+      "addr": "0x1404ad270",
+      "name": "kh2_Ptr32_DecodeNullable"
+    },
+    {
+      "addr": "0x142a105d0",
+      "name": "qword_142A105D0"
+    },
+    {
+      "addr": "0x1403d8a40",
+      "name": "sub_1403D8A40"
+    },
+    {
+      "addr": "0x1403cf490",
+      "name": "sub_1403CF490"
+    },
+    {
+      "addr": "0x142a24b48",
+      "name": "qword_142A24B48"
+    },
+    {
+      "addr": "0x142a24b40",
+      "name": "qword_142A24B40"
+    }
+  ]
+}

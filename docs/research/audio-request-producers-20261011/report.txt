@@ -1,0 +1,125 @@
+Audio-Requests: Erzeuger, Bankauflösung und Resetfolge
+===================================================
+Datum: 2026-10-11. Statische Analyse; keine Änderung an v0.12.16.
+
+Die wichtigste Unterscheidung ist jetzt belegt: Ein nichtnull Request-Handle
+bestätigt eine Reservierung, nicht erfolgreiche oder hörbare Wiedergabe.
+Drei Erzeuger markieren einen fehlgeschlagenen Banklookup nach der Reservierung
+als State 3 und geben trotzdem den zuvor erzeugten Handle zurück. Zwei andere
+Erzeuger ignorieren das Lookup-Ergebnis und verwenden einen expliziten Bankwert.
+
+Erzeuger
+--------
+Alle fünf prüfen den Sound-ID-Parameter als signed int >=1, reservieren über
+1DD510 und rufen anschließend 1DEB50 auf. Dieser bereits in der Voice-Studie
+untersuchte Initialisierer reiht den Request ein, bevor der Erzeuger die
+typspezifischen Felder fertigsetzt. Erst danach erfolgt der Banklookup.
+
+Adresse    Typ  Flagargument  Bankquelle              Zusatz
+1DDDE0       2      0        signiertes a2            Lookupresultat verworfen
+1DDE80       3      1        Lookup(ID / 1000)        ID % 1000 als lokaler Index
+1DE010       4      0        signiertes a2            low16(a3) nach +50
+1DE0C0       1      1        Lookup(ID / 1000)        ID % 1000 als lokaler Index
+1DE150       0      1        Lookup(ID / 1000)        16-Byte-Kopie, +12 danach 1.0
+
+Nur der tatsächlich gespeicherte Bankwert -1 löst hier State 3 aus. Andere
+negative explizite Werte werden an dieser Stelle nicht abgewiesen. Das ist
+keine Freigabe solcher Werte: Die nachfolgenden Verbraucher und Ressourcen
+haben weitere Voraussetzungen. Der Typ-0-Erzeuger prüft den übergebenen
+Kopierzeiger nicht auf Gültigkeit. Sein Listenlauf darf auch erfolglos enden,
+bevor der Kopierhelper erreicht wird.
+
+1A8E60 führt vier DWORD-Lese-/Schreibpaare nacheinander aus. Bei disjunkten
+Bereichen bleiben die ursprünglichen 16 Quellbytes erhalten; bei identischen
+Zeigern wird die Kopie übersprungen. Teilüberlappung wird nicht geprüft und hat
+keine memmove-Semantik: Ziel=Quelle+4 verbreitet das erste DWORD in die späteren
+Lesezugriffe, Ziel=Quelle+8 wiederholt die ersten beiden DWORDs. Der Typ-0-Caller
+überschreibt anschließend Komponente +12 mit 1.0.
+
+Banklookup
+----------
+1DC5B0 besteht aus einem 14-Byte-Hauptstück und einem disjunkten 62-Byte-Tail
+1E0880..1E08BE. Das unveränderte IDA-Aggregat enthält beide Teile. Die Studie
+gibt diese Form ausdrücklich an; der Tail wird nicht zur Funktion erklärt.
+
+Der Tail sucht maximal 27 Einträge mit jeweils drei DWORDs. Das erste passende
+Schlüsselfeld +4 entscheidet: State +8 muss genau 1 sein, dann wird +0 geliefert.
+Sonst kommt -1 zurück. Ein späterer passender und bereiter Eintrag hilft nicht,
+wenn der erste Treffer nicht bereit ist. 692 Fälle wurden gegen die wirklich
+decodierten Tail-Instruktionen in einem kleinen Python-Integerinterpreter
+geprüft, darunter alle 27 Positionen, Sentinelwerte und doppelte Schlüssel.
+Dieser Interpreter führt weder native Instruktionen noch Spielcode aus.
+
+Der gesonderte Bereich 1DD500..1DD50C ist ein positiver signed-ID-Filter vor
+dem Allocator. 1DD507 ist dessen Sprunginstruktion. IDA führt ihn nicht als
+Funktion; fehlende direkte Xrefs auf den Anfang belegen keine Unerreichbarkeit.
+
+Verarbeitung und Reset
+----------------------
+Der neue erfasste Dispatcher-Unterpfad 1DDA80 setzt State 2 nach zwei Backend-
+Aufrufen, ohne deren Rückgabe als Erfolgsbedingung zu testen. Für State 2 gelten
+unterschiedliche Typwege: Typ 2 überspringt die gemeinsamen Parameterupdates,
+Typ 4 nutzt den speziellen WORD+50-Helper. Die genaue Domäne dieses Parameters
+ist noch offen und wird deshalb nicht als benutzbarer Regler angeboten.
+
+1DE550 cancelt passende Bankwerte nur für Typen <=4. 1DE4A0 behandelt Typ 5.
+Die untersuchten Consumer 1DC190 und 1DC650 wählen diese Gruppen aus und rufen
+am Ende den gesamten Request-Prozessor 1DD8D0 auf. Dieser kann übriggebliebene
+Requests weiterverarbeiten und neue Backend-Aufrufe auslösen. Die Consumer
+sind damit keine ausreichend verstandenen Trainerfunktionen zum Leeren einer
+Queue. Die dazwischenliegenden Ressourcenoperationen sind nicht vollständig
+geschlossen; Typ 6 fällt jedenfalls nicht unter die beiden direkten Filter.
+
+Der Runtime-Reset 1DD120 ruft 1DE7C0 vor 1DC8D0 auf. Der erste bekannte Helper
+setzt Zähler/Sperrbyte und Listenwurzeln zurück, baut aber FreeCount nicht direkt
+auf 80 auf. 1DC8D0 setzt zusätzliche Konfiguration und andere kleine Globals
+zurück. Daraus folgt keine sichere Wiederholbarkeit bei einem beliebigen
+laufenden Pool. Die ganzen Funktionen 1DFFF0, 1DF4B0 und 1DF440 bestehen hier
+nur aus xor eax,eax;ret und leisten keine Aufräumung.
+
+1DC770 wurde frisch gegengeprüft, war jedoch bereits Teil der Voice-Studie und
+wird nicht als neue Entdeckung gezählt. Es versucht se000/se999 für Bank 2/3
+zu laden und ignoriert den direkten Loader-Rückgabewert. Die anschließenden
+Polls aggregieren über 13A4A0 die DWORD+108-Felder einer anderen Objektliste.
+Ein Ergebnis null belegt deshalb weder das Vorhandensein der angefragten Bank
+noch ihren erfolgreichen Ladevorgang. Der Loader 1DF7B0 hat formatabhängige
+Pfad- und Freigabeunterschiede; die Studie macht daraus keine sichere Replay-API.
+
+Was sich daraus sinnvoll ableiten lässt
+--------------------------------------
+1. Eine Offline-ID-Erklärung im Inspektor kann Bank-Schlüssel ID/1000 und lokalen
+   Index ID%1000 korrekt trennen. Ob der lokale Index im konkreten Format
+   existiert, braucht weiterhin die passende Formatprüfung.
+2. Eine spätere beobachtende Requestdiagnose könnte „reserviert, dann zur
+   Entfernung markiert“ von „vor Reservierung abgewiesen“ unterscheiden.
+   Dafür fehlen noch abgesicherte Listen-/Poolmitgliedschaft, Generation und
+   Thread-/Lebensdauerregeln. Die fertigen Scalaranzeigen bleiben unverändert.
+3. Eine spätere reine Integeranzeige des 27er Banklookups könnte den ersten
+   fehlenden/nichtbereiten Treffer erklären. Davor sind die konkreten Writer
+   und ihre Reset-/Samplingregeln zu prüfen. State 1 darf nicht als sichere
+   Ressource oder hörbare Wiedergabe ausgegeben werden.
+
+Keine Init-, Replay- oder Resetaktion wird durch diese Studie freigegeben.
+
+Prüfumfang und offene Arbeit
+---------------------------
+- 23 frische Funktionsaufnahmen: 22 zusammenhängend, eine mit disjunktem Tail.
+  Eine Aufnahme ist ausdrücklich die schon bekannte 1DC770-Abhängigkeit.
+- 863 verschiedene decodierte Instruktionen, 3.151 verschiedene Originalbytes.
+- Zwei separate Codebereiche; keine erfundenen Funktionsgrenzen oder Metadaten.
+- 23 eng begrenzte Claims in report.json mit auflösbaren Evidence-Verweisen.
+- 692 Resolvertraces und 10.011 arithmetische Vergleichsfälle; keine Playback-,
+  Native-Ausführungs-, Nebenläufigkeits- oder Lifetimeprüfung.
+- IDA auto_analysis_ready war false. Kein Autoanalysezwang, keine IDB-Mutation,
+  kein Spiel/GUI/Attach/Injection, kein Produktbuild und keine Produktänderung.
+
+Nächste konkrete Targets: 189990 für Typ 4; die festen Banktabellen-Writer
+1E11C0/1E1140/1E1180/1E05A0/1E11A0/1E0620; weitere Lookup-Caller
+1DE9A0/1DEA60/1DEAE0/1DEC00/1DED00/1DED70; Writer und Eigentümer der bei
+13A4A0 beobachteten Liste/Flags. Details und Abhängigkeitspins stehen in den
+JSON-Belegen. Unabhängiger Review steht beim ersten Freeze noch aus.
+
+Reproduktion: py -3 -B artifacts/audio-request-producers-20261011/verify.py --check
+Benötigt die originale EXE, Capstone, die beiden ausdrücklich gepinnten Studien
+und den unveränderten Coverageparser. Der Verifier funktioniert auch nach dem
+Kopieren der gesamten Studie unter docs/research innerhalb dieses Repos.

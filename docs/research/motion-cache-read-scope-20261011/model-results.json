@@ -1,0 +1,286 @@
+{
+  "kind": "policy-order models, not original-native execution",
+  "traceCount": 7,
+  "stateObservations": 20,
+  "profileCases": 16,
+  "traces": [
+    {
+      "name": "successful ordinary async load",
+      "observations": [
+        {
+          "stage": "cache entered",
+          "active": 1,
+          "queue": false,
+          "nodeState": 0,
+          "knownOrdinaryOrigin": true,
+          "admitted": false
+        },
+        {
+          "stage": "enqueued",
+          "active": 2,
+          "queue": true,
+          "nodeState": 1,
+          "knownOrdinaryOrigin": true,
+          "admitted": false
+        },
+        {
+          "stage": "submit returned; bases already equal",
+          "active": 0,
+          "queue": true,
+          "nodeState": 1,
+          "knownOrdinaryOrigin": true,
+          "admitted": false
+        },
+        {
+          "stage": "worker state1",
+          "active": 0,
+          "queue": true,
+          "nodeState": 1,
+          "knownOrdinaryOrigin": true,
+          "admitted": false
+        },
+        {
+          "stage": "worker state2; consumer not started",
+          "active": 0,
+          "queue": true,
+          "nodeState": 1,
+          "knownOrdinaryOrigin": true,
+          "admitted": false
+        },
+        {
+          "stage": "consumer fixup",
+          "active": 1,
+          "queue": true,
+          "nodeState": 1,
+          "knownOrdinaryOrigin": true,
+          "admitted": false
+        },
+        {
+          "stage": "callback set state3; still linked",
+          "active": 1,
+          "queue": true,
+          "nodeState": 3,
+          "knownOrdinaryOrigin": true,
+          "admitted": false
+        },
+        {
+          "stage": "last unlink before consumer return",
+          "active": 1,
+          "queue": false,
+          "nodeState": 3,
+          "knownOrdinaryOrigin": true,
+          "admitted": false
+        },
+        {
+          "stage": "outer consumer returned",
+          "active": 0,
+          "queue": false,
+          "nodeState": 3,
+          "knownOrdinaryOrigin": true,
+          "admitted": true
+        }
+      ]
+    },
+    {
+      "name": "zero-result failure",
+      "observations": [
+        {
+          "stage": "callback failure",
+          "active": 1,
+          "queue": true,
+          "nodeState": 255,
+          "knownOrdinaryOrigin": true,
+          "admitted": false
+        },
+        {
+          "stage": "request consumed",
+          "active": 0,
+          "queue": false,
+          "nodeState": 255,
+          "knownOrdinaryOrigin": true,
+          "admitted": false
+        }
+      ]
+    },
+    {
+      "name": "suppressed submit",
+      "observations": [
+        {
+          "stage": "cache state1 but no enqueue",
+          "active": 0,
+          "queue": false,
+          "nodeState": 1,
+          "knownOrdinaryOrigin": true,
+          "admitted": false
+        }
+      ]
+    },
+    {
+      "name": "reentrant callback submits new request",
+      "observations": [
+        {
+          "stage": "outer callback state3",
+          "active": 2,
+          "queue": true,
+          "nodeState": 3,
+          "knownOrdinaryOrigin": true,
+          "admitted": false
+        },
+        {
+          "stage": "outer consumer returned but new request pending",
+          "active": 0,
+          "queue": true,
+          "nodeState": 3,
+          "knownOrdinaryOrigin": true,
+          "admitted": false
+        }
+      ]
+    },
+    {
+      "name": "unknown child with same stable fields",
+      "observations": [
+        {
+          "stage": "queue empty; same bases and state3",
+          "active": 0,
+          "queue": false,
+          "nodeState": 3,
+          "knownOrdinaryOrigin": false,
+          "admitted": false
+        }
+      ]
+    },
+    {
+      "name": "synchronous relocation",
+      "observations": [
+        {
+          "stage": "planner changed target",
+          "active": 1,
+          "queue": false,
+          "nodeState": 3,
+          "knownOrdinaryOrigin": true,
+          "admitted": false
+        },
+        {
+          "stage": "recursive movement active",
+          "active": 2,
+          "queue": false,
+          "nodeState": 1,
+          "knownOrdinaryOrigin": true,
+          "admitted": false
+        },
+        {
+          "stage": "inner finalization completed",
+          "active": 1,
+          "queue": false,
+          "nodeState": 3,
+          "knownOrdinaryOrigin": true,
+          "admitted": false
+        },
+        {
+          "stage": "outer completed",
+          "active": 0,
+          "queue": false,
+          "nodeState": 3,
+          "knownOrdinaryOrigin": true,
+          "admitted": true
+        }
+      ]
+    },
+    {
+      "name": "existing call missed at installation",
+      "observations": [
+        {
+          "stage": "reported active0/queue0 but origin unknown",
+          "active": 0,
+          "queue": false,
+          "nodeState": 3,
+          "knownOrdinaryOrigin": false,
+          "admitted": false
+        }
+      ]
+    }
+  ],
+  "profiles": [
+    {
+      "byte3": 1,
+      "nativeSpecialPath": false,
+      "copierPolicyAdmitsProfile": true
+    },
+    {
+      "byte3": 17,
+      "nativeSpecialPath": false,
+      "copierPolicyAdmitsProfile": true
+    },
+    {
+      "byte3": 33,
+      "nativeSpecialPath": false,
+      "copierPolicyAdmitsProfile": true
+    },
+    {
+      "byte3": 49,
+      "nativeSpecialPath": false,
+      "copierPolicyAdmitsProfile": true
+    },
+    {
+      "byte3": 65,
+      "nativeSpecialPath": true,
+      "copierPolicyAdmitsProfile": false
+    },
+    {
+      "byte3": 81,
+      "nativeSpecialPath": true,
+      "copierPolicyAdmitsProfile": false
+    },
+    {
+      "byte3": 97,
+      "nativeSpecialPath": true,
+      "copierPolicyAdmitsProfile": false
+    },
+    {
+      "byte3": 113,
+      "nativeSpecialPath": true,
+      "copierPolicyAdmitsProfile": false
+    },
+    {
+      "byte3": 129,
+      "nativeSpecialPath": false,
+      "copierPolicyAdmitsProfile": true
+    },
+    {
+      "byte3": 145,
+      "nativeSpecialPath": false,
+      "copierPolicyAdmitsProfile": true
+    },
+    {
+      "byte3": 161,
+      "nativeSpecialPath": false,
+      "copierPolicyAdmitsProfile": true
+    },
+    {
+      "byte3": 177,
+      "nativeSpecialPath": false,
+      "copierPolicyAdmitsProfile": true
+    },
+    {
+      "byte3": 193,
+      "nativeSpecialPath": false,
+      "copierPolicyAdmitsProfile": false
+    },
+    {
+      "byte3": 209,
+      "nativeSpecialPath": false,
+      "copierPolicyAdmitsProfile": false
+    },
+    {
+      "byte3": 225,
+      "nativeSpecialPath": false,
+      "copierPolicyAdmitsProfile": false
+    },
+    {
+      "byte3": 241,
+      "nativeSpecialPath": false,
+      "copierPolicyAdmitsProfile": false
+    }
+  ],
+  "limits": "Events and preconditions, including synchronous alias-free provider completion, are supplied by each model. No concurrency, actual lifetime, scheduler identity, byte ownership or hook completeness is proven."
+}

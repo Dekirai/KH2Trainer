@@ -1,0 +1,452 @@
+{
+  "schema": 1,
+  "study": "resource-retained-aliases-20261013",
+  "status": "bounded-static-study-complete",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "claims": [
+    {
+      "addr": "0x14012e180",
+      "Finding": "All seven recorded direct code xrefs supply EDX=0: calls at12A367,12A800,12AA6F,12B343,12B7E2,12BB46 and the tail jump12C5A2. Exact XOR EDX,EDX anchors, an intervening register-write/control-flow check and same-body direct-branch checks establish this argument on each selected suffix. The complete lookup tests EDX at12E1CE and skips all unlink/head/tail/count stores when zero. Therefore these direct callers do not exercise the lookup's detach mode. The returned entry contains the supplied pointer within [entry+1624, entry+1624+uint32(entry+1600)), so it may be an interior pointer.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012e180]",
+        "evidence.json",
+        "evidence.zip"
+      ],
+      "Limitations": "Direct xref coverage for the pinned image, not all indirect calls, forged contexts, unobserved callers or runtime patches. Registry/global validity and nonoverflowing intended range arithmetic remain assumptions. The detach branch still exists, and no lookup operation pins the returned entry's lifetime.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x14012e180]",
+          "normalized": "evidence.json#functions[addr=0x14012e180]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json",
+          "normalized": "evidence.json",
+          "archiveMember": null
+        },
+        {
+          "original": "anchors.json",
+          "normalized": "evidence.zip",
+          "archiveMember": "study/anchors.json"
+        },
+        {
+          "original": "root-capture/entry-xrefs.json",
+          "normalized": "evidence.zip",
+          "archiveMember": "study/root-capture/entry-xrefs.json"
+        },
+        {
+          "original": "root-capture/caller-instructions-complete.json",
+          "normalized": "evidence.zip",
+          "archiveMember": "study/root-capture/caller-instructions-complete.json"
+        }
+      ]
+    },
+    {
+      "addr": "0x14012c5a0",
+      "Finding": "The entire seven-byte wrapper is XOR EDX,EDX followed by a tail jump to12E180. It transparently returns the raw entry pointer or null without local copying, ownership acquisition or release. Its own complete xref query records zero incoming references.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012c5a0]",
+        "evidence.json#functions[addr=0x14012e180]",
+        "evidence.zip"
+      ],
+      "Limitations": "No recorded incoming xref does not prove absence of computed/indirect use. This body exposes a raw result if called, but this study does not demonstrate a reachable retaining caller for the wrapper.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x14012c5a0]",
+          "normalized": "evidence.json#functions[addr=0x14012c5a0]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012e180]",
+          "normalized": "evidence.json#functions[addr=0x14012e180]",
+          "archiveMember": null
+        },
+        {
+          "original": "root-capture/wrapper-xrefs.json",
+          "normalized": "evidence.zip",
+          "archiveMember": "study/root-capture/wrapper-xrefs.json"
+        }
+      ]
+    },
+    {
+      "addr": "0x14012a200",
+      "Finding": "The selected lookup input is arg3 when nonzero, otherwise descriptor QWORD+0. After the replacement-range lookup fails, the primary-range result is held locally, its QWORD+520/+528 values are copied into the created texture object's +88/+96, and a new120-byte replacement node can be linked into entry+1648/+1656 with node+112 pointing to that texture. The replacement-range success branch also copies the two identifier values. The outer return is a texture object, not the ResourceEntry result.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012a200]",
+        "evidence.json#functions[addr=0x14012dda0]",
+        "evidence.json#functions[addr=0x14012e180]",
+        "evidence.json#functions[addr=0x14014bb10]"
+      ],
+      "Limitations": "The helper14BB10 stores descriptor+0 in texture+128; a nonzero lookup override arg3 need not equal that descriptor pointer. No universal equality between lookup input and the cached pointer is claimed. Allocation/string validity, other helpers and renderer behavior remain outside the local store/result trace.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x14012a200]",
+          "normalized": "evidence.json#functions[addr=0x14012a200]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012dda0]",
+          "normalized": "evidence.json#functions[addr=0x14012dda0]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012e180]",
+          "normalized": "evidence.json#functions[addr=0x14012e180]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14014bb10]",
+          "normalized": "evidence.json#functions[addr=0x14014bb10]",
+          "archiveMember": null
+        }
+      ]
+    },
+    {
+      "addr": "0x14012a7c0",
+      "Finding": "12A7C0 keeps the primary-lookup entry in R13, passes entry+16 to metadata helpers, and passes the raw entry as stack arg6 to12A4C0 at12AA05/12AA11. 12AA20 has the equivalent final forwarding at12AD2A/12AD36. Both can instead return an existing texture record selected using texture+128 equal to their supplied pointer plus a name comparison. On the creation path the supplied raw pointer is forwarded as12A4C0 arg3; their return is the selected/constructed texture record or null, not the lookup entry itself.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012a7c0]",
+        "evidence.json#functions[addr=0x14012aa20]",
+        "evidence.json#functions[addr=0x14012a4c0]",
+        "evidence.json#functions[addr=0x14012c220]",
+        "evidence.json#functions[addr=0x14012c530]"
+      ],
+      "Limitations": "These are concrete local forwarding paths; the cache match does not acquire an entry/primary-buffer lifetime lock. Metadata pointer validity, string lengths, list invariants and unknown side effects beyond inspected helpers are not globally proved.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x14012a7c0]",
+          "normalized": "evidence.json#functions[addr=0x14012a7c0]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012aa20]",
+          "normalized": "evidence.json#functions[addr=0x14012aa20]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012a4c0]",
+          "normalized": "evidence.json#functions[addr=0x14012a4c0]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012c220]",
+          "normalized": "evidence.json#functions[addr=0x14012c220]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012c530]",
+          "normalized": "evidence.json#functions[addr=0x14012c530]",
+          "archiveMember": null
+        }
+      ]
+    },
+    {
+      "addr": "0x14012a4c0",
+      "Finding": "For a nonnull replacement node, this body returns its existing QWORD+112 texture when present. Otherwise it derives an identifier pointer entry+520 from arg6 and creates texture records through129AE0 or12B650. Exact stack/register forwarding sends the raw lookup pointer arg3 to the constructor's eventual texture+128 slot, and sends entry+520 to the two-value copy described by12B650. For each selected new record, normal return through1186E0 precedes manager-list publication, replacementNode+112=texture, texture DWORD+120=replacement DWORD+80 and replacement QWORD+96=0. The replacement payload originally read from node+96 reaches texture+104 via the constructor.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012a4c0]",
+        "evidence.json#functions[addr=0x140129ae0]",
+        "evidence.json#functions[addr=0x14012b650]",
+        "evidence.json#functions[addr=0x1401186e0]"
+      ],
+      "Limitations": "The selected normal path has a persistent texture record, raw input pointer and replacement backreference; it does not establish a ResourceEntry refcount. Optional dependency-name lookup12E980, formatting, allocation and renderer callbacks are not all re-audited here. No claim that opaque helpers cannot retain further aliases, or that every call completes successfully.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x14012a4c0]",
+          "normalized": "evidence.json#functions[addr=0x14012a4c0]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x140129ae0]",
+          "normalized": "evidence.json#functions[addr=0x140129ae0]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012b650]",
+          "normalized": "evidence.json#functions[addr=0x14012b650]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x1401186e0]",
+          "normalized": "evidence.json#functions[addr=0x1401186e0]",
+          "archiveMember": null
+        }
+      ]
+    },
+    {
+      "addr": "0x14012b650",
+      "Finding": "The complete initializer stores arg4 in texture+104 and arg7 in texture+128. A nonnull arg10 is dereferenced twice: QWORD(arg10) is copied to texture+88 and QWORD(arg10+8) to texture+96; a null arg10 writes zero to both. It does not store arg10 itself in those fields. The129AE0 adapter passes its arg7 through as12B650 arg10 and its arg4 through as12B650 arg7. Consequently entry+520 is an input address for two value copies on the inspected12A4C0 paths, while the supplied raw primary-range pointer is retained separately at+128.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012b650]",
+        "evidence.json#functions[addr=0x140129ae0]",
+        "evidence.json#functions[addr=0x14012a4c0]"
+      ],
+      "Limitations": "The raw pointer may point inside the registered primary range, not necessarily at its base. This initializer's identified stores do not preserve entry+520 as a handle, but this is not an all-transitive or all-field-writer lifetime proof. The formatting call uses the supplied name and remains a conventional library boundary.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x14012b650]",
+          "normalized": "evidence.json#functions[addr=0x14012b650]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x140129ae0]",
+          "normalized": "evidence.json#functions[addr=0x140129ae0]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012a4c0]",
+          "normalized": "evidence.json#functions[addr=0x14012a4c0]",
+          "archiveMember": null
+        }
+      ]
+    },
+    {
+      "addr": "0x14014bb10",
+      "Finding": "At the common nonnull-result tail, this complete body reloads descriptor QWORD+0 and stores it in result+128, then reloads descriptor QWORD+8 and stores it in result+136. This occurs after the selected conversion/upload-helper paths, including paths that allocated temporary converted buffers and freed those temporaries. Thus these retained slots preserve the original descriptor pointers rather than necessarily the temporary conversion buffer forwarded to14B9B0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14014bb10]",
+        "evidence.json#functions[addr=0x14012a200]"
+      ],
+      "Limitations": "No claim that every format branch returns a texture or that conversion helpers are read-only. GPU calls, conversion details, allocator internals and consumer lifetime are outside scope. The two descriptor pointers are not proven to be ResourceEntry-owned allocations or specifically MSET data.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x14014bb10]",
+          "normalized": "evidence.json#functions[addr=0x14014bb10]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012a200]",
+          "normalized": "evidence.json#functions[addr=0x14012a200]",
+          "archiveMember": null
+        }
+      ]
+    },
+    {
+      "addr": "0x14012b1c0",
+      "Finding": "The clone path copies source texture+104, +128, +136 and the two identifier values+88/+96 into a new200-byte object; it sets byte+152=1. It then performs the non-detaching lookup using the copied+128 pointer. For a matching entry it increments DWORD entry+1616, uses the old value in a generated name, and may append a replacement node whose+112 points to the clone. Its initially copied replacement payload field+96 is explicitly cleared before leaving that branch. After118A60 returns, the clone can be appended to the texture manager's head+24/tail+32 list and returned.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012b1c0]",
+        "evidence.json#functions[addr=0x140118a60]",
+        "evidence.json#functions[addr=0x14012ad50]",
+        "evidence.json#functions[addr=0x14012e460]"
+      ],
+      "Limitations": "The source pointers are shared values; copying them proves an additional stored alias, not ownership of the underlying buffers. Entry+1616 is used for clone/name bookkeeping and is not tested by the inspected entry-retirement body as a release gate. No allocation-failure, reentrancy or global pin-count guarantee.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x14012b1c0]",
+          "normalized": "evidence.json#functions[addr=0x14012b1c0]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x140118a60]",
+          "normalized": "evidence.json#functions[addr=0x140118a60]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012ad50]",
+          "normalized": "evidence.json#functions[addr=0x14012ad50]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012e460]",
+          "normalized": "evidence.json#functions[addr=0x14012e460]",
+          "archiveMember": null
+        }
+      ]
+    },
+    {
+      "addr": "0x14012c220",
+      "Finding": "For metadata argument M=entry+16, the helper can return M+16 (entry+32) or its scratch-name region M+80 (entry+96). It also formats into that scratch region and, in applicable modes, changes the counter at M+520 (entry+536) and table beginning M+524 (entry+540). Therefore the returned name is borrowed entry storage and this helper is not a pure getter. The companion12C530 returns a scalar offset/index derived from the primary range/table, and12C4E0 returns a scalar two-bit classification from that table; their inspected local bodies do not store the metadata pointer.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012c220]",
+        "evidence.json#functions[addr=0x14012c530]",
+        "evidence.json#functions[addr=0x14012c4e0]",
+        "evidence.json#functions[addr=0x14012a7c0]",
+        "evidence.json#functions[addr=0x14012aa20]",
+        "evidence.json#functions[addr=0x14012b1c0]"
+      ],
+      "Limitations": "Native range/table arithmetic and string formatting are unchecked here; no safe-bounds API claim. A borrowed name pointer is valid only under external entry-lifetime assumptions, and scratch contents may change. This review does not enumerate every consumer of these metadata helpers.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x14012c220]",
+          "normalized": "evidence.json#functions[addr=0x14012c220]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012c530]",
+          "normalized": "evidence.json#functions[addr=0x14012c530]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012c4e0]",
+          "normalized": "evidence.json#functions[addr=0x14012c4e0]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012a7c0]",
+          "normalized": "evidence.json#functions[addr=0x14012a7c0]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012aa20]",
+          "normalized": "evidence.json#functions[addr=0x14012aa20]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012b1c0]",
+          "normalized": "evidence.json#functions[addr=0x14012b1c0]",
+          "archiveMember": null
+        }
+      ]
+    },
+    {
+      "addr": "0x14012b770",
+      "Finding": "After texture state/count gates,12B770 obtains a fresh entry by comparing its two identifier QWORDs through12E230, then compares that result with a fresh non-detaching12E180(texture+128) result. A null identifier result or pointer mismatch returns1. On the matching clone branch byte+152!=0, it searches for replacementNode+112==texture, unlinks and virtually destroys that replacement node when found, decrements positive entry+1616, and returns1.12BA80 performs the corresponding checks during its time-gated manager iteration and calls12AD50 on the selected removal branches, including failed lookup agreement.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012b770]",
+        "evidence.json#functions[addr=0x14012ba80]",
+        "evidence.json#functions[addr=0x14012e230]",
+        "evidence.json#functions[addr=0x14012e180]",
+        "evidence.json#functions[addr=0x14012ad50]"
+      ],
+      "Limitations": "The equality compares two newly looked-up entry addresses, not a stored entry handle or generation token. No synchronization/pinning or guarantee against concurrent mutation follows.12B770 itself returns a decision; the actual texture removal occurs in separately identified caller paths. timeGetTime scheduling and opaque virtual destruction are not modeled.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x14012b770]",
+          "normalized": "evidence.json#functions[addr=0x14012b770]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012ba80]",
+          "normalized": "evidence.json#functions[addr=0x14012ba80]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012e230]",
+          "normalized": "evidence.json#functions[addr=0x14012e230]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012e180]",
+          "normalized": "evidence.json#functions[addr=0x14012e180]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012ad50]",
+          "normalized": "evidence.json#functions[addr=0x14012ad50]",
+          "archiveMember": null
+        }
+      ]
+    },
+    {
+      "addr": "0x14012ad50",
+      "Finding": "For nonnull texture input, byte+152==0 permits an aligned-free call for nonnull texture+104, then clears+104. The clone path has byte+152=1 and skips that local free. The body next calls119A40 with texture+112, clears+112, calls12C930(texture), unlinks the texture from manager head+24/tail+32/count+40 when found, clears its next link and dispatches virtual slot0 with flag1. Its local instructions do not pass texture+128 or+136 to aligned_free.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012ad50]",
+        "evidence.json#functions[addr=0x14012b1c0]",
+        "evidence.json#functions[addr=0x14012ba80]"
+      ],
+      "Limitations": "This is local free-argument and ordering evidence, not proof that the raw pointer can never be freed elsewhere.119A40,12C930, the virtual destructor and allocator/library internals are explicit boundaries and may affect fields/resources. Membership failure does not suppress the final virtual dispatch; no idempotence or malformed-list safety is claimed.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x14012ad50]",
+          "normalized": "evidence.json#functions[addr=0x14012ad50]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012b1c0]",
+          "normalized": "evidence.json#functions[addr=0x14012b1c0]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012ba80]",
+          "normalized": "evidence.json#functions[addr=0x14012ba80]",
+          "archiveMember": null
+        }
+      ]
+    },
+    {
+      "addr": "0x14012e460",
+      "Finding": "The selected entry-retirement body does not test entry+1616 before proceeding. With its notification argument nonzero, it follows replacementNode+112 texture references and, unless texture DWORD+180 is -1, writes texture+184=0, DWORD+176=10 and DWORD+180=1. It then unlinks the ResourceEntry and dispatches its destructor with flag1. The inspected ResourceEntry destructor destroys replacement-list nodes, passes entry+16 to metadata output and frees the entry object when its own flag1 is set. It does not wait locally for the previously marked texture records to be removed by12BA80.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012e460]",
+        "evidence.json#functions[addr=0x14012d8e0]",
+        "evidence.json#functions[addr=0x14012b1c0]",
+        "evidence.json#functions[addr=0x14012ba80]"
+      ],
+      "Limitations": "The handler-table callback and replacement virtual destructors remain separate side-effect boundaries. This supports separation between registry-entry retirement and the texture lifecycle; it does not prove primary-buffer destruction, when each callback runs in actual gameplay, or a use-after-free. The ordinary provider/null-handler precondition comes from the earlier study and is not expanded to every provider.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x14012e460]",
+          "normalized": "evidence.json#functions[addr=0x14012e460]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012d8e0]",
+          "normalized": "evidence.json#functions[addr=0x14012d8e0]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012b1c0]",
+          "normalized": "evidence.json#functions[addr=0x14012b1c0]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012ba80]",
+          "normalized": "evidence.json#functions[addr=0x14012ba80]",
+          "archiveMember": null
+        }
+      ]
+    },
+    {
+      "addr": "0x1401186e0",
+      "Finding": "Each small wrapper saves the incoming texture in RBX, calls11C150, then forwards its return in RCX, the saved texture in RDX and mode0/1 in R8D to118A90. The mode is0 for1186E0 and1 for118A60. This is the explicit downstream argument trace before the creation/clone paths publish their texture records; no claim is made that11C150 consumes the incoming RCX value.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401186e0]",
+        "evidence.json#functions[addr=0x140118a60]",
+        "evidence.json#functions[addr=0x14012a4c0]",
+        "evidence.json#functions[addr=0x14012b1c0]"
+      ],
+      "Limitations": "The passed texture already contains buffer aliases and copied identifier values. This body-level argument trace does not establish what11C150/118A90 retain or modify, GPU synchronization, or all transitive buffer ownership.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x1401186e0]",
+          "normalized": "evidence.json#functions[addr=0x1401186e0]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x140118a60]",
+          "normalized": "evidence.json#functions[addr=0x140118a60]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012a4c0]",
+          "normalized": "evidence.json#functions[addr=0x14012a4c0]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x14012b1c0]",
+          "normalized": "evidence.json#functions[addr=0x14012b1c0]",
+          "archiveMember": null
+        }
+      ]
+    }
+  ],
+  "captureIntegrity": {
+    "superseded": "root-capture/caller-instructions.json",
+    "reason": "The first six records retained only ten preview matches although their count/scanned metadata reported full bodies. The wrapper record was complete. The truncated artifact is kept solely as provenance and is never used as full assembly evidence.",
+    "replacement": "root-capture/caller-instructions-complete.json",
+    "verification": "Every used full query has cursor done, no truncation/error, count==scanned==matches.length; each body is byte/boundary checked against the original PE."
+  },
+  "globalLimitations": [
+    "This closes selected direct lookup arguments and identifies concrete persistent texture-side raw-buffer aliases and entry-derived value/string flows. It does not close global resource aliases or all indirect callers.",
+    "The seven direct12E180 callers are texture paths plus an unreferenced wrapper. No MSET-specific motion consumer is established by these bodies. Consequently this study does not authorize dynamic MSET replacement or claim that ordinary MSET primary buffers have no retained consumers.",
+    "Primary-range pointers may be interior pointers. The raw pointer, copied two-QWORD identity, borrowed entry name, ResourceEntry object, replacement payload and renderer handle are distinct values with different local lifetimes.",
+    "Opaque resource-name, renderer, conversion, virtual destructor and allocator/library helpers remain explicit boundaries. Native string/table/list validity and serial nonaliasing assumptions apply; no global concurrency or safety proof.",
+    "Static original-byte/instruction evidence only. No game, GUI, Twitch, injection, save writes, native execution or semantic emulator. Product/docs/global coverage/packages are unchanged.",
+    "Original function counts describe verified scope, not newly discovered functions or complete whole-program semantics. Global IDA readiness was not independently observed."
+  ],
+  "archive": "evidence.zip",
+  "provenance": "provenance.json",
+  "completeSemanticAnalysis": false
+}

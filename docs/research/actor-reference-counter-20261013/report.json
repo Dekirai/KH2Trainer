@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "study": "actor-reference-counter-20261013",
+  "status": "bounded-static-study-complete",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "claims": [
+    {
+      "addr": "0x1403e1240",
+      "Finding": "The complete constructor stores arg3 in context+88 and arg4 in context+96. It independently increments the shared-data block counter at +88's target and, when context+96 is nonnull, increments DWORD(target+1464) at 3E13EA. The rechecked Actor setup 3B44D0 passes its Actor input as Allocate3E1730 arg2, which is forwarded as constructor arg4; the returned context is stored in Actor+1456. This is a concrete non-attack source of Actor+1464 references.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1240]",
+        "evidence.json#functions[addr=0x1403b44d0]",
+        "evidence.json#functions[addr=0x1403e1730]"
+      ],
+      "Limitations": "Selected successful local construction path, not all callers or allocator failures. The shared-data counter and Actor counter are distinct. No total source enumeration, concurrency/lifetime guarantee or semantics inferred solely from IDA names."
+    },
+    {
+      "addr": "0x1403e1a00",
+      "Finding": "When context DWORD+56 mask0x2 is clear, the complete body decrements DWORD(target+1464) for a nonnull context+96 target and sets mask0x2. It does not locally clear context+96. Repeated serial calls while mask0x2 remains set perform no additional local decrement.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1a00]",
+        "evidence.json#functions[addr=0x1403e1240]"
+      ],
+      "Limitations": "Unsaturated arithmetic is modulo DWORD; the flag check is not atomic. Other flag writers, invalid context/target pointers and concurrent mutation remain outside the proof."
+    },
+    {
+      "addr": "0x1403e1410",
+      "Finding": "After script/child-context/resource cleanup, this complete body checks context+56 mask0x2, decrements target+1464 through nonnull context+96 only when the bit is still clear, and sets mask0x2. The Actor reference is therefore released by a context-cleanup path in addition to the explicit release helper.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1410]",
+        "evidence.json#functions[addr=0x1403e1240]",
+        "evidence.json#functions[addr=0x1403e1a00]"
+      ],
+      "Limitations": "Only the local guarded decrement is repeat-resistant while mask0x2 remains set; the whole cleanup executes/frees resources before that guard and is not proved idempotent. Complete transitive cleanup semantics, exceptional control flow and all external-helper side effects are not closed."
+    },
+    {
+      "addr": "0x1403e1c80",
+      "Finding": "The script update executes its current context while mask0x2 is clear. If the execution return is not1, it rereads context+56 and, only if mask0x2 remains clear, decrements target+1464 through nonnull context+96 and sets mask0x2. This provides a third explicit context release block, independently of later child-context handling.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1c80]",
+        "evidence.json#functions[addr=0x1403e1240]",
+        "evidence.json#functions[addr=0x1403e1410]"
+      ],
+      "Limitations": "Only the stated local release block and reread are claimed. No full interpreter/child lifecycle review, all-writer claim or concurrent idempotency guarantee."
+    },
+    {
+      "addr": "0x1403db140",
+      "Finding": "The command-data path reads BAR types24/25 with literal tag comd from input+2344 and passes the resulting data and input to the controller setup. If execution reaches the tail after those helpers, it sets input DWORD+292 bit0x800 and increments input DWORD+1464. If bit0x800 was already set on entry, it first calls controller virtual+40, decrements the same counter and clears the bit. A rechecked caller 1C9D60 passes its context+8 pointer and mode4.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403db140]",
+        "evidence.json#functions[addr=0x1401c9d60]",
+        "evidence.json#functions[addr=0x1403db100]"
+      ],
+      "Limitations": "Direct original arithmetic and argument provenance are verified, not a guaranteed net counter delta across opaque controller/resource callbacks. Context+8 is the bounded caller provenance endpoint. All callers, valid BAR presence, input lifetime and actual gameplay scheduling remain unproved."
+    },
+    {
+      "addr": "0x1403db100",
+      "Finding": "Only when input DWORD+292 bit0x800 is set, this complete release body calls the current player controller's virtual+40, decrements input DWORD+1464 and clears bit0x800. The rechecked caller 1C7E00 passes its context+8 pointer.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403db100]",
+        "evidence.json#functions[addr=0x1401c7e00]",
+        "evidence.json#functions[addr=0x1403db140]"
+      ],
+      "Limitations": "Conditional local operation only. A real sequence with the setup caller, controller side effects, all flag writers and safe input lifetime are not established."
+    },
+    {
+      "addr": "0x1403e1840",
+      "Finding": "The complete event helper passes its input context+96 as constructor arg4 when creating a temporary stack context. That temporary context therefore uses the same constructor Actor-counter increment path before the optional update (resolved entry >0) and final cleanup calls.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1840]",
+        "evidence.json#functions[addr=0x1403e1240]",
+        "evidence.json#functions[addr=0x1403e1410]"
+      ],
+      "Limitations": "A concrete copied Actor association is shown; all event invocations, script outcomes and callback mutations are not. The source context+96 must already hold the expected Actor or null."
+    }
+  ],
+  "publicInterpretation": "Actor reference count; known contributors include scripts, commands and attacks. Not an attack count, not a complete per-source breakdown, and zero alone does not authorize destruction.",
+  "searchLimit": "56 displacement text hits include stack locals, non-Actor offsets and unrelated vector loads. They are candidates, not 56 verified Actor accesses and not an all-writer result.",
+  "nativeExecution": false,
+  "gameOrTwitchTesting": false,
+  "verification": "verification.json",
+  "mutations": "New normalized documentation only; frozen study/review, product and package remain unchanged.",
+  "sourceStudy": "actor-counter-writers-20261013",
+  "archive": "evidence.zip",
+  "provenance": "provenance.json"
+}

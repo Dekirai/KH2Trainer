@@ -4,6 +4,33 @@ A training and inspection tool for **KINGDOM HEARTS II FINAL MIX** (Steam build 
 A WPF desktop application talks to a small native bridge that runs on the game thread. The
 bridge applies trainer features and publishes live values through shared memory.
 
+Version **0.12.23** adds six passive readouts under **Advanced > Actor references**:
+the native reference count and two removal flags for Sora and the current target.
+They reuse the existing snapshot validation and list traversal. See
+[Actor reference diagnostics](docs/actor-contact-diagnostics-v0.12.23.md).
+
+Version **0.12.22** blocks the in-game **Revert / Zurück** command while a Twitch
+Drive Form reward is active, including Antiform and Drive Roulette. The lock is
+released when the reward ends or is stopped. **Kick Out of Drive Form** keeps its
+existing interrupt behavior. See [Drive reward lock](docs/drive-revert-lock-v0.12.22.md).
+
+Version **0.12.21** added six Twitch rewards: Cut Enemy HP, Calm the Enemy,
+Refill Form or Summon Timer, Heavy Jumps, Gummi Special Ammo and Enemy Armor. The percentage
+HP reduction and Heavy Jumps are also available as manual trainer actions.
+Flashbang now uses brightness **5000**, up from 50, with exact integer readback
+for restoring the previous level. See [new effects and validation](docs/chaos-comfort-v0.12.21.md).
+
+World travel retains the full English world names added in 0.12.20, following
+the [OpenKH world index](https://openkh.dev/kh2/worlds.html).
+
+The performance fix from **0.12.19** reduces the work performed after connecting: passive display,
+renderer, window and MSAA readouts skip a busy presentation mutex instead of
+waiting on the game thread. Full diagnostic snapshots refresh at most every
+100 ms, with immediate refreshes for commands and context changes. Continuous
+effects and connection checks still run on every game update. Restart KH2 before
+using this version so that the previous in-process bridge is replaced.
+See [performance fix and test scope](docs/performance-fix-v0.12.19.md).
+
 The trainer is tied to one verified game executable. It checks the executable and the supported
 Panacea loader before it loads the bridge, and it refuses to run against anything else.
 
@@ -33,9 +60,27 @@ tests/
   KH2Trainer.Bridge.Tests/     Native guard tests against synthetic memory, run-tests.ps1
 ```
 
-`src/KH2Trainer/Data/features.json` is the source of truth for all 358 features: their
+`src/KH2Trainer/Data/features.json` is the source of truth for all 370 features: their
 command and value slots, ranges and implementation evidence. The bridge sources and this
 catalog must change together.
+
+Gummi Ship > Flight includes **Request special-weapon strike**. It queues one
+normal weapon request: starting needs stock, and a later click can continue the
+combo during its input window. Acknowledgement confirms the request; the next
+native ship update decides whether to consume it. The action is excluded from
+profiles and is never repeated automatically.
+
+World > Missions includes one-time counter addition/subtraction and decimal-digit
+replacement. Both reject a result outside the configured maximum and keep normal
+mission events active. The mission combo readouts show its current value, retained
+peak and allowance in native update units. These features have passed isolated
+tests; they have not been tested in a running game.
+
+Audio > Requests shows free request slots, reservations since the latest audio
+pass and the three observed admission limits. These readouts help diagnose pool
+pressure and native request inhibition. They do not measure audible voices or
+guarantee that a new request will play. Invalid observations appear as unavailable;
+the pass counter can reset between display updates and miss short bursts.
 
 ## Requirements
 
@@ -46,7 +91,7 @@ catalog must change together.
 
 No NuGet packages, test frameworks or third-party libraries are used.
 
-The offline BDX view includes a partial native-call catalog: 1,063 recorded descriptors and
+The offline BDX analysis includes a partial native-call catalog: 1,063 recorded descriptors and
 256 behavioral annotations for the pinned executable across all eleven recorded bank slots.
 The latest notes cover Gummi object creation, movement and deferred deletion,
 mission counters, timers and result transitions, plus the shared state changed by
@@ -101,7 +146,7 @@ analysis working folders and compiled test outputs stay outside the package. Opt
 
 | Suite | Run it with |
 | --- | --- |
-| Native bridge guards (40 suites) | `.\tests\KH2Trainer.Bridge.Tests\run-tests.ps1` (optionally `-Suite LootGuardTests`) |
+| Native bridge guards (41 suites) | `.\tests\KH2Trainer.Bridge.Tests\run-tests.ps1` (optionally `-Suite LootGuardTests`) |
 | Core library and catalog | `dotnet run --project tests\KH2Trainer.Core.Tests -- src\KH2Trainer\Data\features.json` |
 | Twitch rewards | `dotnet run --project tests\KH2Trainer.Twitch.Tests -- src\KH2Trainer\Data\features.json` |
 | Offscreen UI | `dotnet run --project tests\KH2Trainer.UiTests -- --fixture artifacts\ui` |
@@ -109,7 +154,7 @@ analysis working folders and compiled test outputs stay outside the package. Opt
 Tests use isolated memory and fixtures. Some execute short verified native leaf-function copies
 inside a synthetic image or call Windows unwind APIs on private generated code. They do not attach
 to the game, change its executable or mod configuration, or touch real save files, and they do not replace visual and
-gameplay testing. The offscreen UI checks render every feature tab, the Asset Explorer and Game
+gameplay testing. The offscreen UI checks render every feature tab, the Twitch page and Game
 Messages without opening a window, and verify that every catalog feature is reachable from a
 sidebar section.
 
@@ -123,20 +168,6 @@ soon as they are flipped. Search everything with **Ctrl+F**, and pin frequently 
 makes them permanent. The generated user guide describes every feature.
 
 Profiles, backups and preferences are stored in `%LOCALAPPDATA%\KH2Trainer`.
-
-### Inspect game scripts offline
-
-In **Asset Explorer**, open a `.bdx` file or a type-3 entry inside a BAR container.
-The **Script** tab shows its events, stored instructions, branch and call targets,
-and native calls. Choose an event to jump to its entry, or search for an operation,
-PC or native call such as `2:95`. For an unnamed script payload, select it and use
-**Inspect BDX**. Inspection works while disconnected and reads the selected file.
-
-The decoder follows declared event entries with bounded reads. Diagnostics identify
-invalid targets, overlapping instructions and inspection limits. Calls and yields
-have conditional continuations; dynamic returns and native callback effects require
-runtime state. Undecoded bytes may contain data or other code. This view helps locate
-script behavior and compare potential mod targets; it does not execute or modify scripts.
 
 To add a catalog category to a section, edit `src/KH2Trainer/ViewModels/Navigation.cs`. A category
 missing there still appears, in a "More" section.
@@ -179,6 +210,11 @@ same file in your reward dashboard (**Reward dashboard** button) to use it on Tw
   starts as soon as Final Form ends. Alternatives: replace the running effect, or refund.
 - **Redeemed again while running:** add the time to the running effect (capped by the longest
   effect setting), refund, or queue it. Both choices can be set globally and per reward.
+- **Drive Forms:** the in-game **Revert / Zurück** command is blocked for the duration of a
+  form reward, including Antiform and Drive Roulette. The reward must confirm both the form
+  and its Revert lock before points are kept. Extending the reward also extends the lock.
+  The lock is released when the reward ends or is stopped; **Kick Out of Drive Form** still
+  interrupts it. The trainer's explicit Drive controls remain available.
 - Values an effect changed are restored when it ends, but only while the game still shows the
   value the effect set, so a scene change or the streamer's own edit is never overwritten.
 - The Live tab shows running effects with their timer, the queue (with a refund button per
@@ -462,6 +498,13 @@ not prove every branch, caller or runtime state. No complete-analysis percentage
 baseline and current evidence; its parser/deduplication tests and deterministic replay receipt
 are included in `docs/research/coverage/`. The original baseline's per-address records were
 recovered from the matching old audit because the earlier source archive omitted them.
+
+The [reviewed audio studies](docs/research/audio-static-integration-20261011/README.md)
+document request production, bank retirement, Actor/Voice resource ordering and selected
+ORIGIN/SCD metadata. Targeted retail comparisons and bounded metadata readers remain
+available in the analysis library. The Asset Explorer and its script, comparison and audio
+views were removed from the trainer in v0.12.17 at the user's request.
+Safe runtime audio replacement remains unproven.
 
 `docs/legacy/audit-summary-v011.json` preserves that audit. The immutable
 `docs/legacy/KH2_Trainer_v0.11_Source.zip` preserves the earlier source, tests and research

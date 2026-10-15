@@ -1,0 +1,294 @@
+{
+  "schema": 1,
+  "title": "Audio bank retirement: eligibility, partial cancellation, references and admission",
+  "date": "2026-10-11",
+  "status": "BOUNDED_STATIC_STUDY_PENDING_INDEPENDENT_REVIEW",
+  "scope": "40 complete fresh IDA bodies and1 explicit reused insertion dependency. The selected semantic claims are narrower than full-function or subsystem coverage. No product, documentation, coverage or release integration.",
+  "freshFunctionBodies": 40,
+  "claims": [
+    {
+      "address": "0x140078b50",
+      "finding": "The release wrapper takes the global audio lock. In nonforced mode an existing LayoutManager predicate at virtual+384 must succeed before driver deletion at virtual+56. Forced mode skips that initial layout gate. If the driver is absent after passing the gate, the wrapper returns true.",
+      "limitations": "A true return is this branch result, not proof that all external borrowers are quiescent. Alternative driver/layout implementations and concurrent lifecycle changes remain outside closure.",
+      "evidence": [
+        "evidence.json#functions[addr=0x140078b50]",
+        "verification.json",
+        "evidence.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x140078be0",
+      "finding": "The eligibility wrapper returns true when either driver or layout is missing. With both present it requires the driver predicate and then layout+384. The concrete SoundDriver branch inlines the selected bank/player/reference/stream conditions.",
+      "limitations": "Missing infrastructure is not equivalent to completed destruction or safe release of a borrowed payload. No resource lifetime proof follows from this bool.",
+      "evidence": [
+        "evidence.json#functions[addr=0x140078be0]",
+        "evidence.json#functions[addr=0x140091d00]",
+        "evidence.json#functions[addr=0x14006b1d0]",
+        "verification.json",
+        "evidence.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x140091d00",
+      "finding": "Concrete driver eligibility accepts a missing handle lookup. For a present bank it requires no player for which virtual+656 matches the bank and virtual+632 returns false, signed WORD(bank+52)<=0, and either flag+128 bit3 clear, virtual type+8 equal3, or stream predicate0986A0 false.",
+      "limitations": "The WORD is consumed as signed. Helper validity, all counter writers, live states and complete virtual-method contracts are not established by this expression.",
+      "evidence": [
+        "evidence.json#functions[addr=0x140091d00]",
+        "evidence.json#functions[addr=0x14009a780]",
+        "evidence.json#functions[addr=0x1400986a0]",
+        "evidence.json#functions[addr=0x14009f9d0]",
+        "verification.json",
+        "evidence.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x140091a70",
+      "finding": "Concrete driver deletion optionally stops matching players and layout records first when force is nonzero. It then performs a fresh bank lookup and the same player/signed-reference/stream gates; only the eligible present-bank path calls08A570. A missing lookup returns true. Force does not bypass these final driver gates.",
+      "limitations": "Stop/retire virtual operations are only partially expanded. Effects before a later false result are not rolled back. No universal forced-delete or eventual progress guarantee.",
+      "evidence": [
+        "evidence.json#functions[addr=0x140091a70]",
+        "evidence.json#functions[addr=0x14009a780]",
+        "evidence.json#functions[addr=0x14008a570]",
+        "verification.json",
+        "evidence.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x14009a780",
+      "finding": "The player predicate traverses the global player list and returns true on a player whose virtual+656 matches the bank and whose virtual+632 returns false. No such captured match returns false.",
+      "limitations": "The vtable slots are intentionally described by their predicates; this is not a proof of every player implementation or every external SCD reader.",
+      "evidence": [
+        "evidence.json#functions[addr=0x14009a780]",
+        "verification.json",
+        "evidence.json"
+      ]
+    },
+    {
+      "address": "0x1400986a0",
+      "finding": "The stream busy predicate is true for any matching pending request. Otherwise a matching active request is busy when state+24==1 or its reader virtual+16 returns false. Unmatched or absent active requests do not block it.",
+      "limitations": "The stream-manager global is dereferenced without a local null guard. State reachability and reader synchronization are not established.",
+      "evidence": [
+        "evidence.json#functions[addr=0x1400986a0]",
+        "verification.json",
+        "evidence.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x1400981c0",
+      "finding": "Cancellation removes every matching pending request from its list, clears node links, decrements the pending count, writes request+28=-1 and returns those nodes to the request pool. A matching active request is marked+36=1 before the return decision. For that active request success requires state+24==0 and reader virtual+16 true; any nonzero state returns false.",
+      "limitations": "False can accompany completed pending cancellations and a newly marked active request. For abstract state2 with reader=true,0986A0 can be false while this cancellation is false. This is a model distinction, not an observed reachable game state.",
+      "evidence": [
+        "evidence.json#functions[addr=0x1400981c0]",
+        "evidence.json#functions[addr=0x1400986a0]",
+        "verification.json",
+        "evidence.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x14008a570",
+      "finding": "The bank remover validates the computed slot handle. For flag-bit3 banks it removes a matching bank from the stream list and may clear flag0x20 for virtual type3 before invoking0981C0. A false cancellation returns false without restoring the stream-list change. Only after cancellation succeeds does it unlink the hash node and main bank list, free a nonzero auxiliary virtual+232 result, call the bank destructor with flag0 and return the bank object to the pool.",
+      "limitations": "Cleanup is not transactional. No local high-index pool bound is present here. Valid initialized list offsets/objects and no interfering mutation are required for these list effects; external allocator and subclass destructor closure is incomplete.",
+      "evidence": [
+        "evidence.json#functions[addr=0x14008a570]",
+        "evidence.json#functions[addr=0x1400981c0]",
+        "evidence.json#functions[addr=0x14008c250]",
+        "evidence.json#functions[addr=0x14009f910]",
+        "evidence.json#functions[addr=0x1400a1710]",
+        "verification.json",
+        "evidence.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x14009fa70",
+      "finding": "ActualBank virtual destructor09FA70 resets its vtable to Bank. With deletion flags0, as supplied by08A570, it returns without freeing the object or touching the retained SCD pointer+8. Object deallocation is conditional on flag bit0. Auxiliary+40 is a separate virtual accessor and custom-free path in the remover.",
+      "limitations": "No ownership claim is generalized to ToolBank, StreamBankEx or other subclasses. The captured0A1710 allocator manipulates allocation metadata; its entire lifetime and synchronization contract is not proven.",
+      "evidence": [
+        "evidence.json#functions[addr=0x14009fa70]",
+        "evidence.json#functions[addr=0x14009f910]",
+        "evidence.json#functions[addr=0x14008a570]",
+        "evidence.json#functions[addr=0x1400a1710]",
+        "verification.json",
+        "evidence.json"
+      ]
+    },
+    {
+      "address": "0x140136060",
+      "finding": "BankEntry destruction waits while transfer+108 is nonzero, then repeatedly attempts078B50(handle,0), issues a zero-duration stop07D3F0 on failure and sleeps. The second loop also ends if transfer+108 becomes nonzero again. Mode+112==2 skips both aligned_free(payload+88) and clearing that field.",
+      "limitations": "Repeated polling gives no termination or global quiescence guarantee. This reaffirms the prior mode2 borrowed-payload result; it does not close resource/actor/request lifetime ordering or all lower-audio users.",
+      "evidence": [
+        "evidence.json#functions[addr=0x140136060]",
+        "evidence.json#functions[addr=0x140078b50]",
+        "evidence.json#functions[addr=0x140079c10]",
+        "evidence.json#functions[addr=0x14007d3f0]",
+        "evidence.json#functions[addr=0x14007d3a0]",
+        "verification.json",
+        "evidence.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x14007d3f0",
+      "finding": "A bank controller stop converts its duration, resolves the bank handle and asks09D460 to stop matching players; it then invokes layout virtual+200 for the same handle.09D460 uses player bank-match+656 and stop+32, with the nonzero-duration flag path through virtual+104.",
+      "limitations": "A stop request is not a direct BankEntry or replacement-payload free. Duration overflow/general float-conversion semantics and all stop implementations are unexpanded.",
+      "evidence": [
+        "evidence.json#functions[addr=0x14007d3f0]",
+        "evidence.json#functions[addr=0x14009d460]",
+        "evidence.json#functions[addr=0x1400b9030]",
+        "evidence.json#functions[addr=0x1400bdec0]",
+        "evidence.json#functions[addr=0x140079c10]",
+        "evidence.json#functions[addr=0x140093330]",
+        "verification.json",
+        "evidence.json"
+      ]
+    },
+    {
+      "address": "0x14006b1d0",
+      "finding": "Concrete LayoutManager eligibility scans page records and returns false if a record payload+60 equals the requested bank handle; otherwise it returns true. The concrete virtual+384 cell resolves to this body.",
+      "limitations": "Absence from the selected lists is not proof that all playback, callback or external readers are finished. Valid page/list structures and stable lock contracts are premises.",
+      "evidence": [
+        "evidence.json#functions[addr=0x14006b1d0]",
+        "evidence.json#functions[addr=0x140069e20]",
+        "verification.json",
+        "evidence.json"
+      ]
+    },
+    {
+      "address": "0x14006d910",
+      "finding": "Concrete LayoutManager stop visits pages and calls039D30. Matching records receive duration+80 and flag+76=0, invoke their destructor according to page allocation mode, then unlink and recycle their record nodes.",
+      "limitations": "The called record destructor and all downstream sound effects are not closed. The list/allocator structures must be intact; no general safe hot-reload follows.",
+      "evidence": [
+        "evidence.json#functions[addr=0x14006d910]",
+        "evidence.json#functions[addr=0x140039d30]",
+        "verification.json",
+        "evidence.json"
+      ]
+    },
+    {
+      "address": "0x140088fc0",
+      "finding": "Bank lookup derives a pool index from handle>>20, then checks a main-list owner marker and exact handle equality. It returns the raw bank pointer after releasing its internal lock. There is no explicit upper index bound in this captured body before address computation and dereferences.",
+      "limitations": "Callers may impose valid-handle bounds or hold wider locks; their complete contract is not proven. This is not a live invalid-handle crash or a usable resource lease.",
+      "evidence": [
+        "evidence.json#functions[addr=0x140088fc0]",
+        "verification.json",
+        "evidence.json"
+      ]
+    },
+    {
+      "address": "0x140088f20",
+      "finding": "Generation allocation increments the low20 counter, wraps to1 at0x100000 and, after a wrap has been recorded, skips low20 values currently present in the live bank list. A previously retired generation can be reused.",
+      "limitations": "Live-list avoidance does not provide an eternal stale-handle/ABA guarantee. No complete counter-wrap epoch invariant or termination under full occupancy is established.",
+      "evidence": [
+        "evidence.json#functions[addr=0x140088f20]",
+        "evidence.json#functions[addr=0x140089390]",
+        "verification.json",
+        "evidence.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x140089390",
+      "finding": "The in-memory bank factory pops its free-list head before checking SEDB, unsigned version<=4 and SSCF. The selected rejecting header paths return0 without a free-head restoration in this body. Generation is allocated after the first two tests and before SSCF. ActualBank mode stores the input SCD at+8; ToolBank takes a different branch. The header gate admits version0, although09FBD0 asserts outside versions1..4.",
+      "limitations": "The free-list observation assumes a nonempty intact pool, readable input and no external intervening writer. It is a body-local resource-consumption condition, not a live leak/exploit reproduction or full malformed-input safety proof. Accepted header gates do not imply successful initialization.",
+      "evidence": [
+        "evidence.json#functions[addr=0x140089390]",
+        "evidence.json#functions[addr=0x140078810]",
+        "evidence.json#functions[addr=0x140088f20]",
+        "evidence.json#functions[addr=0x14009fbd0]",
+        "verification.json",
+        "evidence.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x140089c90",
+      "finding": "The StreamBankEx factory is a separate path: it initially sets inherited payload+8 and+40 toNULL, retains external inputs at+168/+192/+200 with size/state at+208, installs StreamBankEx/adapter vtables, sets flag bit3 and links the bank into the main bank list. It does not use the same immediate SEDB/SSCF header gate as089390.",
+      "limitations": "No complete stream parser, reader ownership, allocation failure or subclass teardown contract is inferred. This contrast prevents applying ActualBank conclusions to every bank.",
+      "evidence": [
+        "evidence.json#functions[addr=0x140089c90]",
+        "evidence.json#functions[addr=0x1400919e0]",
+        "verification.json",
+        "evidence.json"
+      ]
+    },
+    {
+      "address": "0x1400ba4a0",
+      "finding": "BA4A0/BA4B0 are direct WORD+52 increment/decrement primitives. Each performs a16-bit update without a local saturation or overflow/underflow check. Signed-positive consumers therefore treat0x8000 and0xffff as nonpositive.",
+      "limitations": "Wrap examples are machine-width arithmetic, not proof that an actual game reference count reaches those values. Caller balance, locking and all writers remain open.",
+      "evidence": [
+        "evidence.json#functions[addr=0x1400ba4a0]",
+        "evidence.json#functions[addr=0x1400ba4b0]",
+        "evidence.json#functions[addr=0x140091d00]",
+        "verification.json",
+        "evidence.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x1400bb050",
+      "finding": "The selected RootSound admission path obtains bank IDs from signed WORD entries at sound+540, searches matching bank+28 and increments bank WORD+52 if found. Its destructorBB250 performs matching decrements. Both update sites are direct WORD instructions without a local range check.",
+      "limitations": "The paired sites are concrete additional writers, not a complete balanced-reference proof. Earlier admission gates, other virtuals, signed bank-ID semantics and concurrent ownership remain bounded.",
+      "evidence": [
+        "evidence.json#functions[addr=0x1400bb050]",
+        "evidence.json#functions[addr=0x1400bb250]",
+        "evidence.json#functions[addr=0x1400ba4a0]",
+        "evidence.json#functions[addr=0x1400ba4b0]",
+        "verification.json",
+        "evidence.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x140091250",
+      "finding": "The selected constructors install SoundDriver and LayoutManager vtables whose original data cells bind driver deletion/eligibility to091A70/091D00 and layout stop/eligibility to06D910/06B1D0. SoundSystem CreateCore076F20 provides concrete constructor/publication witnesses for the driver/layout globals.",
+      "limitations": "A constructor witness and static vtable cells identify this implementation path; they do not prove its live presence for every run. Other factory branches and virtual implementations remain possible.",
+      "evidence": [
+        "evidence.json#functions[addr=0x140091250]",
+        "evidence.json#functions[addr=0x140069e20]",
+        "evidence.json#functions[addr=0x140076f20]",
+        "verification.json",
+        "evidence.json"
+      ]
+    },
+    {
+      "address": "0x1400889b0",
+      "finding": "The SoundDriver initializer sets main-list node offset56, stream-list offset80 and all64 hash-bucket node offsets104. The64 bucket stores are two passes of32 unrolled immediate stores. This supplies an initializer witness for selected list layouts.",
+      "limitations": "Offsets must remain initialized and list objects intact and nonoverlapping. Other writes and concurrency are not excluded. Current study reuses08C1A0 explicitly from the accepted prior study.",
+      "evidence": [
+        "evidence.json#functions[addr=0x1400889b0]",
+        "evidence.json#functions[addr=0x140091250]",
+        "evidence.json#functions[addr=0x14008c250]",
+        "verification.json",
+        "evidence.json"
+      ]
+    },
+    {
+      "address": "0x14009fbd0",
+      "finding": "On the captured ActualBank path, initialization retains the SCD, computes sequence offsets and writes byte+15=0xff through virtual09FD20 for each sequence when flag bit3 is clear. Payload+8 and NULL auxiliary+40 survive08C1A0 only under retained bucket offsets104, valid disjoint bank/list objects and no intervening relevant-field mutation.09FD20 uses signed index comparison and signed DWORD relative offsets.",
+      "limitations": "This repeats a conditional prior finding to connect admission and retirement. Writable valid SCD layout is required; no overall payload-size check, all-writers exclusion or live mutation witness is supplied.",
+      "evidence": [
+        "evidence.json#functions[addr=0x14009fbd0]",
+        "evidence.json#functions[addr=0x14009fd20]",
+        "evidence.json#functions[addr=0x1400889b0]",
+        "evidence.json#functions[addr=0x140089390]",
+        "verification.json",
+        "evidence.json"
+      ]
+    }
+  ],
+  "gameExecution": false,
+  "independentReviewComplete": false,
+  "limitations": [
+    "No original code, importer, game, GUI, process attach or injection executed for this study.",
+    "No proof of global resource lifetime, safe audio replacement/hot reload, all writers or eventual destructor termination.",
+    "autoAnalysisReady was false during capture. Positive references and complete selected bodies are not a complete cross-reference census.",
+    "Factories, allocators, reader interfaces and player/layout virtuals are only selectively expanded.",
+    "Fresh capture count is not semantic novelty; prior mode2, ActualBank and wrapper knowledge is explicitly reused."
+  ]
+}

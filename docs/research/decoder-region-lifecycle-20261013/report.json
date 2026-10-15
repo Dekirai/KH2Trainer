@@ -1,0 +1,198 @@
+{
+  "schema": 1,
+  "status": "AUTHOR_COMPLETE",
+  "study": "decoder-region-lifecycle-20261013",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "claims": [
+    {
+      "addr": "0x1404ad390",
+      "Finding": "The complete encoder scans at most 64 QWORD slots from RVA 2B0D720. The first all-ones slot receives (input & ~0x1ffffff); an equal existing base is reused without a store. If all 64 are occupied and unequal, EAX reaches 64 and the return path shifts it left by 25 in 32 bits, ORs the low 25 input bits and sets bit 31. This nonzero result decodes with region index 0; the exhaustion path performs no table store.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404ad390]",
+        "evidence.json#functions[addr=0x1404ad3f0]",
+        "evidence.json"
+      ],
+      "Limitations": "No live exhaustion is established. Alignment, source ownership, uniqueness under concurrency, all indirect writers and caller reactions remain outside this local instruction result.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x1404ad390]",
+          "normalized": "evidence.json#functions[addr=0x1404ad390]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x1404ad3f0]",
+          "normalized": "evidence.json#functions[addr=0x1404ad3f0]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#saturation",
+          "normalized": "evidence.json",
+          "archiveMember": null
+        }
+      ]
+    },
+    {
+      "addr": "0x1404ad2c0",
+      "Finding": "The initializer uses the signed global guard at RVA 2B0D920 and TLS DWORD+16 as its fast-path check. After calling 439F50, only guard==-1 enters an eight-iteration loop with eight QWORD -1 stores per iteration: exactly 64 table slots. It then calls 439EF0 to publish completion. Its PE runtime metadata links the selected initializer to the FuncInfo record at RVA 5FA7C0 and its unwind action 5707A0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404ad2c0]",
+        "evidence.json"
+      ],
+      "Limitations": "The selected normal body contains no post-initialization slot release. This is not a proof against arbitrary indirect writes, modified code, all exception behavior or global epoch rollover. OS and language exception-dispatch implementations are not analyzed.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x1404ad2c0]",
+          "normalized": "evidence.json#functions[addr=0x1404ad2c0]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#initializerRuntimeMetadata",
+          "normalized": "evidence.json",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#tables",
+          "normalized": "evidence.json",
+          "archiveMember": null
+        }
+      ]
+    },
+    {
+      "addr": "0x1404ad280",
+      "Finding": "This complete nullable encoder wrapper returns zero for a null input. For nonnull input it calls 4AD2C0, restores the original pointer as RDX and tail-jumps to 4AD390 with the initializer return in RCX. The earlier wrapper 4AD240 has the same selected initialize-before-encode structure. Thus the initializer guard is left before either wrapper reaches the core table scan/store.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404ad280]",
+        "evidence.json#functions[addr=0x1404ad240]",
+        "evidence.zip"
+      ],
+      "Limitations": "Only these complete wrappers and the two recorded direct callers of EncodeCore are covered. This does not enumerate every possible indirect caller or establish caller-thread serialization.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x1404ad280]",
+          "normalized": "evidence.json#functions[addr=0x1404ad280]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#functions[addr=0x1404ad240]",
+          "normalized": "evidence.json#functions[addr=0x1404ad240]",
+          "archiveMember": null
+        },
+        {
+          "original": "root-capture/region-xrefs.json",
+          "normalized": "evidence.zip",
+          "archiveMember": "study/root-capture/region-xrefs.json"
+        }
+      ]
+    },
+    {
+      "addr": "0x140439f50",
+      "Finding": "The selected guard-acquisition helper enters the shared critical section at RVA 2AF9B20. A zero guard becomes -1. A -1 guard loops through 43A028(100) and rechecks; a different value updates TLS DWORD+16 from the global epoch. Every normal exit leaves the critical section, so the initializer's following table stores do not retain that critical-section ownership.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140439f50]"
+      ],
+      "Limitations": "The guard protocol delegates exclusion/waiting to imported OS functions and encoded callback paths. No general CRT correctness, deadlock freedom, starvation bound or thread provenance is claimed.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x140439f50]",
+          "normalized": "evidence.json#functions[addr=0x140439f50]",
+          "archiveMember": null
+        }
+      ]
+    },
+    {
+      "addr": "0x140439ef0",
+      "Finding": "The completion helper enters the same critical section, increments global DWORD RVA 759204, stores that value to the supplied guard and current TLS DWORD+16, leaves the section, then tail-jumps to 439FC8. The initializer calls it after its 64 sentinel stores.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140439ef0]"
+      ],
+      "Limitations": "The 32-bit epoch increment has no local overflow check. Normal successful imported calls and valid supplied/TLS addresses are premises, not proved runtime facts.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x140439ef0]",
+          "normalized": "evidence.json#functions[addr=0x140439ef0]",
+          "archiveMember": null
+        }
+      ]
+    },
+    {
+      "addr": "0x140439ec0",
+      "Finding": "The abort helper enters the shared critical section, clears the supplied DWORD guard, leaves the section and tail-jumps to 439FC8. It contains no region-table store.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140439ec0]"
+      ],
+      "Limitations": "Clearing the guard allows a later initializer retry under the surrounding protocol; this helper alone neither restores table entries nor establishes which exception outcomes invoke it.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x140439ec0]",
+          "normalized": "evidence.json#functions[addr=0x140439ec0]",
+          "archiveMember": null
+        }
+      ]
+    },
+    {
+      "addr": "0x1405707a0",
+      "Finding": "The complete unwind action loads the address of the Ptr32 guard at RVA 2B0D920 into RCX and tail-jumps to 439EC0. The original PE initializer runtime record and FuncInfo/unwind-map bytes select this action for the recorded cleanup state.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1405707a0]",
+        "evidence.json"
+      ],
+      "Limitations": "This establishes the recorded exception-cleanup binding and guard-reset action. It does not prove an exception occurs, that a partial table is externally usable, or the complete OS/language exception dispatch semantics.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x1405707a0]",
+          "normalized": "evidence.json#functions[addr=0x1405707a0]",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#initializerRuntimeMetadata",
+          "normalized": "evidence.json",
+          "archiveMember": null
+        },
+        {
+          "original": "evidence.json#tables",
+          "normalized": "evidence.json",
+          "archiveMember": null
+        }
+      ]
+    },
+    {
+      "addr": "0x140439fc8",
+      "Finding": "The guard notification helper tests the shared event handle. With a nonnull handle it calls SetEvent and tail-calls ResetEvent. With a null handle it XOR/rotates an encoded function pointer and tail-calls it with the shared condition-variable object address.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140439fc8]"
+      ],
+      "Limitations": "Imported API behavior and the indirect target's identity/implementation remain external to the selected complete body; no delivery or scheduling guarantee follows.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x140439fc8]",
+          "normalized": "evidence.json#functions[addr=0x140439fc8]",
+          "archiveMember": null
+        }
+      ]
+    },
+    {
+      "addr": "0x14043a028",
+      "Finding": "The guard wait helper uses the event-handle branch to leave the shared critical section, call WaitForSingleObjectEx(handle, milliseconds, false), and enter the section again. The null-handle branch instead decodes and calls an indirect target with the shared condition object, critical-section address and timeout.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14043a028]"
+      ],
+      "Limitations": "The selected caller supplies 100 milliseconds. The helper ignores the wait result in the shown branch. Callback binding, OS synchronization semantics and total wait duration remain outside this claim.",
+      "EvidenceNormalization": [
+        {
+          "original": "evidence.json#functions[addr=0x14043a028]",
+          "normalized": "evidence.json#functions[addr=0x14043a028]",
+          "archiveMember": null
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "The 64 slot-address queries find direct static xrefs, not an exhaustive pointer-alias write closure.",
+    "Within the selected normal initializer/encoder bodies, slots are sentinel-initialized and filled/reused by equality. No ordinary slot-removal/recycling routine is demonstrated.",
+    "A region base maps a 32-MiB address range and does not identify an allocation generation. Stable table bytes do not exclude resource allocation reuse.",
+    "No product changes, native execution, live game, save writes or Twitch actions."
+  ],
+  "archive": "evidence.zip",
+  "provenance": "provenance.json",
+  "completeSemanticAnalysis": false
+}

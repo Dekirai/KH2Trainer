@@ -1,0 +1,140 @@
+{
+  "schema": "native-research-report-v1",
+  "title": "Ordinary MSET cache lifetime and asynchronous completion",
+  "scope": "Read-only bounded static study; no live scope, hook, source change, native execution or product-safety claim. Fresh and reused evidence are separately identified. Evidence contains43 function bodies plus one separate completion callback code range;44 bodies total.39DEE0 is not promoted to an inventory function.",
+  "claims": [
+    {
+      "addr": "0x14039d590",
+      "Finding": "The reservation planner assigns destination bases without reading node WORD+2. The relocation/load body39E690 also does not read this reference field; acquire/release39CC40/39DA10 therefore do not pin bytes against these operations.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039d590]",
+        "evidence.json#functions[addr=0x14039e690]",
+        "evidence.json#functions[addr=0x14039cc40]",
+        "evidence.json#functions[addr=0x14039da10]",
+        "evidence.json#functions[addr=0x14039dbb0]",
+        "anchors.json",
+        "model-results.json"
+      ],
+      "Limitations": "Restricted to these complete bodies. The reference count has other uses, including state queries; this is not a global proof that it is ignored."
+    },
+    {
+      "addr": "0x14039e690",
+      "Finding": "The async-load branch sets node state1, submits callback39DEE0 via3A0BD0, then copies base+88 to+96 before callback completion. Equal bases do not prove completed loading. The synchronous move branch unfixes, copies16-byte units, fixes and finalizes before return.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039e690]",
+        "evidence.json#functions[addr=0x14039d460]",
+        "anchors.json",
+        "model-results.json"
+      ],
+      "Limitations": "Requires trusted observed cache provenance and bounds. Existing pending/unknown nodes are not made safe merely by reading state3."
+    },
+    {
+      "addr": "0x1403a0710",
+      "Finding": "The request initializer initializes state0 and links the request into the global queue2A0D628. The caller3A0BD0 then stores destination+56, callback+64 and context+72. Initializer return and submit return are not IO completion.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a0710]",
+        "evidence.json#functions[addr=0x1403a0bd0]",
+        "anchors.json",
+        "model-results.json"
+      ],
+      "Limitations": "3A0710 is a fresh cross-capture of an already known body, not a newly discovered function. Submit suppression before allocation has no successful cachecompletion claim."
+    },
+    {
+      "addr": "0x1403a0c60",
+      "Finding": "The worker selects a state0 request, sets state1, performs its read, stores result+80, changes selected BAR header profiles, prepares nonzero-result type1 BARs, then writes state2 and loops. There is no later payload store for that request in this body after state2.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a0c60]",
+        "evidence.json#functions[addr=0x1403a64f0]",
+        "anchors.json",
+        "model-results.json",
+        "evidence.json#functions[addr=0x1403f9850]",
+        "evidence.json#functions[addr=0x140106700]",
+        "evidence.json#functions[addr=0x14012f070]",
+        "evidence.json#functions[addr=0x14012e5c0]"
+      ],
+      "Limitations": "The entire worker never returns and is not a finite Before/After event. Nonzero result uses unsigned compare; no payload-format or exact-length guarantee follows. Workerbody order does not prove that registered provider handlers retain no aliases or perform no postreturn writes. Ordinary request selector WORD94=0 chooses3F9850;3F99E0 is excluded."
+    },
+    {
+      "addr": "0x1403a0790",
+      "Finding": "The finite consumer processes state2 requests. For type1/nonzero result it fixes the BAR before callback; zero result clears the callback destination. Callback precedes unlink and free. No further request-payload write follows unlink in this body.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a0790]",
+        "evidence.json#functions[addr=0x1403a6840]",
+        "anchors.json",
+        "model-results.json"
+      ],
+      "Limitations": "The guard on global79CF00+4752 can defer completion. Callback may reenter or submit more work; admission needs outermost completion return and an empty queue."
+    },
+    {
+      "addr": "0x14039dee0",
+      "Finding": "The cache callback branches only on resultRDX being zero: zero writes stateFF; nonzero tailcalls39E900 with nodeR8. The ordinary kind0 branch writes state3. Kind1 can remain awaiting audio and kind2 creates child aliases and removes its parent.",
+      "Evidence": [
+        "evidence.json#code_ranges[addr=0x14039dee0]",
+        "evidence.json#functions[addr=0x14039e900]",
+        "anchors.json",
+        "model-results.json"
+      ],
+      "Limitations": "Only ordinary kind0 is proposed for admission. No cancellation-success transition is established; absence of callback never means completed success."
+    },
+    {
+      "addr": "0x1403a09c0",
+      "Finding": "Initializer argument-1 installs3A0C60 via15EC70/16C9D0 on a Windows CreateThread path and separately registers3A0790 as a scheduler task through14F770. Thus IO preparation and completion fixups have different dispatch paths.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a09c0]",
+        "evidence.json#functions[addr=0x14015ec70]",
+        "evidence.json#functions[addr=0x14016c9d0]",
+        "evidence.json#functions[addr=0x14016c9b0]",
+        "evidence.json#functions[addr=0x14015ed20]",
+        "evidence.json#functions[addr=0x14014f770]",
+        "evidence.json#functions[addr=0x14015edd0]",
+        "evidence.json#functions[addr=0x1400fdd90]",
+        "anchors.json",
+        "model-results.json"
+      ],
+      "Limitations": "The scheduler callback thread is not statically identified as the trainer game thread. Thread identity must be observed. Existing thread-factory bodies are explicit dependencies."
+    },
+    {
+      "addr": "0x14039e340",
+      "Finding": "The native wait polls request busy3A0A30 plus another subsystem and yields through150060; it also accepts only node state0 or3 for categories below10000. That wait policy does not establish loaded state3 or ordinary reservation provenance.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039e340]",
+        "evidence.json#functions[addr=0x1403a0a30]",
+        "evidence.json#functions[addr=0x140150060]",
+        "evidence.json#functions[addr=0x140135470]",
+        "anchors.json",
+        "model-results.json"
+      ],
+      "Limitations": "No gate lock may be held while invoking the yielding native wait. No claim is made about completing all IO merely from an empty queue at bootstrap."
+    },
+    {
+      "addr": "0x1403a6840",
+      "Finding": "The BAR fixer selects its specialized path only when BYTE3&C0 equals40. Header80 follows ordinary packed-pointer fixup and the type9 constructor dispatch. The worker writes80 for the obj/P_EX100 name prefix; metadata bits10/20 are retained.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a6840]",
+        "evidence.json#functions[addr=0x1403a0c60]",
+        "evidence.json#functions[addr=0x1401c5f20]",
+        "evidence.json#functions[addr=0x1401c3840]",
+        "evidence.json#functions[addr=0x1401d2610]",
+        "evidence.json#functions[addr=0x1401dafb0]",
+        "anchors.json",
+        "model-results.json"
+      ],
+      "Limitations": "The proposed copier policy still rejects every bit40 profile, including C0 although the native fixer takes the ordinary branch for C0. This addendum does not alter the frozen earlier contract or prove an actual live Sora resource."
+    },
+    {
+      "addr": "0x14039e000",
+      "Finding": "Cache registration can return or recategorize an existing node and reset state0; only its new allocation branch initializes the complete node with kind0, zero bases and rounded extent. Return address identity alone cannot distinguish a new ordinary reservation from a reused child.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039e000]",
+        "evidence.json#functions[addr=0x14039e1e0]",
+        "evidence.json#functions[addr=0x14039e900]",
+        "evidence.json#functions[addr=0x14039dd70]",
+        "evidence.json#functions[addr=0x14039e2a0]",
+        "evidence.json#functions[addr=0x14039cca0]",
+        "anchors.json",
+        "model-results.json"
+      ],
+      "Limitations": "A held-scope implementation needs observed origin/retirement history, not a trusted boolean supplied by a caller. Reused unknown nodes remain excluded."
+    }
+  ]
+}

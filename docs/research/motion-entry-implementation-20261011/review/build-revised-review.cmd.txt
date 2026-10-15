@@ -1,0 +1,18 @@
+@echo off
+call "C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Auxiliary\Build\vcvars64.bat" >nul
+if errorlevel 1 exit /b 1
+cd /d "%~dp0"
+cl /nologo /std:c++17 /EHsc /W4 /O2 /MT ..\..\tests\KH2Trainer.Bridge.Tests\MotionObserverTests.cpp /Fe:MotionObserverTests.exe /Fo:MotionObserverTests.obj
+if errorlevel 1 exit /b 1
+MotionObserverTests.exe > observer-tests.txt
+if errorlevel 1 exit /b 1
+cl /nologo /std:c++17 /EHsc /W4 /O2 /MT ..\..\tests\KH2Trainer.Bridge.Tests\MotionOriginalTrampolineTests.cpp /Fe:MotionOriginalTrampolineTests.exe /Fo:MotionOriginalTrampolineTests.obj
+if errorlevel 1 exit /b 1
+MotionOriginalTrampolineTests.exe > trampoline-tests.txt
+if errorlevel 1 exit /b 1
+cl /nologo /std:c++17 /EHsc /W4 /O2 /MT /DMOTION_ORIGINAL_PRODUCTION_COMPILE /c ..\..\tests\KH2Trainer.Bridge.Tests\MotionOriginalTrampolineTests.cpp /Fo:MotionOriginalProduction.obj
+if errorlevel 1 exit /b 1
+cl /nologo /std:c++17 /EHsc /W4 /O2 /MT CallbackPolicyReviewTests.cpp /Fe:CallbackPolicyReviewTests.exe /Fo:CallbackPolicyReviewTests.obj
+if errorlevel 1 exit /b 1
+CallbackPolicyReviewTests.exe > callback-policy-tests.txt
+exit /b %errorlevel%

@@ -1,0 +1,70 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"addr\":\"0x1403A6A10\",\"code\":\"// Static analysis (SHA256 9002b2de...49ed). Analysis label: kh2_BAR_ReleaseResources. Type-specific cleanup; recursive nested containers and specialized resource frees.\\nchar __fastcall kh2_BAR_ReleaseResources(__int64 a1, unsigned int a2)\\n{\\n  __int64 v4; // rax\\n  __int64 v5; // rax\\n  int v6; // ebp\\n  int *v7; // rdi\\n  unsigned __int64 v8; // rbx\\n  __int64 v9; // rax\\n  __int64 v10; // r9\\n  __int64 v11; // rcx\\n  char v12; // al\\n  __int64 v13; // rcx\\n  __int64 v14; // rax\\n\\n  if ( (*(_BYTE *)(a1 + 3) & 0xC0) == 0x40 ) /*0x1403a6a26*/\\n  {\\n    v4 = kh2_Ptr32_DecodeNullable(*(_DWORD *)(a1 + 8)); /*0x1403a6a2b*/\\n    LOBYTE(v5) = sub_1401A2C20(v4, 1); /*0x1403a6a41*/\\n  }\\n  else\\n  {\\n    v6 = 0; /*0x1403a6a55*/\\n    *(_DWORD *)(a1 + 8) = kh2_Ptr32_EncodeNullable(a1); /*0x1403a6a57*/\\n    if ( *(int *)(a1 + 4) > 0 ) /*0x1403a6a5d*/\\n    {\\n      v7 = (int *)(a1 + 24); /*0x1403a6a68*/\\n      do /*0x1403a6b60*/\\n      {\\n        if ( v7[1] && (*((_BYTE *)v7 - 6) & 1) == 0 ) /*0x1403a6a92*/\\n        {\\n          v8 = kh2_Ptr32_DecodeNullable(*(_DWORD *)(a1 + 8)); /*0x1403a6aa2*/\\n          if ( v8 > kh2_Ptr32_DecodeNullable(*v7) ) /*0x1403a6aad*/\\n            break; /*0x1403a6aad*/\\n          v9 = kh2_Ptr32_DecodeNullable(*v7); /*0x1403a6ab5*/\\n          v10 = v9; /*0x1403a6abe*/\\n          switch ( *((_WORD *)v7 - 4) ) /*0x1403a6ae3*/\\n          {\\n            case 1: /*0x1403a6ae3*/\\n            case 0x11: /*0x1403a6ae3*/\\n            case 0x14: /*0x1403a6ae3*/\\n            case 0x1E: /*0x1403a6ae3*/\\n            case 0x2E: /*0x1403a6ae3*/\\n              kh2_BAR_ReleaseResources(v9, a2); /*0x1403a6aeb*/\\n              break; /*0x1403a6af0*/\\n            case 4: /*0x1403a6ae3*/\\n              sub_1401BE1C0(v9, 1); /*0x1403a6afc*/\\n              break; /*0x1403a6b01*/\\n            case 7: /*0x1403a6ae3*/\\n              sub_1401A3A60(v9); /*0x1403a6b06*/\\n              break; /*0x1403a6b0b*/\\n            case 0x12: /*0x1403a6ae3*/\\n              sub_1402C4230(v9); /*0x1403a6b10*/\\n              break; /*0x1403a6b15*/\\n            case 0x18: /*0x1403a6ae3*/\\n              sub_140191160(v9); /*0x1403a6b1a*/\\n              break; /*0x1403a6b1f*/\\n            case 0x1D: /*0x1403a6ae3*/\\n              sub_140191210(v9); /*0x1403a6b24*/\\n              break; /*0x1403a6b29*/\\n            case 0x22: /*0x1403a6ae3*/\\n            case 0x30: /*0x1403a6ae3*/\\n              v11 = 0; /*0x1403a6b2b*/\\n              while ( 1 ) /*0x1403a6b30*/\\n              {\\n                v12 = *(_BYTE *)(v10 + v11++); /*0x1403a6b30*/\\n                if ( v12 != aOrigin[v11 - 1] ) /*0x1403a6b3d*/\\n                  break; /*0x1403a6b3d*/\\n                if ( v11 == 7 ) /*0x1403a6b43*/\\n                {\\n                  v13 = *(unsigned int *)(v10 + 12); /*0x1403a6b45*/\\n                  if ( (_DWORD)v13 ) /*0x1403a6b4b*/\\n                    sub_1401363B0(v13, 2); /*0x1403a6b52*/\\n                  goto LABEL_20; /*0x1403a6b52*/\\n                }\\n              }\\n              break; /*0x1403a6b52*/\\n            default:\\n              break;\\n          }\\n        }\\nLABEL_20:\\n        ++v6; /*0x1403a6b57*/\\n        v7 += 4; /*0x1403a6b59*/\\n      }\\n      while ( v6 < *(_DWORD *)(a1 + 4) ); /*0x1403a6b60*/\\n    }\\n    v5 = kh2_Ptr32_DecodeNullable(*(_DWORD *)(a1 + 12) ^ (*(_DWORD *)(a1 + 12) /*0x1403a6b75*/\\n                                                        ^ (*(unsigned __int8 *)(a1 + 3) >> 4))\\n                                                       & 3u);\\n    if ( v5 ) /*0x1403a6b92*/\\n    {\\n      v14 = kh2_Ptr32_DecodeNullable(*(_DWORD *)(a1 + 12) ^ (*(_DWORD *)(a1 + 12) /*0x1403a6baa*/\\n                                                           ^ (*(unsigned __int8 *)(a1 + 3) >> 4))\\n                                                          & 3u);\\n      sub_14012E460(v14, a2 != 0); /*0x1403a6bb5*/\\n      LODWORD(v5) = kh2_Ptr32_EncodeNullable(0); /*0x1403a6bbc*/\\n      *(_DWORD *)(a1 + 12) &= 3u; /*0x1403a6bc1*/\\n      *(_BYTE *)(a1 + 3) &= 0xCFu; /*0x1403a6bc7*/\\n      *(_DWORD *)(a1 + 12) |= v5 & 0xFFFFFFFC; /*0x1403a6bce*/\\n      LOBYTE(v5) = 16 * (v5 & 3); /*0x1403a6bd3*/\\n      *(_BYTE *)(a1 + 3) |= v5; /*0x1403a6bd6*/\\n    }\\n  }\\n  return v5; /*0x1403a6a3a*/\\n}\",\"line_count\":106,\"total_lines\":106,\"truncated\":false,\"cursor\":{\"done\":true},\"refs\":[{\"addr\":\"0x1404ad270\",\"name\":\"kh2_Ptr32_DecodeNullable\"},{\"addr\":\"0x1401a2c20\",\"name\":\"sub_1401A2C20\"},{\"addr\":\"0x1404ad240\",\"name\":\"kh2_Ptr32_EncodeNullable\"},{\"addr\":\"0x1403a6a10\",\"name\":\"kh2_BAR_ReleaseResources\"},{\"addr\":\"0x1401be1c0\",\"name\":\"sub_1401BE1C0\"},{\"addr\":\"0x1401a3a60\",\"name\":\"sub_1401A3A60\"},{\"addr\":\"0x1402c4230\",\"name\":\"sub_1402C4230\"},{\"addr\":\"0x140191160\",\"name\":\"sub_140191160\"},{\"addr\":\"0x140191210\",\"name\":\"sub_140191210\"},{\"addr\":\"0x1405b4b24\",\"name\":\"aOrigin\",\"string\":\"ORIGIN\"},{\"addr\":\"0x1401363b0\",\"name\":\"sub_1401363B0\"},{\"addr\":\"0x14012e460\",\"name\":\"sub_14012E460\"}]}"
+    }
+  ],
+  "structuredContent": {
+    "addr": "0x1403A6A10",
+    "code": "// Static analysis (SHA256 9002b2de...49ed). Analysis label: kh2_BAR_ReleaseResources. Type-specific cleanup; recursive nested containers and specialized resource frees.\nchar __fastcall kh2_BAR_ReleaseResources(__int64 a1, unsigned int a2)\n{\n  __int64 v4; // rax\n  __int64 v5; // rax\n  int v6; // ebp\n  int *v7; // rdi\n  unsigned __int64 v8; // rbx\n  __int64 v9; // rax\n  __int64 v10; // r9\n  __int64 v11; // rcx\n  char v12; // al\n  __int64 v13; // rcx\n  __int64 v14; // rax\n\n  if ( (*(_BYTE *)(a1 + 3) & 0xC0) == 0x40 ) /*0x1403a6a26*/\n  {\n    v4 = kh2_Ptr32_DecodeNullable(*(_DWORD *)(a1 + 8)); /*0x1403a6a2b*/\n    LOBYTE(v5) = sub_1401A2C20(v4, 1); /*0x1403a6a41*/\n  }\n  else\n  {\n    v6 = 0; /*0x1403a6a55*/\n    *(_DWORD *)(a1 + 8) = kh2_Ptr32_EncodeNullable(a1); /*0x1403a6a57*/\n    if ( *(int *)(a1 + 4) > 0 ) /*0x1403a6a5d*/\n    {\n      v7 = (int *)(a1 + 24); /*0x1403a6a68*/\n      do /*0x1403a6b60*/\n      {\n        if ( v7[1] && (*((_BYTE *)v7 - 6) & 1) == 0 ) /*0x1403a6a92*/\n        {\n          v8 = kh2_Ptr32_DecodeNullable(*(_DWORD *)(a1 + 8)); /*0x1403a6aa2*/\n          if ( v8 > kh2_Ptr32_DecodeNullable(*v7) ) /*0x1403a6aad*/\n            break; /*0x1403a6aad*/\n          v9 = kh2_Ptr32_DecodeNullable(*v7); /*0x1403a6ab5*/\n          v10 = v9; /*0x1403a6abe*/\n          switch ( *((_WORD *)v7 - 4) ) /*0x1403a6ae3*/\n          {\n            case 1: /*0x1403a6ae3*/\n            case 0x11: /*0x1403a6ae3*/\n            case 0x14: /*0x1403a6ae3*/\n            case 0x1E: /*0x1403a6ae3*/\n            case 0x2E: /*0x1403a6ae3*/\n              kh2_BAR_ReleaseResources(v9, a2); /*0x1403a6aeb*/\n              break; /*0x1403a6af0*/\n            case 4: /*0x1403a6ae3*/\n              sub_1401BE1C0(v9, 1); /*0x1403a6afc*/\n              break; /*0x1403a6b01*/\n            case 7: /*0x1403a6ae3*/\n              sub_1401A3A60(v9); /*0x1403a6b06*/\n              break; /*0x1403a6b0b*/\n            case 0x12: /*0x1403a6ae3*/\n              sub_1402C4230(v9); /*0x1403a6b10*/\n              break; /*0x1403a6b15*/\n            case 0x18: /*0x1403a6ae3*/\n              sub_140191160(v9); /*0x1403a6b1a*/\n              break; /*0x1403a6b1f*/\n            case 0x1D: /*0x1403a6ae3*/\n              sub_140191210(v9); /*0x1403a6b24*/\n              break; /*0x1403a6b29*/\n            case 0x22: /*0x1403a6ae3*/\n            case 0x30: /*0x1403a6ae3*/\n              v11 = 0; /*0x1403a6b2b*/\n              while ( 1 ) /*0x1403a6b30*/\n              {\n                v12 = *(_BYTE *)(v10 + v11++); /*0x1403a6b30*/\n                if ( v12 != aOrigin[v11 - 1] ) /*0x1403a6b3d*/\n                  break; /*0x1403a6b3d*/\n                if ( v11 == 7 ) /*0x1403a6b43*/\n                {\n                  v13 = *(unsigned int *)(v10 + 12); /*0x1403a6b45*/\n                  if ( (_DWORD)v13 ) /*0x1403a6b4b*/\n                    sub_1401363B0(v13, 2); /*0x1403a6b52*/\n                  goto LABEL_20; /*0x1403a6b52*/\n                }\n              }\n              break; /*0x1403a6b52*/\n            default:\n              break;\n          }\n        }\nLABEL_20:\n        ++v6; /*0x1403a6b57*/\n        v7 += 4; /*0x1403a6b59*/\n      }\n      while ( v6 < *(_DWORD *)(a1 + 4) ); /*0x1403a6b60*/\n    }\n    v5 = kh2_Ptr32_DecodeNullable(*(_DWORD *)(a1 + 12) ^ (*(_DWORD *)(a1 + 12) /*0x1403a6b75*/\n                                                        ^ (*(unsigned __int8 *)(a1 + 3) >> 4))\n                                                       & 3u);\n    if ( v5 ) /*0x1403a6b92*/\n    {\n      v14 = kh2_Ptr32_DecodeNullable(*(_DWORD *)(a1 + 12) ^ (*(_DWORD *)(a1 + 12) /*0x1403a6baa*/\n                                                           ^ (*(unsigned __int8 *)(a1 + 3) >> 4))\n                                                          & 3u);\n      sub_14012E460(v14, a2 != 0); /*0x1403a6bb5*/\n      LODWORD(v5) = kh2_Ptr32_EncodeNullable(0); /*0x1403a6bbc*/\n      *(_DWORD *)(a1 + 12) &= 3u; /*0x1403a6bc1*/\n      *(_BYTE *)(a1 + 3) &= 0xCFu; /*0x1403a6bc7*/\n      *(_DWORD *)(a1 + 12) |= v5 & 0xFFFFFFFC; /*0x1403a6bce*/\n      LOBYTE(v5) = 16 * (v5 & 3); /*0x1403a6bd3*/\n      *(_BYTE *)(a1 + 3) |= v5; /*0x1403a6bd6*/\n    }\n  }\n  return v5; /*0x1403a6a3a*/\n}",
+    "line_count": 106,
+    "total_lines": 106,
+    "truncated": false,
+    "cursor": {
+      "done": true
+    },
+    "refs": [
+      {
+        "addr": "0x1404ad270",
+        "name": "kh2_Ptr32_DecodeNullable"
+      },
+      {
+        "addr": "0x1401a2c20",
+        "name": "sub_1401A2C20"
+      },
+      {
+        "addr": "0x1404ad240",
+        "name": "kh2_Ptr32_EncodeNullable"
+      },
+      {
+        "addr": "0x1403a6a10",
+        "name": "kh2_BAR_ReleaseResources"
+      },
+      {
+        "addr": "0x1401be1c0",
+        "name": "sub_1401BE1C0"
+      },
+      {
+        "addr": "0x1401a3a60",
+        "name": "sub_1401A3A60"
+      },
+      {
+        "addr": "0x1402c4230",
+        "name": "sub_1402C4230"
+      },
+      {
+        "addr": "0x140191160",
+        "name": "sub_140191160"
+      },
+      {
+        "addr": "0x140191210",
+        "name": "sub_140191210"
+      },
+      {
+        "addr": "0x1405b4b24",
+        "name": "aOrigin",
+        "string": "ORIGIN"
+      },
+      {
+        "addr": "0x1401363b0",
+        "name": "sub_1401363B0"
+      },
+      {
+        "addr": "0x14012e460",
+        "name": "sub_14012E460"
+      }
+    ]
+  },
+  "isError": false
+}

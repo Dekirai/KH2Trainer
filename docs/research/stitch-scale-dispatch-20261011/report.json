@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "Domain": "native",
+  "title": "Stitch scalar reset: BDX virtual dispatch, factory binding and callback lifecycle",
+  "date": "2026-10-11",
+  "status": "BOUNDED_STATIC_STUDY_PENDING_INDEPENDENT_REVIEW",
+  "scope": "15 fresh complete captures, five explicitly reused bodies, original descriptor and RTTI data. The actual generic virtual-slot caller is established; retail script invocation and action-table initialization remain open. No product change.",
+  "claims": [
+    {
+      "addr": "0x1405364b0",
+      "Finding": "The complete 11-instruction adapter decodes operand0's low DWORD, decodes DWORD(wrapper+4), passes that Actor to 1B4B80, and tail-jumps through the resulting object's virtual +80 cell at 5364D5. 1B4B80 returns QWORD(Actor+3576). For an object retaining the original Stitch vtable 5B3FC8, the selected cell is 1C7E00. No local null, type, tag, ownership or scalar-value test precedes the tail dispatch.",
+      "Evidence": ["evidence.json#functions[addr=0x1405364b0]", "evidence.json#functions[addr=0x1401b4b80]", "dependencies.json#functions[addr=0x1401c6d00]", "data-capture.json", "model-results.json"],
+      "Limitations": "Conditional native routing, with valid decoded pointers and the stated vtable. It does not identify an executing retail script or prove current cache identity, object lifetime, thread ownership or all callers. An alternate vtable selects its own +80 target."
+    },
+    {
+      "addr": "0x140536480",
+      "Finding": "The companion adapter performs the same double decode and Actor+3576 access, then tail-jumps through virtual +72 at 5364A5. The original Stitch +72 cell selects 1C9D60. Original bank10 at 753490+10*8 points to 787070; descriptors 7870A0 and 7870B0 are respectively indices3/4, target 536480/5364B0, argument count1, return flag absent, reserved DWORD zero.",
+      "Evidence": ["evidence.json#functions[addr=0x140536480]", "dependencies.json#functions[addr=0x1401c9d60]", "data-capture.json", "docs/research/bdx-trap-registry-20261008/evidence.json#functions[addr=0x14041b400]", "docs/research/bdx-trap-registry-20261008/report.json", "model-results.json"],
+      "Limitations": "The BDX dispatcher interpretation is explicitly reused from pinned prior evidence. These are concrete bank10:3 and bank10:4 registration routes, not proof of a script event reaching either route."
+    },
+    {
+      "addr": "0x1401b06e0",
+      "Finding": "The factory's type-selection block obtains 3B5B20's WORD type. Type200 selects Actor+3592=14, allocation size1944 and, on nonnull allocation, 1C6D00 with RCX=allocation, RDX=Actor and R8=71D800+zero-extended DWORD(71D800+14*4). It stores the constructed result, or zero after failed allocation, to Actor+3576, stores 1CA240 to Actor+3584, and sets mask0x2 in Actor+3608 and Actor+3344. It subsequently calls 1CCCF0 with Actor+3576. The original Stitch constructor writes vtable5B3FC8; its COL resolves to .?AVStitch@kn@@.",
+      "Evidence": ["evidence.json#functions[addr=0x1401b06e0]", "evidence.json#functions[addr=0x1403b5b20]", "dependencies.json#functions[addr=0x1401c6d00]", "data-capture.json", "model-results.json"],
+      "Limitations": "This binds one factory branch to the Stitch object and later generic adapter. Allocation failure is not established safe: the later helper receives zero. Resource contents, subsequent mutations and live type200 allocation are outside scope. Synthetic factory cases begin at the captured type-selection block, stub allocation/constructors and do not validate the resource table."
+    },
+    {
+      "addr": "0x1401cc120",
+      "Finding": "The base constructor stores RDX at object+8, R8 at object+16, zero DWORD at +24, zero QWORD at +32 and the FriendPersonality vtable at +0. The captured Stitch constructor calls it with the inherited factory Actor/resource arguments before replacing the vtable. The separate 3B5B20 helper obtains the type from WORD(DecodeNullable(DWORD(Actor+8))+76).",
+      "Evidence": ["evidence.json#functions[addr=0x1401cc120]", "evidence.json#functions[addr=0x1403b5b20]", "dependencies.json#functions[addr=0x1401c6d00]", "model-results.json"],
+      "Limitations": "Argument flow and stores are established from ASM, including parameters omitted by abbreviated decompiler prototypes. This is not a resource allocation/lifetime contract or a total context-writer inventory."
+    },
+    {
+      "addr": "0x1401b7d20",
+      "Finding": "The complete setter writes RDX directly to QWORD(Actor+4000). The reused Stitch setup1C9D60 passes its context Actor at this+8 and callback1C7BF0 to this setter; reused reset1C7E00 ends by passing that context Actor and zero. Thus setup and reset install and clear this concrete callback field.",
+      "Evidence": ["evidence.json#functions[addr=0x1401b7d20]", "dependencies.json#functions[addr=0x1401c9d60]", "dependencies.json#functions[addr=0x1401c7e00]", "model-results.json"],
+      "Limitations": "No claim that these are all writers, that setup/reset pairing is guaranteed, or that callback clearing prevents an already-dispatched invocation."
+    },
+    {
+      "addr": "0x14053fa00",
+      "Finding": "Original bank7 points to 7883F0; descriptor788590 is index26 with target53FA00 and flags0x40000002 (two operands and dispatcher return flag). The adapter double-decodes operand0, preserves the low DWORD of operand1 in EBX, explicitly sets EDX=EBX and RCX=Actor, then calls1B2870. It writes returned EAX and high DWORD0x544E4940 into operand0. The fresh ASM preserves the second argument omitted from its decompiled call expression.",
+      "Evidence": ["evidence.json#functions[addr=0x14053fa00]", "data-capture.json", "docs/research/bdx-trap-registry-20261008/report.json", "model-results.json"],
+      "Limitations": "The adapter establishes transport of low32 action and return value. It performs no local action validation. Dispatcher semantics are reused, and concrete retail invocation remains unobserved."
+    },
+    {
+      "addr": "0x1401b2870",
+      "Finding": "The complete body is an indirect tail jump through QWORD(RCX+4000), preserving the Actor in RCX and action in EDX from53FA00. There is no local null test. When the field contains the setup-installed1C7BF0 pointer, this is a concrete invocation route into that callback.",
+      "Evidence": ["evidence.json#functions[addr=0x1401b2870]", "evidence.json#functions[addr=0x1401b7d20]", "evidence.json#functions[addr=0x14053fa00]", "model-results.json"],
+      "Limitations": "This does not establish that the field is populated for arbitrary callers or actions. No native call was executed during analysis."
+    },
+    {
+      "addr": "0x1401c7bf0",
+      "Finding": "The callback obtains Actor+3576 through1B4B80. Actions525,526,527 respectively form member-descriptor keys for1C8610,1C8700,1C8440, with the remaining12 key bytes zero, and call1CD150. Other actions leave the record pointer zero. After two3BDA50 calls it calls1B7F10(Actor,0,0), then unconditionally reads signed DWORD(record+16) at1C7CB3 and calls QWORD(record+8) with an adjusted personality this pointer. There is no local missing-record rejection. Original image records at724340 have zero function QWORDs at +8 in each of seven72-byte records.",
+      "Evidence": ["evidence.json#functions[addr=0x1401c7bf0]", "evidence.json#functions[addr=0x1401cd150]", "evidence.json#functions[addr=0x1401b7f10]", "data-capture.json", "model-results.json"],
+      "Limitations": "The record initializer and the live table contents are unresolved. No claim that actions525..527 can safely run. Synthetic callback tests intentionally stop before the unchecked dereference and stub the lookup; callee behavior after it is not modeled. The original zero data is not a statement about initialized runtime records."
+    },
+    {
+      "addr": "0x1401cd150",
+      "Finding": "The lookup requires nonnull QWORD(personality+32) and positive signed DWORD(personality+24), scans72-byte records, compares record+8 to key+0, and for a nonzero function also compares DWORDs record+16/+20/+24 to key+8/+12/+16. A zero function match skips those three comparisons. It returns the first matching record or zero.",
+      "Evidence": ["evidence.json#functions[addr=0x1401cd150]"],
+      "Limitations": "Established from complete ASM and original bytes, not synthetic execution of this lookup. No backing-array extent, mutation synchronization or record lifetime is proved."
+    },
+    {
+      "addr": "0x1401b7f10",
+      "Finding": "The complete setter writes RDX to Actor+3816 and R8 to Actor+3824. In1C7BF0 the first call clears both fields before the record dereference; after the indirect member call returns, another call stores the selected record and zero before the remaining helper calls.",
+      "Evidence": ["evidence.json#functions[addr=0x1401b7f10]", "evidence.json#functions[addr=0x1401c7bf0]"],
+      "Limitations": "Local write order only. Other record writers, reentrancy, resource ownership and the indirect member call's behavior remain open."
+    },
+    {
+      "addr": "0x1401b1400",
+      "Finding": "The cleanup body independently visits Actor+3560,+3568,+3576; for each nonnull object it calls virtual slot0(object,1), then clears that field, and finally tail-calls3C3470. A separate pre-cleanup1B1A30 unconditionally calls personality virtual+8 before its later conditional field cleanup and tail3C3550. The original Stitch slot0 is1C7440 and slot+8 is the complete1CC760 RET 0 body (no return-value assignment); neither local virtual selection is +80.",
+      "Evidence": ["evidence.json#functions[addr=0x1401b1400]", "evidence.json#functions[addr=0x1401b1a30]", "evidence.json#functions[addr=0x1401cc760]", "dependencies.json#functions[addr=0x1401c7440]", "data-capture.json", "model-results.json"],
+      "Limitations": "These concrete cleanup selections do not prove a global reset-before-free protocol or exclude a transitive reset elsewhere. Destructors/helpers are stubbed in cleanup models. The1B1A30 route is inspected statically rather than synthetically executed."
+    },
+    {
+      "addr": "0x1401c7e00",
+      "Finding": "Connecting the new bank10:4 adapter to the prior reset body shows that dispatch Actor/personality context and scalar target are different dependencies:1C7E00 uses this+8 for context operations but calls1B4B70(0) for the cached Actor whose +60 receives0x3F800000 at1C7E49. The local store also occurs when that scalar already equals1.0. Its final callback clear uses the context Actor. Consequently observing only scalar inequality cannot identify every execution of this takeover path.",
+      "Evidence": ["evidence.json#functions[addr=0x1405364b0]", "dependencies.json#functions[addr=0x1401c7e00]", "dependencies.json#functions[addr=0x1401b4b70]", "evidence.json#functions[addr=0x1401b7d20]", "model-results.json"],
+      "Limitations": "The reset and cache accessor are explicitly reused; the new result is their concrete connection to the adapter/factory. This does not prove a complete trainer revoke mechanism, pre-consumer ordering, cache freshness, actor allocation identity or safe Tiny/Giant activation. It provides no basis for excluding all summons."
+    }
+  ],
+  "openQuestions": [
+    "Which retail BDX scripts invoke bank10:3/4 and bank7:26, and in which event/context order?",
+    "Which initializer populates the seven Stitch action records, and what protects them across reset and destruction?",
+    "Which cache/context revision and pre-consumer boundary lets a trainer revoke scale ownership before this same-value reset or attachment takeover?",
+    "Which remaining writers can change Actor+3576, Actor+4000 or scalar+60 across the proposed trainer ownership interval?"
+  ]
+}

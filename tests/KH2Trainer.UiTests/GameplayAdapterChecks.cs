@@ -195,6 +195,34 @@ internal static class GameplayAdapterChecks
         check(!game.LockOnPair.Available,"A disconnected host suppresses cached targeting globals.");
     }
 
+    private static void DriveRevertChecks(Action<bool, string> check)
+    {
+        const ulong owner = 0xFEDCBA9876543210, bridge = 0x8877665544332211;
+        var snapshot = new TrainerSnapshot { Connected = true, SceneReady = false, Status = 1, ProtocolVersion = 4 };
+        void Set(int slot, double value)
+        { snapshot.Values[slot] = value; snapshot.Valid[slot / 64] |= 1UL << (slot % 64); snapshot.Supported[slot / 64] |= 1UL << (slot % 64); }
+        Set(463, unchecked((uint)Environment.TickCount));
+        Set(488, 1); Set(489, unchecked((uint)owner)); Set(490, (uint)(owner >> 32)); Set(491, unchecked((uint)bridge)); Set(492, (uint)(bridge >> 32));
+        var host = new Host { Snapshot = snapshot }; var game = Adapter(host); var sample = game.DriveRevertLock;
+        check(host.Reads == 1 && sample.Effective && sample.Owner == owner && sample.BridgeInstance == bridge && !game.SceneReady,
+            "The actual adapter reads Revert lock ownership from one publication without player, scene or movement-hook metadata.");
+        host.OnOrdinaryCommand = () => { host.Snapshot = snapshot with { Values = (double[])snapshot.Values.Clone() }; host.Snapshot.Values[488] = 0; host.Snapshot.Values[489] = 0; host.Snapshot.Values[490] = 0; };
+        game.ExecuteAsync(1488, [0, unchecked((uint)owner), (uint)(owner >> 32), unchecked((uint)bridge), (uint)(bridge >> 32)], "fixture").GetAwaiter().GetResult();
+        sample = game.DriveRevertLock;
+        check(sample.Available && sample.State == 0 && sample.Owner == 0 && host.Reads == 2,
+            "Release invalidates cached Revert lock ownership even outside a scene.");
+        host.FailOrdinaryCommand = true;
+        host.OnOrdinaryCommand = () => { host.Snapshot = snapshot with { Values = (double[])snapshot.Values.Clone() }; host.Snapshot.Values[488] = 2; };
+        bool failed = false; try { game.ExecuteAsync(1488, [], "fixture").GetAwaiter().GetResult(); } catch (IOException) { failed = true; }
+        sample = game.DriveRevertLock;
+        check(failed && sample.CleanupPending && sample.Owner == owner && host.Reads == 3,
+            "A lost release acknowledgement invalidates the cache and preserves the native cleanup-pending owner.");
+        host.Snapshot.Values[463] = unchecked((uint)Environment.TickCount - 2000);
+        check(!game.DriveRevertLock.Available, "Revert lock observations expire with the native publication.");
+        host.Snapshot.Values[463] = unchecked((uint)Environment.TickCount); host.IsConnected = false;
+        check(!game.DriveRevertLock.Available, "Disconnected host cannot reuse cached Revert lock ownership.");
+    }
+
     internal static object Run()
     {
         int count = 0;
@@ -226,6 +254,7 @@ internal static class GameplayAdapterChecks
         Check(!game.IsConnected && !game.Gameplay.Known && !game.TryRead(0, out _), "The host disconnect must override a cached connected snapshot.");
         MovementChecks(Check);
         DamageGuardChecks(Check);
+        DriveRevertChecks(Check);
         LockOnPairChecks(Check);
         return new { checks = count, nativeAccess = false };
     }

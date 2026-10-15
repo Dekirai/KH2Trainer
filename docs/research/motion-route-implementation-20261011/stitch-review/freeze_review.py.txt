@@ -1,0 +1,45 @@
+"""Freeze review evidence; exclude generated build outputs, not nested manifests."""
+from pathlib import Path
+import argparse
+import hashlib
+import json
+
+H = Path(__file__).resolve().parent
+MANIFEST = H / 'manifest.json'
+RECEIPT_SHA = 'c619c833208ac63d061460a24422b0fb11bfee3ab24c133e7ba68e8c6eb3f996'
+BUILD_DIRECTORIES = {'bin', 'obj'}
+BUILD_EXTENSIONS = {'.exe', '.dll', '.obj', '.pdb'}
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+assert sha(H / 'review.json') == RECEIPT_SHA
+members = []
+for path in sorted(H.rglob('*')):
+    if not path.is_file() or path == MANIFEST:
+        continue
+    relative = path.relative_to(H)
+    if any(part.lower() in BUILD_DIRECTORIES for part in relative.parts[:-1]):
+        continue
+    if path.suffix.lower() in BUILD_EXTENSIONS:
+        continue
+    members.append({'path': relative.as_posix(), 'bytes': path.stat().st_size, 'sha256': sha(path)})
+assert any(x['path'] == 'freeze-negative-fixture/manifest.json' for x in members)
+assert any(x['path'] == 'freeze-negative-fixture/nested/manifest.json' for x in members)
+document = {
+    'schema': 1,
+    'scope': 'Exact recursive review evidence and source files. Only this root manifest and declared build outputs are excluded; nested manifests remain members.',
+    'excludedBuildDirectories': sorted(BUILD_DIRECTORIES),
+    'excludedBuildExtensions': sorted(BUILD_EXTENSIONS),
+    'acceptedReviewSha256': RECEIPT_SHA,
+    'files': members,
+}
+parser = argparse.ArgumentParser()
+parser.add_argument('--check', action='store_true')
+args = parser.parse_args()
+if args.check:
+    assert json.loads(MANIFEST.read_bytes()) == document
+else:
+    MANIFEST.write_text(json.dumps(document, indent=2) + '\n', encoding='utf-8')
+assert sha(H / 'review.json') == RECEIPT_SHA
+print(json.dumps({'status': 'PASS', 'members': len(members), 'manifestSha256': sha(MANIFEST), 'reviewSha256': RECEIPT_SHA}))

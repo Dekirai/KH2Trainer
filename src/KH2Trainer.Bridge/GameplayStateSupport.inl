@@ -630,5 +630,18 @@ void GameplayStateSnapshot(const TrainerContext& c) {
     SnapshotValue(460,s.fieldState);
     SnapshotValue(461,s.characterId);
     SnapshotValue(462,s.form);
+    // Reuse this publication's completed player identity inspection. No extra
+    // live-list traversal, lifetime hook, retained Actor, or native getter call.
+    // Input blocking (including retirement flags) does not hide these raw readouts.
+    if(s.known && s.role==player_role::Role::Sora && c.sceneReady &&
+       !(s.blockers&(gameplay_state::Loading|gameplay_state::Transition|gameplay_state::NoPlayer))) {
+        const uint32_t flags=*reinterpret_cast<const uint32_t*>(c.player+288);
+        SnapshotValue(493,*reinterpret_cast<const uint32_t*>(c.player+1464));
+        SnapshotValue(494,(flags&0x10000000)?1:0);
+        SnapshotValue(495,(flags&0x80000)?1:0);
+    }
 }
-void GameplayStateCapabilities() { for(unsigned slot=456;slot<=462;++slot) SupportCapability(slot); }
+void GameplayStateCapabilities() {
+    for(unsigned slot=456;slot<=462;++slot) SupportCapability(slot);
+    for(unsigned slot=493;slot<=495;++slot) SupportCapability(slot);
+}

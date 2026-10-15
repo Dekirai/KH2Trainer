@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "reviewer": "root",
+  "scope": "Independent source inspection of the five synthetic instruction fixtures and their opaque helper boundaries, local manager/constructor/deleting-wrapper dataflow and full verification command. Does not execute native game code or establish game reachability.",
+  "originalManifestSha256": "a82329a23874340103094c2fe2c0695ecd74008ee44b00a2e7b764eb73b8a8c8",
+  "verification": "py -3 -B artifacts/attack-slot-reuse-20261013/verify.py --check",
+  "criticalStores": [
+    "3D26ED stores replacement into the selected cell",
+    "40F468 saves that cell address in new+720",
+    "40F4D9/40F4E0 load old+720 and unconditionally zero its pointee before opaque cleanup"
+  ],
+  "fixtureScope": "Five interpreted sequences; two later deleting-wrapper calls explicitly supplied; base constructor/cleanup, allocation and pointer codec stubbed. Assertions establish the specified local stores under those assumptions.",
+  "openFindings": [],
+  "openProofs": [
+    "Reachable caller sequence and differing parameters in the actual game",
+    "Transitive helper changes, external writers and reentrancy",
+    "Object and cell lifetime outside synthetic memory",
+    "Universal lifetime/free/repair admission"
+  ],
+  "importChanges": [
+    "Spaced hex octets for the existing coverage parser",
+    "Completed ASM pages preserve all original IDA instructions",
+    "Raw captures and report remain byte exact in original-study.zip",
+    "Adapter scope note updated only in imported report to link the separate42-body study"
+  ]
+}

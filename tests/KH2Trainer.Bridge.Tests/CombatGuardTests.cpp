@@ -379,6 +379,107 @@ void TargetRegression() {
     const double args[8]{};TrainerResult r{};
     Check(!CombatHandle(Context(),109,args,r)&&!CombatHandle(Context(),111,args,r),"unclaimed slots stay unclaimed");
 }
+// Slot486 is a one-shot operation on the target and HP found by this command.
+// These comparisons cover complete actor/status/lock records, not only HP.
+struct TargetRecords {
+    BYTE player[3608],enemy[3408],playerStatus[632],enemyStatus[632],lock[64];
+    TargetRecords() {
+        memcpy(player,reinterpret_cast<void*>(g_base+Actor),sizeof(player));
+        memcpy(enemy,reinterpret_cast<void*>(g_base+EnemyActor),sizeof(enemy));
+        memcpy(playerStatus,reinterpret_cast<void*>(g_base+Pool),sizeof(playerStatus));
+        memcpy(enemyStatus,reinterpret_cast<void*>(g_base+EnemyStatus),sizeof(enemyStatus));
+        memcpy(lock,reinterpret_cast<void*>(g_base+combat::LockRva),sizeof(lock));
+    }
+    void Verify(int hp) {
+        memcpy(enemyStatus,&hp,sizeof(hp));
+        Check(!memcmp(enemyStatus,reinterpret_cast<void*>(g_base+EnemyStatus),sizeof(enemyStatus)),"reduction changes only enemy current HP");
+        Check(!memcmp(player,reinterpret_cast<void*>(g_base+Actor),sizeof(player)) &&
+              !memcmp(enemy,reinterpret_cast<void*>(g_base+EnemyActor),sizeof(enemy)) &&
+              !memcmp(playerStatus,reinterpret_cast<void*>(g_base+Pool),sizeof(playerStatus)) &&
+              !memcmp(lock,reinterpret_cast<void*>(g_base+combat::LockRva),sizeof(lock)),"reduction preserves actors, player status and lock record");
+        Check(!forwardCalls&&!deathCalls&&!birthCalls,"reduction invokes no damage, death or construction callback");
+    }
+};
+void ReduceTargetHp() {
+    struct Case { int current,maximum,floor,percent,expected; bool accepted; };
+    const Case cases[]={
+        {80,500,0,50,40,true},{101,500,0,1,99,true},{101,500,0,99,1,true},
+        {2,500,0,99,1,true},{1,500,0,1,1,false},{4,500,3,99,3,true},
+        {80,500,100,50,80,false},{100,500,100,1,100,false},
+        {101,500,100,99,100,true},{1000000,1000000,0,99,10000,true},
+        {80,500,1,99,1,true},{500,500,500,50,500,false}
+    };
+    for(const auto& c:cases) {
+        Setup();Enemy();At<int>(EnemyStatus)=c.current;At<int>(EnemyStatus+4)=c.maximum;At<int>(EnemyStatus+8)=c.floor;
+        TargetRecords before;
+        Check((Command(486,c.percent).code==0)==c.accepted,"percentage rounding and nonlethal/native floor boundary");
+        before.Verify(c.expected);
+    }
+    for(double bad:{-1.,0.,100.,1.5,std::numeric_limits<double>::quiet_NaN(),
+                    std::numeric_limits<double>::infinity(),-std::numeric_limits<double>::infinity()}) {
+        Setup();Enemy();TargetRecords before;Check(Command(486,bad).code==2,"percentage requires a finite integer from1 through99");before.Verify(80);
+    }
+    Setup();Enemy();TargetRecords nullBefore;TrainerResult r{};
+    Check(CombatHandle(Context(),486,nullptr,r)&&r.code==2,"missing percentage arguments rejected");nullBefore.Verify(80);
+    // Each independent target admission failure also preserves all records.
+    for(unsigned gate=0;gate<17;++gate) {
+        Setup();Enemy();
+        switch(gate) {
+        case 0: At<int>(combat::LockRva)=1;break;
+        case 1: At<uint32_t>(combat::LockRva+12)=1;break;
+        case 2: At<int>(0x716884)=2;break;
+        case 3: At<uintptr_t>(0x9BA928)=1;break;
+        case 4: At<uintptr_t>(combat::LockRva+56)=0;break;
+        case 5: At<uint32_t>(EnemyActor+2704)=Packed(g_base+EnemyActor);break;
+        case 6: At<uintptr_t>(0x2A171C8)=0;break;
+        case 7: At<uint32_t>(EnemyActor+1736)=2;break;
+        case 8: At<uint32_t>(EnemyActor+2488)=4;break;
+        case 9: At<uint32_t>(EnemyStatus+616)=Packed(g_base+Actor);break;
+        case 10: At<int>(EnemyStatus)=0;break;
+        case 11: At<int>(EnemyStatus)=501;break;
+        case 12: At<int>(EnemyStatus+8)=-1;break;
+        case 13: At<int>(EnemyStatus+8)=501;break;
+        case 14: At<int>(EnemyStatus+4)=1000001;break;
+        case 15: At<uint32_t>(EnemyStatus+620)=1;break;
+        case 16: At<BYTE>(0x9006B0)=1;break;
+        }
+        const int current=At<int>(EnemyStatus);TargetRecords before;
+        Check(Command(486,50).code==3,"unavailable lock, phase, target or malformed status rejects reduction");before.Verify(current);
+    }
+    Setup();Enemy();DWORD old=0,unused=0;
+    Check(VirtualProtect(reinterpret_cast<void*>(g_base+EnemyStatus),4096,PAGE_READONLY,&old)!=FALSE,"readonly enemy status fixture");
+    TargetRecords readOnly;Check(Command(486,50).code==3,"readonly HP rejects reduction");readOnly.Verify(80);
+    Check(VirtualProtect(reinterpret_cast<void*>(g_base+EnemyStatus),4096,old,&unused)!=FALSE,"restore fixture protection");
+    Setup();Enemy();CombatSnapshot(Context());At<int>(EnemyStatus)=21;
+    Check(state.values[98]==80&&!Command(486,50).code&&At<int>(EnemyStatus)==10,"command samples current HP rather than prior snapshot");
+    Check(!Command(486,50).code&&At<int>(EnemyStatus)==5,"repeated request computes from newly reduced HP");
+    // The lock now refers to a second listed enemy with its own current status.
+    Setup();Enemy();CombatSnapshot(Context());constexpr uintptr_t second=0x140000,secondStatus=0x144000;
+    memcpy(reinterpret_cast<void*>(g_base+second),reinterpret_cast<void*>(g_base+EnemyActor),3408);
+    memcpy(reinterpret_cast<void*>(g_base+secondStatus),reinterpret_cast<void*>(g_base+EnemyStatus),632);
+    At<uintptr_t>(second+1472)=g_base+secondStatus;At<uint32_t>(secondStatus+616)=Packed(g_base+second);
+    At<uint32_t>(EnemyActor+2704)=Packed(g_base+second);At<uint32_t>(combat::LockRva+4)=Packed(g_base+second);At<int>(secondStatus)=201;
+    Check(!Command(486,50).code&&At<int>(secondStatus)==100&&At<int>(EnemyStatus)==80,"changed manual target uses second enemy HP and preserves prior target");
+    Setup();Enemy();At<float>(EnemyActor+3400)=std::numeric_limits<float>::quiet_NaN();
+    Check(!Command(486,50).code&&At<int>(EnemyStatus)==40,"HP reduction does not require a revenge-capable target");
+    // Exercise actual wire1486 dispatch, shared host/expiry gates and no replay.
+    for(unsigned gate=0;gate<5;++gate) {
+        Setup();Enemy();state.commandId=1486;state.arguments[0]=50;state.commandIssuedAt=GetTickCount();++state.requestSequence;
+        if(gate==1)state.hostHeartbeat=0;
+        if(gate==2)state.hostHeartbeat=GetTickCount()-6000;
+        if(gate==3)state.commandIssuedAt=GetTickCount()-9000;
+        if(gate==4)At<int>(0x716884)=2;
+        TrainerFrame();
+        Check(state.responseSequence==state.requestSequence&&(state.resultCode==0)==(gate==0),"wire1486 acknowledges success or host/expiry/pause rejection");
+        Check(At<int>(EnemyStatus)==(gate==0?40:80),"wire reduction does not apply after rejected admission");
+        TrainerFrame();Check(At<int>(EnemyStatus)==(gate==0?40:80),"acknowledged wire command is not replayed next frame");
+    }
+    Setup();CombatCapabilities();
+    uint64_t expectedSupport[8]{};
+    for(unsigned slot=98;slot<=110;++slot)if(slot!=109)expectedSupport[slot/64]|=uint64_t(1)<<(slot%64);
+    for(unsigned slot:{472u,473u,474u,486u,496u,497u,498u})expectedSupport[slot/64]|=uint64_t(1)<<(slot%64);
+    Check(!memcmp(state.supportedCapabilities,expectedSupport,sizeof(expectedSupport)),"exact combat capability roster includes486 and contact diagnostics496..498");
+}
 // Joint regression: actual gameplay, movement, role and Actor-lifetime code in a
 // private image. Native callback forwarding uses the existing fixture doubles.
 uint64_t movementOperation=0;
@@ -471,7 +572,7 @@ void DisconnectedMovementCleanup() {
 int main() {
     g_base=reinterpret_cast<uintptr_t>(VirtualAlloc(nullptr,kImageSize,MEM_COMMIT|MEM_RESERVE,PAGE_READWRITE));
     if(!g_base)return 2;
-    RolesAndAbi();LifetimeAndPhases();OwnersAndIpc();PinsTablesProtection();TargetRegression();DisconnectedMovementCleanup();
+    RolesAndAbi();LifetimeAndPhases();OwnersAndIpc();PinsTablesProtection();TargetRegression();ReduceTargetHp();DisconnectedMovementCleanup();
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     std::printf("CombatGuardTests: %u checks, %u failures. Synthetic memory; no game code executed.\n",checks,failures);
     return failures?1:0;

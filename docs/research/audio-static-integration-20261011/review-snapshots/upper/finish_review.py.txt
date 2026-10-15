@@ -1,0 +1,80 @@
+"""Reproduce this external review and emit its bounded acceptance receipt."""
+from pathlib import Path
+import json,hashlib,subprocess,sys
+H=Path(__file__).resolve().parent;R=H.parents[1];S=R/'artifacts/voice-resource-teardown-20261011'
+def load(p):return json.loads(p.read_text(encoding='utf-8-sig'))
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+commands=[['py','-3','-B',str(H/'review.py')],['py','-3','-B',str(H/'integration_delta.py')],['py','-3','-B',str(S/'verify.py'),'--check'],['py','-3','-B',str(S/'integration-check.py')]]
+logs=[]
+for command in commands:
+ p=subprocess.run(command,cwd=R,text=True,encoding='utf-8',capture_output=True)
+ logs.append({'command':command,'exitCode':p.returncode,'stdout':p.stdout,'stderr':p.stderr})
+ if p.returncode:raise AssertionError(logs[-1])
+(H/'reproduction.json').write_text(json.dumps(logs,indent=2)+'\n')
+checks=load(H/'checks.json');delta=load(H/'integration-delta.json');report=load(S/'report.json');manifest=load(S/'manifest.json')
+notes=[
+ 'Original unsigned point predicate, callback then tail retirement, and absent local +1604 gate. Own full-function cases exercise zero address and field values. Registered internal callback remains possible.',
+ 'Complete wrapper repeats range lookup and direct retirement. Progress depends on callbacks and list removal; no termination guarantee is added.',
+ 'All original comparison instructions reviewed. Own full traversal cases include first-match ordering, adjacency, empty/reversed queries and modulo address sums; expected predicate is independently expressed.',
+ 'Own full native sweep simulations check gate, callback, unlink/destructor order and resulting list. Meaning/all writers of +1604 remain unproved.',
+ 'All original jump-table bytes and 46 type selectors verified. Own pre/post scanner plus actual request-stop body simulations distinguish alias low bit, zero size, type34 and exact pointer.',
+ 'Original post-copy pointer update precedes alias/type gate. Own exact-pointer models also verify request+24 stays unchanged; relocated calls do not rebind old requests.',
+ 'Complete original body manually reviewed for selected old-payload path. No simulation of all overlap/reload branches, no readable-bounds or reload-safety claim.',
+ 'Complete original code-selector body manually reviewed for flag bit1, byte+1==3 and release/unlink order. Counter gating elsewhere remains open.',
+ 'Complete original actor-switch body manually reviewed. Mode0 list/yield, mode1 virtual call and common three retire calls differ as stated. No scheduling, ABA or caller-mode proof.',
+ 'Original context-global loads/stores, cache bit update and replacement-before-retirement order inspected. Plain stores do not prove thread exclusion or eventual completion.',
+ 'Own original-instruction cache-selection cases check all eight used masks and all selected matches including index3 fallthrough. Physical array extent and live feasibility remain unknown.',
+ 'Small callback bodies inspected at actual register widths. Forwarding selects type3 and marker clearing uses current global context without a visible identity check. No request-completion proof.',
+ 'Own full body simulations check group1 mode0, key/length argument widths, signed range end and retirement for registration return0 and1.',
+ 'Complete original group2 body manually reviewed for ORIGIN, SeBlock and ordinary branches. Mode1 applies only keys20/21; free/retirement is not status-gated. The backend and allocator are explicit dependencies.',
+ 'Selected concrete BTLNPC destructor and base calls reviewed in their pinned complete originals. Own three-pointer release cases verify calls before pointer clearing. Stop/state marking remains distinct from BankEntry destruction.',
+ 'Complete original matching loop and both WORD add sites inspected. No-match computes address2 and wrap is arithmetic; no actual invalid write or normal-play reachability is claimed.'
+]
+assert len(notes)==len(report['claims'])==16
+claimReviews=[{'address':c['address'],'title':c['title'],'status':'ACCEPTED_BOUNDED','review':n} for c,n in zip(report['claims'],notes)]
+docs=R/'docs/research/voice-resource-teardown-20261011'
+docsCheck=None
+if (docs/'manifest.json').is_file():
+ docsCheck=sha(docs/'manifest.json')==sha(S/'manifest.json') and all((docs/name).read_bytes()==(S/name).read_bytes() for name in manifest['files'])
+ assert docsCheck
+receipt={
+ 'status':'ACCEPTED_BOUNDED_INDEPENDENT_REVIEW',
+ 'studyManifestSha256':sha(S/'manifest.json'),
+ 'studyEvidenceSha256':sha(S/'evidence.json'),
+ 'studyPath':'artifacts/voice-resource-teardown-20261011',
+ 'originalSha256':'9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed',
+ 'openBlockers':[],
+ 'independentChecks':checks['checks']+delta['checks'],
+ 'completeOriginalBodies':35,'freshCaptureBodies':19,'explicitReusedBodies':16,
+ 'freshCaptureAlreadyInPriorEvidence':5,
+ 'originalBytes':sum(x['bytes'] for x in checks['bodies']),
+ 'freshBytes':sum(x['bytes'] for x in checks['bodies'] if x['group']=='functions'),
+ 'freshInstructions':sum(x['instructions'] for x in checks['bodies'] if x['group']=='functions'),
+ 'semanticAnchors':140,'originalSwitchCases':92,
+ 'independentInstructionSimulationCases':checks['cases'],'independentSimulationGroups':checks['groups'],
+ 'authorVerifierReproduced':True,'authorIntegrationCheckReproduced':True,
+ 'authorModelCases':1260,'authorModelCasesAreNotIndependentSimulationCount':True,
+ 'transportDelta':{'checks':delta['checks'],'oldEvidenceAndDependenciesByteExactReconstruction':True,'semanticFieldsUnchanged':True,'changedSelectors':18,'resolvedReferences':46,'parserSha256':'546d0defdacd8857d7f2461283516348ca28776d13e253d8d954ad43622cc1b2','portableDocsRoot':True},
+ 'docsCopyByteIdenticalAtReview':docsCheck,
+ 'claimReviews':claimReviews,
+ 'method':['Independent PE section mapping and SHA identity; every byte of all35 bodies compared to original PE.', 'Capstone boundary/operand decode independent of IDA and author model; original ASM page joins, terminal cursors, selected raw data cells and both entire jump maps checked.', 'Selected original instructions interpreted over synthetic sparse memory and explicit helper-return stubs; no original native code executed. The generic VM is reviewer-authored and separate from the author model.', 'Manual path review for all16 claims, including bodies not instruction-simulated; transport delta reconstructs entire old evidence/dependencies and original report byte-for-byte.', 'Existing coverage parser helpers reused unchanged only to test integration acceptance; this does not count as an independent parser implementation.'],
+ 'limitations':['Instruction models use synthetic helper results and intact fixture lists; they do not establish actual allocations, live feasibility or ABI volatile-register clobber behavior.', 'The small interpreter implements only selected opcodes/flags. Unknown calls/opcodes fail. Selected paths do not consume unmodelled INC/DEC arithmetic flags; no general x64 emulator claim.', 'No execution of game, native functions, playback, callbacks, scheduler, IDB mutation or asset/product changes.', 'No complete-analysis, all-writer, global lifetime/ownership, mutex, ABA, race freedom, forward-progress, cache-extent or crash-safety guarantee.', 'Local handoff order does not demonstrate asynchronous backend completion. Conditional source bounds and original study premises remain required.'],
+ 'openResearchQuestions':report['openQuestions'],
+ 'reviewFiles':{name:{'sha256':sha(H/name),'bytes':(H/name).stat().st_size} for name in ['review.py','vm.py','integration_delta.py','checks.json','integration-delta.json','reproduction.json','finish_review.py']}
+}
+(H/'review.json').write_text(json.dumps(receipt,indent=2)+'\n')
+(H/'report.md').write_text('''# Independent upper resource/Voice teardown review
+
+Accepted within the study's stated static scope. No open review blockers.
+
+The review checks all 35 complete original bodies (19 fresh captures, including five known functions; 16 reused bodies), 8,163 original bytes, 140 semantic anchors, and both complete 46-case BAR maps. Own instruction models cover 1,914 synthetic cases. Together with the transport audit, 11,754 independent checks pass. Author verification and its 1,260 model cases reproduce separately.
+
+The concrete findings distinguish exact pointer matching from rebinding, Voice stop/state marking from backend completion, and zero-gated sweep from direct retirement. The original cache code reaches index3 when the three searched rows are used; physical table extent and live reachability remain open. Both group1 and selected group2 handoffs have cleanup after a registration return without a success gate.
+
+Transport changes preserve complete old evidence and dependency bytes after removing added transport fields and normalizing the original hex formatting. All 16 claim texts and limits are unchanged; 18 dependency selectors now resolve with the existing parser. Two Lower pins are explicitly renewed to the separately accepted byte-identical docs snapshot.
+
+The original bodies were decoded and interpreted over synthetic memory with explicit helper stubs. Selected unmodelled paths were reviewed manually. No game or native function was run, and no product or study files were changed. No global lifetime, concurrency, playback, progress, complete-analysis or crash guarantee follows.
+
+Reproduce with `py -3 -B artifacts/review-voice-resource-teardown-20261011/finish_review.py`. The receipt contains exact study and reviewer pins, per-claim decisions, model groups, limitations and remaining research questions.
+''',encoding='utf-8')
+print(json.dumps({'status':receipt['status'],'studyManifestSha256':receipt['studyManifestSha256'],'independentChecks':receipt['independentChecks'],'independentInstructionSimulationCases':receipt['independentInstructionSimulationCases'],'openBlockers':receipt['openBlockers'],'receiptSha256':sha(H/'review.json'),'docsCopyByteIdenticalAtReview':docsCheck}))

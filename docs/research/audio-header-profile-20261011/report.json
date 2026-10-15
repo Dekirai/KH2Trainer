@@ -1,0 +1,115 @@
+{
+  "schema": 1,
+  "Domain": "native",
+  "title": "SCD header profiles: concrete metadata readers, streaming gates and ToolBank copying",
+  "status": "BOUNDED_STATIC_STUDY_PENDING_INDEPENDENT_REVIEW",
+  "date": "2026-10-11",
+  "scope": "12 complete fresh captures, absent from the exact prior evidence function arrays inventoried here, plus3 explicitly reused bodies. New capture is not complete semantics. No semantic naming for file bytes12/13 is established.",
+  "claims": [
+    {
+      "addr": "0x14007ad30",
+      "Finding": "Under the global sound critical section, this metadata reader compares only DWORD(file+0) to SEDB. On match it returns1000*WORD(file+u16(file+14)+6)+WORD(file+signExtendedDWORD(file+u16(file+14)+32+4*signExtendedIndex)+12). The table displacement is fixed32; there is no local version selection, SSCF comparison, index-count check, file-size argument or byte12/13 condition. Mismatching first magic returnsUINT32_MAX.",
+      "Limitations": "All pointer/range readability and externally supplied index validity remain caller premises. This is an ID calculation, not safe file validation. The sequence WORD+12 is a different field from file header bytes12/13. Native support for arbitrary profile bytes is not implied.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14007ad30]",
+        "model-results.json"
+      ]
+    },
+    {
+      "addr": "0x14007ada0",
+      "Finding": "This companion metadata reader compares only the SEDB DWORD, then returns zero-extended WORD(file+u16(file+14)); a mismatching first magic returnsUINT32_MAX. No local version/SSCF/header-byte12/13 or physical-span check is present.",
+      "Limitations": "The critical section does not establish caller-buffer readability, file validity or ownership. Positive models intentionally vary other header bytes but establish only this selected body-local behavior.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14007ada0]",
+        "model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400a13b0",
+      "Finding": "The object-based header-size helper reads DWORD(object+24): version1 returns16; unsigned(version-2)<=2 returns32; otherwise it invokes the diagnostic callback at78A950 with the GetScdHeaderSize source string, then returns0 if that callback returns. The scalar helper0A4020 uses the same partition directly on ECX. These helpers do not inspect a serialized header or bytes12/13.",
+      "Limitations": "Diagnostic callback termination/side effects are outside this claim. The previously captured089390 gate accepts version0..4 while these size helpers accept only1..4. Passing one local gate is not format validity.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400a13b0]",
+        "evidence.json#functions[addr=0x1400a4020]",
+        "dependencies.json#functions[addr=0x140089390]",
+        "model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400a2840",
+      "Finding": "The captured virtual-table cell61CFC8 points to this sequence wrapper. It branches to09FD20 only when bank byte+128 mask0x02 is set and the full32-bit index is0; otherwise it returns0. The adjacent initializer cell61CFC0 points to09FBD0.",
+      "Limitations": "This is one concrete table pair, not all implementations. Returning a raw sequence pointer proves no size, lifetime or header-profile contract. The prior09FD20 body remains explicitly reused.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400a2840]",
+        "dependencies.json#functions[addr=0x14009fd20]",
+        "dependencies.json#functions[addr=0x14009fbd0]",
+        "data-capture.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400a3590",
+      "Finding": "In state0 of the captured StreamBankEx routine, signed field+48 must be>=80. If progress+64 is below80, a provider read may add bytes before the repeated>=80 test. The ensuing header gate compares both SEDB and SSCF, copies file DWORD+8 into bank version and DWORD+16 into bank length, then requires file WORDs at absolute+52,+48,+50 all equal1. It sets bank ID from absolute WORD+54 and calls0A34E0(bank,1). This branch does not use file+14 for the count fields, does not restrict the copied version and does not read bytes12/13. Failed signature/count or too-small capacity clears flag0x80 and sets flag2.",
+      "Limitations": "The modeled slice begins after the prior progress gate; full read scheduling and provider correctness are manually bounded dependencies, not simulated. Copying version/length precedes count acceptance. This fixed layout is not a general SCD parser or proof of supported versions, codecs or profiles. Complete capture includes other states, which are outside the header claim.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400a3590]",
+        "evidence.json#functions[addr=0x1400a34e0]",
+        "model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400a34e0",
+      "Finding": "The state helper sets byte(bank+400)=1, enters the critical section at bank+360, writes the32-bit requested state to bank+212 and leaves when byte+400 is nonzero. Its+212 state is the+52 field seen through the StreamBankEx subobject pointer bank+160.",
+      "Limitations": "This is a concrete layout/call relation; all state writers, scheduler ordering and synchronization across other locks remain open.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400a34e0]",
+        "evidence.json#functions[addr=0x1400a3590]"
+      ]
+    },
+    {
+      "addr": "0x1400a2220",
+      "Finding": "On the selected pending-handle+280 invalidated path, StreamBank standby compares only SEDB at payload+168. A match copies DWORD(file+8) to bank+24 and sets bank+48 to wrappingDWORD(file+16)-WORD(file+u16(file+14)+28), then invokes its diagnostic callback. There is no local SSCF/version/header-byte12/13 check on this branch. The pending field is cleared after the branch returns.",
+      "Limitations": "This statement does not assign success/failure meaning to the diagnostic callback or pending-handle invalidation, and does not establish source readability. Other pending fields+284/+292 and their provider calls have further behavior outside the claim.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400a2220]"
+      ]
+    },
+    {
+      "addr": "0x1400a09a0",
+      "Finding": "The ToolBank copy helper sign-extends DWORD(file+16) to64bits with MOVSXD, passes the resulting value to allocator0F8920, then uses the same64-bit value as memcpy size and stores the allocation result into bank+8 after memcpy returns. The body has no local magic/version/profile, physical-span, negative-length or allocator-null rejection.",
+      "Limitations": "The model starts at the actual sign-extension instruction and resumes the allocation/copy suffix with explicit helper stubs; TLS/allocator initialization is not simulated. No huge copy or null write is executed. Caller validity and allocator behavior remain premises, so this is not a observed retail failure or an offline validation API.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400a09a0]",
+        "model-results.json"
+      ]
+    },
+    {
+      "addr": "0x1400a0b00",
+      "Finding": "The ToolBank rebind body first calls08C250, passes a nonzero current bank+8 to031E80 and clears it, then calls0A09A0 with the supplied source. After copying, it invokes virtual+16 only when the current table differs from the concrete ToolBank table. There is no local source-versus-old-payload alias rejection.",
+      "Limitations": "No contract is inferred for callers passing the old payload as source, and no actual use-after-free/crash is claimed. The allocator and cleanup helper semantics beyond their selected prior roles remain boundaries; this adds no ORIGIN wrapper ownership rule.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400a0b00]",
+        "evidence.json#functions[addr=0x1400a09a0]"
+      ]
+    },
+    {
+      "addr": "0x1400896f0",
+      "Finding": "The selected provider wrapper calls provider virtual+56 and then virtual+8 to obtain a payload. It can return an existing bank handle when bank flag0x40 and bank+16 exactly match that provider; this hit skips the explicit provider virtual+64 call in this wrapper. Otherwise a nonnull payload reaches089390(payload,0); successful handle resolution records provider in bank+16 and sets flag0x40. The no-hit exits call provider virtual+64.0918D0 has the corresponding selected path with its provider supplied in RDX.",
+      "Limitations": "Virtual+56/+8/+64 are described by offsets, not assigned lock/unlock/validation semantics. Provider implementation, payload validity, list lifetime and cleanup contracts are not closed. No extra serialized-byte12/13 validation is visible in these wrappers, but callees may have independent behavior.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1400896f0]",
+        "evidence.json#functions[addr=0x1400918d0]",
+        "dependencies.json#functions[addr=0x140089390]"
+      ]
+    }
+  ],
+  "conclusion": "The observed retail pair byte12=0,byte13=4 remains a conservative supported-profile boundary for the offline inspector. These native paths provide no evidence naming those bytes as endian or pointer-size flags. Absence of a local check is not support for other values.",
+  "openQuestions": [
+    "Concrete origin and intended format semantics of file bytes12/13; no all-writer or all-consumer search is claimed.",
+    "Provider virtual implementations and whether they perform additional normalization or validation.",
+    "Full StreamBankEx states1..5, actual codec payload contracts and read scheduling; they are captured but only header/state transitions are claimed.",
+    "ToolBank allocation failure contract, source alias preconditions and every caller of its copy/rebind path.",
+    "Caller provenance and reachability of the direct metadata getters with their fixed h+32 table offset."
+  ],
+  "actions": "Read-only IDA and original PE inspection; offline synthetic models; artifacts only. No autoanalysis, IDB changes, game, attach, injection, native execution, product or docs changes."
+}

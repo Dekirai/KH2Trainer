@@ -1,0 +1,87 @@
+{
+  "status": "PASS",
+  "originalExeSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "bodyBytes": 287,
+  "bodyInstructions": 86,
+  "bodySha256": "7be995bb4bd05f399acb2ff1b0553ef2b36eeb5ed642a742a51432c7b458be1f",
+  "originalRuntimeFunction": [
+    3968208,
+    3968495,
+    7234612
+  ],
+  "originalUnwindBytes": "01 22 0a 00 22 78 02 00 14 68 03 00 0f 64 0b 00 0f 34 0a 00 0f 72 0b 70",
+  "headerBodyMatchesOriginal": true,
+  "runtimeFixtureUnwindMatchesOriginal": true,
+  "fixtureStubs": [
+    {
+      "rva": "0x40d7f0",
+      "target": "GroupFixture"
+    },
+    {
+      "rva": "0x3c8a40",
+      "target": "BindFixture"
+    },
+    {
+      "rva": "0x40d7d0",
+      "target": "SuccessFixture"
+    }
+  ],
+  "branchAnchors": [
+    {
+      "rva": "0x3c8cf7",
+      "mnemonic": "call",
+      "operands": "0x14040d7f0"
+    },
+    {
+      "rva": "0x3c8d24",
+      "mnemonic": "js",
+      "operands": "0x1403c8d4c"
+    },
+    {
+      "rva": "0x3c8d5b",
+      "mnemonic": "call",
+      "operands": "0x1403c8a40"
+    },
+    {
+      "rva": "0x3c8d62",
+      "mnemonic": "je",
+      "operands": "0x1403c8dd5"
+    },
+    {
+      "rva": "0x3c8d6a",
+      "mnemonic": "call",
+      "operands": "0x14040d7d0"
+    },
+    {
+      "rva": "0x3c8d73",
+      "mnemonic": "mov",
+      "operands": "eax, 0xffffffff"
+    },
+    {
+      "rva": "0x3c8d8f",
+      "mnemonic": "jne",
+      "operands": "0x1403c8da0"
+    },
+    {
+      "rva": "0x3c8da5",
+      "mnemonic": "mov",
+      "operands": "rbx, qword ptr [rdi + 0xd8]"
+    },
+    {
+      "rva": "0x3c8dbf",
+      "mnemonic": "je",
+      "operands": "0x1403c8dd3"
+    },
+    {
+      "rva": "0x3c8dd3",
+      "mnemonic": "mov",
+      "operands": "al, 1"
+    }
+  ],
+  "noRipRelativeDataOperand": true,
+  "boundedInterpretation": "Manual path inspection: selection -1 skips both 40D7A0 calls. Bind false returns AL0; true calls 40D7D0. Its fixture returns false, producing EAX=-1 and skipping the basis+0x120 write. Null C+216 skips the child lookup/recursion; success returns AL1. Original writes C+328/C+344/C+352 before Bind; success additionally C+44/C+48. ModelBase is an opaque pointer value used only in address arithmetic on these fixture paths, not an allocated resource.",
+  "limits": [
+    "Three helper implementations are explicit fixture functions; their original semantics are not executed.",
+    "No game state, live entry installation, resource lifetime, old writer drain or Scale behavior was tested."
+  ]
+}

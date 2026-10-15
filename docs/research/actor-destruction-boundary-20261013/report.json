@@ -1,0 +1,207 @@
+{
+  "schema": 1,
+  "status": "AUTHOR_COMPLETE",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "claims": [
+    {
+      "addr": "0x1403bf550",
+      "Finding": "Ruft 3F6540 auf und anschließend 14FC20 mit dem Manager aus global2A17180. Zusammen mit dem registrierten Task3BF5E0 verbindet dies den Feldcallback mit dem Actor-Taskmanager.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bf550]",
+        "evidence.json",
+        "verification.json",
+        "report.md"
+      ],
+      "Limitations": [
+        "Nur unter passender unveränderter Registrierung; kein Beweis sämtlicher Managerwriter oder Threads."
+      ]
+    },
+    {
+      "addr": "0x14014fc20",
+      "Finding": "Setzt zweites und drittes Argument auf null und springt zu14FD60. Dessen Maskenvergleich selektiert dadurch jeden verketteten Task unabhängig von seinen Flags.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14014fc20]",
+        "evidence.json",
+        "verification.json",
+        "report.md"
+      ],
+      "Limitations": [
+        "Direkter/Fiber-Pfad hängt separat von Task+112 ab."
+      ]
+    },
+    {
+      "addr": "0x1403bf5e0",
+      "Finding": "Iteriert die aktive Actorliste über global2A171C8 und packed+2704, speichert aktuellen Actor in2A17248 und ruft3BFD30 in direkten beziehungsweise abhängigen Durchläufen. Nach der Nachbearbeitung wird2A17248 auf null gesetzt.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bf5e0]",
+        "evidence.json",
+        "verification.json",
+        "report.md"
+      ],
+      "Limitations": [
+        "Keine Vollsemantik der Abhängigkeitshelfer und keine allgemeine Terminierungs- oder Framegarantie."
+      ]
+    },
+    {
+      "addr": "0x1403bf8f0",
+      "Finding": "Ruft vor der Actor-Schleife unter anderem3CFED0 auf. Bei ungesetztem Actor+288-Bit0x80000 vergleicht es Descriptor+112 signed mit dem Schwellwert. Bei Ergebnis>=Schwellwert ruft es Descriptor+72 direkt auf, ohne lokalen Aufruf des Zulassungsslots+64.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bf8f0]",
+        "evidence.json",
+        "verification.json",
+        "report.md"
+      ],
+      "Limitations": [
+        "Vorbereitende Helfer sind teilweise undurchsichtig; fehlender lokaler Countertest ist kein nachgewiesener Livefehler."
+      ]
+    },
+    {
+      "addr": "0x1403ac2f0",
+      "Finding": "Ruft3BF8F0 mit ECX=2000 auf und danach weitere lokale Helfer.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ac2f0]",
+        "evidence.json",
+        "verification.json",
+        "report.md"
+      ],
+      "Limitations": [
+        "Keine vollständige Klassifizierung der übergeordneten Ereignisse oder Zustände."
+      ]
+    },
+    {
+      "addr": "0x1403ad0e0",
+      "Finding": "Der im vollständigen Körper erfasste Bereinigungszweig ruft3BF8F0(2000), weitere Helfer und setzt Context+60=2 sowie QWORD+64=3.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ad0e0]",
+        "evidence.json",
+        "verification.json",
+        "report.md"
+      ],
+      "Limitations": [
+        "Bedingte Erreichbarkeit folgt den lokalen Prädikaten und Contextfeldern; keine tatsächliche Szenenfolge behauptet."
+      ]
+    },
+    {
+      "addr": "0x1403b4e80",
+      "Finding": "Bei fehlender Maske0x40 in Actor-DWORD+2488 ruft es Descriptor+48 auf und setzt die Maske erst nach Callbackrückkehr.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b4e80]",
+        "evidence.json",
+        "verification.json",
+        "report.md"
+      ],
+      "Limitations": [
+        "Kein allgemeiner Wiedereintritts- oder Konkurrenzschutz; kein Countertest im Körper."
+      ]
+    },
+    {
+      "addr": "0x1403d2840",
+      "Finding": "Leitet das zweite Argument als erstes Argument an3DABE0 weiter. Die originale Tabelle5C6250 enthält diesen Adapter in Slot+48.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d2840]",
+        "evidence.json",
+        "verification.json",
+        "report.md"
+      ],
+      "Limitations": [
+        "Gilt für die geprüfte Originaltabelle; abgeleitete aktuelle Descriptoren separat zu beweisen."
+      ]
+    },
+    {
+      "addr": "0x1403dabe0",
+      "Finding": "Ruft3C7300 für Actor+344; bei nichtnull Actor+128 ruft es2C6490 und2C5730 dort auf; anschließend3B43C0(actor).",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403dabe0]",
+        "evidence.json",
+        "verification.json",
+        "report.md"
+      ],
+      "Limitations": [
+        "Transitive Seiteneffekte der Ressourcenhelfer bleiben eigene Anforderungen."
+      ]
+    },
+    {
+      "addr": "0x1403b43c0",
+      "Finding": "Ruft3E61E0(actor+2320); bei nichtnull Actor+2696 ruft es dessen virtuellen Slot+72 mit Rückgabe152590 und Actor+1968 und setzt Actor+2696 danach auf null.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b43c0]",
+        "evidence.json",
+        "verification.json",
+        "report.md"
+      ],
+      "Limitations": [
+        "Der delegierte virtuelle Callback und Allocator sind hier nicht vollständig geschlossen; kein Getter."
+      ]
+    },
+    {
+      "addr": "0x1403b3d60",
+      "Finding": "Bereinigt ausgewählte pointergebundene und eingebettete Actorbereiche über die konkreten Calls; dabei kein lokaler Test von Actor+1464. Der geprüfte Descriptor-Destruktor3D2720 ruft diese Routine vor152570(actor).",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b3d60]",
+        "evidence.json",
+        "verification.json",
+        "report.md"
+      ],
+      "Limitations": [
+        "Keine Aussage, dass alle transitiven Helfer counterfrei wären oder dass jede dynamische Allocation demselben Allocator gehört."
+      ]
+    },
+    {
+      "addr": "0x1403d2920",
+      "Finding": "Leitet das zweite Argument an3B44A0 weiter; die originale Tabelle5C6250 bindet Slot+112 an diesen Adapter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d2920]",
+        "evidence.json",
+        "verification.json",
+        "report.md"
+      ],
+      "Limitations": [
+        "Keine Gleichsetzung sämtlicher abgeleiteter Descriptoren."
+      ]
+    },
+    {
+      "addr": "0x1403b44a0",
+      "Finding": "Dekodiert DWORD am Eingabeobjekt+8, ruft3E0B50 mit zweitem Argument0 und reicht dessen Ergebnis an39DB20 weiter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b44a0]",
+        "evidence.json",
+        "verification.json",
+        "report.md"
+      ],
+      "Limitations": [
+        "Semantische Bedeutung aller zurückgegebenen Zahlen nicht belegt."
+      ]
+    },
+    {
+      "addr": "0x1403baa80",
+      "Finding": "Liest Actor-DWORD+288 und gibt zurück, ob mindestens eines der Bits in0x10080000 gesetzt ist.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403baa80]",
+        "evidence.json",
+        "verification.json",
+        "report.md"
+      ],
+      "Limitations": [
+        "Begrenzter reiner lokaler Flagtest, keine Referenzzahl- oder Lebensdauergarantie."
+      ]
+    },
+    {
+      "addr": "0x14014eb70",
+      "Finding": "Ruft14FC20 mit dem Manager aus global9BA888 auf, anschließend folgen ein globales Zählerupdate und die lokale Rückgabewertentscheidung.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14014eb70]",
+        "evidence.json",
+        "verification.json",
+        "report.md"
+      ],
+      "Limitations": [
+        "Keine universelle Threadbindung, keine Gleichheit mit dem Actor-Taskmanager und kein Nachweis einer leeren Ressourcenwarteschlange."
+      ]
+    }
+  ],
+  "completeSemanticAnalysis": false,
+  "liveGame": false,
+  "study": "actor-destruction-boundary-20261013",
+  "archive": "evidence.zip",
+  "provenance": "provenance.json"
+}

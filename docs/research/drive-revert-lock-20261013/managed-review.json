@@ -1,0 +1,139 @@
+{
+  "status": "PASS_WITH_FIXED_FINDING",
+  "openBlockers": [],
+  "scope": "Independent managed source review, actual isolated Release Twitch test runner with in-process fakes, no live KH2 or Twitch account actions. Adapter tests inspected; root executed the complete isolated offscreen UI suite and this reviewer checked its saved report. Reviewer authored the fifteen additional regression checks and the lease/timer fixes after independently finding the issues.",
+  "fixedFinding": {
+    "title": "Deferred form end could revert a later same-ID form after a different bridge or owner took over",
+    "cause": "Release discarded its bridge intent without recording foreign identity; a deferred EndForm could run after player control returned and see only the old numeric form ID.",
+    "fix": "Retain admitted bridge identity beyond release and record fresh different bridge or nonzero foreign owner observations before and after release. The existing EndForm ownership-lost gate then suppresses the direct native Revert. Normal owner zero after own release still permits it.",
+    "before": {
+      "passed": 2571,
+      "failed": 6
+    },
+    "after": {
+      "passed": 2577,
+      "failed": 0
+    }
+  },
+  "fixedTimerFinding": {
+    "title": "Old formtimer scalar restore could overwrite a newer bridge or owner after proven identity replacement",
+    "fix": "A separate ForeignIdentity marker records only fresh different bridge or nonzero foreign owner. RestoreAsync then removes only this old effect combat.formtimer entry. Ordinary lost owner zero and confirmed own release preserve normal timer restoration.",
+    "before": {
+      "passed": 2578,
+      "failed": 8
+    },
+    "after": {
+      "passed": 2586,
+      "failed": 0
+    },
+    "regressions": "Four deferred-control cases, two pre/post release takeover cases, and active loss under states0/1/2. The owner0 control case passed before and after; all eight foreign-identity timer assertions failed before and passed after."
+  },
+  "reviewedRootCompileFix": {
+    "file": "tests/KH2Trainer.UiTests/GameplayAdapterChecks.cs",
+    "change": "Exactly four intentional low-half conversions of ulong const owner/bridge to uint now use unchecked; both high-half shifts are unchanged. Removing exactly those four wrappers reproduces the previously reviewed SHA2565b8df42fcae834bdc18414602e44eaf7e39e985f37056f8554499f82a23badd0.",
+    "reason": "C# constant evaluation otherwise rejects these out-of-range truncations even though the intended low32-bit split is valid.",
+    "rootOffscreenReport": {
+      "path": "artifacts/revert-ui-20261013/report.json",
+      "bytes": 9870,
+      "sha256": "ef5ef848e24486c6459a53ae6074904685891b0c48425cfe32affeb9c63702e9"
+    },
+    "rootOffscreenLog": {
+      "path": "artifacts/revert-ui-20261013.txt",
+      "bytes": 6312,
+      "sha256": "e8ac1f5c2725d4de6779e71764f178d2fd52c5e32a752c62012fada89bea1fda"
+    },
+    "savedResult": {
+      "success": true,
+      "adapterChecks": 37,
+      "bindingErrors": 0,
+      "windowCount": 0
+    }
+  },
+  "reviewedInvariants": [
+    "All six fixed form rewards and Roulette use the same lock start/monitor/end path.",
+    "Acquire requires current supported independent native bridge identity, stores cleanup intent before await, and confirms own effective owner before timer/Drive trigger.",
+    "Full UInt64 bridge/owner values are split into exact UInt32 arguments and reconstructed from one fresh snapshot.",
+    "No form establishment or charge without both the completed target transition and own effective lock.",
+    "Fresh proven loss is observed before generic control/usability gates; missing publication pauses without asserting loss.",
+    "Release is attempted before control and pending-Drive-cancel gates; uncertain ACK/state2 retains durable cleanup and is retried.",
+    "Deferred cleanup never reacquires. Native direct end-Revert waits until lock release is confirmed.",
+    "Replace releases old owner before new acquire; Extend retains original owner; refused Kick Out leaves old reward locked; accepted Kick Out acts before releasing it.",
+    "Foreign identity appearing before release, during release, or after release while control is absent prevents a later direct Revert.",
+    "Fresh bridge replacement with zero current owner also prevents a deferred old reward from reverting a same-ID form in the replacement game.",
+    "Proven foreign identity also discards only the old combat.formtimer restore, leaving the newer hold at1 without a timer command; ordinary owner0 loss does not discard the normal restore."
+  ],
+  "sourcePins": [
+    {
+      "path": "src/KH2Trainer.Core/DriveRevertLockSnapshot.cs",
+      "bytes": 1621,
+      "sha256": "ec7fcd74221c203ff7f88184b6cee97fa097e967ff8fa2d31259ffebf2f32f3f"
+    },
+    {
+      "path": "src/KH2Trainer.Twitch/Effects/DriveRevertEffectLease.cs",
+      "bytes": 5419,
+      "sha256": "912a04c5eba88c4209e68e8f3c3fbd2265aec2603ccf1fe0a9432549d206be5d"
+    },
+    {
+      "path": "src/KH2Trainer.Twitch/Effects/EffectModel.cs",
+      "bytes": 27268,
+      "sha256": "e2874c0c567626c09fecca96a3a80f2aa27c3f7196219d6b49a97e9585e26304"
+    },
+    {
+      "path": "src/KH2Trainer.Twitch/Effects/EffectEngine.cs",
+      "bytes": 38654,
+      "sha256": "f120d6a143065f7c42dd7cd2492370a0e7322ff4b6113d555e351d2622a1cbd1"
+    },
+    {
+      "path": "src/KH2Trainer.Twitch/Effects/EffectCatalog.cs",
+      "bytes": 61664,
+      "sha256": "06de403e3d39a250979f6880972e65ff1906c452e2024079b59b575a31f8406d"
+    },
+    {
+      "path": "src/KH2Trainer/ViewModels/TwitchViewModel.cs",
+      "bytes": 50688,
+      "sha256": "b2a431a74ca64f7428ed85908972bcc71057481245d2361337a0b54f14ecaf7f"
+    },
+    {
+      "path": "tests/KH2Trainer.Twitch.Tests/DriveRevertOwnershipTests.cs",
+      "bytes": 24222,
+      "sha256": "d91d95545b831b2e42fcb246dee7c88b9629c24207cc18869261adfbf98dc48f"
+    },
+    {
+      "path": "tests/KH2Trainer.Twitch.Tests/DriveRevertLockFake.cs",
+      "bytes": 3596,
+      "sha256": "50c549c0830a24599159b3cf1feb5b68ea94a2fa3859ef392db0dd0781457104"
+    },
+    {
+      "path": "tests/KH2Trainer.UiTests/GameplayAdapterChecks.cs",
+      "bytes": 19421,
+      "sha256": "6482b3d08968e4116b1129e34f04912da02c02beb1dfaface1fb879d97d27280"
+    }
+  ],
+  "logs": [
+    {
+      "path": "artifacts/review-drive-revert-managed-20261013/tests-before-fix.log",
+      "bytes": 175183,
+      "sha256": "7f14b9cbd81d73d7af93ca589f67247b6dd8f7cefe326e27c973f7ce67c0fe82"
+    },
+    {
+      "path": "artifacts/review-drive-revert-managed-20261013/tests-after-fix.log",
+      "bytes": 175183,
+      "sha256": "3205c455a63964f0e998f9204cd24d94fc4f9a09be40c300b647acad8acb085f"
+    },
+    {
+      "path": "artifacts/review-drive-revert-managed-20261013/tests-before-timer-fix.log",
+      "bytes": 176245,
+      "sha256": "81ef15bbac24b44365dcf45a14c9ec37f2e7de8dfec39c01d65f67b5a95be801"
+    },
+    {
+      "path": "artifacts/review-drive-revert-managed-20261013/tests-after-timer-fix.log",
+      "bytes": 176245,
+      "sha256": "c2c12c7fb1b7f879dc7fe315b2b30e89e3137d81f020a7583814ac2fc8f57f34"
+    }
+  ],
+  "limits": [
+    "No gameplay or real Twitch redemption acceptance is claimed.",
+    "Generic scalar restoration otherwise retains its preexisting compare-before-restore semantics. The narrow formtimer exception requires positively observed foreign identity; missing or owner0 data is not treated as a takeover.",
+    "This review does not independently re-prove the native command-mask mechanism; root and native reviewers cover it."
+  ]
+}

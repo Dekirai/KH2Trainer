@@ -1,0 +1,48 @@
+Begrenzte Transport-/Integrationskorrektur, 11.10.2026
+
+Vorheriges Manifest:
+fe618ca60ada66f158521423c2d75f0ed334225d97819a2363dfb10d51bbf526
+Vorherige Evidence:
+1258bfbeed7ebab90b51845605390e3bbdad114afb258e9a82e916d80c45af78
+Unveränderter Coverageparser:
+546d0defdacd8857d7f2461283516348ca28776d13e253d8d954ad43622cc1b2
+
+18 bisher nicht unterstützte evidence.json#dependencies[addr=...]-Verweise zeigen
+nun auf dependencies.json#functions[addr=...]. Die ausgewählten Adressen und die
+16 Claimtexte einschließlich ihrer Grenzen bleiben identisch. Der vorhandene
+resolve_reference-Helper löst jetzt alle46 Referenzen auf; zuvor waren28 exists
+und18 unsupported_fragment. Der Coverageparser wurde nicht verändert.
+
+Die19 frischen Evidence-Körper enthalten jetzt vollständige disassembly/pages und
+pseudocode-Objekte ihrer Captures, außerdem deren Quellenmetadaten samt Hash.
+originalBytes ist mit Leerzeichen zwischen den Bytes formatiert. Dieselben
+Metadaten stehen für die16 ausdrücklich wiederverwendeten Körper in dependencies.json
+und den abgeleiteten Evidence-Einträgen. Sie stammen unverändert aus den bereits
+gepinnten Originalstudien. Aggregierte ASM-Zähler/Cursor werden nicht erfunden:
+Bei den zwei älteren Actor-Körpern werden die vorhandenen Top-Level-Felder zu einem
+disassembly-Objekt zusammengestellt. body_assembly akzeptiert die Originalquellen
+und die normalisierten Kopien. original_spans und pe_comparer bestätigen sämtliche
+Originalbytes aller35 ausgewählten Körper.
+
+Der Vorher-/Nachher-Check normalisiert nur die Hexformatierung zurück und entfernt
+die hinzugefügten Transportfelder. Alle zuvor vorhandenen Evidence-Kernfelder und
+Dependency-Kernfelder stimmen dann exakt mit ihren gespeicherten Ausgangshashes
+überein. Beide frischen Captures, Modelle, Modellresultate, semantischen Anker und
+report.txt bleiben byteidentisch. Der alte Report ist in integration-before.json
+als Zeichenkette gespeichert, damit historische Claims nicht erneut als aktuelle
+Claims in die Coverage gelangen.
+
+ROOT wird über den Vorfahren mit src/KH2Trainer.Core ermittelt. Der Probeimport mit
+einem __file__ unter docs/research findet denselben Root und schreibt keine Datei
+in docs. prepare.py verwendet dieselbe Root-Suche. Die beiden Lower-Abhängigkeiten
+werden auf die ausdrücklich aktualisierte und byteidentisch übernommene Docs-Kopie
+der Unterbankstudie gepinnt. Dies ist eine dokumentierte Abhängigkeitserneuerung;
+kein stiller Fallback auf einen anderen Stand.
+
+Reproduktion nach finalem Freeze:
+py -3 -B artifacts/voice-resource-teardown-20261011/verify.py --check
+py -3 -B artifacts/voice-resource-teardown-20261011/integration-check.py
+
+Diese Formatkorrektur ergänzt keine semantische Aussage und ersetzt den separaten
+Peerreview nicht. Kein Produkt, keine Docs-Datei, kein Build, keine Coverageausgabe
+und kein Spielprozess wurde durch diese Korrektur geändert oder gestartet.

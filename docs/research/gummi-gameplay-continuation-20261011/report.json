@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "Domain": "native",
+  "title": "Gummi special-weapon request and deferred combo consumption",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "status": "static evidence complete; product proposal awaits independent review",
+  "scope": "One normal special-weapon request for the current installed Gummi combo. Complete captures support narrow findings; no live execution or complete resource-ownership proof.",
+  "claims": [
+    {
+      "addr": "0x1402312b0",
+      "Finding": "The RCX-only request helper ORs DWORD[combo+68] with mask 2 and returns. It performs no call, stock decrement, stage transition, pointer traversal or timer write.",
+      "Evidence": ["evidence.json#functions[addr=0x1402312b0]", "model-results.json"],
+      "Limitations": "A queued bit is not evidence of a consumed request, weapon creation or visible attack. Immediate write extent only."
+    },
+    {
+      "addr": "0x1401fe860",
+      "Finding": "At 1FEB3D..1FEB6D the normal player input path tests the installed predicate for inline combo player+0x1308, then bit 0x1000 in DWORD[inputObject+8] from player+0x568, and calls 2312B0 on that same combo if both pass.",
+      "Evidence": ["evidence.json#functions[addr=0x1401fe860]", "evidence.json#functions[addr=0x1402311f0]", "evidence.json#functions[addr=0x1402312b0]"],
+      "Limitations": "This finding covers that request branch only. Earlier camera/roll checks are separate branches; no claim that they globally gate this branch, nor that the input resource lifetime is proven."
+    },
+    {
+      "addr": "0x1401fd1e0",
+      "Finding": "The player+0x5D8 phase-2 branch calls input update 1FE860 at 1FD26C, then later 1FDD50 at 1FD524, combo update 230D20(player+0x1308) at 1FD530, and 2313E0 at 1FD53C. Other player phases in this body do not call 230D20.",
+      "Evidence": ["evidence.json#functions[addr=0x1401fd1e0]", "evidence.json#functions[addr=0x140230d20]"],
+      "Limitations": "Native order within this captured update is proven; this does not establish that a future trainer request remains valid across the next update boundary. Unrelated movement/camera paths are not claimed. The extent includes 3 alignment bytes and a 24-byte switch table after the last recorded RET."
+    },
+    {
+      "addr": "0x140230d20",
+      "Finding": "With installation mask 1, phase0 consumes mask2 only when signed stock>0: it spends one stock, optionally clears saturation mask4/progress, and enters phase2 without dispatching that update. Phase3 accepts mask2 only for elapsed10..50 inclusive, entering phase1 without further stock cost; >50 enters recovery. Phase1 uses delay table [0,0,10,10,20]. Phase2 dispatches main IDs [621,605,606,607,608] for stages0..4 and skips following nonpositive counts; stage5 skips main dispatch, advances to6 and phase4. Phase4 dispatches each nonnull companion at elapsed>=4; phase5 resets at >=40. Installed updates add the native step then clear mask2; absent installation returns before both operations.",
+      "Evidence": ["evidence.json#functions[addr=0x140230d20]", "evidence.json#functions[addr=0x140154430]", "evidence.json", "model-results.json"],
+      "Limitations": "Finite, coherent native state is assumed for the proposal; no native bounds check protects phase1's index. Timer units are native step units, not established wall time. Companion arguments come from the actual RCX loads in ASM; decompiler omitted them. 24 trailing jump-table bytes are retained separately from the 140 recorded instructions. Callee dispatch can have its own effects/resources outside the isolated model."
+    },
+    {
+      "addr": "0x1401fbc50",
+      "Finding": "Main dispatch traverses ship+152 and each part's packed next field+1344. It calls the native part-ID getter and invokes 22AB00 on every part whose ID equals EDX; it does not stop at the first match.",
+      "Evidence": ["evidence.json#functions[addr=0x1401fbc50]", "evidence.json#functions[addr=0x14022ab00]"],
+      "Limitations": "Traversal and selection are proven; part allocation provenance, list acyclicity, lifetime and actual projectile output are not. Native ID getter and packed-pointer decoder are prior-study dependencies, not newly interpreted here."
+    },
+    {
+      "addr": "0x1401fbcb0",
+      "Finding": "Companion dispatch traverses the same ship+152 / packed part+1344 list and calls 22AB00 for every part accepted by 229D30; that predicate is a comparison of DWORD[part+1224] with 3.",
+      "Evidence": ["evidence.json#functions[addr=0x1401fbcb0]", "evidence.json#functions[addr=0x140229d30]", "evidence.json#functions[addr=0x14022ab00]"],
+      "Limitations": "A nonnull companion pointer and accepted part type do not independently prove valid ownership of the nested objects."
+    },
+    {
+      "addr": "0x14022ab00",
+      "Finding": "For each weapon instance from part+1440 and packed instance-next+164, this routine calls 1F26A0(instance,0), then continues traversal until the decoded pointer is null.",
+      "Evidence": ["evidence.json#functions[addr=0x14022ab00]", "evidence.json#functions[addr=0x1401f26a0]"],
+      "Limitations": "No bounded scan or ownership proof is present in this body. The call is a request latch, not an established projectile-spawn operation."
+    },
+    {
+      "addr": "0x1401f26a0",
+      "Finding": "When BYTE[instance+144] equals EDX, the function ORs DWORD[instance+156] with mask1. If mask4 is then present it also clears BYTE[instance+148]; a mode mismatch changes nothing.",
+      "Evidence": ["evidence.json#functions[addr=0x1401f26a0]", "model-results.json"],
+      "Limitations": "Only these writes and branches are claimed. The later consumer of this latch and projectile/hit behavior are outside scope."
+    },
+    {
+      "addr": "0x140230c50",
+      "Finding": "Installation scanning sets combo mask1 for accepted type-3 parts. For a main ship classified by 1FB320==0, it increments counts at+32..48 (IDs605..608 select stages1..4, otherwise stage0) and sets mask8. This is the origin of the stage-count and installed-flag relationship used by the proposal.",
+      "Evidence": ["evidence.json#functions[addr=0x140230c50]", "evidence.json#functions[addr=0x140229d30]"],
+      "Limitations": "Reconfirmed initialization behavior overlaps the legacy Gummi study; not a newly discovered function. It does not establish ongoing validity of those parts after initialization."
+    },
+    {
+      "addr": "0x140231150",
+      "Finding": "Initialization stores main and two companion pointers, scans main plus each nonnull companion, adds the native stock getter result to existing stock, and resets phase0/index-first-positive-or5/timer0. It is not a one-shot activation helper and must not be used to refill or force a strike.",
+      "Evidence": ["evidence.json#functions[addr=0x140231150]", "evidence.json#functions[addr=0x140230c50]"],
+      "Limitations": "Reconfirmed legacy initializer. This study does not prove the callers' companion ownership or permit replaying initialization over a live loadout."
+    }
+  ],
+  "supportOnly": ["0x1402311f0", "0x140229d30", "0x140154430", "0x140230b30", "0x1401fdd50", "0x1401ff7f0"],
+  "duplicateExtractedBodiesNotChosenAsLiveEntry": ["0x140230f60", "0x140231010", "0x1401ff260"],
+  "nextAddressesIfExpandingScope": [
+    "231150 callers: establish current companion-object identity, creation and retirement before claiming full downstream ownership",
+    "1FBC50/1FBCB0 list writers for ship+152 / part+1344 and 22AB00 list writers for part+1440 / instance+164",
+    "1F26A0 instance+156 consumer: projectile creation, resource lookup and mode-specific refusal paths"
+  ],
+  "productProposal": "contract.md",
+  "historicalDependencies": "dependencies.json",
+  "verification": "verification.json"
+}

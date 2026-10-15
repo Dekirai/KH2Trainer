@@ -1,0 +1,120 @@
+{
+  "title": "Ordinary MSET provider and retained aliases",
+  "status": "bounded static findings",
+  "claims": [
+    {
+      "addr": "0x14012ee70",
+      "Finding": "The original retail entrypoint supplies RCX=0 to the only direct caller of 12EE70; this setter is the sole direct write found to handler-table global8AEF38. The normal unchanged startup therefore installs no resource handler table.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012ee70]",
+        "evidence.json#functions[addr=0x14014f1e0]",
+        "root-xrefs-handlers.json",
+        "anchors.json"
+      ],
+      "Limitations": "Direct-Xref closure for the hash-pinned image, not proof against indirect stores, patches, other initializers outside recorded provenance, or an observed live value."
+    },
+    {
+      "addr": "0x14012e5c0",
+      "Finding": "After constructing and linking currentEntry, a null handler table branches directly to return. The constructor sets handlerIndex+1612=-1; the dispatch changes it only after the matched load callback. Ordinary null-table registration has no table load callback and retains the negative index for retirement.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012e5c0]",
+        "evidence.json#functions[addr=0x14012cd80]",
+        "evidence.json#functions[addr=0x14012dbb0]",
+        "evidence.json#functions[addr=0x14012e460]",
+        "evidence.json#functions[addr=0x14012ef80]",
+        "model-results.json"
+      ],
+      "Limitations": "Requires unchanged normal initialization and normal return; non-null custom tables and construction faults are outside this path. Does not rule out other independent callbacks."
+    },
+    {
+      "addr": "0x140107620",
+      "Finding": "Package_ReadBase performs direct CRT _read calls and optional in-process prefix/codec work before return; it reloads nominal package+300 for all three return branches instead of reporting the read/codec result.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140107620]",
+        "evidence.json#functions[addr=0x1401062b0]",
+        "evidence.json#functions[addr=0x1404696f0]",
+        "evidence.json#functions[addr=0x140106700]",
+        "anchors.json",
+        "model-results.json"
+      ],
+      "Limitations": "Normal CRT/in-process codec semantics are the explicit library boundary; helper implementations are not exhaustively audited. Nominal length cannot certify full read, decompression success or valid MSET."
+    },
+    {
+      "addr": "0x1403f9850",
+      "Finding": "The ordinary reader retires overlapping registrations, calls106700, then on positive nominal result uses currentEntry in mode3 and writes the encoded entry pointer into BAR+12 and BYTE3 metadata before returning.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403f9850]",
+        "evidence.json#functions[addr=0x140106700]",
+        "evidence.json#functions[addr=0x14012f070]",
+        "evidence.json#functions[addr=0x14012ef30]"
+      ],
+      "Limitations": "Limited to observed ordinary reader/mode3 provenance with known destination reservation; alternate3F99E0, nonpositive/fallback paths and third-party providers are excluded. Not a successful-content or whole-engine ownership guarantee."
+    },
+    {
+      "addr": "0x14012cd80",
+      "Finding": "The resource constructor retains the supplied primary address at Entry+16 and Entry+1624, with lengths at+24/+1600. Relocation39E690 finds that exact old address plus name via12DF90 and updates both aliases before its source copy.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012cd80]",
+        "evidence.json#functions[addr=0x14012df90]",
+        "evidence.json#functions[addr=0x14039e690]"
+      ],
+      "Limitations": "The aliases are not reservations or locks. Finding one update path does not enumerate callers which already hold a returned entry or primary pointer."
+    },
+    {
+      "addr": "0x14012e180",
+      "Finding": "Primary-range lookup can detach an entry when EDX is nonzero: it updates head/tail/count and Entry+8, then returns the still-live entry without clearing either primary alias or calling a destructor.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012e180]",
+        "model-results.json"
+      ],
+      "Limitations": "Native range arithmetic is unchecked; this lookup is not a safe bounds validator. Empty registry/head alone does not prove that retained aliases are dead."
+    },
+    {
+      "addr": "0x14012e860",
+      "Finding": "Replacement-context teardown detaches the primary registration list, destroys the RootFileData list, frees the context and clears8AEF30.12EA20 constructs/publishes a new context. These are context lifetime transitions, not proof of primary-buffer retirement.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012e860]",
+        "evidence.json#functions[addr=0x14012ea20]"
+      ],
+      "Limitations": "Entry handles may outlive list membership; context identity changes must revoke admission before any metadata lookup. No global alias lifetime claim."
+    },
+    {
+      "addr": "0x14012e460",
+      "Finding": "Retirement skips the table unload callback for negative handlerIndex, unlinks the entry and calls its destructor. The destructor passes metadata+16 to conditional disk-name-table output and directly frees the entry object;12EEA0 has a separate caller callback before retirement.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012e460]",
+        "evidence.json#functions[addr=0x14012d8e0]",
+        "evidence.json#functions[addr=0x14012d5a0]",
+        "evidence.json#functions[addr=0x14012eea0]",
+        "evidence.json#functions[addr=0x14012ef80]",
+        "evidence.json#functions[addr=0x1403a6a10]"
+      ],
+      "Limitations": "The caller callback in12EEA0 is not disabled by the null handler table. Replacement-object virtual destruction and other aliases remain separate lifetime obligations; no universal no-write/no-free claim."
+    },
+    {
+      "addr": "0x14012eb70",
+      "Finding": "The remaining inspected direct context users manage names or look up entries:12EB70 inserts RootFileData/dependency strings,12E980 looks them up;12DDA0/12DE20/12E230/12E310 search replacement ranges, normalized names, 16-byte digests, or replacement type/name. Their recorded bodies contain no primary-payload reload.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14012eb70]",
+        "evidence.json#functions[addr=0x14012e980]",
+        "evidence.json#functions[addr=0x14012dda0]",
+        "evidence.json#functions[addr=0x14012de20]",
+        "evidence.json#functions[addr=0x14012e230]",
+        "evidence.json#functions[addr=0x14012e310]",
+        "root-xrefs-retirement.json",
+        "anchors.json"
+      ],
+      "Limitations": "Returning entry aliases does not constrain downstream consumers. Context Xrefs include one explicitly excluded alternate-reader reference3F9B15; the other28 have full bodies here."
+    },
+    {
+      "addr": "0x1403a64f0",
+      "Finding": "The original BAR replacement-preparation switch sends Type17 to recursive BAR preparation while Type9 takes the default advance path without a specialized replacement callback.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a64f0]",
+        "evidence.json#functions[addr=0x1403a6840]",
+        "anchors.json"
+      ],
+      "Limitations": "This is the replacement-preparation dispatch only. Later Type9 construction/fixup still mutates its payload and remains covered by the separate cache/binding contract."
+    }
+  ]
+}

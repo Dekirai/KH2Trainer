@@ -161,6 +161,8 @@ public sealed class AssetArchiveReader
         if (data.Length >= 4 && data[..4].SequenceEqual("IMGD"u8)) return "IMGD image";
         if (data.Length >= 4 && data[..4].SequenceEqual("IMGZ"u8)) return "IMGZ image collection";
         if (data.Length >= 8 && data[..8].SequenceEqual("SeBlock\0"u8)) return "SeBlock audio";
+        if (data.Length >= 7 && data[..7].SequenceEqual("ORIGIN\0"u8)) return "ORIGIN audio reference";
+        if (data.Length >= 8 && data[..8].SequenceEqual("SEDBSSCF"u8)) return "SCD audio bank";
         return "Binary data";
     }
 

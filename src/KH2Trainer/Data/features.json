@@ -1588,79 +1588,79 @@
         "DefaultValue": 2,
         "Choices": [
           {
-            "Label": "0 â€” zz",
+            "Label": "World ZZ",
             "Value": 0
           },
           {
-            "Label": "1 â€” es",
+            "Label": "End of Sea",
             "Value": 1
           },
           {
-            "Label": "2 â€” tt",
+            "Label": "Twilight Town",
             "Value": 2
           },
           {
-            "Label": "3 â€” di",
+            "Label": "Destiny Islands",
             "Value": 3
           },
           {
-            "Label": "4 â€” hb",
+            "Label": "Hollow Bastion",
             "Value": 4
           },
           {
-            "Label": "5 â€” bb",
+            "Label": "Beast's Castle",
             "Value": 5
           },
           {
-            "Label": "6 â€” he",
+            "Label": "Olympus Coliseum",
             "Value": 6
           },
           {
-            "Label": "7 â€” al",
+            "Label": "Agrabah",
             "Value": 7
           },
           {
-            "Label": "8 â€” mu",
+            "Label": "The Land of Dragons",
             "Value": 8
           },
           {
-            "Label": "9 â€” po",
+            "Label": "100 Acre Wood",
             "Value": 9
           },
           {
-            "Label": "10 â€” lk",
+            "Label": "Pride Lands",
             "Value": 10
           },
           {
-            "Label": "11 â€” lm",
+            "Label": "Atlantica",
             "Value": 11
           },
           {
-            "Label": "12 â€” dc",
+            "Label": "Disney Castle",
             "Value": 12
           },
           {
-            "Label": "13 â€” wi",
+            "Label": "Timeless River",
             "Value": 13
           },
           {
-            "Label": "14 â€” nm",
+            "Label": "Halloween Town",
             "Value": 14
           },
           {
-            "Label": "15 â€” wm",
+            "Label": "World Map",
             "Value": 15
           },
           {
-            "Label": "16 â€” ca",
+            "Label": "Port Royal",
             "Value": 16
           },
           {
-            "Label": "17 â€” tr",
+            "Label": "Space Paranoids",
             "Value": 17
           },
           {
-            "Label": "18 â€” eh",
+            "Label": "The World That Never Was",
             "Value": 18
           }
         ]
@@ -3290,6 +3290,35 @@
     ]
   },
   {
+    "Id": "target_reduce_hp_percent",
+    "Category": "Combat Practice",
+    "Name": "Reduce locked enemy HP by percent",
+    "Description": "Remove a percentage of the manually locked enemy's current HP, rounded up. Keeps at least 1 HP and respects the enemy's native minimum. Refuses a target already at that minimum.",
+    "Kind": "Action",
+    "CommandId": 1486,
+    "ValueSlot": -1,
+    "CapabilitySlot": 486,
+    "Minimum": 1,
+    "Maximum": 99,
+    "DefaultValue": 25,
+    "Step": 1,
+    "Unit": "% of current HP",
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "One-time nonlethal change to the enemy selected when the command executes. Does not alter maximum HP, native minimum HP, saved stats or damage callbacks. Battle scripts can react to changed HP.",
+    "Arguments": [
+      { "Name": "HP reduction (%)", "Minimum": 1, "Maximum": 99, "DefaultValue": 25, "Choices": [] }
+    ],
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A7A40 / 0x3DCD70 / 0x3C0860 / 0x3D2EB0",
+        "Finding": "Reuses the verified current manual target, live actor-list and STATUS backlink checks. Reads current/max/min HP at STATUS+0/+4/+8 and computes the percentage in the same native command before a guarded nonlethal current-HP write.",
+        "Level": "Existing native IDA field and target contract, extended guarded implementation and isolated tests; no live-game test."
+      }
+    ]
+  },
+  {
     "Id": "target_set_hp",
     "Category": "Combat Practice",
     "Name": "Set locked enemy HP",
@@ -4531,6 +4560,84 @@
         "Address": "RVA 0x121D90 / 0x077FC0 / 0x08FE90 / 0x079C90 / 0x07FAD0",
         "Finding": "Normal app lifecycle serializes init/update/shutdown; audio workers hold the global Sound CS while updating envelopes. Game-thread commands lock, validate fresh bus identities and apply one-millisecond native gain transitions.",
         "Level": "Static IDA, original-byte verification and isolated tests; live behavior pending"
+      }
+    ]
+  },
+  {
+    "Id": "audio.requests.free",
+    "Category": "Audio Requests",
+    "Name": "Free request slots",
+    "Description": "Free entries in the shared audio request pool. The observed reservation paths keep 16 entries in reserve. This does not count audible voices or queued sounds.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 482,
+    "CapabilitySlot": 482,
+    "Minimum": 0,
+    "Maximum": 80,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "/ 80",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observed sample only. Values are omitted when validation fails or two consecutive reads differ.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x00DA30 / 0x1DD510 / 0x1DDF10 / 0x1DE230 / 0x1DD8D0",
+        "Finding": "The static initializer installs 80 free slots. Reservation decrements AD9390; deferred retirement returns an index and increments it. The diagnostic accepts a bounded scalar sample without traversing audio resources.",
+        "Level": "Static IDA and original-byte verification; isolated implementation tests; live behavior pending"
+      }
+    ]
+  },
+  {
+    "Id": "audio.requests.interval",
+    "Category": "Audio Requests",
+    "Name": "Reservations since audio pass",
+    "Description": "Reservations since the latest reset of this counter. Audio processing and initialization reset it. This is not a rate or history: a sampled zero can miss requests between display updates.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 483,
+    "CapabilitySlot": 483,
+    "Minimum": 0,
+    "Maximum": 25,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observed sample only. The counter resets on each native processing pass and during initialization.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x1DD510 / 0x1DDF10 / 0x1DE230 / 0x1DD8D0 / 0x1DE7C0",
+        "Finding": "Reservation increments AD93C4 while its signed value is at most 24. Processing and initialization reset it to zero. No elapsed-time or cumulative event count is inferred.",
+        "Level": "Static IDA and original-byte verification; isolated implementation tests; live behavior pending"
+      }
+    ]
+  },
+  {
+    "Id": "audio.requests.gates",
+    "Category": "Audio Requests",
+    "Name": "New request limits",
+    "Description": "Shows the native inhibit flag, the pool reserve threshold and the per-pass reservation limit observed in the same sample. No sampled admission limit does not guarantee playback: resources and the audio backend can still reject a request.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 484,
+    "CapabilitySlot": 484,
+    "Minimum": 0,
+    "Maximum": 7,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Derived from two equal scalar reads. This observation does not synchronize the pool or predict the next request.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x1DD4E0 / 0x1DD4F0 / 0x1DD510 / 0x1DDF10 / 0x1DE230",
+        "Finding": "Reservation rejects inhibit AD93C0 != 0, signed free count <= 16, or signed interval count > 24. Bits 1, 2 and 4 describe only those observed limits; no audio lock or native audio call is required.",
+        "Level": "Static IDA and original-byte verification; isolated implementation tests; live behavior pending"
       }
     ]
   },
@@ -6957,13 +7064,13 @@
     "Id": "display.brightness_preview",
     "Category": "Display previews",
     "Name": "Brightness preview",
-    "Description": "Apply the game's brightness adjustment once. The current renderer value is shown here; later game settings can replace this preview.",
+    "Description": "Apply a brightness level from -50 to 5000. Values above the normal menu limit of 50 strongly overexpose the image; 5000 is the Flashbang level. Later game settings can replace this preview.",
     "Kind": "Number",
     "CommandId": 1304,
     "ValueSlot": 304,
     "CapabilitySlot": 304,
     "Minimum": -50,
-    "Maximum": 50,
+    "Maximum": 5000,
     "DefaultValue": 0,
     "Step": 1,
     "Unit": "native levels",
@@ -6974,7 +7081,7 @@
     "Evidence": [
       {
         "Address": "0x1405061A0 / 0x1401268C0 / 0x14051A4C0",
-        "Finding": "The native menu limits signed brightness to -50..50; preview writes GX+716 and gamma2.2/(2.2+level/50). The final pass consumes these constants.",
+        "Finding": "The menu uses -50..50, but its signed-int16 preview setter has no clamp. The trainer admits -50..5000: GX+716=level/50 and inverse gamma=2.2/(2.2+level/50). Program47 applies this exponent to RGB. Exact integer readback permits restoration; loaded settings retain the menu range.",
         "Level": "Full native IDA assembly and synthetic lifecycle/ABI/locking tests. Live display validation is pending."
       }
     ]
@@ -7173,6 +7280,32 @@
         "Maximum": 900,
         "DefaultValue": 100,
         "Choices": []
+      }
+    ]
+  },
+  {
+    "Id": "gummi.request_special_attack",
+    "Category": "Gummi controls",
+    "Name": "Request special-weapon strike",
+    "Description": "Request one strike from the installed special weapon. Starting a combo needs at least one stock; another click can continue it during the normal input window. The next ship update decides whether to use the request.",
+    "Kind": "Action",
+    "CommandId": 1485,
+    "ValueSlot": -1,
+    "CapabilitySlot": 485,
+    "Minimum": 0,
+    "Maximum": 0,
+    "DefaultValue": 0,
+    "Step": 1,
+    "Unit": "",
+    "RequiresScene": false,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "One request to the current ship. Normal weapon timing and stock consumption apply. The request is never repeated automatically or saved in a profile.",
+    "Evidence": [
+      {
+        "Address": "0x1402312B0 / 0x140230D20 / 0x1401FE860",
+        "Finding": "The normal input helper ORs combo+68 with mask2. The later native update consumes the pulse in phase0 with stock or phase3 at elapsed10..50, then clears it. Acknowledgement confirms the request only.",
+        "Level": "Complete native IDA assembly and original-byte comparison. Isolated request, guard and transport validation; live Gummi validation pending."
       }
     ]
   },
@@ -7422,6 +7555,31 @@
         "Address": "0x1403DA940 / 0x140405030 / 0x140415670 / 0x140404FB0 / 0x1404154E0",
         "Finding": "Verified player constructors share the Actor movement block; exact normal and rescue-Mickey input wrappers reach the shared movement consumer. Actor/object/status identity is checked before the one-time write. Collision and targeting keep their separate Sora-only gate.",
         "Level": "Static IDA and synthetic tests; see docs/research/actor-movement-roles-20261007. Live character movement is not yet validated."
+      }
+    ]
+  },
+  {
+    "Id": "movement.heavy_jumps",
+    "Category": "Player movement",
+    "Name": "Heavy jumps",
+    "Description": "Halve the current base jump height and double the fall-speed limit, up to 100. Applies once to Sora, Roxas or rescue Mickey. High Jump and special actions may use different heights; clicking again applies the change again.",
+    "Kind": "Action",
+    "CommandId": 1487,
+    "ValueSlot": -1,
+    "CapabilitySlot": 487,
+    "Minimum": 0,
+    "Maximum": 0,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "One-time runtime change. Use the movement fields to adjust it afterward; native scripts, character or form changes can replace it. The Twitch Heavy Jumps reward uses a separate timed ownership lease and restores its own values.",
+    "Evidence": [
+      {
+        "Address": "RVA 0x3A8FA0 / Actor+312 / Actor+304",
+        "Finding": "Uses the existing verified movement roles and context. Samples and validates both the fall-speed limit and base-height fallback before writing either field; native High Jump height selection is not replaced.",
+        "Level": "Existing native IDA movement contract, extended guarded implementation and isolated tests; no live-game test."
       }
     ]
   },
@@ -10369,6 +10527,156 @@
         "Address": "RVA 0x3A2C30 / 0x3FA610 / 0x3FA790 / 0x3FA820",
         "Finding": "The registered inline mission combo at +880 stores current +56, retained peak +80 and float allowance +84. Values are published only after mission, registry, vtable and field checks; they issue no command. See docs/research/mission-counter-implementation-20261008.",
         "Level": "Native IDA and original-byte evidence; isolated snapshot and UI tests. Live gameplay not tested."
+      }
+    ]
+  },
+  {
+    "Id": "actor.sora.reference_count",
+    "Category": "Actor reference diagnostics",
+    "Name": "Sora references",
+    "Description": "References currently counted for Sora. Scripts, commands and attacks can contribute; this is not a count of attacks or unique objects.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 493,
+    "CapabilitySlot": 493,
+    "Minimum": 0,
+    "Maximum": 4294967295,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. No commands, hooks, native getter calls, retained actor pointers or game writes. An unavailable actor has no valid value.",
+    "Evidence": [
+      {
+        "Address": "0x1403CFB10 / 0x1403B4420 / 0x1403E1240 / 0x1403E1A00 / 0x1403DB140 / 0x1403DB100",
+        "Finding": "Actor DWORD+1464 counts references from multiple sources. The YSVM constructor increments the non-null actor stored at VM+96; its guarded cleanup decrements it. Actor command installation and release also increment/decrement the field. Contact cleanup decrements each non-null field+12/+20, which can alias. Read directly without calling the native counter predicate, which can run VM work.",
+        "Level": "Original-byte and IDA evidence in actor-contact-retirement-20261013 and actor-counter-writers-20261013; bounded snapshot integration. Live gameplay not tested."
+      }
+    ]
+  },
+  {
+    "Id": "actor.sora.retirement_requested",
+    "Category": "Actor reference diagnostics",
+    "Name": "Sora retirement requested",
+    "Description": "Shows whether KH2 has requested Sora's removal. The request can remain pending while the game finishes cleanup.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 494,
+    "CapabilitySlot": 494,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. No commands, hooks, native getter calls, retained actor pointers or game writes. An unavailable actor has no valid value.",
+    "Evidence": [
+      {
+        "Address": "0x1403B4700 / 0x1403BFD30",
+        "Finding": "Actor DWORD+288 bit0x10000000 is set by the retirement request path and tested before descriptor admission callbacks.",
+        "Level": "Original-byte and IDA evidence in actor-contact-retirement-20261013; bounded snapshot integration. Live gameplay not tested."
+      }
+    ]
+  },
+  {
+    "Id": "actor.sora.retirement_marked",
+    "Category": "Actor reference diagnostics",
+    "Name": "Sora marked for retirement",
+    "Description": "Shows whether KH2 has marked Sora to leave the active actor list. Removal can follow in a later update.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 495,
+    "CapabilitySlot": 495,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. No commands, hooks, native getter calls, retained actor pointers or game writes. An unavailable actor has no valid value.",
+    "Evidence": [
+      {
+        "Address": "0x1403B45C0 / 0x1403BF300",
+        "Finding": "Actor DWORD+288 bit0x80000 marks active actors for transfer to the dead list. The consumer destroys the previous dead list before transferring newly marked actors; a later call may occur in the same frame.",
+        "Level": "Original-byte and IDA evidence in actor-contact-retirement-20261013; bounded snapshot integration. Live gameplay not tested."
+      }
+    ]
+  },
+  {
+    "Id": "actor.target.reference_count",
+    "Category": "Actor reference diagnostics",
+    "Name": "Target references",
+    "Description": "References currently counted for the current enemy. Scripts, commands and attacks can contribute; this is not a count of attacks or unique objects.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 496,
+    "CapabilitySlot": 496,
+    "Minimum": 0,
+    "Maximum": 4294967295,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. No commands, hooks, native getter calls, retained actor pointers or game writes. An unavailable actor has no valid value.",
+    "Evidence": [
+      {
+        "Address": "0x1403CFB10 / 0x1403B4420 / 0x1403E1240 / 0x1403E1A00 / 0x1403DB140 / 0x1403DB100",
+        "Finding": "Actor DWORD+1464 counts references from multiple sources. The YSVM constructor increments the non-null actor stored at VM+96; its guarded cleanup decrements it. Actor command installation and release also increment/decrement the field. Contact cleanup decrements each non-null field+12/+20, which can alias. Read directly without calling the native counter predicate, which can run VM work.",
+        "Level": "Original-byte and IDA evidence in actor-contact-retirement-20261013 and actor-counter-writers-20261013; bounded snapshot integration. Live gameplay not tested."
+      }
+    ]
+  },
+  {
+    "Id": "actor.target.retirement_requested",
+    "Category": "Actor reference diagnostics",
+    "Name": "Target retirement requested",
+    "Description": "Shows whether KH2 has requested the current enemy's removal. The request can remain pending while the game finishes cleanup.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 497,
+    "CapabilitySlot": 497,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. No commands, hooks, native getter calls, retained actor pointers or game writes. An unavailable actor has no valid value.",
+    "Evidence": [
+      {
+        "Address": "0x1403B4700 / 0x1403BFD30",
+        "Finding": "Actor DWORD+288 bit0x10000000 is set by the retirement request path and tested before descriptor admission callbacks.",
+        "Level": "Original-byte and IDA evidence in actor-contact-retirement-20261013; bounded snapshot integration. Live gameplay not tested."
+      }
+    ]
+  },
+  {
+    "Id": "actor.target.retirement_marked",
+    "Category": "Actor reference diagnostics",
+    "Name": "Target marked for retirement",
+    "Description": "Shows whether KH2 has marked the current enemy to leave the active actor list. Removal can follow in a later update.",
+    "Kind": "ReadOnly",
+    "CommandId": 0,
+    "ValueSlot": 498,
+    "CapabilitySlot": 498,
+    "Minimum": 0,
+    "Maximum": 1,
+    "DefaultValue": 0,
+    "Step": 1,
+    "RequiresScene": true,
+    "ChangesProgression": false,
+    "CanSaveInProfile": false,
+    "RestoreBehavior": "Observation only. No commands, hooks, native getter calls, retained actor pointers or game writes. An unavailable actor has no valid value.",
+    "Evidence": [
+      {
+        "Address": "0x1403B45C0 / 0x1403BF300",
+        "Finding": "Actor DWORD+288 bit0x80000 marks active actors for transfer to the dead list. The consumer destroys the previous dead list before transferring newly marked actors; a later call may occur in the same frame.",
+        "Level": "Original-byte and IDA evidence in actor-contact-retirement-20261013; bounded snapshot integration. Live gameplay not tested."
       }
     ]
   }

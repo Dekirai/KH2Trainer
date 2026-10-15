@@ -1,0 +1,138 @@
+{
+  "status": "accepted",
+  "reviewer": "review_bank3_extended",
+  "scope": "Independent review of actual single-entry INT3/VEH Motion router and composed Runtime; no game or gameplay activation.",
+  "sourcePins": {
+    "src/KH2Trainer.Bridge/MotionBreakpointRouter.h": {
+      "sha256": "02066e37f6d91d601ee7c3237156d25ed099ca63d5157d58af5dc1b3035a469f",
+      "bytes": 14597
+    },
+    "src/KH2Trainer.Bridge/MotionObservationRuntime.h": {
+      "sha256": "aad9edf1c0f093e0d047cb741dce6956eec7cdf86da42e304f72f60115467cd8",
+      "bytes": 5683
+    },
+    "src/KH2Trainer.Bridge/MotionEntryPlan.h": {
+      "sha256": "1897771ca4c86932eb3a1193835f2507969f71ec921f6b28dac85894daa49bdc",
+      "bytes": 9239
+    },
+    "src/KH2Trainer.Bridge/MotionObserverSupport.h": {
+      "sha256": "6eed72919decbde5281375dfeff96e705f41ca8cf79c2f489526724748be65ee",
+      "bytes": 4885
+    },
+    "src/KH2Trainer.Bridge/MotionOriginalTrampoline.h": {
+      "sha256": "14b92147f8fe6ceb8dad50c0629f0a42f6679a8686d83a4379b8ad5367b6affa",
+      "bytes": 5484
+    },
+    "tests/KH2Trainer.Bridge.Tests/MotionBreakpointRouterTests.cpp": {
+      "sha256": "db12feff32430061344ae5e65f91f5fe1e40d4b3fe0b74dc069cd72c1448983f",
+      "bytes": 20664
+    },
+    "tests/KH2Trainer.Bridge.Tests/MotionObservationRuntimeTests.cpp": {
+      "sha256": "c4ae4b3f5c2c3aff08935d8ed8590b70e4c0d2436f3239be2147175367ce14fe",
+      "bytes": 12422
+    },
+    "tests/KH2Trainer.Bridge.Tests/run-tests.ps1": {
+      "sha256": "a6a9faf34eb93f5bba268b1c4b4ac328613366254ba5869978308fb1d2fdf871",
+      "bytes": 8019
+    },
+    "scripts/setup-toolchain.cmd": {
+      "sha256": "6cfe2d704422e8e3e764f77cc780211a4b5949cdec164bdb4181733a2cbbd889",
+      "bytes": 755
+    }
+  },
+  "priorReviewPins": {
+    "docs/research/motion-entry-implementation-20261011/review/manifest.json.txt": {
+      "sha256": "6abd53114d5800232f1ab81c59e6bccf8ce0b354ed4d4040dff57bdec95f191f",
+      "bytes": 3995
+    },
+    "docs/research/motion-entry-implementation-20261011/review/review.json.txt": {
+      "sha256": "04ca12127d866369b8fb93b37f079a810ef40ef09f563dfd3cc6816e4b7bed5e",
+      "bytes": 8334
+    }
+  },
+  "authorSuitesIndependentlyRebuilt": {
+    "MotionBreakpointRouterTests": 544,
+    "MotionObservationRuntimeTests": 660
+  },
+  "productionCompileWithoutTestHooks": {
+    "MOTION_BREAKPOINT_PRODUCTION_COMPILE": "PASS",
+    "MOTION_RUNTIME_PRODUCTION_COMPILE": "PASS"
+  },
+  "independentRegression": {
+    "scenarios": 2,
+    "totalAssertions": 57,
+    "newReviewerAssertions": 15,
+    "reusedFixtureAssertions": 42,
+    "failures": 0,
+    "fixtureMethod": "The reviewer includes the author Runtime test translation unit with its main renamed, reuses only the explicitly declared private original-body fixture, and runs two new post-bind failure scenarios."
+  },
+  "originalFixtureComparison": {
+    "status": "PASS",
+    "originalExeSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+    "bodyBytes": 287,
+    "bodyInstructions": 86,
+    "originalUnwindBytes": 24,
+    "branchAnchors": 10,
+    "declaredFixtureCallees": 3,
+    "evidence": "fixture-check.json",
+    "sha256": "534a62abf6b32b1af4d7d094182e445f28db54101be97a7143cdb0ea44ab83ce"
+  },
+  "logSha256": {
+    "build-log.txt": "68ab573c20025767a84d39a583a157abd6d53459d6b119c18ad7cb01936bb56c",
+    "router-tests.txt": "f69f268025bf0db3afb5544bdd8e8dcbc879fab721bd60e88cb9a103a43de848",
+    "runtime-failure-review-tests.txt": "7f6e2eaa3d66b0b4a8604ad3175529d3225b6f950b8035d15c99edfb2cb85f0a",
+    "runtime-tests.txt": "1094048fe40dfbd3e018dd189e1f2dc1f3a5d112af5f21b1848b99c94bc4d309"
+  },
+  "findings": [
+    {
+      "topic": "Atomic publication",
+      "status": "accepted",
+      "detail": "Immutable source/target data and a bound typed original are published before the one-byte CAS. active and VEH precede code exposure; the handler changes only RIP and does not gate on Resident/Patched."
+    },
+    {
+      "topic": "Lifetime and rollback",
+      "status": "accepted",
+      "detail": "Source, wrapper and handler modules are pinned; Runtime retains source before Original.Prepare and pins callback modules. Successful byte restoration does not tear down routing. Failed restoration preserves permanent exposure and separate failure state; foreign bytes are not overwritten."
+    },
+    {
+      "topic": "Delayed real exception",
+      "status": "accepted",
+      "detail": "The independently rerun router suite holds a real private INT3 in a front VEH, rolls back the entry into Fault, then releases the exception. The retained route forwards it once through wrapper and original."
+    },
+    {
+      "topic": "Composed failure retention",
+      "status": "accepted",
+      "detail": "Two added reviewer scenarios verify bound image retention after RouterPrepare failure and real entry forwarding after RouterCommit plus rollback failure. Tick does not release sealed code/unwind storage; AL1 and native SEH still traverse the composed route."
+    },
+    {
+      "topic": "Actual original-body fixture",
+      "status": "accepted",
+      "detail": "Original PE confirms 287 body bytes and 24 unwind bytes. Runtime tests preserve all continuation bytes and replace only three declared callees. Selection -1, null group/child pointers, and a false SuccessFixture return bound the accessed paths. ModelBase is only used in non-dereferenced address arithmetic."
+    },
+    {
+      "topic": "Thread and fault semantics",
+      "status": "accepted",
+      "detail": "Management is owner-thread restricted using a retained handle. New entrants may arrive on arbitrary threads; callback synchronization remains an owner obligation. observerFault includes original SEH and conveys no exception-origin classification."
+    },
+    {
+      "topic": "Scope and runner integration",
+      "status": "accepted",
+      "detail": "Both suites and production compile variants are registered in the existing native runner. TrainerBridge does not invoke or include the new Runtime/Router; this supports real private test routing and does not activate a gameplay consumer."
+    }
+  ],
+  "blockers": [],
+  "nonIntegrationSource": {
+    "path": "src/KH2Trainer.Bridge/TrainerBridge.cpp",
+    "sha256": "d078e6e96f1817b9ef21b9691e2f9a33c60d844c4a3a9a8a826fc1576ecd5e3c",
+    "bytes": 45929
+  },
+  "limits": [
+    "No game process, GUI, attachment, injection, IDB modification, save or mod action occurred.",
+    "Private runtime tests execute the actual complete original body but substitute three declared helper implementations; they do not validate the helpers or arbitrary motion/resource inputs.",
+    "Router tests use an explicit synthetic continuation fingerprint after the original five-byte prefix; the separate Runtime suite provides the unchanged-body evidence.",
+    "Old calls are not drained or retrospectively observed. No complete writer history, resource lease, Scale/Tiny-Giant behavior or live-installation guarantee follows.",
+    "One-byte CAS is not a full-body transaction. Concurrent foreign patching/unmapping violates the documented source ownership contract.",
+    "Published router/observer/image/callback contexts must survive until process exit. Module pins do not retain arbitrary heap contexts.",
+    "Test-only handler removal occurs only after isolated fixture callers/handlers have joined and is not a production teardown API."
+  ]
+}

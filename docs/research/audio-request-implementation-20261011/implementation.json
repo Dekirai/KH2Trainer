@@ -1,0 +1,143 @@
+{
+  "success": true,
+  "status": "IMPLEMENTED_PENDING_INDEPENDENT_REVIEW",
+  "slots": [
+    482,
+    483,
+    484
+  ],
+  "readOnly": true,
+  "rejectedCommands": [
+    1482,
+    1483,
+    1484
+  ],
+  "features": [
+    "free request slots",
+    "reservations since audio pass/reset",
+    "observed admission gate mask"
+  ],
+  "sourcePins": {
+    "src/KH2Trainer.Bridge/AudioRequestFeatures.inl": {
+      "bytes": 3323,
+      "sha256": "8a59388b3bb21d3f4dd2572ff40d97455e3ce4f3f49606abf330c660326ac824",
+      "snapshot": "source/src/KH2Trainer.Bridge/AudioRequestFeatures.inl"
+    },
+    "src/KH2Trainer.Bridge/AudioRequestSignatures.h": {
+      "bytes": 8950,
+      "sha256": "8a88f36314824fc889fe138d733803e5ab0ff6f6ec42dd56903c2d31295ea1c3",
+      "snapshot": "source/src/KH2Trainer.Bridge/AudioRequestSignatures.h"
+    },
+    "src/KH2Trainer.Bridge/TrainerBridge.cpp": {
+      "bytes": 45929,
+      "sha256": "d078e6e96f1817b9ef21b9691e2f9a33c60d844c4a3a9a8a826fc1576ecd5e3c",
+      "snapshot": "source/src/KH2Trainer.Bridge/TrainerBridge.cpp"
+    },
+    "tests/KH2Trainer.Bridge.Tests/AudioRequestGuardTests.cpp": {
+      "bytes": 10149,
+      "sha256": "a7d8430200a8bd4021c890b976c86ec2bdd5645a9161f2c2ddb162a093cafab7",
+      "snapshot": "source/tests/KH2Trainer.Bridge.Tests/AudioRequestGuardTests.cpp"
+    },
+    "tests/KH2Trainer.Bridge.Tests/PlayerBridgeTests.cpp": {
+      "bytes": 53856,
+      "sha256": "0df6367bd95db313311a343aea4a33e54e5c06bea057a60a7f8e16b43498d130",
+      "snapshot": "source/tests/KH2Trainer.Bridge.Tests/PlayerBridgeTests.cpp"
+    },
+    "tests/KH2Trainer.Bridge.Tests/run-tests.ps1": {
+      "bytes": 7551,
+      "sha256": "6d3acffa252adaa2943b90213a823c13c886e23d58dd408b0d0e880f37948586",
+      "snapshot": "source/tests/KH2Trainer.Bridge.Tests/run-tests.ps1"
+    }
+  },
+  "unchangedMixer": {
+    "path": "src/KH2Trainer.Bridge/AudioFeatures.inl",
+    "sha256": "bf59ce784b108a35282b4bb570284578835b103f7ce79b5f61314602ab957c12"
+  },
+  "nativeSignatures": {
+    "writers": 8,
+    "bytes": 1520,
+    "receipt": "signature-evidence.json",
+    "sha256": "7d905711e3e828a2d05916d3b405396184568c97fd52c3231427d0b499c83c06"
+  },
+  "nativeTestChecks": {
+    "AudioRequestGuardTests": 21097,
+    "AudioGuardTests": 618,
+    "PlayerBridgeTests": 665
+  },
+  "totalNativeTestChecks": 22380,
+  "testLogPins": {
+    "test-logs/native-AudioRequestGuardTests.txt": "5382034dc0baf77911d15ac608ae5e61f969e797925b0d2608a2db5423661535",
+    "test-logs/native-AudioGuardTests.txt": "13e9a2937d7c803aaa18b9045800b41b5ad4a2e382b7d90f8c6974d8f3f4a092",
+    "test-logs/native-PlayerBridgeTests.txt": "3dfb83c9b2247841ae97c5752dd608704b1f360eb261e0b639e189a844f6ac47"
+  },
+  "productionCompile": {
+    "source": "src/KH2Trainer.Bridge/TrainerBridge.cpp",
+    "testDefines": false,
+    "objectSha256": "342f30e860ae5906199ce52e4d25a66b6c7ce6bd649199644a5f4fdae6480a07",
+    "bytes": 923931,
+    "linked": false,
+    "compiler": "cl.exe",
+    "arguments": [
+      "/nologo",
+      "/std:c++17",
+      "/O2",
+      "/W4",
+      "/MT",
+      "/EHsc",
+      "/DUNICODE",
+      "/D_UNICODE",
+      "/c",
+      "src/KH2Trainer.Bridge/TrainerBridge.cpp",
+      "/Fo<isolated output>/AudioRequestGuardTests.Production.obj"
+    ],
+    "commandSource": "tests/KH2Trainer.Bridge.Tests/run-tests.ps1",
+    "outputLog": "test-logs/native-AudioRequestGuardTests.txt"
+  },
+  "directSnapshotReads": [
+    {
+      "rva": "0xAD9390",
+      "size": 4,
+      "signed": true,
+      "range": [
+        0,
+        80
+      ]
+    },
+    {
+      "rva": "0xAD93C0",
+      "size": 1,
+      "signed": false,
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "rva": "0xAD93C4",
+      "size": 4,
+      "signed": true,
+      "range": [
+        0,
+        25
+      ]
+    }
+  ],
+  "guardContract": [
+    "Validated existing post-Update route; matching base/game thread, enabled bridge and fresh nonzero host heartbeat.",
+    "All eight exact native writer-body signatures match before sampling; each of the three scalar spans is readable.",
+    "Two independently loaded volatile samples must be in range and equal; context, host heartbeat and shared mapping identity are checked again before publication.",
+    "Only then publish all three values within TrainerFrame snapshot sequence; otherwise its cleared valid bits stay invalid. Explicit read-only commands are rejected before generic fallback."
+  ],
+  "boundaries": [
+    "Snapshot observes shared admission counters, not active/queued/audible voice counts or future playback success.",
+    "Equal consecutive scalar values are not an atomic multi-field sample, global writer census, lock or ABA guarantee. The existing Sound critical section is not acquired or claimed to protect this pool.",
+    "Interval count resets can hide all activity between two UI samples. No dropped count, rate, history or wall-clock unit is inferred.",
+    "No new hook, native audio/resource call, request-list traversal, Actor/bank/resource pointer dereference, game/save/config write or native counter write.",
+    "Only static original-file reads and synthetic tests; no live game, injection, attach, GUI or audio observation."
+  ],
+  "nativeFindings": {
+    "receipt": "report.json",
+    "sha256": "9e60679d2577756a69db20d91ef252f53077db17fff59f411a968b06aef48d69"
+  },
+  "reproduction": "Run tests/KH2Trainer.Bridge.Tests/run-tests.ps1 -Suite AudioRequestGuardTests,AudioGuardTests,PlayerBridgeTests -OutputDirectory <isolated artifact folder> -LogDirectory <isolated log folder>; build_signatures.py --check compares original evidence and header."
+}

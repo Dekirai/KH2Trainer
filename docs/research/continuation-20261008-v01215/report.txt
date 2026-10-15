@@ -1,0 +1,19 @@
+KH2 Trainer v0.12.15 — Analyse und Umsetzung
+
+Neu im Trainer:
+- Unter World > Missions lassen sich Missionszähler um einen ganzzahligen Betrag ändern und einzelne Dezimalstellen ersetzen. Ergebnisse außerhalb 0..Maximum werden abgelehnt. Der vorhandene Setter führt normale Missionsereignisse weiter aus; die Aktionen können daher Fortschritt oder Belohnungen auslösen.
+- Drei Anzeigen zeigen den aktuellen Missions-Combo, seinen gespeicherten Höchstwert und das verbleibende native Zeitfenster. Die Zeitangabe ist noch nicht in Sekunden umgerechnet. Fehlende oder ungültige Beobachtungen werden als unbekannt angezeigt.
+- Der dunkle BDX-Inspektor enthält 256 Beschreibungen zu 1.063 numerisch unveränderten Deskriptoren. 17 neue Gummi-Beschreibungen erläutern Bewegung, Kameraorientierung, Reaktionsimpulse und Controller-Vibration.
+
+Interessante Ergebnisse und mögliche Anwendungen:
+- Voice-Anfragen können vor der tatsächlichen Aufnahme verworfen werden. Ein Handle oder der interne Startzustand belegt noch keine hörbare Wiedergabe. Ein künftiger Audio-Diagnosebereich könnte diese Zustände getrennt anzeigen; Ressourcenbesitz und Freigabe müssen dafür weiter untersucht werden.
+- Die untersuchten Gummi-Auswahlfunktionen besitzen besondere Gleichstandsregeln, und ein Bewegungszähler kann überlaufen. Das ist für einen Bewegungseditor oder eine genaue Skriptvorschau relevant. Der Katalog dokumentiert das beobachtete Verhalten einschließlich seiner Grenzen.
+- Missionsaktionen verwenden den bereits geprüften absoluten Setter. Die neuen Berechnungen umgehen den ungeprüften nativen Dezimalstellenadapter und prüfen Widget sowie Ereigniszustand vor dem Aufruf erneut.
+
+Final Form und zweite Waffe:
+Der vorhandene Fix prüft den zweiten Waffenplatz von Final, Valor und Master. Bei ungültiger Belegung wird Soras Hauptschlüsselschwert als Ersatz geprüft, einschließlich Modell, Offhand-Animation und Skelettdaten. Nach Revert wird erneut geprüft. Fehlt ein gültiger Ersatz, wird die neue Verwandlung abgelehnt. Eine erfolgreiche Slot-Initialisierung bleibt bestehen und kann beim normalen Speichern übernommen werden. Dieser Fix ist gegenüber v0.12.14 unverändert.
+
+Prüfung und Grenzen:
+Native Tests verwenden synthetischen Speicher und modellierte Callbacks. Die Oberfläche wurde ohne sichtbares Fenster gerendert und visuell geprüft. Die Paketnachweise enthalten die Ergebnisse des vollständigen Builds. Ein Spieltest wurde nicht durchgeführt. Die Einzelstudien belegen ausgewählte Pfade; eine allgemeine Garantie für Thread-, Objekt- oder Ressourcenlebensdauer folgt daraus nicht.
+
+Die Gesamtanalyse bleibt offen. Eine konkrete statische Aussage zu einer Funktion bedeutet nicht, dass die gesamte Funktion vollständig verstanden ist.

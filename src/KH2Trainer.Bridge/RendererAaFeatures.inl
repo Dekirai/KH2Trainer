@@ -747,6 +747,12 @@ int Lock(const Lease& l) {
     __finally { if(AbnormalTermination()){Fault();display_preview::faulted=true;} }
     return value;
 }
+int TryLock(const Lease& l) {
+    int value=-1;
+    __try { value=display_preview::TryLock(l); }
+    __finally { if(AbnormalTermination())Fault(); }
+    return value;
+}
 }
 bool RendererAaHandle(const TrainerContext& c,unsigned slot,const double args[8],TrainerResult& result) {
     using namespace renderer_aa;
@@ -799,7 +805,7 @@ void RendererAaSnapshot(const TrainerContext& c) {
     if(!g_gameThread || GetCurrentThreadId()!=g_gameThread)return;
     SnapshotValue(455,faulted?2:installed?1:0);
     SnapshotValue(449,InterlockedCompareExchange(&mode,0,0));
-    Lease before{};if(!LeaseReady(c,before) || Lock(before)!=0)return;
+    Lease before{};if(!LeaseReady(c,before) || renderer_aa::TryLock(before)!=0)return;
     bool valid=false,haveDecision=false;int maximum=0,current=0,native=0,chosen=0,request=0;
     __try {
         Lease after{};

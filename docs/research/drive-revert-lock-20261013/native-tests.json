@@ -1,0 +1,71 @@
+{
+  "task": "Native Twitch Drive Revert lock completion",
+  "date": "2026-10-13",
+  "status": "native sources frozen; four isolated suites passed",
+  "sources": [
+    {
+      "path": "src/KH2Trainer.Bridge/DriveRevertLockSupport.inl",
+      "sha256": "bf9e9fa961e5f6313f8b5080b9ea9ff136ba228a12768b7362b74c4b16873b0d"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/DriveFeatures.inl",
+      "sha256": "f431dfc0b97a28e98f5f5a9bc862749a460f43995a38f26bb1fa68acb277cbe8"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/DriveGuardTests.cpp",
+      "sha256": "8e7c27ca37b78e6b9092f342e14548cb80cd48484d238a8e91fd8acee4392b13"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/DriveRevertBridgeTests.cpp",
+      "sha256": "6f2a546634ced8d60faa107db778545197e47035c543d6f55248d2704ced5eb3"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/run-tests.ps1",
+      "sha256": "f69c96e8e97b782605bcbd794af9550b9e6dcb2f7ed9384d652ddfa0a0df71f8"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/TrainerBridge.cpp",
+      "sha256": "e7ef4f1faf37f56b087aa60768b7ebc62626161ac6e9d812eaf2ec156c2733bd"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/PlayerBridgeTests.cpp",
+      "sha256": "2011b0cb801c6efba8ee02f9ff91a37c4142fc19c4ec50b5815ed9f520889f80"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/GummiRequestBridgeTests.cpp",
+      "sha256": "c9a2486490c17c16af8e8aa4bf360ff26e602b410c7e9fb75aa3a75ea3a3cdd8"
+    }
+  ],
+  "tests": [
+    {
+      "suite": "DriveGuardTests",
+      "checks": 1746,
+      "failures": 0
+    },
+    {
+      "suite": "DriveRevertBridgeTests",
+      "checks": 20,
+      "failures": 0
+    },
+    {
+      "suite": "PlayerBridgeTests",
+      "checks": 671,
+      "failures": 0
+    },
+    {
+      "suite": "GummiRequestBridgeTests",
+      "checks": 15,
+      "failures": 0
+    }
+  ],
+  "totalChecks": 2452,
+  "totalFailures": 0,
+  "logDirectory": "artifacts/drive-revert-native-20261013/logs",
+  "limits": [
+    "Synthetic memory only; no game process, native game call, injection, UI control, or Twitch access.",
+    "TrainerFrame cleanup integration starts from a seeded acquired lease. Acquire and native switch callbacks are covered separately by DriveGuardTests.",
+    "Normal host expiry is proven to retry table cleanup while player/scene unavailable. Global bridge fault disables the update hook after its one-shot BestEffort cleanup; later retries are not claimed under g_disabled.",
+    "Bytecode/form mask behavior depends on exact pinned KH2 build and the observed original image arena binding; no arbitrary mod concurrency or identical in-place ABA lifecycle claim."
+  ],
+  "initialHarnessFailure": "First private draft encoded BAR handles as raw RVAs; production DecodePacked correctly rejected this invalid fixture. The permanent suite uses real packed region-table handles and passes. Original failed draft log retained as frame-integration.log."
+}

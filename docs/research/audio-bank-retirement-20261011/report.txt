@@ -1,0 +1,187 @@
+Audio-Banken: Freigabeprüfungen, Abbruch und geliehene Daten
+=========================================================
+
+Stand: 11.10.2026. Begrenzte statische Teilstudie; unabhängiger Review steht aus.
+Diese Dateien bleiben unter artifacts. Sie gehören weder zum Trainerpaket
+v0.12.15 noch zu dessen Dokumentation, Coverage oder Produktcode.
+
+Ergebnis
+--------
+Der native Audiopfad unterscheidet zwischen einer Freigabeprüfung, Stoppen,
+Abbrechen von Stream-Requests, Entfernen aus Listen und dem tatsächlichen
+Destruktoraufruf. Ein true-Ergebnis kann bereits bei fehlendem Treiber oder
+Layout entstehen. Ein false-Ergebnis kann dagegen bereits erfolgte Änderungen
+an Requests und Listen enthalten. Keines der beiden Ergebnisse allein beweist,
+dass sämtliche Leser eines Replacement-Buffers beendet sind.
+
+Die frühere Erkenntnis zu Voice-Modus 2 bleibt bestehen: BankEntry gibt den
+geliehenen Payload in diesem Modus nicht frei und nullt dessen Zeiger auch nicht.
+Die vorliegende Studie erweitert vor allem die unteren Freigabebedingungen,
+die Reihenfolge von Abbruch und Listenänderungen sowie zwei Zählergrenzen.
+Sie schließt die Lebensdauer der geliehenen Audiodaten weiterhin nicht vollständig.
+
+1. Was die Freigabeprüfung tatsächlich prüft
+------------------------------------------
+078BE0 gibt true zurück, sobald SoundDriver oder LayoutManager fehlt. Sind beide
+vorhanden, müssen die Treiberprüfung und anschließend die Layoutprüfung bestehen.
+Der konkret erfasste SoundDriver akzeptiert einen nicht gefundenen Handle. Für
+eine vorhandene Bank verlangt er:
+
+- Kein passender Player, dessen zweites geprüftes Prädikat false liefert.
+- Der als vorzeichenbehaftetes WORD gelesene Wert bei Bank+52 ist höchstens null.
+- Für flag-bit3-Banken zusätzlich: Typ 3 oder kein blockierender Stream-Request.
+
+091D00 implementiert diese Bedingung separat. 091A70 prüft sie nach optionalem
+Stoppen erneut und ruft erst danach 08A570 zum Entfernen auf. Auch der Force-Pfad
+überspringt diese letzte Treiberprüfung nicht.
+
+Die Layoutprüfung 06B1D0 sucht in ihren Seitenlisten nach einem Record, dessen
+Payload+60 dem Handle entspricht. Die Playerprüfung 09A780 verwendet dagegen
+zwei virtuelle Prädikate (+656 und +632). Deren sämtliche Implementierungen sind
+nicht erfasst. Die Aussagen gelten für diese Listen und Prädikate; es wird keine
+globale Aussage über alle möglichen Audio-Leser daraus abgeleitet.
+
+2. Abbrechen kann bereits Änderungen vorgenommen haben
+------------------------------------------------------
+0981C0 entfernt passende wartende Requests, setzt ihren Status bei +28 auf -1
+und gibt die Knoten an den Request-Pool zurück. Einen passenden aktiven Request
+markiert es bei +36 mit 1. Erst danach entscheidet es über den Rückgabewert:
+Bei einem aktiven Treffer sind Zustand +24 gleich null und ein positives
+Reader-Prädikat nötig. Ein anderer Zustand ergibt false.
+
+Die vorherige Stream-Prüfung 0986A0 hat eine andere Bedingung: Ein aktiver
+Treffer blockiert bei Zustand 1 oder negativem Reader-Prädikat. Ein abstrakter
+Zustand 2 mit positivem Reader-Prädikat kann deshalb die Prüfung passieren und
+bei Cancellation trotzdem false liefern. Der Modelltest zeigt diesen Unterschied;
+er behauptet keine Erreichbarkeit dieses Zustands in einem konkreten Spielablauf.
+
+08A570 entfernt die Bank bei gesetztem flag-bit3 bereits aus der Streamliste,
+bevor es Cancellation aufruft. Für Typ 3 kann es zusätzlich flag0x20 löschen.
+Wenn Cancellation false ergibt, werden diese Änderungen nicht zurückgenommen.
+Die Bank bleibt dann in der Hauptliste und Hashstruktur. Die Operation arbeitet
+somit nicht als Transaktion mit vollständiger Rücknahme bei Fehlschlag.
+
+Erst nach erfolgreicher Cancellation folgen Hash-Unlink, Hauptlisten-Unlink,
+gegebenenfalls die Freigabe des Hilfsspeichers aus Virtual+232, der Destruktor
+mit Flag 0 und die Rückgabe des Bankobjekts an den Pool.
+
+3. Stoppen, Destruktor und Besitz sind verschiedene Schritte
+-----------------------------------------------------------
+07D3F0 fragt nach dem Bankobjekt, stoppt passende Player über 09D460 und ruft
+den Layout-Stop auf. Dessen konkrete Kette 06D910 -> 039D30 setzt Felder in
+passenden Records, ruft Destruktoren und entfernt/recycelt ihre Listenknoten.
+Die nicht vollständig erfassten virtuellen Folgewirkungen bleiben eine Grenze.
+
+BankEntry-Destruktor 136060 wartet zunächst auf Transfer+108. Danach versucht er
+078B50 wiederholt, fordert bei Fehlschlag einen Stop mit Dauer null an und schläft.
+Auch eine erneute Änderung von Transfer+108 auf nicht null beendet diese zweite
+Schleife. Eine allgemeine Terminierung oder vollständige Ruhe aller Leser lässt
+sich daraus nicht ableiten. Modus 2 überspringt sowohl _aligned_free des Feldes
++88 als auch das Nullsetzen dieses Feldes.
+
+Der konkret ausgewählte ActualBank-Destruktor 09FA70 setzt bei Flag 0 lediglich
+seine Vtable zurück. Er gibt den bei +8 gespeicherten SCD-Payload in diesem Körper
+nicht frei. Hilfsspeicher +40 wird an anderer Stelle behandelt. Der Destruktorbefund
+ist deshalb keine umfassende Aussage über andere Felder, Aliase oder Callbacks.
+ToolBank und StreamBankEx dürfen nicht mit diesem Körper gleichgesetzt werden.
+
+4. Referenzwort und Handle sind keine unbegrenzten Garantien
+-----------------------------------------------------------
+BA4A0/BA4B0 inkrementieren/dekrementieren Bank+52 unmittelbar als WORD.
+Weitere konkrete Schreiber stehen in RootSound BB050 und BB250. Lokale
+Überlauf-, Unterlauf- oder Sättigungsprüfungen fehlen an diesen Stellen.
+Die Freigabeprüfung liest denselben Wert vorzeichenbehaftet: 0x7fff + 1 ergibt
+0x8000 und wird damit negativ; 0 - 1 ergibt 0xffff, ebenfalls negativ.
+Das sind geprüfte Rechenfälle, keine beobachteten Zählerstände und kein Beweis
+für unbalancierte Referenzen im Spiel.
+
+088FC0 berechnet den Poolindex aus Handle>>20 und prüft danach Listenmarkierung
+und vollständigen Handlewert. Eine obere Indexgrenze steht vor den Dereferenzen
+in diesem Körper nicht. Der Rückgabewert ist ein roher Zeiger nach Freigabe des
+internen Locks. Andere Aufrufer können zusätzliche Bedingungen erfüllen oder
+breitere Locks halten; dieser Kontext ist nicht vollständig erfasst.
+
+088F20 lässt die unteren 20 Generation-Bits bei 0x100000 auf 1 umlaufen.
+Nach registriertem Umlauf überspringt es Generationen in der aktuellen Bankliste.
+Eine aus dieser Liste entfernte Generation kann später wiederverwendet werden.
+Das verhindert keine unbegrenzte Wiederverwendung eines alten Handles und
+ersetzt keine abgesicherte Objektlebensdauer.
+
+5. Der Factory nimmt den Poolknoten vor der Headerprüfung
+--------------------------------------------------------
+089390 entfernt den freien Kopfknoten zuerst. Erst danach prüft es SEDB,
+Version <=4 ohne Vorzeichen und SSCF. Die erfassten Ablehnungspfade geben null
+zurück, ohne innerhalb dieses Körpers den freien Kopf wiederherzustellen.
+Die Generation wird nach den ersten beiden Prüfungen und vor SSCF angefordert.
+Der Befund setzt einen intakten Pool, lesbaren Input und keine intervenierenden
+Schreiber voraus. Er beschreibt einen lokalen Ablauf; eine tatsächliche
+Ressourcenerschöpfung, ein Exploit oder ein Live-Absturz wurde nicht reproduziert.
+
+Die Headerprüfung lässt auch Version 0 passieren. ActualBank-Initialisierung
+09FBD0 behandelt dagegen nur 1 bis 4 ohne Assertion. Erfolgreiche Admission
+bedeutet folglich noch keine erfolgreiche vollständige Initialisierung.
+
+089C90 konstruiert StreamBankEx über eine andere Schnittstelle mit externen
+Reader-/Bufferwerten. Der vererbte Payload+8 ist dort zunächst null; das gleiche
+unmittelbare SEDB/SSCF-Gate wird nicht verwendet. Die gesamte Stream-Verarbeitung
+und ihr Besitzmodell sind hier nicht geschlossen.
+
+6. Die bedingte Payload-Mutation bleibt ausdrücklich bedingt
+-----------------------------------------------------------
+091250 und 069E20 installieren konkrete SoundDriver-/LayoutManager-Vtables;
+076F20 zeigt deren Konstruktion und Veröffentlichung an den Audio-Globals.
+Die Original-Vtable-Zellen verbinden die oben genannten Methoden.
+
+0889B0 initialisiert Hauptlistenknotenoffset 56, Streamlistenknotenoffset 80
+und alle 64 Bucket-Knotenoffsets mit 104. Der bereits separat geprüfte Körper
+08C1A0 wird ausdrücklich als wiederverwendete Abhängigkeit mitgeführt.
+Bleiben diese Offsets erhalten und die Bank-/Listenobjekte intakt und getrennt,
+bleiben Payload +8 und Alternativspeicher +40 über die Einfügung erhalten.
+Unter diesen Bedingungen schreibt 09FBD0 bei geeignetem Flag jede Sequenz bei
+Byte +15 auf 0xff. Wie zuvor fehlt der Ausschluss aller späteren oder
+konkurrierenden Schreiber sowie ein umfassender Payload-Längennachweis.
+
+Prüfung und Reproduktion
+-----------------------
+40 frische vollständige IDA-Funktionskörper: 3.108 Instruktionen, 13.520 Byte.
+13.513 Byte gehören zu erfassten Instruktionen; sieben nachgestellte CC-Bytes
+sind ausdrücklich als Padding zugeordnet. Zusätzlich wird ein klar benannter
+wiederverwendeter Einfügungskörper aus der vorherigen Studie verifiziert.
+
+Der Verifier prüft die Original-EXE-SHA256, vollständige Körperbytes, PE-Abbildung,
+Capstone-Decodierung, ASM-/Pseudocode-Seiten und Endcursor, 118 feste semantische
+Instruktionsanker, 892 positiv kodierte Referenzen, zehn konkrete Vtable-Ziele,
+drei RTTI-Identitäten, Original-Signaturliterale sowie die Bucket-Initialisierung.
+
+527 begrenzte Modellfälle prüfen Prädikate, geordnete Abbruch-/Unlink-Effekte,
+WORD-Arithmetik, Header-Admission, Generationen und Destruktorgrenzen.
+224 davon werden zusätzlich gegen einen kleinen Interpreter des tatsächlich
+decodierten 091D00-Branchgraphs geprüft. Helferergebnisse sind dabei synthetische
+Eingaben; weder ihre Erreichbarkeit noch Nebenläufigkeit werden damit bewiesen.
+
+  py -3 -B artifacts/audio-bank-retirement-20261011/verify.py --check
+
+--check schreibt keine Dateien. --write erzeugt ausschließlich die abgeleiteten
+evidence/model-results/verification-Dateien innerhalb dieses Studienordners;
+eine Änderung würde anschließend einen neuen Manifeststand und Review erfordern.
+report.json enthält 22 einzelne Claims mit Belegen und Grenzen. Manifest und
+Provenance pinnen Aufnahmen, Reproduktion und verwendetes Vorwissen.
+
+Die IDA-Aufnahmen meldeten autoAnalysisReady=false. Eine vollständige Suche
+nach allen Referenzen oder Schreibern wird aus positiven Referenzen nicht
+abgeleitet. Frische Aufnahmen sind keine 40 neuen semantischen Entdeckungen.
+Insbesondere Modus 2, ActualBank und Teile von Admission/Handle-Verarbeitung
+überschneiden sich mit der vorherigen ORIGIN- und Voice-Studie.
+
+Mögliche spätere Verwendung
+--------------------------
+Eine Diagnoseanzeige könnte künftig getrennt zeigen, ob eine Bank noch Player,
+positive Referenzen, Layout-Records, wartende Stream-Requests oder einen aktiven
+Abbruch hat. Sie könnte dadurch fehlgeschlagene Freigaben verständlicher machen.
+Bevor daraus Audioaustausch oder Hot Reload entstehen kann, müssen Lesergrenzen,
+Objektlebensdauer, virtuelle Reader und die Aufrufreihenfolge gegenüber
+ResourceEntry-/ReplaceEntry-Freigabe weiter abgesichert werden.
+
+Keine Spiel-, GUI-, Attach-, Injection-, Save-, Mod- oder Importeraktion wurde
+für diese Studie ausgeführt. Produktquellen und ausgelieferte Pakete bleiben
+außerhalb dieser Studie.

@@ -13,6 +13,10 @@
 #include <limits.h>
 namespace {
 uintptr_t g_base=0; DWORD g_gameThread=0; volatile LONG g_disabled=0;
+// The two movement floats occupy one native page. A narrow fixture denial
+// makes their individual preflight failures distinguishable; real page
+// protection is exercised separately below.
+uintptr_t deniedWrite=0;
 struct TrainerContext { uintptr_t base,player,status; bool sceneReady; } context{};
 struct TrainerResult { LONG code; const wchar_t* text; };
 struct Shared { DWORD hostHeartbeat; double values[512]; uint64_t valid[8],supported[8]; } shared{};
@@ -24,7 +28,11 @@ bool Readable(const void* p,size_t size) {
         m.State==MEM_COMMIT && !(m.Protect&(PAGE_GUARD|PAGE_NOACCESS)) &&
         reinterpret_cast<uintptr_t>(p)+size<=reinterpret_cast<uintptr_t>(m.BaseAddress)+m.RegionSize;
 }
-bool Writable(const void* p,size_t size) { MEMORY_BASIC_INFORMATION m{};return Readable(p,size)&&VirtualQuery(p,&m,sizeof(m))&&m.Protect==PAGE_READWRITE; }
+bool Writable(const void* p,size_t size) {
+    const uintptr_t address=reinterpret_cast<uintptr_t>(p);
+    if(deniedWrite && address<=deniedWrite && deniedWrite-address<size)return false;
+    MEMORY_BASIC_INFORMATION m{};return Readable(p,size)&&VirtualQuery(p,&m,sizeof(m))&&m.Protect==PAGE_READWRITE;
+}
 uintptr_t DecodePacked(uint32_t p){return p?g_base+p:0;}
 bool IsInteger(double v,double lo,double hi){return isfinite(v)&&floor(v)==v&&v>=lo&&v<=hi;}
 void SnapshotValue(unsigned s,double v){shared.values[s]=v;shared.valid[s/64]|=uint64_t(1)<<(s%64);}
@@ -42,6 +50,7 @@ unsigned checks=0,failures=0;
 void Check(bool yes,const char* name){++checks;if(!yes){++failures;printf("FAIL %s\n",name);}}
 bool Valid(unsigned s){return (shared.valid[s/64]&(uint64_t(1)<<(s%64)))!=0;}
 void Setup(int form=0) {
+    deniedWrite=0;
     memset(reinterpret_cast<void*>(g_base),0,0x2C00000);shared={};g_shared=&shared;g_disabled=0;
     g_gameThread=GetCurrentThreadId();shared.hostHeartbeat=GetTickCount();
     context={g_base,g_base+Player,g_base+Status,true};
@@ -84,8 +93,57 @@ void Reject(const char* why) {
     BYTE actorBefore[3608],statusBefore[632];memcpy(actorBefore,reinterpret_cast<void*>(g_base+Player),sizeof(actorBefore));
     memcpy(statusBefore,reinterpret_cast<void*>(g_base+Status),sizeof(statusBefore));
     for(unsigned slot=344;slot<=347;++slot)Check(Run(slot,4).code!=0,why);
+    Check(Run(487,0).code!=0,why);
     Check(!memcmp(actorBefore,reinterpret_cast<void*>(g_base+Player),sizeof(actorBefore)),"rejected command preserves whole actor");
     Check(!memcmp(statusBefore,reinterpret_cast<void*>(g_base+Status),sizeof(statusBefore)),"rejected command preserves whole status");
+}
+void HeavyJumpSuccess(float fall,float height,float expectedFall,float expectedHeight,bool nullArguments=false) {
+    At<float>(Player+312)=fall;At<float>(Player+304)=height;
+    BYTE expected[3608],statusBefore[632],otherBefore[3608];
+    memcpy(expected,reinterpret_cast<void*>(context.player),sizeof(expected));
+    memcpy(statusBefore,reinterpret_cast<void*>(context.status),sizeof(statusBefore));
+    memcpy(otherBefore,reinterpret_cast<void*>(g_base+Other),sizeof(otherBefore));
+    memcpy(expected+312,&expectedFall,4);memcpy(expected+304,&expectedHeight,4);
+    const BYTE savedForm=At<BYTE>(0x9ACDD4);TrainerResult result{};
+    if(nullArguments)Check(ActorMovementHandle(context,487,nullptr,result)&&result.code==0,"no-argument heavy jump accepts null arguments");
+    else Check(Run(487,0).code==0,"supported role accepts heavy jump");
+    Check(!memcmp(expected,reinterpret_cast<void*>(context.player),sizeof(expected)),"heavy jump changes only the two intended floats");
+    Check(!memcmp(statusBefore,reinterpret_cast<void*>(context.status),sizeof(statusBefore)) &&
+          !memcmp(otherBefore,reinterpret_cast<void*>(g_base+Other),sizeof(otherBefore)) &&
+          At<BYTE>(0x9ACDD4)==savedForm,"heavy jump preserves status, other actor and saved form");
+}
+void HeavyJumpReject(const char* reason) {
+    BYTE before[3608];memcpy(before,reinterpret_cast<void*>(g_base+Player),sizeof(before));
+    Check(Run(487,0).code==3,reason);
+    Check(!memcmp(before,reinterpret_cast<void*>(g_base+Player),sizeof(before)),"heavy jump rejection leaves both fields and entire actor unchanged");
+}
+void HeavyJumpCases() {
+    for(int form=0;form<=6;++form) {Setup(form);HeavyJumpSuccess(20,160,40,80);}
+    SetupRole(player_role::Roxas,0);HeavyJumpSuccess(20,160,40,80);
+    SetupRole(player_role::Roxas,10);HeavyJumpSuccess(20,160,40,80);
+    SetupRole(player_role::Mickey,11);HeavyJumpSuccess(20,160,40,80);
+    Setup();HeavyJumpSuccess(.1f,0,.2f,0,true);
+    Setup();HeavyJumpSuccess(50,1000,100,500);
+    Setup();HeavyJumpSuccess(nextafterf(50,100),160,100,80);
+    Setup();HeavyJumpSuccess(100,160,100,80);
+    Setup();Check(Run(487,0).code==0&&Run(487,0).code==0&&At<float>(Player+312)==80&&At<float>(Player+304)==40,
+        "repeated heavy jump samples current fields without retained baseline");
+    for(float bad:{0.f,nextafterf(.1f,0),nextafterf(100.f,200.f),
+                   std::numeric_limits<float>::quiet_NaN(),std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity()}) {
+        Setup();At<float>(Player+312)=bad;HeavyJumpReject("invalid current fall limit");
+    }
+    for(float bad:{-1.f,nextafterf(1000.f,2000.f),std::numeric_limits<float>::quiet_NaN(),
+                   std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity()}) {
+        Setup();At<float>(Player+304)=bad;HeavyJumpReject("invalid current base jump height");
+    }
+    for(unsigned field:{312u,304u}) {
+        Setup();deniedWrite=context.player+field;
+        HeavyJumpReject("each field must pass its own write preflight before either store");
+    }
+    Setup();shared.hostHeartbeat=GetTickCount()+6000;HeavyJumpReject("future host heartbeat rejects heavy jump");
+    Setup();ActorMovementCapabilities();const uint64_t expected[8]={0,0,0,0,0,uint64_t(15)<<24,0,uint64_t(1)<<39};
+    Check(!memcmp(shared.supported,expected,sizeof(expected)),"exact movement capabilities344..347 and487");
+    ActorMovementSnapshot(context);Check(!Valid(487),"heavy jump action has no invented value readout");
 }
 }
 int main() {
@@ -204,9 +262,9 @@ int main() {
     Setup();DWORD old=0,unused=0;void* page=reinterpret_cast<void*>(g_base+Player);
     Check(VirtualProtect(page,4096,PAGE_READONLY,&old)!=FALSE,"real read-only actor page");Reject("non-writable scalar");VirtualProtect(page,4096,old,&unused);
     Setup();context.player=1;At<uintptr_t>(0x2A105D0)=1;Reject("unreadable current actor pointer");
-    Setup();ActorMovementCapabilities();Check(shared.supported[5]==(uint64_t(15)<<24),"exact capabilities344..347 only");
+    HeavyJumpCases();
     const double args[8]{};TrainerResult result{};
-    for(unsigned slot:{343u,348u,349u,350u,351u,352u})Check(!ActorMovementHandle(context,slot,args,result),"reserved and neighboring slots unclaimed");
+    for(unsigned slot:{343u,348u,349u,350u,351u,352u,486u,488u})Check(!ActorMovementHandle(context,slot,args,result),"reserved and neighboring slots unclaimed");
     printf("ActorMovementGuardTests: %u checks, %u failures\n",checks,failures);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);return failures?1:0;
 }

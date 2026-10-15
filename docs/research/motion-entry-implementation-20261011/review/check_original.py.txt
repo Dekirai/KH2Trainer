@@ -1,0 +1,64 @@
+"""Independent PE/ABI/prefix extraction. No IDB, process, or game operations."""
+import argparse,hashlib,json,struct,sys
+from pathlib import Path
+from capstone import Cs,CS_ARCH_X86,CS_MODE_64
+from capstone.x86_const import X86_OP_MEM,X86_OP_IMM,X86_REG_RIP
+sys.dont_write_bytecode=True
+H=Path(__file__).resolve().parent;R=next(p for p in H.parents if (p/'src/KH2Trainer.Core').is_dir())
+D=R/'docs/research/motion-resource-binding-20261011';BASE=0x140000000;ENTRY=0x3c8cd0
+EXE=Path(r'E:\SteamLibrary\steamapps\common\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-\KINGDOM HEARTS II FINAL MIX.exe')
+sha=lambda b:hashlib.sha256(b).hexdigest()
+checks=0
+def ck(v,s):
+    global checks
+    checks+=1
+    if not v:raise AssertionError(s)
+def main():
+    ap=argparse.ArgumentParser();ap.add_argument('--write',action='store_true');args=ap.parse_args()
+    ck(sha((D/'manifest.json').read_bytes())=='a08b49891738bf8281a7a0fc1f41dc8cd7e0718d5351cda6a1c4e75a234d668b','frozen study manifest')
+    ck(sha((D/'evidence.json').read_bytes())=='5e13ffdbe28eefccc62a71d43e3d9525589476fd826c488e21fd56062d7f8b39','frozen evidence')
+    raw=EXE.read_bytes();ck(sha(raw)=='9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed','original identity')
+    u16=lambda x:struct.unpack_from('<H',raw,x)[0];u32=lambda x:struct.unpack_from('<I',raw,x)[0]
+    pe=u32(60);opt=pe+24;sec=opt+u16(pe+20)
+    ck(raw[:2]==b'MZ' and raw[pe:pe+4]==b'PE\0\0' and u16(pe+4)==0x8664 and u16(opt)==0x20b and struct.unpack_from('<Q',raw,opt+24)[0]==BASE,'AMD64 PE32+ image')
+    sections=[(u32(sec+40*i+12),u32(sec+40*i+16),u32(sec+40*i+20)) for i in range(u16(pe+6))]
+    def span(rva,n):
+        matches=[p+rva-v for v,s,p in sections if v<=rva and rva+n<=v+s]
+        ck(len(matches)==1 and n>0,'physical range '+hex(rva));return raw[matches[0]:matches[0]+n]
+    drva,dsize=struct.unpack_from('<II',raw,opt+112+3*8);ck(dsize%12==0,'exception directory entry size')
+    directory=span(drva,dsize);rows=list(struct.iter_unpack('<III',directory));found=[r for r in rows if r[0]<=ENTRY<r[1]]
+    ck(len(found)==1,'unique owning runtime entry');begin,end,unwind=found[0]
+    ck((begin,end,unwind)==(ENTRY,0x3c8def,0x6e6434),'exact original runtime entry')
+    head=span(unwind,4);version=head[0]&7;flags=head[0]>>3;prolog,count,frame=head[1:]
+    ck((version,flags,prolog,count,frame)==(1,0,0x22,10,0),'original unwind header')
+    uw=span(unwind,4+2*((count+1)&~1));codes=[];j=0
+    while j<count:
+        at,packed=uw[4+j*2:6+j*2];op=packed&15;info=packed>>4;j+=1
+        c={'codeOffset':at,'operation':op,'registerOrInfo':info}
+        if op in (4,8):c['stackOffset']=struct.unpack_from('<H',uw,4+j*2)[0]*(8 if op==4 else 16);j+=1
+        elif op==2:c['allocationBytes']=info*8+8
+        else:ck(op==0,'only expected PUSH/SAVE/ALLOC operations')
+        codes.append(c)
+    ck(j==count and len(codes)==6,'unwind slot interpretation')
+    expected=[(34,8,7,32),(20,8,6,48),(15,4,6,88),(15,4,3,80),(15,2,7,64),(11,0,7,None)]
+    ck([(c['codeOffset'],c['operation'],c['registerOrInfo'],c.get('stackOffset',c.get('allocationBytes'))) for c in codes]==expected,'exact saved registers and full-frame offsets')
+    evidence=json.loads((D/'evidence.json').read_bytes());f=next(f for f in evidence['functions'] if int(f['addr'],16)==BASE+ENTRY);body=span(ENTRY,end-begin)
+    ck(len(body)==f['size']==287 and body==bytes.fromhex(f['originalBytes']),'full original function agrees with frozen IDA capture')
+    cs=Cs(CS_ARCH_X86,CS_MODE_64);cs.detail=True;ins=list(cs.disasm(body,BASE+ENTRY));decoded={i.address-BASE:i for i in ins}
+    ck(sum(i.size for i in ins)==len(body) and [i.address for i in ins]==[int(r['addr'],16) for r in f['disassembly']['asm']['lines']],'all original boundaries agree with full captured ASM')
+    ck(f['disassembly']['cursor']=={'done':True} and f['disassembly']['instruction_count']==f['disassembly']['total_instructions']==len(ins),'completed ASM cursor')
+    prefix=body[:5];ck(prefix==bytes.fromhex('48 89 5c 24 08') and ins[0].size==5,'five-byte whole-instruction prefix')
+    ck(ins[0].mnemonic=='mov' and ins[0].op_str=='qword ptr [rsp + 8], rbx','prefix is RBX home-slot save only')
+    ck(not any(o.type==X86_OP_MEM and o.mem.base==X86_REG_RIP for o in ins[0].operands),'prefix has no RIP relocation')
+    ck(not any(any(i.reg_name(r) in ('r11','r11d','r11w','r11b') for r in sum((list(x) for x in i.regs_access()),[])) for i in ins),'no direct R11 read/write anywhere in entry body')
+    anchors={0x3c8ce4:('mov','rdi, rcx'),0x3c8cea:('movaps','xmm6, xmm2'),0x3c8cf2:('mov','esi, edx'),0x3c8cf4:('movaps','xmm7, xmm3'),0x3c8cf7:('call','0x14040d7f0'),0x3c8d03:('mov','rax, qword ptr [rdi + 0x10]'),0x3c8d09:('sub','rax, -0x80'),0x3c8d0d:('mov','qword ptr [rdi + 0x148], rax'),0x3c8d14:('mov','qword ptr [rdi + 0x158], rbx'),0x3c8d1b:('mov','qword ptr [rdi + 0x160], rbx'),0x3c8d4f:('movaps','xmm3, xmm7'),0x3c8d52:('movaps','xmm2, xmm6'),0x3c8d60:('test','al, al'),0x3c8dcc:('call','0x1403c8cd0'),0x3c8dd3:('mov','al, 1')}
+    for a,want in anchors.items():ck((decoded[a].mnemonic,decoded[a].op_str)==want,'ABI/store/return anchor '+hex(a))
+    ck([i.address-BASE for i in ins if i.mnemonic=='ret']==[0x3c8dee],'single final RET')
+    prefix_uw=bytes.fromhex('01 05 02 00 05 34 01 00')
+    result={'status':'PASS','checks':checks,'sourceManifestSha256':sha((D/'manifest.json').read_bytes()),'sourceEvidenceSha256':sha((D/'evidence.json').read_bytes()),'originalExeSha256':sha(raw),'exceptionDirectory':{'rva':hex(drva),'size':dsize,'entryCount':len(rows),'sha256':sha(directory)},'runtimeFunction':{'beginRva':hex(begin),'endRvaExclusive':hex(end),'unwindRva':hex(unwind)},'originalUnwind':{'bytes':uw.hex(' '),'version':version,'flags':flags,'prologBytes':prolog,'slots':count,'frameRegister':frame&15,'frameOffset':frame>>4,'codes':codes},'body':{'rva':hex(ENTRY),'bytes':body.hex(' '),'sha256':sha(body),'size':len(body),'instructionCount':len(ins),'instructions':[{'rva':hex(i.address-BASE),'bytes':i.bytes.hex(' '),'mnemonic':i.mnemonic,'operands':i.op_str} for i in ins]},'suggestedPrefix':{'bytes':prefix.hex(' '),'size':5,'boundaries':[0,5],'continuationRva':hex(ENTRY+5),'unwindBytes':prefix_uw.hex(' '),'tail':'49 BB imm64;41 FF E3. R11 is Win64 volatile and directly unused in this body; no claim of arbitrary custom hidden-register conventions.'},'abi':{'inputs':['RCX=context pointer','EDX=signed motion selection','XMM2.low32=float argument3','XMM3.low32=float argument4'],'return':'AL boolean 0/1 only; upper RAX is not a defined return pointer.','nonvolatileUsed':['RBX','RSI','RDI','XMM6','XMM7'],'firstContextStoreRva':'0x3c8d0d','firstContextStore':'QWORD[C+328]=QWORD[C+16]+128; subsequent C+344/C+352 clears.','earlierCallRva':'0x3c8cf7','recursiveCallRva':'0x3c8dcc'},'limits':['No detour installation, game execution, IDB mutation, resource lease or overall observer bootstrap approval.','Five-byte prefix changes no RSP and writes only incoming caller home slot. Standalone unwind must use+8, not full-prolog+80.','First context write is locally identified; called helper40D7F0 occurs earlier.','Partial-prolog relocation requires exact instruction boundary0; continuation boundary5 remains original.']}
+    fixture='#pragma once\nconstexpr unsigned char EntryBody[] = {'+','.join(hex(b) for b in body)+'};\nconstexpr unsigned char OriginalUnwind[] = {'+','.join(hex(b) for b in uw)+'};\nconstexpr unsigned char PrefixUnwind[] = {'+','.join(hex(b) for b in prefix_uw)+'};\n'
+    for name,data in [('original.json',(json.dumps(result,indent=2)+'\n').encode()),('fixture.h',fixture.encode())]:
+        if args.write:(H/name).write_bytes(data)
+        else:ck((H/name).read_bytes()==data,'reproduce '+name)
+    print(json.dumps({'status':'PASS','checks':result['checks'],'bodyBytes':len(body),'instructions':len(ins),'unwind':uw.hex(' '),'prefixUnwind':prefix_uw.hex(' ')}))
+if __name__=='__main__':main()

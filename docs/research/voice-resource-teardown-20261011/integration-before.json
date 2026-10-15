@@ -1,0 +1,488 @@
+{
+  "parserSha256": "546d0defdacd8857d7f2461283516348ca28776d13e253d8d954ad43622cc1b2",
+  "manifest": {
+    "schema": 1,
+    "scope": "Bounded static upper resource/Voice teardown study; independent review pending; outside product and releases.",
+    "files": {
+      "anchors.json": {
+        "bytes": 23740,
+        "sha256": "36dcd14c60ed6d84745e354422c47642386dfef09b0fd6f25e5f86d12e732042"
+      },
+      "author.py": {
+        "bytes": 12840,
+        "sha256": "15089f9eeac2d3332372c591df9a0f5b603268fe85e95e7c4daec91e929bf56f"
+      },
+      "capture-2.json": {
+        "bytes": 24783,
+        "sha256": "05b73f65908c10492344dd5f05295b50d611b033169ab7b52c9f38f35b3b0c08"
+      },
+      "capture.json": {
+        "bytes": 478267,
+        "sha256": "82af6b9581f3d04b6f81f76884a2d8e6f9f6c3019311733b10d1ca0e3c481974"
+      },
+      "dependencies.json": {
+        "bytes": 189319,
+        "sha256": "be0d2070aacc14f63577d84a937aac2fd9b36d24ffd28df1e8a58aa56a6db539"
+      },
+      "discovery-secondary.json": {
+        "bytes": 79432,
+        "sha256": "6e525b847bc0b3a1f70efe3b5fb7811901134ef12248c89819448f65d622384e"
+      },
+      "discovery-xrefs.json": {
+        "bytes": 42143,
+        "sha256": "1a57c468a472b8cfb0c348d971f235552b695e1855862ef563fc4f2ffe2cbc59"
+      },
+      "evidence.json": {
+        "bytes": 611388,
+        "sha256": "1258bfbeed7ebab90b51845605390e3bbdad114afb258e9a82e916d80c45af78"
+      },
+      "model-results.json": {
+        "bytes": 1021,
+        "sha256": "c57357cef0d50e5d98239a17212046963d7370e56da99073b2e360aa645a0915"
+      },
+      "model.py": {
+        "bytes": 6284,
+        "sha256": "452e01a3d3db3e91fe413d0dcb2bc6237514cf96f058cbad1a0d3efd826d2d04"
+      },
+      "prepare.py": {
+        "bytes": 2691,
+        "sha256": "78b0bb46d12cff29ef3a6c6ee184aa62751c5c6d42a92d64d4e6e79f8e9093d2"
+      },
+      "priorwork-inventory.json": {
+        "bytes": 1538,
+        "sha256": "6e8c08b4983a57f9a1f5695632369e3f04e56fd111e4dc969058c2ca677850a3"
+      },
+      "provenance.json": {
+        "bytes": 2915,
+        "sha256": "aecbc28cffe4b6e118e02ab4ea18eb01b05278854d7c420c5b68366144391c97"
+      },
+      "report.json": {
+        "bytes": 14311,
+        "sha256": "05af8ad7bafad3a10c4a80613eb34afb43343c6f5a017169c7b954be27243333"
+      },
+      "report.txt": {
+        "bytes": 10652,
+        "sha256": "7eaf8606beb072823204ffe2a6f5c0ad7c488f57a213905a49a1bfc3946de10e"
+      },
+      "verification.json": {
+        "bytes": 720,
+        "sha256": "da9e8faa8afcb8e7930befb55c1a524dfedb135783347092199cd78dc87327a8"
+      },
+      "verify.py": {
+        "bytes": 9265,
+        "sha256": "edfa90b91a0f7e3ae3e5363d0d2d0f945645a91e46b6266aaee0a9a173b3da21"
+      }
+    }
+  },
+  "manifestSha256": "fe618ca60ada66f158521423c2d75f0ed334225d97819a2363dfb10d51bbf526",
+  "reportJson": "{\"title\": \"Upper resource/Voice teardown: concrete ordering and remaining lifetime boundaries\", \"status\": \"BOUNDED_STATIC_STUDY_PENDING_INDEPENDENT_REVIEW\", \"Domain\": \"native\", \"date\": \"2026-10-11\", \"claims\": [{\"address\": \"0x14012eea0\", \"title\": \"Point-selected retirement\", \"finding\": \"For nonzero address, the first list record with unsigned start=QWORD+1624 <= address < (start+zero-extended DWORD+1600) is selected. If supplied, the caller callback receives that record before a tail call12E460(record,0). This wrapper does not test ResourceEntry+1604 or wait for audio eligibility.\", \"limits\": \"Intact list/readable records and no intervening mutation are premises. Addition is machine-width; no wrap validation.12E460 may invoke its own registered callback; NULL supplied callback does not suppress that separate callback. No global absence of external protection.\", \"evidence\": [\"evidence.json#functions[addr=0x14012eea0]\", \"evidence.json#dependencies[addr=0x14012e460]\"]}, {\"address\": \"0x14012ef30\", \"title\": \"Range-selected retirement\", \"finding\": \"Repeatedly calls12E100(start,end), then12E460(record,flag), until lookup returns zero. There is no local ResourceEntry+1604 test in either this wrapper or12E460.\", \"limits\": \"Termination depends on callbacks/destruction actually removing matching records and no external changes. No claim that arbitrary input addresses are safe.\", \"evidence\": [\"evidence.json#functions[addr=0x14012ef30]\", \"evidence.json#functions[addr=0x14012e100]\", \"evidence.json#dependencies[addr=0x14012e460]\"]}, {\"address\": \"0x14012e100\", \"title\": \"Exact range predicate\", \"finding\": \"Uses exact endpoint equality or four strict endpoint-inside comparisons. Adjacent nonoverlapping normal intervals are rejected. An empty query point strictly inside a nonempty record can match; this is not interchangeable with a generic half-open interval-overlap utility.\", \"limits\": \"Unsigned64 address arithmetic and zero-extended32 length. Boundary, degenerate and wrap examples are synthetic arithmetic tests, not evidence that runtime records assume those states.\", \"evidence\": [\"evidence.json#functions[addr=0x14012e100]\"]}, {\"address\": \"0x14012ef80\", \"title\": \"Zero-gated sweep differs from forced retirement\", \"finding\": \"This separate list sweep skips a record when DWORD+1604 is nonzero. For zero it optionally invokes dispatch[index+1612].callback+24, unlinks from the global list, then invokes record virtual+0 with flags1.\", \"limits\": \"The complete meaning and all writers of+1604 are not established here. It must not be called an audio lease/refcount merely because it gates this sweep. Virtual calls/callbacks may have further effects.\", \"evidence\": [\"evidence.json#functions[addr=0x14012ef80]\", \"evidence.json#dependencies[addr=0x14012e460]\", \"evidence.json#dependencies[addr=0x14012d8e0]\", \"evidence.json#dependencies[addr=0x140129d30]\"]}, {\"address\": \"0x1403a62b0\", \"title\": \"Pre-copy Voice stop\", \"finding\": \"For nonzero-size, nonalias BAR records, type34 dispatches1DE5C0 on the decoded wrapper pointer; types1/17/20/30/46 recurse. Type48 has no such case in the captured46-type map.1DE5C0 matches request+24 by exact pointer and request+53==6, calls1DE320, then for matching ORIGIN data invalidates group2 by DWORD+12.\", \"limits\": \"No matching request means that helper does not reach its ORIGIN invalidation. Stop marks request+52=4; it neither proves synchronous backend quiescence nor establishes all callers/aliases.\", \"evidence\": [\"evidence.json#functions[addr=0x1403a62b0]\", \"evidence.json#dependencies[addr=0x1401de5c0]\", \"evidence.json#dependencies[addr=0x1401de320]\"]}, {\"address\": \"0x1403a6120\", \"title\": \"Post-copy Voice stop uses relocated pointer\", \"finding\": \"Relocation first updates each nonzero-size BAR record pointer using the base delta. A nonalias type34 then passes the new decoded pointer to1DE5C0. It does not rebind old request+24 pointers. The same selected recursive types are present.\", \"limits\": \"Pointer decoding validity, nested data bounds and external request management remain premises. Type48 is outside this46-case map. No safety claim for arbitrary BAR data.\", \"evidence\": [\"evidence.json#functions[addr=0x1403a6120]\", \"evidence.json#dependencies[addr=0x1401de5c0]\"]}, {\"address\": \"0x14039e690\", \"title\": \"Local relocation order\", \"finding\": \"On the selected existing-payload/nonzero-size path:3A62B0(oldBAR), optional matching ResourceEntry update(+16 and+1624) plus ReplaceEntry auxiliary+112 target+128 delta, direction-aware16-byte payload copies when old!=new,3A6120(newBAR),39E900. This supplies concrete pre-copy and post-copy type34 stop passes.\", \"limits\": \"Refines prior relocation research; this body is a fresh recapture, not new coverage. Overlap/reload branches and callbacks differ. Aligned size/readable bounds, exact pointer matching and serialized use are required; no global safe hot-reload guarantee.\", \"evidence\": [\"evidence.json#functions[addr=0x14039e690]\", \"evidence.json#functions[addr=0x1403a62b0]\", \"evidence.json#functions[addr=0x1403a6120]\"]}, {\"address\": \"0x14039d010\", \"title\": \"Resource code retirement\", \"finding\": \"Scans for DWORD+72==requested code. If flag DWORD+68 bit1 is clear, only byte+1==3 takes BAR release3A6A10(payload+88,1), then39E2A0 and manager virtual+16. Flag bit1 set takes unlink/free without that BAR release. The body has no WORD+2 counter gate.\", \"limits\": \"Intact list and manager contract assumed. This is not a proof that callers legitimately pass a code while users still exist or that counter gating is absent elsewhere.\", \"evidence\": [\"evidence.json#functions[addr=0x14039d010]\", \"evidence.json#dependencies[addr=0x1403a6a10]\"]}, {\"address\": \"0x1403e90e0\", \"title\": \"Actor switch order is mode-dependent\", \"finding\": \"Captures old Actor+2336 before the switch. Mode0 sets Actor+2488 bit0x10 and yields until3BFB70 says the old pointer is absent from the Actor list, then yields once with argument1. Mode1 instead calls descriptor virtual+328; other nonzero modes skip both local branches. The common suffix calls39D010(code),code+1,code+2 before3CD980(context,oldBuffer,...).\", \"limits\": \"List absence is not an eternal no-reuse/ABA or audio-completion guarantee. Mode1 virtual target and caller mode invariants remain open. The old buffer is held as a raw register value across yields; no separate retain is visible in this body.\", \"evidence\": [\"evidence.json#functions[addr=0x1403e90e0]\", \"evidence.json#dependencies[addr=0x1403bfb70]\", \"evidence.json#functions[addr=0x14039d010]\", \"evidence.json#functions[addr=0x1403cd980]\"]}, {\"address\": \"0x1403cd980\", \"title\": \"Voice replacement before containing-resource retirement\", \"finding\": \"Waits by yielding while global2A244D8 is nonzero, writes the supplied context there, clears a matching cache-used bit, calls3CDE50(newId,oldBuffer), then12EEA0(oldBuffer,NULL), then clears global2A244D8.\", \"limits\": \"Plain loads/stores are not a demonstrated mutex or cross-thread exclusion. Normal call-return order only; no progress proof. The NULL caller callback still permits12E460 registered callbacks.\", \"evidence\": [\"evidence.json#functions[addr=0x1403cd980]\", \"evidence.json#functions[addr=0x1403cde50]\", \"evidence.json#functions[addr=0x14012eea0]\"]}, {\"address\": \"0x1403cde50\", \"title\": \"Three searched cache rows and completion marker\", \"finding\": \"For valid helper result and WORD+76 in1..15, searches three cache rows by two keys. A match marks used and returns. Otherwise selects the first clear used-bit among three rows, writes its keys, constructs the regional battle-voice path, requests loading via3A0B30 with3CDDF0 callback, sets context+24=1, and yields until that marker clears.\", \"limits\": \"After all three searched rows are marked used and no key matches, the local index advances to3 and is used without a local rejection. Physical cache allocation, reserved fallback-row intent and live reachability are not established: no out-of-bounds/crash claim. Callback ordering relative to setting the wait marker is external.\", \"evidence\": [\"evidence.json#functions[addr=0x1403cde50]\"]}, {\"address\": \"0x1403cddf0\", \"title\": \"Callback bridge and marker-clear witness\", \"finding\": \"With nonzero second argument,3CDDF0 forwards buffer,length,slot and3CE030 callback through1DF0E0, which selects type3 at1E03E0. With zero it clears current global context+24 directly.3CE030 also clears that field when the global is nonzero.\", \"limits\": \"No full1E03E0/request lifecycle or completion guarantee is derived. The callback targets a global current context, without an identity check visible in these small bodies. ABI inferred from actual registers, not the decompiler int width for pointers.\", \"evidence\": [\"evidence.json#functions[addr=0x1403cddf0]\", \"evidence.json#functions[addr=0x1401df0e0]\", \"evidence.json#functions[addr=0x1403ce030]\"]}, {\"address\": \"0x1401df3c0\", \"title\": \"Group1 copy-mode handoff before range retirement\", \"finding\": \"Calls1363B0(key,1),13B2E0(key,buffer,length,group1,mode0), then12EF30(buffer,buffer+signExtendedLength,0). It preserves registration return value but does not condition retirement on success.\", \"limits\": \"Mode0 contract is prior work; current claim is call order and mode argument, not proof of native worker completion. Signed length can produce nonstandard ranges; only bounded synthetic arithmetic considered.\", \"evidence\": [\"evidence.json#functions[addr=0x1401df3c0]\", \"evidence.json#dependencies[addr=0x14013b2e0]\", \"evidence.json#functions[addr=0x14012ef30]\"]}, {\"address\": \"0x1401df7b0\", \"title\": \"Group2 ownership branches differ from borrowed voice\", \"finding\": \"ORIGIN with nonzero payload+32 uses13B2E0(group2,mode0). SeBlock resolves a replacement, registers its+96 payload using mode0, then aligned-frees nonzero+96 and clears it, regardless of returned status. The ordinary branch chooses mode1 only for unsigned(key-20)<=1, otherwise mode0, then retires matching source ranges. This differs from1DFD70 ORIGIN voice mode2.\", \"limits\": \"No general validity/size/allocator/asynchronous-safety proof. SeBlock lookup remains a dependency boundary. ORIGIN branch does not itself free wrapper+32. Native success/failure behavior was not exercised.\", \"evidence\": [\"evidence.json#functions[addr=0x1401df7b0]\", \"evidence.json#dependencies[addr=0x1401dfd70]\", \"evidence.json#dependencies[addr=0x14013b2e0]\", \"evidence.json#functions[addr=0x14012ef30]\"]}, {\"address\": \"0x1403e61e0\", \"title\": \"Actor Voice stop precedes local resource decrements\", \"finding\": \"Previously captured BTLNPC destructor4069C0 calls base Voice destructor3CD8E0 on Actor+3000 before3B3D60.3B3D60 calls3E61E0 on Actor+2320. That releases its nonnull+16/+24/+32 resource pointers through39DA10 then clears them. Voice destructor stops a nonzero handle via1DE500 and clears its handle before this resource step.\", \"limits\": \"This composes direct local call order, assuming normal returns and the selected concrete destructor. Request marking/backend stopping is not BankEntry destruction; other actor types, bulk cleanup and callbacks remain outside this chain.\", \"evidence\": [\"evidence.json#functions[addr=0x1403e61e0]\", \"evidence.json#dependencies[addr=0x1404069c0]\", \"evidence.json#dependencies[addr=0x1403cd8e0]\", \"evidence.json#dependencies[addr=0x1403b3d60]\", \"evidence.json#dependencies[addr=0x1401de500]\", \"evidence.json#dependencies[addr=0x1401de320]\", \"evidence.json#functions[addr=0x14039da10]\"]}, {\"address\": \"0x14039da10\", \"title\": \"Local resource counter decrement has no floor check\", \"finding\": \"Finds the first resource record whose payload+88 equals the input, then adds0xffff to WORD+2. No local underflow guard. The no-match path retains RAX=0 and has the same WORD[RAX+2] add.\", \"limits\": \"Only a body-local precondition: valid matching resource is required. No claim that the no-match path or counter wrap occurs in normal play. This resource-list WORD is distinct from audio-bank WORD+52 and ResourceEntry DWORD+1604.\", \"evidence\": [\"evidence.json#functions[addr=0x14039da10]\"]}], \"priorWork\": \"ORIGIN ownership, EE request lifecycle, Actor teardown and lower audio-bank retirement are pinned dependencies.19 fresh captures include5 known bodies;16 reused bodies are separate. Novelty inventory is bounded to inspected docs/research/*/evidence.json function arrays.\", \"openQuestions\": [\"Complete resource callback table provenance and all relevant writers of ResourceEntry+1604.\", \"Mode1 virtual+328 target, caller modes and same-address Actor reuse across yields.\", \"Physical battle-voice cache extent/fallback-slot3 intent and callback scheduling for1E03E0.\", \"Global serialization between Actor stop, EE request sweep, ResourceEntry buffer free and deferred BankEntry destruction.\", \"All BAR type48 users, all ORIGIN wrapper aliases and all buffer-owning paths.\"], \"actions\": \"No game, process attach, injection, IDB mutation, asset writing, product change or build. Outputs are research artifacts only.\"}",
+  "provenance": {
+    "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+    "dependencies": [
+      {
+        "path": "docs/research/voice-origin-resources-20261011/evidence.json",
+        "sha256": "55c04c57a068bc36dfd1fe2ebed7fc904719002c9e37184352290594d9aab361"
+      },
+      {
+        "path": "docs/research/voice-request-lifecycle-20261008/evidence.json",
+        "sha256": "d963a6362130791b19d6f50701bf7c4d1c90a9a3beb13e4be26e8f6ad2715b99"
+      },
+      {
+        "path": "docs/research/actor-lifetime-20261007/evidence.json",
+        "sha256": "7416fc1b4d5898e3e758e4f9265248cb3e3475e24c425a9b47b1f7bf1a6f7deb"
+      },
+      {
+        "path": "docs/research/voice-origin-resources-20261011/report.json",
+        "sha256": "36e7a8da9a876e7e829854707c99fad0496ae4bc0bf6c624b1a14f97bb07fc60"
+      },
+      {
+        "path": "docs/research/voice-origin-resources-20261011/manifest.json",
+        "sha256": "694b3f0499140b05e73c07916fa535fc76198e8dfb6e6711a569d1a0c9f7e6de"
+      },
+      {
+        "path": "docs/research/voice-request-lifecycle-20261008/report.json",
+        "sha256": "357a44ba954ffed7dba2172c7665d6cbdf55fdd15942e1b439f602c3bc67eb95"
+      },
+      {
+        "path": "docs/research/voice-request-lifecycle-20261008/manifest.json",
+        "sha256": "a2ec21eec1487b2f83d7efd91dfd888406ff77a6c4cd8f3aadd4dba4da9ae5fb"
+      },
+      {
+        "path": "docs/research/actor-lifetime-20261007/report.json",
+        "sha256": "419f18e1e098147c2d58f56868548bad9ddfaf2ed58bf908094e3c41dc3e2955"
+      },
+      {
+        "path": "artifacts/audio-bank-retirement-20261011/manifest.json",
+        "sha256": "23ab6085e22e788ba2c317dc9710350d9801e29fd3318e8dae1de409713f8379"
+      },
+      {
+        "path": "artifacts/audio-bank-retirement-20261011/report.json",
+        "sha256": "acd4771ce4901b834bd4ed9d5911129cb60f8912738e05b8bae5c2b7a83ecf29"
+      },
+      {
+        "path": "docs/research/actor-free-closure-20261008/report.json",
+        "sha256": "35a3a7acdf16cf3193b3a7e4f3c531b7659782584ba5f5b0d407d81672febf6b"
+      },
+      {
+        "path": "docs/research/drive-preconstructor-20261007/report.json",
+        "sha256": "7f1b9c5a0559b4afd98ee19dfb71378da91078b01805ca422b5c15dbc19b5b5d"
+      },
+      {
+        "path": "docs/research/actor-bulk-lifetime-20261008/report.json",
+        "sha256": "8f2194f147f9f0f5597a2c2b74a5ce87f7aeffdefec320299f1b79502d08e972"
+      }
+    ],
+    "captureMethod": "Read-only IDA MCP disasm/decompile/get_bytes; all cursors completed. Existing worker adopted without autoanalysis; no IDB mutation. Prior bodies explicitly extracted and pinned, not counted as fresh.",
+    "novelty": "19 fresh capture operations; five functions already present in prior evidence (12EF30,12E100,39D400,39E690,3A6120). Remaining14 absent from the inspected prior evidence.json function lists; this is no global novelty claim. Callgraph output is discovery only because it labels some branches as calls."
+  },
+  "evidenceSha256": "1258bfbeed7ebab90b51845605390e3bbdad114afb258e9a82e916d80c45af78",
+  "evidenceMetadataDigest": "8ddb7445b4ddd1f8c1f693e9c7c03e133ee5378f4c5b9b65ee6a30f5808ceee7",
+  "evidenceDigests": {
+    "functions": {
+      "0x14012eea0": "300c8d7836272720e4878e1fdd27c22dbd7f3c6932dffe6795e155bd614be8af",
+      "0x14012ef30": "477b04935073ce492b2ee763633fdd17370d824ae6d1479c904c38ac1b301526",
+      "0x14012e100": "79c95aadeff216f67ad70057f12fd49b5c67403b846f62bf234eaaa9f31f6bad",
+      "0x14012ef80": "205089b6f422e23f85de4e2da3bbf496d16606f9685c1b1a80a3f5e9d899233c",
+      "0x14039d400": "f9334715cd1a640b1a8483ecbc0bd113564daccec550697f7ceb1c5d8e388701",
+      "0x14039e690": "30dc74eaa1f05cd84bf1124d6184c9978956f0a560cc56dd43adb6a1ffc14d36",
+      "0x1403a6120": "2a61904aa8fb7785880821754ed01522d24a616e2942248585f89cefd89ff6be",
+      "0x1403a62b0": "c069372764b3a3fc4d66f9e4529a76c63a4cdf11072d66c80409d4400f3e9825",
+      "0x1401df3c0": "457ba4fbf4f05697400c004514776f711a608710ec12d26e547a725bf9062644",
+      "0x1401df7b0": "62d4f433902c55ac1af51b79d1dfa810bb68d4a1659cba503bfca60b0e5988f0",
+      "0x1403cd980": "435b987370fd9d5ddb0e50177e1c6b22335007b8a07f91a949e3f0e4d3d8acb0",
+      "0x1403cde50": "146c5bcb552211625319150f6c90eaceae546b53c4893482e8645027e83e5ba4",
+      "0x1403e90e0": "f9883dde9d6f35948347d8127ed959ab561c6a17a6e4ebd7223513fb5d768264",
+      "0x1403cddf0": "dd3d2899ef671d107d15d5f822fed0abf28f7f0de1321b4041ddc224be0749bc",
+      "0x1403ce030": "1fd5f4c790f790c7255853cc6c5381cb329ce652f2ead3c70bd1f2fccb6d8b7c",
+      "0x1401df0e0": "280bf538e854a2e56e88c55ac61495536ca825fff635712f99ebe508ea20ec89",
+      "0x14039d010": "50fd6f7b6bbe6ea272a81dd7f088813bf0d813b2b4e5739f6e5705f4d3804c09",
+      "0x1403e61e0": "8665c8cbfcd8f9a2b856128d0ff47cac4621654a0a0397dbd47f900b772c057a",
+      "0x14039da10": "6a3a7fbfd12844b34d3e4d7e4a3e230497dc31ed6bdbda52fe9a01aee6304aed"
+    },
+    "dependencies": {
+      "0x1403a6a10": "43f6e1c7728df8096f81702a92d084d31c61687dfc21fd7dca95bb3154ce5510",
+      "0x14012e460": "7201fb7b3e439c6131b2ffd9cd5ce38a470582360d72950c388f6b89bc0b0e3a",
+      "0x14012d8e0": "e102545e8fc2f20e62d404bbbdcc69a729adf8b4faaffe27f546255425b8ea2e",
+      "0x140129d30": "c31a6b55907aecb75e2cf4d9dd3407927c2891f97be45412340c6ca7d6156885",
+      "0x1401de5c0": "7246000e6f92bee57a0e834750661c98b931aa88332cf7851fa72c13f935a462",
+      "0x1401dfd70": "ca1035099d2dd6886b21b68231166d3163068abac917e53df646161365f9ad2e",
+      "0x1401363b0": "f5bde8fbe2ffa69a998edf15bb74682d8a471c0dd7d6af228c6a2e471515425f",
+      "0x14013c470": "ac4a9f180eea7b27cbb84fc02d0a77113c78eb9ec5fab14ed9a31e46730305c0",
+      "0x14013b2e0": "c76f253da3399801fbab793871b77a32480378a379b0bfc7f7716a725f3c1b99",
+      "0x1401de230": "6961bddd522d6afdcba368668c2d13e932f60400abd2a91157b587f597963a69",
+      "0x1404069c0": "d2cae1e148e0d550d7ac59e8f05ae0284923c2d73fbfcf084066327d803acda0",
+      "0x1403cd8e0": "7d88f373d562d2ee58942ba995cbb86c35d99f4d7c7efd1fcd22bba1188ad59c",
+      "0x1401de500": "396db5aeab56701052165381ea33267f3e779d0c45594397f6e6f4ef6c69f339",
+      "0x1401de320": "0e293a6b29a22d0b5e707b350a8c7fe4fbffc84fb118b692e976684069185bdb",
+      "0x1403b3d60": "9e41ace125ef384f9ec89d8690b02102c9f39369901bdf16a8325fba77583006",
+      "0x1403bfb70": "47e7d71527cf564f4a9b740d360934cfef9f0b1cbb784ea2a83e0a26ee4e70fa"
+    }
+  },
+  "dependencyDigests": {
+    "0x1403a6a10": "1bbeb26cded178e0a251350322e0ac85eab20b1503deee5249e51b6c84799bf6",
+    "0x14012e460": "7bcc6cd4cd0c2a3a61ce0e3dd813d45ede5da21e5662d1fee209675811df1389",
+    "0x14012d8e0": "4fe5ec3843db3fdc476ab92b3c2a38db3b0702829ffcfff0822620c63c567551",
+    "0x140129d30": "082a57557b76026512056f9a8f7de6d5307a344a23918d8a76430e1e7f9a6547",
+    "0x1401de5c0": "e8c4c2de450d93928056d75a95cf76ee2e8e860e701b1d43ae8015ac6bec776f",
+    "0x1401dfd70": "634360d4fe30c0f6dd12c0c709bc3b545b0164c94f23527506bb880e04cc4d44",
+    "0x1401363b0": "cf87a3b19fbf3f760fa4d7472924d1d1698d0e5caca5a87ef5fdc65f992140a5",
+    "0x14013c470": "5b8c43eef8bac5d33781b44b046b185297268f39eb217887a1c14967c4e462cc",
+    "0x14013b2e0": "85f3793a05124e1134bdfc45056071468c96457bc100419791f8f6142c22e436",
+    "0x1401de230": "082fef69ab3819982229d8c647bba3ffeacff0db91592905ff794810a6e7b377",
+    "0x1404069c0": "e99d373dca7d0193cf91ab324b551f96532d0af12da2280d46fe047cba247610",
+    "0x1403cd8e0": "efa7ac2cd05c4067dc9156354aa8c1fd7ffad2e48e3d8703c99141f08ed517f0",
+    "0x1401de500": "8f8c71f7fce66769ab04ca03d0c44caaddb8dd708767a3c6cf40554c44c99674",
+    "0x1401de320": "b0ced0b2053eeaaa6cdf4b4443d2982f8c997aecbfc9a151939df54907d90a54",
+    "0x1403b3d60": "7ded4ec783f3c97b2e0c082bfbb050950718b0813f4b4005995c4d3c6961e48e",
+    "0x1403bfb70": "0ef1b45f01678f41df137a60e4b15232cd72a10404320c380285ccc2257692b2"
+  },
+  "parserResult": {
+    "referenceCount": 46,
+    "referenceStatuses": {
+      "exists": 28,
+      "unsupported_fragment": 18
+    },
+    "bodies": [
+      {
+        "addr": "0x14012eea0",
+        "kind": "fresh",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x14012ef30",
+        "kind": "fresh",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x14012e100",
+        "kind": "fresh",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x14012ef80",
+        "kind": "fresh",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x14039d400",
+        "kind": "fresh",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x14039e690",
+        "kind": "fresh",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1403a6120",
+        "kind": "fresh",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1403a62b0",
+        "kind": "fresh",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1401df3c0",
+        "kind": "fresh",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1401df7b0",
+        "kind": "fresh",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1403cd980",
+        "kind": "fresh",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1403cde50",
+        "kind": "fresh",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1403e90e0",
+        "kind": "fresh",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1403cddf0",
+        "kind": "fresh",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1403ce030",
+        "kind": "fresh",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1401df0e0",
+        "kind": "fresh",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x14039d010",
+        "kind": "fresh",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1403e61e0",
+        "kind": "fresh",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x14039da10",
+        "kind": "fresh",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1403a6a10",
+        "kind": "reused",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x14012e460",
+        "kind": "reused",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x14012d8e0",
+        "kind": "reused",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x140129d30",
+        "kind": "reused",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1401de5c0",
+        "kind": "reused",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1401dfd70",
+        "kind": "reused",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1401363b0",
+        "kind": "reused",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x14013c470",
+        "kind": "reused",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x14013b2e0",
+        "kind": "reused",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1401de230",
+        "kind": "reused",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1404069c0",
+        "kind": "reused",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1403cd8e0",
+        "kind": "reused",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1401de500",
+        "kind": "reused",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1401de320",
+        "kind": "reused",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1403b3d60",
+        "kind": "reused",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      },
+      {
+        "addr": "0x1403bfb70",
+        "kind": "reused",
+        "completeASM": false,
+        "reason": "no valid ASM start",
+        "originalByteCount": 0,
+        "allOriginalBytesMatch": false
+      }
+    ]
+  }
+}

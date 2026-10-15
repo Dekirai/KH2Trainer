@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "status": "ACCEPTED_BOUNDED_STATIC_REVIEW",
+  "study": "artifacts/collision-resource-lifetime-20261011",
+  "studyManifestSha256": "6d6d8c2f71ab42297ec19e7156c5352a610d0c96468f549bd6a9646b9761cff6",
+  "studyEvidenceSha256": "b7370e0b8399b4344fac6a64b3b563a3389a392fcc53735213c448e20b57f7ce",
+  "openBlockers": [],
+  "resolvedReviewPoints": [
+    {
+      "address": "0x1401722f0",
+      "resolution": "Leaf writes are explicitly limited to the narrowed leaf count being positive as signed32."
+    },
+    {
+      "address": "0x140163fc0",
+      "resolution": "Endpoint replacement is claimed; geometric shortening is not."
+    }
+  ],
+  "manualReview": "All 18 claims read against complete pseudocode and targeted original ASM for binding, activation, pool/list ownership, decrement, query writes and cleanup ordering. No full semantic coverage guarantee.",
+  "independentChecks": {
+    "structuralSemantic": 14237,
+    "conditionalFlagProvenance": 372313,
+    "total": 386550,
+    "originalBodies": 20,
+    "originalBytes": 6896,
+    "originalInstructions": 1671,
+    "canonicalReferences": 35,
+    "originalInstructionCases": 2663,
+    "interpretedInstructions": 1193081
+  },
+  "authorVerifier": {
+    "command": "py -3 -B artifacts/collision-resource-lifetime-20261011/verify.py --check",
+    "exitCode": 0,
+    "status": "PASS",
+    "checks": 1343
+  },
+  "verificationCommand": "py -3 -B artifacts/review-collision-resource-lifetime-20261011/review.py",
+  "limits": [
+    "Synthetic bounded memory and helper stubs only; no actual native/game execution.",
+    "No geometry-validity, race-freedom, global ownership, complete cleanup, live gameplay or Tiny/Giant-readiness guarantee.",
+    "No author-folder, src, docs or package changes made by reviewer."
+  ]
+}
+

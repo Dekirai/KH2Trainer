@@ -1,0 +1,118 @@
+"""Independent bounded review. Writes only this review folder with --write.
+--native additionally repeats the inspected author's private three-body probe;
+the independent checks and instruction fixtures below do not call that model.
+No author receipts, IDB, game process, product, docs or package are modified.
+"""
+import argparse,hashlib,importlib.util,json,math,struct,sys
+from pathlib import Path
+from capstone import Cs,CS_ARCH_X86,CS_MODE_64
+from capstone.x86_const import X86_OP_IMM,X86_OP_MEM,X86_REG_RIP
+from bounded_machine import Machine,B,f32
+sys.dont_write_bytecode=True
+H=Path(__file__).resolve().parent
+R=next(p for p in H.parents if (p/'src/KH2Trainer.Core').is_dir())
+A=R/'artifacts/actor-body-bounds-20261011'
+PIN='bc97953b4c545eae7983987ccc2f965c2e407206af9ce2a60b96d737090c5c1d'
+EXE=Path(r'E:\SteamLibrary\steamapps\common\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-\KINGDOM HEARTS II FINAL MIX.exe')
+EXEPIN='9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed'
+sha=lambda b:hashlib.sha256(b).hexdigest()
+load=lambda p:json.loads(p.read_bytes())
+encode=lambda o:(json.dumps(o,indent=2,ensure_ascii=False)+'\n').encode()
+checks=0
+def ck(ok,label):
+    global checks
+    checks+=1
+    if not ok:raise AssertionError(label)
+def module(name,path):
+    spec=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);return m
+def main():
+    ap=argparse.ArgumentParser();ap.add_argument('--write',action='store_true');ap.add_argument('--native',action='store_true');args=ap.parse_args()
+    ck(sha((A/'manifest.json').read_bytes())==PIN,'exact author manifest')
+    files=load(A/'manifest.json')['files'];ck(set(files)=={p.relative_to(A).as_posix() for p in A.rglob('*') if p.is_file() and p.name!='manifest.json'},'exact author recursive inventory')
+    for n,s in files.items():ck(sha((A/n).read_bytes())==s,'author member '+n)
+    ck(sha((H/'bounded_machine.py').read_bytes())=='63363b619c9a3d41b6e6deed6d8f9214d71044b6d5a1f184ec1681506f8a8df8','reviewer interpreter copy pin')
+    raw=EXE.read_bytes();ck(sha(raw)==EXEPIN,'original retail identity')
+    u16=lambda o:struct.unpack_from('<H',raw,o)[0];u32=lambda o:struct.unpack_from('<I',raw,o)[0]
+    pe=u32(60);opt=pe+24;sec=opt+u16(pe+20)
+    ck(raw[:2]==b'MZ' and raw[pe:pe+4]==b'PE\0\0' and u16(pe+4)==0x8664 and u16(opt)==0x20b and struct.unpack_from('<Q',raw,opt+24)[0]==B,'independent AMD64 PE32+ layout')
+    sections=[(u32(sec+i*40+12),u32(sec+i*40+16),u32(sec+i*40+20)) for i in range(u16(pe+6))]
+    def read(a,n):
+        matches=[p+a-B-v for v,size,p in sections if v<=a-B and a-B+n<=v+size]
+        ck(n>0 and len(matches)==1,'physical extent '+hex(a));return raw[matches[0]:matches[0]+n]
+    capture=load(A/'capture.json');evidence=load(A/'evidence.json');cs=Cs(CS_ARCH_X86,CS_MODE_64);cs.detail=True
+    instructions={};functions={};independent=[]
+    aliases={'retn':'ret','jz':'je','jnz':'jne','cmovnz':'cmovne','movsxd':'movsxd','cdqe':'cdqe','sal':'shl','setnz':'setne'}
+    for f in evidence['functions']:
+        address=int(f['addr'],16);body=bytes.fromhex(f['originalBytes']);ck(body==read(address,f['size']) and len(body)==f['size'],'entire body '+f['addr'])
+        source=next(s for s in capture['functions'] if s['addr']==f['addr']);ck(body==bytes(int(x,16) for x in source['idaBytes'].split()),'capture bytes agree')
+        asm=[];count=0
+        for page in source['pages']:
+            ck(page.get('offset',count)==count and page['instruction_count']==len(page['asm']['lines']),'ASM contiguous pages')
+            count+=page['instruction_count'];asm+=page['asm']['lines']
+        ck(source['pages'][-1]['cursor']=={'done':True} and count==source['pages'][-1]['total_instructions'],'complete ASM final cursor')
+        decoded=list(cs.disasm(body,address));ck(sum(i.size for i in decoded)==len(body) and [i.address for i in decoded]==[int(r['addr'],16) for r in asm],'full extent decoded with no unlisted bytes')
+        for i,row in zip(decoded,asm):
+            op=row['instruction'].split(';')[0].split()[0].lower();ck(aliases.get(op,op)==i.mnemonic,'original/IDA mnemonic '+hex(i.address));instructions[i.address]=i
+        dp=source['decompilePages'];ck(len(dp)==1 and dp[0]['cursor']=={'done':True} and not dp[0].get('truncated') and dp[0]['code']==source['pseudocode'] and len(dp[0]['code'].splitlines())==dp[0]['line_count']==dp[0]['total_lines'],'complete pseudocode extent')
+        functions[address]=decoded;independent.append({'addr':f['addr'],'size':len(body),'sha256':sha(body),'instructionCount':len(decoded)})
+    ck(len(functions)==13 and sum(len(x) for x in functions.values())==1057,'13 complete bodies /1057 instructions')
+    # Exact sites establish lower/upper operation without trusting Hex-Rays fmin.
+    for a,dst,src in [(0x40acf0,'xmm0','xmm1'),(0x40ad01,'xmm2','xmm1'),(0x40ad14,'xmm3','xmm0'),(0x40ad27,'xmm4','xmm0'),(0x40ad39,'xmm5','xmm0'),(0x40ad50,'xmm6','xmm0')]:
+        i=instructions[B+a];ck((i.mnemonic,i.op_str)==('minss',dst+', '+src),'six lower and upper MINSS sites')
+    chosen={B+x for x in [0x40ac20,0x184270,0x184940]};probe_instructions={i.address:i for a in chosen for i in functions[a]}
+    for a in chosen:
+        local={i.address for i in functions[a]}
+        for i in functions[a]:
+            ck(all(o.type!=X86_OP_MEM or o.mem.base!=X86_REG_RIP for o in i.operands),'probe has no RIP-relative game data')
+            if i.mnemonic=='call' or i.mnemonic.startswith('j'):
+                ck(i.operands[0].type==X86_OP_IMM and i.operands[0].imm in (local|chosen),'all probe control transfers close within copied bodies')
+    probe=load(A/'native-probe.json');ck(probe['probeScriptSha256']==files['verify.py'] and probe['originalSha256']==EXEPIN,'author native receipt exact script/image')
+    # Independent ABI/memory interpreter: exact three original bodies, no stubs.
+    tests=[(r['case'],r['records']) for r in probe['cases']]
+    tests += [('review_positive_y_height_asymmetry',[(2,9,3,4,5),(7,1,9,20,-4)]),('review_third_smaller_upper',[(9,1,0,0,0),(7,2,10,3,0),(1,3,-10,-4,0)]),('review_rounded_large_coordinate',[(1,2,33554432,0,0),(4,5,33554440,10,0)])]
+    interpreted=[];steps=0
+    for name,rows in tests:
+        # Canonicalize every input to stored Float32 before reference arithmetic.
+        rows=[[f32(x) for x in r] for r in rows];m=Machine(probe_instructions,lambda a,n:(_ for _ in ()).throw(AssertionError('unexpected external read')));m.stubs={}
+        source=0x200000;dest=0x300000;size=24+40*len(rows);m.allocate(source,size);m.allocate(dest,24);m.put(source,4,len(rows))
+        for j,(r,h,x,y,z) in enumerate(rows):m.vector(source+24+40*j+4,(r,h));m.vector(source+24+40*j+24,(x,y,z,1))
+        before=bytes(m.memory[source+i] for i in range(size));m.invoke(0x40ac20,(source,dest));steps+=m.steps
+        boxes=[[f32(x-r),f32(y-h),f32(z-r),f32(x+r),f32(y+h),f32(z+r)] for r,h,x,y,z in rows]
+        wanted=[min(b[k] for b in boxes) for k in range(6)] if rows else [0.0]*6
+        union=[(min if k<3 else max)(b[k] for b in boxes) for k in range(6)] if rows else [0.0]*6
+        actual=bytes(m.memory[dest+i] for i in range(24));expected=struct.pack('<6f',*wanted)
+        ck(actual==expected,'independent exact original interpretation '+name);ck(before==bytes(m.memory[source+i] for i in range(size)),'source unchanged '+name)
+        if name in [x['case'] for x in probe['cases']]:ck(actual.hex()==next(x for x in probe['cases'] if x['case']==name)['actualBits'],'independent agrees with saved native witness '+name)
+        interpreted.append({'case':name,'input':rows,'actualBits':actual.hex(),'enclosingUnionBits':struct.pack('<6f',*union).hex(),'instructionSteps':m.steps})
+    ck(sum(x['actualBits']!=x['enclosingUnionBits'] for x in interpreted[:12])==8,'eight selected original witnesses differ from union')
+    # Verify the prior copy helper supporting the matrix-publication wording.
+    prior_path=R/'docs/research/bdx-bank3-extended-20261008/evidence.json';priorpin='7388412db33d2cabab9a239c18ebb1cecb9259a9e547fe114d3eaa9524851e09'
+    ck(sha(prior_path.read_bytes())==priorpin,'prior matrix-copy evidence pin')
+    prior=next(f for f in load(prior_path)['functions'] if f['addr']=='0x1401a94c0');pbytes=bytes.fromhex(prior['originalBytes'])
+    ck(pbytes==read(B+0x1a94c0,prior['size']),'matrix-copy helper original bytes')
+    pdec=list(cs.disasm(pbytes,B+0x1a94c0));ck(sum(i.size for i in pdec)==len(pbytes) and not any(i.mnemonic=='call' for i in pdec),'matrix-copy helper full extent and no nested calls')
+    # Reviewer selected exact caller/output/order anchors, beyond author counters.
+    anchors={0x3cc0cd:('call','0x14040ac20'),0x55bb42:('call','0x14040ac20'),0x562cc5:('call','0x14040ac20'),0x3ccfe5:('lea','rcx, [rdi + 0x40]'),0x3ccfe9:('call','0x1401a94c0'),0x3cd0e3:('call','0x14040b140'),0x3cd18f:('lea','rcx, [rdi + 0x808]'),0x3cd1b5:('call','0x1401a94c0'),0x3bfad0:('call','0x1403ccb90'),0x3bfae3:('call','0x1403c6aa0'),0x3bfb0f:('call','0x14040b140'),0x3c9c9e:('movsx','eax, word ptr [rdi + 0x10]'),0x3c9cb6:('movsx','eax, word ptr [rdi + 0x12]'),0x3c9cf9:('movsx','eax, word ptr [rdi + 0xe]'),0x40b146:('mov','dword ptr [rcx], 0'),0x40b199:('call','0x1403c9c00')}
+    for a,want in anchors.items():i=instructions[B+a];ck((i.mnemonic,i.op_str)==want,'independent semantic anchor '+hex(a))
+    parser_path=R/'scripts/update-analysis-coverage.py';ck(sha(parser_path.read_bytes())=='546d0defdacd8857d7f2461283516348ca28776d13e253d8d954ad43622cc1b2','unchanged parser pin');parser=module('coverage_review',parser_path)
+    claims=load(A/'claims.json')['claims'];refs=[]
+    for c in claims:
+        ck(int(c['addr'],16) in functions and bool(c['Limitations']),'claim has complete body and limit')
+        for ref in c['Evidence']:r=parser.resolve_reference(A/'claims.json',ref);ck(r['status']=='exists','reference '+ref);refs.append(r)
+    for f in evidence['functions']:
+        ok,addresses,why=parser.body_assembly(f);ck(ok and len(addresses)==len(functions[int(f['addr'],16)]),'original parser full body '+why);ck(parser.has_raw_code(f,int(f['addr'],16),f['size']),'original parser byte witness')
+    # Inspected author fixture replay is supplemental. It has no writes itself;
+    # run_native returns JSON, and we persist it only under this review folder.
+    if args.native:
+        author=module('body_bounds_author',A/'verify.py');replayed=json.loads(encode(author.run_native(evidence)))
+        if replayed!=probe:raise AssertionError('private original-code replay differs from frozen native receipt')
+        (H/'native-replay.json').write_bytes(encode({'status':'PASS','authorScriptSha256':files['verify.py'],'authorManifestSha256':PIN,'replayed':replayed}))
+    replay=load(H/'native-replay.json');ck(replay['status']=='PASS' and replay['authorManifestSha256']==PIN and replay['replayed']==probe,'saved independent-process replay receipt')
+    ck(sha((A/'manifest.json').read_bytes())==PIN and all(sha((A/n).read_bytes())==s for n,s in files.items()),'author files remained unchanged')
+    result={'status':'accepted_with_explicit_limits','authorStudy':A.relative_to(R).as_posix(),'authorManifestSha256':PIN,'reviewer':'review_bank3_extended','originalSha256':EXEPIN,'checks':checks,'failures':0,'completeBodies':13,'originalBytes':4966,'decodedInstructions':1057,'claimsReviewed':len(claims),'resolvedEvidenceReferences':len(refs),'independentInstructionCases':len(interpreted),'independentInstructionSteps':steps,'supplementalNativeReplayCases':12,'findings':[{'status':'accepted','claim':'40AC20 /184270 /184940','reason':'Original full bodies and AMD64 float/stack ABI support zero-count initialization and six MINSS reductions. Own instruction interpretation agrees with all12 original native witnesses plus3 distinct finite cases. No enclosing-union contract is assumed from the helper name.'},{'status':'accepted','claim':'3CBFE0 /55BAF0 /562C50','reason':'Manually read both fallback and model-corner branches, three direct callers, midpoint preparation, Z clearing and selected result-copy branch. Claims correctly avoid all-character reachability and complete spawn semantics.'},{'status':'accepted','claim':'3C9B30 /40A9E0 /3B6310 /40B140 /3C9C00','reason':'Signed-positive resource iteration, 24+40*count allocation, two kind publications, count reset and filtered refill match original ASM. Radius/height use signed WORD conversion; transformed center and unscaled resource dimensions are distinguished. Capacity and owner lifetime are explicitly open.'},{'status':'accepted','claim':'3CCB90 /3BFAB0','reason':'Initial Actor+64 copy precedes conditional +2560 refill, followed by Actor+2056 copy. The second +1600 refill follows model/motion call in the active3BFAB0 path. Prior complete1A94C0 byte witness confirms the64-byte copy. Ordering is conditional local control flow, not a thread/lease guarantee.'}], 'blockers':[],'limits':['No global engine patch, safe Tiny/Giant implementation or live gameplay defect is approved.','Native replay executes only three original copied functions in a separate private Python process with synthetic finite nonnegative-dimension buffers; no game process/global/IDB use.','Original author script run_native was inspected and reused only as supplemental replay, not counted as independent semantic analysis.','Independent interpreter is reviewer-owned and reused from collision-query study, pinned by its bytes. It models round-to-nearest Float32 without DAZ/FTZ; native witness comparison covers only selected finite cases.','Downstream consumers, real resource multiplicity, model-bound versus body-fallback reachability, ownership/retirement and cross-thread ordering remain open.','Counted checks reflect reproducible structural assertions; they are not coverage percentages or semantic completeness.'],'priorDependency':{'path':prior_path.relative_to(R).as_posix(),'sha256':priorpin,'selectedBody':'0x1401a94c0'},'reviewScriptSha256':sha(Path(__file__).read_bytes()),'machineSha256':sha((H/'bounded_machine.py').read_bytes()),'nativeReplaySha256':sha((H/'native-replay.json').read_bytes())}
+    outputs={'instruction-results.json':encode({'scope':'Three original bodies interpreted, no call stubs or external memory reads.','cases':interpreted}),'body-checks.json':encode(independent),'review.json':encode(result)}
+    for name,data in outputs.items():
+        if args.write:(H/name).write_bytes(data)
+        else:ck((H/name).read_bytes()==data,'reproduced review '+name)
+    print(json.dumps({k:result[k] for k in ['status','checks','completeBodies','claimsReviewed','independentInstructionCases','independentInstructionSteps','supplementalNativeReplayCases','blockers']},indent=2))
+if __name__=='__main__':main()

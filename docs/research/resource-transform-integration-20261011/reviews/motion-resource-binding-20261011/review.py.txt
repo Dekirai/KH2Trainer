@@ -1,0 +1,226 @@
+"""Independent bounded review. Writes only this review folder; no IDA/game use."""
+from pathlib import Path
+import json, hashlib, struct, importlib.util, sys, subprocess, random
+from capstone import Cs, CS_ARCH_X86, CS_MODE_64
+from capstone.x86_const import X86_OP_IMM, X86_OP_MEM
+sys.dont_write_bytecode=True
+H=Path(__file__).resolve().parent
+R=next(p for p in H.parents if (p/'src/KH2Trainer.Core').is_dir())
+S=R/'artifacts/motion-resource-binding-20261011'
+EXPECTED='a08b49891738bf8281a7a0fc1f41dc8cd7e0718d5351cda6a1c4e75a234d668b'
+BASE=0x140000000
+load=lambda p:json.loads(p.read_text(encoding='utf-8-sig'))
+sha=lambda b:hashlib.sha256(b).hexdigest()
+checks=0
+def need(ok,why):
+ global checks
+ checks+=1
+ if not ok:raise AssertionError(why)
+def module(name,path):
+ s=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
+def pin_tree(folder,manifest):
+ entries=manifest['files']
+ if isinstance(entries,dict):entries=[dict(v,path=k) for k,v in entries.items()]
+ actual={p.relative_to(folder).as_posix() for p in folder.rglob('*') if p.is_file() and p.name!='manifest.json'}
+ need(actual=={x['path'] for x in entries},'exact file membership '+str(folder))
+ for row in entries:
+  p=folder/row['path'];b=p.read_bytes();need(sha(b)==row['sha256'],'file pin '+str(p))
+  if 'bytes' in row:need(len(b)==row['bytes'],'file size '+str(p))
+need(sha((S/'manifest.json').read_bytes())==EXPECTED,'author final pin')
+pin_tree(S,load(S/'manifest.json'))
+for p in load(S/'dependencies.json')['files']:
+ path=R/p['path'];need(sha(path.read_bytes())==p['sha256'],'dependency pin')
+ if p.get('manifest'):pin_tree(path.parent,load(path))
+original=Path(r'E:\SteamLibrary\steamapps\common\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-\KINGDOM HEARTS II FINAL MIX.exe').read_bytes()
+need(sha(original)=='9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed','original hash')
+p=struct.unpack_from('<I',original,60)[0];o=p+24
+need(original[p:p+4]==b'PE\0\0','PE signature')
+n=struct.unpack_from('<H',original,p+6)[0];z=struct.unpack_from('<H',original,p+20)[0]
+need(struct.unpack_from('<Q',original,o+24)[0]==BASE,'PE image base')
+sections=[struct.unpack_from('<4I',original,o+z+40*k+8) for k in range(n)]
+def read(a,n):
+ r=a-BASE;spans=[(fo+r-va,rs-(r-va)) for vs,va,rs,fo in sections if va<=r and r+n<=va+rs]
+ need(len(spans)==1 and n>=0,'single file-backed original span')
+ return original[spans[0][0]:spans[0][0]+n]
+e=load(S/'evidence.json');fs=e['functions'];by={int(f['addr'],16):f for f in fs}
+cs=Cs(CS_ARCH_X86,CS_MODE_64);cs.detail=True
+allins={};fnins={};counts={'bodies':len(fs),'instructions':0,'extentBytes':0,'noninstructionBytes':0,'asmPages':0}
+for f in fs:
+ a=int(f['addr'],16);b=bytes.fromhex(f['originalBytes'])
+ need(len(b)==f['size'] and b==read(a,len(b)) and sha(b)==f['sha256'],'complete original body '+f['addr'])
+ joined=[]
+ for index,page in enumerate(f['pages']):
+  raw=load(S/page['capturePath'])['structuredContent']
+  need({k:v for k,v in page.items() if k not in ('offset','capturePath')}==raw,'exact raw ASM transport')
+  need(page['offset']==len(joined),'page offset')
+  need(page['instruction_count']==len(page['asm']['lines']),'page count')
+  joined+=page['asm']['lines'];counts['asmPages']+=1
+  need(page['cursor']==({'done':True} if index==len(f['pages'])-1 else {'next':len(joined)}),'complete page cursor')
+ need(joined==f['disassembly']['asm']['lines'],'aggregate ASM join')
+ need(len(joined)==f['disassembly']['instruction_count']==f['disassembly']['total_instructions'],'aggregate counts')
+ need(all(p['total_instructions']==len(joined) for p in f['pages']),'page totals')
+ covered=set();fnins[a]={}
+ need(len(joined)==len(f['independentDecode']),'decode row count')
+ for row,claimed in zip(joined,f['independentDecode']):
+  pc=int(row['addr'],16);need(a<=pc<a+len(b),'instruction start in body')
+  i=next(cs.disasm(read(pc,min(15,a+len(b)-pc)),pc,count=1))
+  span=set(range(pc,pc+i.size));need(not (covered&span),'no duplicate instruction bytes');covered|=span
+  need(claimed=={'addr':hex(pc),'size':i.size,'bytes':i.bytes.hex(' '),'mnemonic':i.mnemonic,'operands':i.op_str},'independent decode from PE')
+  allins[pc]=i;fnins[a][pc]=i
+  # IDA mnemonic aliases are allowed; bytes and complete per-instruction boundaries are authoritative.
+ gaps=set()
+ for gap in f['noninstructionSpans']:
+  start=int(gap['addr'],16);raw=bytes.fromhex(gap['bytes'])
+  need(len(raw)==gap['size'] and read(start,len(raw))==raw,'explicit noninstruction span')
+  need(not(gaps&set(range(start,start+len(raw)))),'disjoint gaps');gaps.update(range(start,start+len(raw)))
+ need(not(covered&gaps) and covered|gaps==set(range(a,a+len(b))),'exact instruction/data partition')
+ ps=f['pseudocode'];need(ps['cursor']=={'done':True} and ps['line_count']==ps['total_lines']==len(ps['code'].splitlines()),'complete pseudocode')
+ raw=load(S/'raw'/('decompile-'+hex(a).upper().replace('0X','0x')+'-0.json'))['structuredContent']
+ need(raw==ps,'exact raw pseudocode transport')
+ counts['instructions']+=len(joined);counts['extentBytes']+=len(b);counts['noninstructionBytes']+=len(gaps)
+need(counts=={'bodies':57,'instructions':3709,'extentBytes':15587,'noninstructionBytes':165,'asmPages':61},'reported complete capture totals')
+parser=module('independent_existing_parser',R/'scripts/update-analysis-coverage.py')
+report=load(S/'report.json');refs=[]
+for claim in report['claims']:
+ need(int(claim['addr'],16) in by and bool(claim['Finding']) and bool(claim['Limitations']),'canonical bounded claim')
+ for reference in claim['Evidence']:
+  r=parser.resolve_reference(S/'report.json',reference);need(r['status']=='exists','existing parser reference '+reference);refs.append(r)
+for f in fs:
+ ok,addrs,why=parser.body_assembly(f);need(ok,'existing parser ASM '+f['addr']+' '+str(why))
+ spans=parser.original_spans(f);need(len(spans)==1 and spans[0][1]==read(spans[0][0],f['size']),'existing parser original span')
+
+# Independent control-flow checks. Calls are opaque returning nodes; exceptions,
+# callee reentrancy and the actual game scheduler are outside this local graph.
+def graph(entry):
+ ins=fnins[BASE+entry];g={pc:set() for pc in ins}
+ for pc,i in ins.items():
+  nxt=pc+i.size
+  if i.mnemonic.startswith('ret'):continue
+  if i.mnemonic=='jmp':
+   if i.operands[0].type==X86_OP_IMM and i.operands[0].imm in ins:g[pc].add(i.operands[0].imm)
+  elif i.mnemonic.startswith('j'):
+   need(i.operands[0].type==X86_OP_IMM,'known conditional edge')
+   if i.operands[0].imm in ins:g[pc].add(i.operands[0].imm)
+   if nxt in ins:g[pc].add(nxt)
+  elif nxt in ins:g[pc].add(nxt)
+ return g
+def reachable(g,start,goal,removed=None):
+ pending=[start];seen=set()
+ while pending:
+  pc=pending.pop()
+  if pc==removed or pc in seen:continue
+  if pc==goal:return True
+  seen.add(pc);pending+=list(g.get(pc,()))
+ return False
+dominance=[]
+for entry,earlier,later,meaning in [
+ (0x3c8a40,0x3c8a9c,0x3c8aff,'cleanup call before Motion publication'),
+ (0x3c8a40,0x3c8aff,0x3c8b09,'Motion publication before virtual duration'),
+ (0x3c8a40,0x3c8aff,0x3c8bd3,'Motion publication before optional bounds'),
+ (0x3c8a40,0x3c8aff,0x3c8ca6,'Motion publication before optional pose helper'),
+ (0x3c8cd0,0x3c8d0d,0x3c8d5b,'normal root context store before bind'),
+ (0x3c8cd0,0x3c8d14,0x3c8d5b,'normal auxiliary context clear before bind'),
+ (0x3c8cd0,0x3c8d1b,0x3c8d5b,'normal alternate BAR clear before bind'),
+ (0x3c65e0,0x3c66d2,0x3c6708,'tagged root context store before bind'),
+ (0x3c65e0,0x3c66de,0x3c6708,'tagged source context store before bind'),
+ (0x3c65e0,0x3c66e5,0x3c6708,'tagged alternate BAR clear before bind'),
+ (0x3c65e0,0x3c6708,0x3c6733,'borrowed counter acquisition after binding'),
+ (0x3c65e0,0x3c6698,0x3c66a5,'failed selection cleans up before Motion clear'),
+ (0x3c7300,0x3c7384,0x3c73a2,'cleanup list-tail clear before callback'),
+ (0x3c7300,0x3c738b,0x3c73a2,'cleanup list-head clear before callback')]:
+  g=graph(entry);start=BASE+entry;u=BASE+earlier;v=BASE+later
+  need(reachable(g,start,v) and not reachable(g,start,v,u),'local dominator '+meaning)
+  dominance.append({'function':hex(start),'dominator':hex(u),'consumer':hex(v),'meaning':meaning})
+g=graph(0x3c7300)
+need(reachable(g,BASE+0x3c7325,BASE+0x3c73a2),'conditional counter decrement can precede cleanup callback')
+need(not reachable(g,BASE+0x3c73a2,BASE+0x3c7325),'no local edge from callback back to counter decrement')
+
+# Read actual switch-selector and jump cells from the PE; labels do not decide cases.
+switches=[]
+for selectorInsn,jumpInsn,count,default,expectedCases in [
+ (0x3a6916,0x3a691f,46,0x3a6982,{1:0x3a692c,17:0x3a692c,20:0x3a692c,30:0x3a692c,46:0x3a692c,4:0x3a6936,7:0x3a6940,9:0x3a6952,8:0x3a695c,18:0x3a6966,24:0x3a6970,29:0x3a697a}),
+ (0x3a6acf,0x3a6ad8,48,0x3a6b57,{1:0x3a6ae5,17:0x3a6ae5,20:0x3a6ae5,30:0x3a6ae5,46:0x3a6ae5,4:0x3a6af2,7:0x3a6b03,18:0x3a6b0d,24:0x3a6b17,29:0x3a6b21,34:0x3a6b2b,48:0x3a6b2b})]:
+  selector=allins[BASE+selectorInsn].operands[1].mem.disp
+  jump=allins[BASE+jumpInsn].operands[1].mem.disp
+  for kind in range(1,count+1):
+   index=read(BASE+selector+kind-1,1)[0]
+   target=struct.unpack('<I',read(BASE+jump+index*4,4))[0]
+   need(target==expectedCases.get(kind,default),'BAR switch kind '+str(kind))
+   switches.append({'selector':hex(BASE+selector),'kind':kind,'target':hex(BASE+target)})
+
+# Additional direct instruction anchors from important writer/alias paths.
+anchors=[]
+for rva,mnemonic,operands,meaning in [
+ (0x1d262c,'movzx','edx, word ptr [r8 + 0x12]','unsigned upper count input'),
+ (0x1d2631,'movzx','eax, word ptr [r8 + 0x10]','unsigned lower count input'),
+ (0x1d263a,'sub','edx, eax','32-bit difference, no uint16 truncation'),
+ (0x3c8460,'mov','qword ptr [rcx], rdx','primary bank direct setter'),
+ (0x3c7c40,'mov','qword ptr [rcx + 8], rdx','override direct setter'),
+ (0x3c8f10,'mov','qword ptr [rcx + 8], 0','override clear'),
+ (0x3c6d73,'lea','rax, [rcx + 0x5b8]','borrowed source Actor counter address'),
+ (0x3d9408,'lea','r9, [rbx + 0x50]','alternate source counter address differs'),
+ (0x3c697b,'call','rax','queued callback'),
+ (0x3c69c4,'call','0x1403c64a0','queued alternate selection'),
+ (0x3c69f1,'call','0x1403c88c0','queued normal selection'),
+ (0x39cc89,'inc','word ptr [rbx + 2]','cache reference is WORD'),
+ (0x39da41,'mov','ecx, 0xffff','cache release delta is low16 minus one'),
+ (0x39da46,'add','word ptr [rax + 2], cx','cache release is modulo WORD decrement'),
+ (0x39ea32,'mov','qword ptr [rax + 0x50], rdi','child descriptor rounded extent'),
+ (0x39ea6c,'mov','qword ptr [rbx + 0x60], rax','child previous base is decoded subentry'),
+ (0x39ea70,'mov','qword ptr [rbx + 0x58], rax','child destination aliases same subentry'),
+ (0x39ea74,'mov','dword ptr [rbx + 0x48], 0x2710','child special category10000'),
+ (0x39e794,'call','0x1403a62b0','unfix before relocation copying'),
+ (0x39e87f,'call','0x1403a6120','refix after relocation copying')]:
+  i=allins[BASE+rva];need((i.mnemonic,i.op_str)==(mnemonic,operands),'original anchor '+meaning)
+  anchors.append({'addr':hex(i.address),'bytes':i.bytes.hex(' '),'instruction':i.mnemonic+' '+i.op_str,'meaning':meaning})
+
+# Differential testing of the author's explicitly proposed policy only.
+# Independent reference uses subtraction/remaining lengths instead of sum endpoints.
+policy=module('reviewed_span_policy',S/'model.py');U=(1<<64)-1
+def contained(base,extent,point,size):
+ if any(type(x) is not int or x<0 or x>U for x in (base,extent,point,size)):return False
+ if extent==0 or extent>U-base or point<base:return False
+ delta=point-base
+ return delta<=extent and size<=extent-delta
+def expected_payload(values):
+ b,n,nested,nl,motion,ml,payload=values
+ if not contained(b,n,nested,nl) or not contained(nested,nl,motion,ml):return None
+ if ml<144 or payload!=motion+144:return None
+ return payload,ml-144
+rng=random.Random(0x20261011);policyCases=0;accepted=0;examples=[]
+for i in range(12000):
+ b=rng.choice([0,0x1000,0x140000000,U-4096,U-128,-1,U+1])
+ n=rng.choice([0,1,127,128,143,144,145,512,4096,-1,U])
+ nested=b+rng.choice([-1,0,1,127,128,512,n])
+ nl=rng.choice([0,1,128,144,512,4096,-1])
+ motion=nested+rng.choice([-1,0,1,16,128,nl])
+ ml=rng.choice([0,1,143,144,145,256,512,nl,-1])
+ payload=motion+rng.choice([0,143,144,145])
+ values=(b,n,nested,nl,motion,ml,payload);expected=expected_payload(values)
+ need(policy.payload(*values)==expected,'independent interval oracle')
+ policyCases+=1;accepted+=expected is not None
+ if i<12 or (expected is not None and len(examples)<24):examples.append({'input':values,'expected':expected})
+need(accepted>0,'differential suite includes admitted policy cases')
+
+# Author reproduction is a separate check and gets no independent-check credit.
+run=subprocess.run([sys.executable,'-B',str(S/'verify.py')],cwd=R,text=True,capture_output=True)
+need(run.returncode==0,'author reproduction '+run.stderr)
+author=json.loads(run.stdout)
+need(sha((S/'manifest.json').read_bytes())==EXPECTED,'author manifest unchanged after review')
+pin_tree(S,load(S/'manifest.json'))
+result={'status':'ACCEPTED_BOUNDED_STATIC_STUDY','studyManifestSha256':EXPECTED,'openBlockers':[],
+ 'counts':dict(counts,independentChecks=checks,resolvedReferences=len(refs),manuallyReviewedClaims=len(report['claims']),controlFlowDominancePairs=len(dominance),originalSwitchCases=len(switches),extraOriginalAnchors=len(anchors),policyDifferentialCases=policyCases,policyAdmittedCases=accepted),
+ 'sourcePins':{'evidence':sha((S/'evidence.json').read_bytes()),'report':sha((S/'report.json').read_bytes()),'reportMarkdown':sha((S/'report.md').read_bytes()),'coverageParser':sha((R/'scripts/update-analysis-coverage.py').read_bytes())},
+ 'findings':['Cache+80 is a native rounded layout/copy extent. Child descriptors can point into parent bytes; current pointer/state equality alone does not establish an owned allocation.',
+ 'Outer reservation plus nested BAR and exact type9 entry extent is a coherent bounded-copy proposal only with the stated observed history, checked nesting and pre-change revocation.',
+ 'Caller root-context stores precede 3C8A40, and its Motion consumers precede return. Observing only the bind return is too late for the shown paths.',
+ 'C+432 is a caller-provided DWORD reference, with distinct source Actor/source-object origins. Release/rebind can restore both pointer and count values; neither is a generation.',
+ 'BAR release kind 9 routes to the original switch default, independently decoded from PE cells. This local absence does not establish persistent backing memory.',
+ 'The Prototype0 count inputs are zero-extended WORDs; subtraction is 32-bit. The phrase unsigned-short difference describes input fields, not a 16-bit wrapped result.'],
+ 'authorReproduction':author,'limits':['No installed observer, detour ABI, live allocation, game execution, whole-binary writer coverage, race freedom or Tiny/Giant product approval.',
+ 'Control-flow checks summarize returning callees; exceptions, reentrant mutations and scheduler ordering remain outside those graphs.',
+ 'The 12000 differential cases test the stated policy model only. They do not execute native code or validate a product implementation.',
+ 'Fresh capture is not global novelty. IDA auto_analysis_ready=false remains disclosed; exact original byte and transport checks pass.']}
+for name,data in [('review.json',result),('details.json',{'controlFlow':dominance,'originalSwitchCases':switches,'anchors':anchors,'policyExamples':examples})]:
+ (H/name).write_text(json.dumps(data,indent=2)+'\n',encoding='utf-8')
+print(json.dumps({'status':result['status'],'counts':result['counts'],'openBlockers':[]}))

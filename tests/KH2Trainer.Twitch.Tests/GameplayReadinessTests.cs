@@ -128,7 +128,7 @@ internal static class GameplayReadinessTests
             missing.Game.Values.Remove(map.Get("display.brightness_preview").ValueSlot); await missing.End("flashbang");
             check(missing.Game.Count("display.brightness_preview") == 1 && missing.Engine.PendingCleanupCount == 1,
                 "restore: missing readback is not permission to overwrite");
-            missing.Game.Set("display.brightness_preview", 50); await missing.Tick(1);
+            missing.Game.Set("display.brightness_preview", 5000); await missing.Tick(1);
             check(missing.Game.Get("display.brightness_preview") == 0, "restore: readback recovery allows the pending restore");
         }
         {
@@ -174,8 +174,9 @@ internal static class GameplayReadinessTests
         {
             var h = new Harness(features); h.Game.DriveSteps = 9; h.Redeem("final"); await h.Tick();
             h.Game.SceneReady = false; int count = h.Game.Commands.Count; await h.End("final");
-            check(h.Game.Commands.Skip(count).Select(c => c.Feature).SequenceEqual(["drive.cancel"]) && h.Sink.IsRefunded("a"),
-                "Drive: loading permits only pending-queue cancellation, with immediate refund");
+            check(h.Game.Commands.Skip(count).Select(c => c.Feature).SequenceEqual(["drive.revert_lock", "drive.cancel"]) &&
+                h.Game.Commands[count].Arguments[0] == 0 && h.Sink.IsRefunded("a"),
+                "Drive: loading permits owner release and pending-queue cancellation, with immediate refund");
             await h.Observe(5); h.Game.SceneReady = true; await h.Tick(1); await h.Tick(1);
             check(h.Game.Count("drive.cancel") == 1 && h.Game.Count("drive.revert") == 0 && h.Sink.Refunded.Count == 1 && h.Game.Get("combat.formtimer") == 0,
                 "Drive: deferred value cleanup neither cancels twice nor charges a failed transformation");

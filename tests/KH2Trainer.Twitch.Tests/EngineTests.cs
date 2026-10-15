@@ -478,7 +478,7 @@ internal static class EngineTests
             var h = Create(features);
             h.Engine.Submit(new Redemption("t", "flashbang", "Test", "", h.Clock.Now, IsTest: true));
             await h.TickAsync();
-            check(h.IsActive("flashbang") && h.Game.Get("display.brightness_preview") == 50, "test runs start the effect");
+            check(h.IsActive("flashbang") && h.Game.Get("display.brightness_preview") == 5000, "test runs start the effect");
             await h.TickAsync(9);
             check(h.Game.Get("display.brightness_preview") == 0 && h.Game.Count("display.restore_loaded") == 0, "test runs restore brightness without changing the color filter");
         }

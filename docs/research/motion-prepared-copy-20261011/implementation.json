@@ -1,0 +1,59 @@
+{
+  "status": "PASS",
+  "kind": "Coordinator source review and exact stored-evidence integration",
+  "sourcePins": [
+    {
+      "path": "src/KH2Trainer.Bridge/MotionPayloadCopy.h",
+      "sha256": "245ab6c1703228b7c714aa4a5187bba966fd627d9f407b284a408722b0310fb4",
+      "bytes": 16688,
+      "snapshot": "sources/MotionPayloadCopy.h"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/MotionPayloadCopyTests.cpp",
+      "sha256": "e881a908f4d24357b32bb98a7b89e42c3438685b2fff9d745170cf4f50b34ef5",
+      "bytes": 29185,
+      "snapshot": "sources/MotionPayloadCopyTests.cpp"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/run-tests.ps1",
+      "sha256": "451ee403ff84816541469290e8a02f7226e926e8d33f3829130036c8414edb47",
+      "bytes": 8194,
+      "snapshot": "sources/run-tests.ps1"
+    }
+  ],
+  "testReport": {
+    "path": "artifacts/motion-prepared-copy-tests-20261011/report.json",
+    "sha256": "166fd201b9898f0d2729a9f9533093d8e9913cb210320a74c9f32eecdf070961",
+    "bytes": 4984
+  },
+  "testManifest": {
+    "path": "artifacts/motion-prepared-copy-tests-20261011/manifest.json",
+    "sha256": "3331b9a6a8bafa031594e008e2394e722cf1a7637bfba84a2539b7365202ba26",
+    "bytes": 1328
+  },
+  "reviewedBehavior": [
+    "Prepare allocates both private buffers outside the required held source interval.",
+    "Copy makes no vector capacity/size change or allocation/free; failed calls clear publication metadata.",
+    "Failed TakeResult preserves prepared buffers; successful TakeResult consumes payload storage and prevents further Copy until Prepare.",
+    "The verified ordinary bit80 profile is admitted; bit40 and combined C0 remain outside policy.",
+    "ReadScope remains a trusted caller boundary, not a live synchronization implementation."
+  ],
+  "bindingCounterexample": {
+    "source": {
+      "path": "docs/research/motion-resource-binding-20261011/raw/disasm-0x1403C88C0-0.json",
+      "sha256": "f4d73755ef3ec5eaf613b5927e96be23d7e8e2f6317563f1a4f8f6a2ede38b80",
+      "bytes": 26392
+    },
+    "interpretation": "Existing complete body has call3C8CD0 at3C8A08 followed by successful-path controller+40 store at3C8A11; normal-callee After alone does not close caller writes.",
+    "freshIdaCapture": false
+  },
+  "newReleaseBuilt": false,
+  "runtimeConsumerInstalled": false,
+  "liveGame": false,
+  "limits": [
+    "Coordinator review is not an independent review of its own header edits.",
+    "Targeted tests were authored/run by the separate reviewer; current integration verifies stored results and exact pins.",
+    "No OS gate, native resource provider, bootstrap proof, worker coordination or frame-time guarantee is implemented.",
+    "The previous Core handoff used the initial copier and is not claimed as a rerun of this refactor."
+  ]
+}

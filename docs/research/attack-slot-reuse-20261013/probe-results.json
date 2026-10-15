@@ -1,0 +1,90 @@
+{
+  "kind": "Original local bodies with explicit opaque native-helper fixtures; staged calls, not game execution",
+  "caseCount": 5,
+  "cases": [
+    {
+      "case": "parameter_change",
+      "replacement": true,
+      "oldMarked": true,
+      "cellAfterManager": "0x230000",
+      "oldCellPointer": "0x200c20",
+      "callerSuppliedLaterDestructor": true,
+      "newCellPointer": "0x200c20",
+      "cellAfterOldDestructor": "0x0",
+      "newObjectStillAllocatedInFixture": true,
+      "events": [
+        "allocate_new",
+        "opaque_base_constructor",
+        "opaque_common_cleanup_after_observed_zero",
+        "opaque_free"
+      ],
+      "steps": 219
+    },
+    {
+      "case": "tag_change",
+      "replacement": true,
+      "oldMarked": true,
+      "cellAfterManager": "0x230000",
+      "oldCellPointer": "0x200c20",
+      "callerSuppliedLaterDestructor": true,
+      "newCellPointer": "0x200c20",
+      "cellAfterOldDestructor": "0x0",
+      "newObjectStillAllocatedInFixture": true,
+      "events": [
+        "allocate_new",
+        "opaque_base_constructor",
+        "opaque_common_cleanup_after_observed_zero",
+        "opaque_free"
+      ],
+      "steps": 221
+    },
+    {
+      "case": "same_parameters",
+      "replacement": false,
+      "oldMarked": false,
+      "cellAfterManager": "0x220000",
+      "oldCellPointer": "0x200c20",
+      "callerSuppliedLaterDestructor": false,
+      "events": [],
+      "steps": 58
+    },
+    {
+      "case": "inactive_marking",
+      "replacement": true,
+      "oldMarked": false,
+      "cellAfterManager": "0x230000",
+      "oldCellPointer": "0x200c20",
+      "callerSuppliedLaterDestructor": false,
+      "newCellPointer": "0x200c20",
+      "events": [
+        "allocate_new",
+        "opaque_base_constructor"
+      ],
+      "steps": 185
+    },
+    {
+      "case": "missing_contact_membership",
+      "replacement": true,
+      "oldMarked": false,
+      "cellAfterManager": "0x230000",
+      "oldCellPointer": "0x200c20",
+      "callerSuppliedLaterDestructor": false,
+      "newCellPointer": "0x200c20",
+      "events": [
+        "allocate_new",
+        "opaque_base_constructor"
+      ],
+      "steps": 203
+    }
+  ],
+  "steps": 886,
+  "distinctInstructions": 223,
+  "limits": [
+    "The manager, mark helper, derived constructor and old deleting wrapper execute decoded original instructions. No branch replacing their local slot stores is modeled.",
+    "Common constructor and common cleanup are opaque stubs. They do not establish native registration, unlinking, refcounts or all side effects.",
+    "Ptr32 mapping and successful allocation are fixture inputs; all synthetic object/cell memory is supplied and remains allocated.",
+    "Two later old-destructor calls are explicitly supplied by the fixture; the contact scheduler/caller sequence is not executed.",
+    "No asynchronous mutation, reentrancy, external-helper writes, caller-save clobbering, exception or lifetime/concurrency behavior is modeled.",
+    "A cleared new registration in this fixture is not a reachable game bug, memory leak or use-after-free proof."
+  ]
+}

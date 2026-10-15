@@ -1,0 +1,40 @@
+# Unabhängiger Review: Motion-Ressourcenbindung
+
+**Im begrenzten statischen Umfang akzeptiert. Keine offenen Blocker.**
+
+Geprüfter Autorenstand: `artifacts/motion-resource-binding-20261011`, Manifest SHA256 `a08b49891738bf8281a7a0fc1f41dc8cd7e0718d5351cda6a1c4e75a234d668b`. Autorendateien wurden nicht verändert.
+
+## Wesentliche Befunde
+
+- Cache+80 ist der gerundete Umfang, den die untersuchten nativen Pfade für Platzvergabe und Kopieren verwenden. Er ersetzt keine belegte Reservierungshistorie: Die Containeraufteilung kann Deskriptoren auf Unterbereiche eines Elternpuffers setzen. Pointergleichheit und Zustand3 reichen deshalb nicht aus.
+- Die Kombination aus zugelassenem äußerem Cachebereich, vollständig begrenzten verschachtelten BAR-Einträgen und der tatsächlichen Type-9-Entrylänge ist als Vorschlag für eine begrenzte Payloadkopie schlüssig. Der Bericht nennt Beobachtung, Ära, Grenzen und Widerruf vor Änderungen als Voraussetzungen. Eine solche Produktimplementierung wurde hier nicht geprüft.
+- Die Kontextstores in 3C8CD0 und im erfolgreichen 3C65E0-Pfad liegen vor 3C8A40. Innerhalb 3C8A40 liegen Duration, optionale Bounds und Posevorbereitung vor dem Return. Ein Beobachter erst am Bindungsreturn würde diese Verbraucher verpassen.
+- C+432 ist ein übergebener DWORD-Zähler. Die belegten Ursprünge unterscheiden sich zwischen Quell-Actor+1464 und Quellobjekt+80. Identischer Pointer und identischer Zählerstand können eine zwischenzeitliche Freigabe und Neubindung verdecken.
+- Type9 hat im untersuchten BAR-Release-Switch keinen eigenen Fall. Die Originaltabellen bestätigen den Default-Zweig. Daraus folgt keine dauerhafte Gültigkeit der Payloadbytes.
+
+Die kleine Formulierungsgrenze bei Prototype0 ist im Receipt präzisiert: Zwei WORD-Eingaben werden nullerweitert; ihre Differenz wird in EDX berechnet. Es handelt sich nicht um eine anschließende 16-Bit-Trunkierung. Der Autor behauptet diese Trunkierung auch nicht.
+
+## Unabhängige Prüfung
+
+29.101 Prüfungen bestanden:
+
+- 57 vollständige Funktionsbereiche, 61 ASM-Seiten, 3.709 Instruktionen und 15.587 Originalbytes; 165 Nichtinstruktionsbytes ausdrücklich separat.
+- Alle Manifest- und Abhängigkeitspins, rohe ASM-/Pseudocodeantworten, Seitenübergänge und der exakte Bytebereich gegen die Original-EXE geprüft.
+- 67 Referenzen mit dem unveränderten Coverageparser aufgelöst; alle 57 ASM-/Originalbyteobjekte werden von dessen bestehenden Helfern akzeptiert.
+- 30 enge Claims anhand ihrer relevanten ASM-/Datenpfade gelesen. 14 konkrete Reihenfolgen mit unabhängigen Kontrollflussgraphen überprüft; zwei weitere Erreichbarkeitsprüfungen trennen bedingtes Zählerrelease und Callback.
+- 94 BAR-Switchfälle aus den ursprünglichen Selector- und Sprungtabellen bestimmt; 20 zusätzliche Instruktionsanker geprüft.
+- 12.000 deterministische Differentialfälle vergleichen das vorgeschlagene Spanmodell mit einer unabhängig formulierten Intervallprüfung; darunter 15 zulässige Fälle. Das sind Modelltests, keine Ausführung der Originalfunktionen.
+- Der unveränderte Autorenverifier reproduziert seinen eigenen Stand separat erfolgreich. Seine 19 Anker und zwölf Policyfälle werden nicht nochmals als unabhängige Tests gezählt.
+
+Die Kontrollflussgraphen behandeln Calls als opake, zurückkehrende Schritte. Sie beweisen keine Reentranzfreiheit, Ausnahmesemantik oder Schedulerreihenfolge. Die falsche Annahme, ein bloßer Revisionwechsel könne bereits angewendete Skalierung gefahrlos bestehen lassen, wird im Autorenbericht ausdrücklich ausgeschlossen.
+
+## Grenzen und Reproduktion
+
+Dies ist keine Freigabe für Tiny/Giant, installierte Hooks, Observer-ABI, Laufzeitidentität, Gesamtheit aller Writer, Nebenläufigkeit oder eine vollständige Spielanalyse. Die dokumentierte IDA-Grenze `auto_analysis_ready=false` bleibt bestehen. Es gab keine Liveaktion, keine neue IDA-Abfrage und keine Produkt-, Docs- oder Paketänderung.
+
+```powershell
+py -3 -B artifacts/review-motion-resource-binding-20261011/review.py
+py -3 -B artifacts/review-motion-resource-binding-20261011/check-manifest.py
+```
+
+`review.py` schreibt nur die beiden abgeleiteten Reviewergebnisse im eigenen Reviewordner. Das Autorenmanifest wird vor und nach der Prüfung erneut kontrolliert.

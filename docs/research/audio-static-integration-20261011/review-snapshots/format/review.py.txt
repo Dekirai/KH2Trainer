@@ -1,0 +1,245 @@
+"""Independent bounded review; writes only this reviewer artifact directory."""
+import collections, hashlib, json, random, runpy, struct, sys
+from pathlib import Path
+from capstone import Cs, CS_ARCH_X86, CS_MODE_64
+from capstone.x86 import X86_OP_REG, X86_OP_IMM, X86_OP_MEM
+sys.dont_write_bytecode=True
+HERE=Path(__file__).resolve().parent
+ROOT=next(p for p in HERE.parents if (p/'src/KH2Trainer.Core').is_dir())
+AUTHOR=ROOT/'artifacts/audio-bank-format-20261011'
+load=lambda p:json.loads(p.read_text(encoding='utf-8-sig'))
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+checks=collections.Counter()
+def check(ok,group,label):
+    checks[group]+=1
+    if not ok:raise AssertionError((group,label))
+
+manifest=load(AUTHOR/'manifest.json')['files']
+check(set(manifest)=={p.relative_to(AUTHOR).as_posix() for p in AUTHOR.rglob('*') if p.is_file() and p!=AUTHOR/'manifest.json'},'integrity','exact author file set')
+for name,pin in manifest.items():
+    p=AUTHOR/name
+    check(p.stat().st_size==pin['bytes'] and sha(p)==pin['sha256'],'integrity',name)
+raw=Path(r'E:\SteamLibrary\steamapps\common\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-\KINGDOM HEARTS II FINAL MIX.exe').read_bytes()
+check(hashlib.sha256(raw).hexdigest()=='9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed','original','PE hash')
+pe=struct.unpack_from('<I',raw,60)[0];base=struct.unpack_from('<Q',raw,pe+48)[0]
+table=pe+24+struct.unpack_from('<H',raw,pe+20)[0]
+sections=[struct.unpack_from('<4I',raw,table+40*i+8) for i in range(struct.unpack_from('<H',raw,pe+6)[0])]
+def pebytes(a,n):
+    r=a-base
+    hits=[(va,p) for vs,va,rs,p in sections if va<=r and r+n<=va+rs]
+    assert len(hits)==1,(hex(a),n)
+    va,p=hits[0];return raw[p+r-va:p+r-va+n]
+cs=Cs(CS_ARCH_X86,CS_MODE_64);cs.detail=True
+e=load(AUTHOR/'evidence.json');ins={};primary=0;fresh=0
+for filename in ['capture.json','capture-2.json','capture-3.json']:
+    for f in load(AUTHOR/filename)['functions']:
+        a=int(f['addr'],0);b=bytes(int(v,16) for v in f['idaBytes'].split());original=pebytes(a,f['size'])
+        check(b==original and len(b)==f['size'],'original',f['addr'])
+        pages=f['pages'];lines=[r for page in pages for r in page['asm']['lines']]
+        check(lines==f['disassembly']['asm']['lines'] and pages[-1]['cursor']=={'done':True},'capture',f['addr'])
+        aggregate=f['disassembly']
+        check(aggregate['cursor']=={'done':True} and aggregate['instruction_count']==aggregate['total_instructions']==len(lines),'capture','aggregate complete')
+        seen=set()
+        for row in lines:
+            p=int(row['addr'],16);d=next(cs.disasm(original[p-a:],p,count=1));bytes_=set(range(p,p+d.size))
+            check(a<=p<p+d.size<=a+f['size'] and not bytes_&seen,'decode','instruction span')
+            seen|=bytes_;ins[p]=d
+        missing=set(range(a,a+f['size']))-seen
+        check(not missing or missing==set(range(min(missing),a+f['size'])) and pebytes(min(missing),len(missing))==b'\xcc'*len(missing),'decode','only trailing CC padding')
+        saved=next(x for x in e['functions'] if int(x['addr'],0)==a)
+        check(bytes.fromhex(saved['originalBytes'])==original and saved['sha256']==hashlib.sha256(original).hexdigest(),'original','normalized evidence bytes/hash')
+        for row in saved['instructions']:
+            d=ins[int(row['addr'],0)]
+            check((d.mnemonic,d.op_str,d.bytes.hex(),d.size)==(row['mnemonic'],row['operands'],row['bytes'],row['size']),'decode','independent normalized instruction')
+        fresh+=1;primary+=len(b)
+check((fresh,len(ins),primary)==(20,989,3297),'capture','author fresh counts')
+deps=load(AUTHOR/'dependencies.json')['functions'];dep_decoded={}
+for d in deps:
+    f=d['function'];a=int(f['addr'],0);b=bytes.fromhex(f['originalBytes'])
+    check(pebytes(a,len(b))==b and hashlib.sha256(b).hexdigest()==f['sha256'],'dependency',f['addr'])
+    check(sha(ROOT/d['source'])==d['sourceSha256'],'dependency','source pin')
+    dep_decoded.update({i.address:i for i in cs.disasm(b,a)})
+check(len(deps)==6,'dependency','six explicit reused bodies')
+for address,pair in load(AUTHOR/'anchors.json').items():
+    d=ins[base+int(address,16)]
+    check([d.mnemonic,d.op_str]==pair,'anchor',address)
+
+def expect(rva,mnemonic,op):
+    d=ins[base+rva]
+    check((d.mnemonic,d.op_str)==(mnemonic,op),'manual-semantics',hex(base+rva))
+for rva,op in [(0x9FF15,'eax, dword ptr [rcx + rdx + 0xa0]'),(0x9FF60,'eax, dword ptr [rax + 4]')]:expect(rva,'mov',op)
+for rva in [0x9FF1C,0x9FF6B]:expect(rva,'cvtsi2ss','xmm0, rax')
+expect(0xB79D9,'movd','xmm0, r10d');expect(0xB79DE,'cvtdq2ps','xmm0, xmm0')
+expect(0x9FEF9,'xorps','xmm6, xmm6');expect(0x9FFBE,'maxss','xmm0, xmm6')
+expect(0xA0026,'mov','eax, 0x10624dd3');expect(0xA002B,'mul','edx');expect(0xA0032,'shr','edx, 6')
+expect(0xA467B,'test','al, 0xf5');expect(0xA467F,'cmp','cl, 0xa')
+expect(0x7C56E,'mov','rbx, 0xffffffffffffffff');expect(0x7C57E,'mov','r8, rbx')
+
+model=runpy.run_path(str(AUTHOR/'model.py'))
+def i32(v):return (v&0x7fffffff)-(v&0x80000000)
+def f32(v):return struct.unpack('<f',struct.pack('<f',v))[0]
+scale=struct.unpack('<f',pebytes(base+0x6239C4,4))[0]
+duration_examples=[]
+for n in [0,1,999,1000,0x7ffffffe,0x7fffffff,0x80000000,0xffffffff]:
+    unsigned=f32(f32(n)*scale);signed=f32(f32(i32(n))*scale)
+    check(unsigned>=0 and (signed<0)==bool(n&0x80000000),'float','unsigned metadata vs signed accumulator')
+    check(max(0.0,signed)>=0,'float','09FEE0 scanner maximum is initialized to zero')
+    duration_examples.append(dict(bits=hex(n),metadata=unsigned,scanner=signed,maximumWithZero=max(0.0,signed)))
+rng=random.Random(0xB78F0)
+for n in [0,1,999,1000,0xffffffff,0x80000000]+[rng.randrange(2**32) for _ in range(4096)]:
+    quotient=((n*0x10624dd3)>>32)>>6;remainder=(n-quotient*1000)&0xffffffff
+    check(remainder==n%1000,'unsigned-modulo','decoded multiply-high/shift calculation')
+    ids=[295,999,5,5,0]
+    expected=next((j for j,x in enumerate(ids) if x==remainder),None)
+    check(model['first_id'](ids,n)==expected,'first-match','duplicate and UINT32 behavior')
+for kind in range(256):
+    # Follow the two actual x86 branches independently of the author's formula.
+    al=(kind-2)&255;branch=bool(al&0xF5)
+    shift=2 if branch or kind==10 else 3
+    check(1<<shift==model['stride'](kind)==(8 if kind in (2,4,12) else 4),'stride','all byte kinds')
+
+# Construct actual small synthetic byte layouts, then decode declared widths
+# independently. These declarations are not claims of whole-file validity.
+layout_cases=0
+for version,start in [(1,8),(2,16),(3,16),(4,32)]:
+    for mask in range(64):
+        lengths={'100':12,'400':9,'800':10,'8000':14,'2000':8,'extended':16}
+        data=bytearray(256);flags=0;pos=start;wanted={}
+        for bit,(flag,label,fmt,field) in enumerate([(0x100,'100','<I',0),(0x400,'400','B',0),(0x800,'800','B',1),(0x8000,'8000','<H',2),(0x2000,'2000','<H',2)]):
+            if mask&(1<<bit):
+                flags|=flag;wanted[label]=pos;struct.pack_into(fmt,data,pos+field,lengths[label]);pos+=lengths[label]
+        ext=bool(mask&32) and version==4
+        if ext:wanted['extended']=pos;struct.pack_into('<I',data,pos+4,lengths['extended']);pos+=lengths['extended']
+        wanted['entries']=pos
+        observed={};cursor=start
+        for flag,label,fmt,field in [(0x100,'100','<I',0),(0x400,'400','B',0),(0x800,'800','B',1),(0x8000,'8000','<H',2),(0x2000,'2000','<H',2)]:
+            if flags&flag:observed[label]=cursor;cursor=(cursor+struct.unpack_from(fmt,data,cursor+field)[0])&0xffffffff
+        if ext:observed['extended']=cursor;cursor=(cursor+struct.unpack_from('<I',data,cursor+4)[0])&0xffffffff
+        observed['entries']=cursor
+        check(observed==wanted==model['sequence_layout'](version,flags,int(bool(mask&32)),lengths),'layout','widths and order from bytes')
+        layout_cases+=1
+for start in [8,16,32]:
+    for length in [0,1,0x7fffffff,0xfffffff0,0xffffffff]:
+        native=(start+length)&0xffffffff
+        check(native==struct.unpack('<I',struct.pack('<I',(start+length)%2**32))[0],'layout-wrap','32-bit arithmetic')
+        if start+length>=2**32:check(native<start+length,'layout-wrap','wide viewer sum must not imitate native wrap')
+
+# A small integer interpreter for actual decoded B78F0 handler instructions.
+# It ends at the next dispatcher iteration. Data reads are synthetic/bounded.
+jumps=struct.unpack('<13I',pebytes(base+0xB79F0,52));classes=pebytes(base+0xB7A24,64)
+targets=[base+jumps[c] for c in classes]
+check(len(set(targets))==13,'dispatch','13 actual jump targets')
+for op,target in enumerate(targets):check(int(e['opcodeTargets'][op]['target'],0)==target,'dispatch','original table target')
+aliases={n:(r,32) for n,r in [('eax','rax'),('ecx','rcx'),('edx','rdx'),('r8d','r8'),('r9d','r9'),('r10d','r10')]}
+native_steps=0
+def native_step(data,cursor,acc):
+    global native_steps
+    def readmem(a,n):
+        p=a-0x10000000
+        if p<0 or p+n>len(data):raise ValueError('truncated')
+        return int.from_bytes(data[p:p+n],'little')
+    op=readmem(0x10000000+cursor,2)
+    post=i32(cursor+2)
+    if op>63:return dict(status='unknown',cursor=post,acc=acc)
+    regs={'r8':0x10000000,'rdx':post&0xffffffff,'r10':acc&0xffffffff};pc=targets[op];zero=False;sign=False;steps=0
+    def regread(n):
+        root,bits=aliases.get(n,(n,64));return regs.get(root,0)&((1<<bits)-1)
+    def write(n,value):
+        root,bits=aliases.get(n,(n,64));regs[root]=value&((1<<bits)-1)
+    def ea(i,o):
+        m=o.mem;return (regread(i.reg_name(m.base)) if m.base else 0)+(regread(i.reg_name(m.index))*m.scale if m.index else 0)+m.disp
+    def value(i,o):
+        if o.type==X86_OP_IMM:return o.imm
+        if o.type==X86_OP_REG:return regread(i.reg_name(o.reg))
+        return readmem(ea(i,o),o.size)
+    while True:
+        if pc in [base+0xB7910,base+0xB79D9,base+0xB79EA]:
+            native_steps+=steps
+            return dict(status={base+0xB7910:'continue',base+0xB79D9:'stop',base+0xB79EA:'unknown'}[pc],cursor=i32(regread('edx')),acc=i32(regread('r10d')))
+        i=ins[pc];pc+=i.size;steps+=1
+        if steps>1000:raise AssertionError('review model loop bound')
+        m=i.mnemonic;o=i.operands
+        if m=='nop':continue
+        if m=='jmp':pc=value(i,o[0]);continue
+        if m in ['jne','jle']:
+            if (not zero if m=='jne' else zero or sign):pc=value(i,o[0])
+            continue
+        if m=='test':
+            v=value(i,o[0])&value(i,o[1]);zero=v==0;sign=bool(v&(1<<(o[0].size*8-1)));continue
+        assert o[0].type==X86_OP_REG
+        name=i.reg_name(o[0].reg)
+        if m in ['mov','movzx']:v=value(i,o[1])
+        elif m in ['movsx','movsxd']:
+            v=value(i,o[1]);bits=o[1].size*8;v=(v&((1<<(bits-1))-1))-(v&(1<<(bits-1)))
+        elif m=='lea':v=ea(i,o[1])
+        elif m=='add':v=value(i,o[0])+value(i,o[1])
+        elif m=='sub':v=value(i,o[0])-value(i,o[1]);zero=(v&((1<<(o[0].size*8))-1))==0
+        else:raise AssertionError(('unmodeled',m))
+        write(name,v)
+
+scanner_cases=0
+for op in range(64):
+    for advance,count in [(-12,-1),(-2,0),(0,1),(2,0),(4,1),(10,2),(60,3)]:
+        data=bytearray(1024);cursor=128;p=cursor+2
+        struct.pack_into('<H',data,cursor,op)
+        t=targets[op]-base
+        if t==0xB798C:struct.pack_into('<I',data,p,(advance+count)&0xffffffff)
+        elif t==0xB79C9:struct.pack_into('<H',data,p,abs(advance))
+        elif t==0xB79B3:struct.pack_into('<H',data,p+2,abs(advance))
+        elif t in [0xB793A,0xB7950]:
+            struct.pack_into('<hh',data,p+2,advance,count)
+            if t==0xB7950 and count>0:
+                q=p+advance
+                for _ in range(count):struct.pack_into('<hh',data,q+2,4,1);q+=8
+        for acc in [0,1,0x7fffffff,-1,-0x80000000]:
+            observed=native_step(data,cursor,acc)
+            expected=model['scan_step'](data,cursor,acc,[x-base for x in targets])
+            check(observed==expected,'scanner-trace',(op,advance,count,acc))
+            scanner_cases+=1
+data=bytearray(16);struct.pack_into('<H',data,0,61);struct.pack_into('<hh',data,4,-2,0)
+check(native_step(data,0,0)==dict(status='continue',cursor=0,acc=0),'scanner-trace','native nonprogressing witness')
+data=bytearray(32);struct.pack_into('<H',data,10,61);struct.pack_into('<hh',data,14,-12,0)
+check(native_step(data,10,0)['cursor']==0,'scanner-trace','native backwards witness')
+
+# The exact ORIGIN literal is separately obtained from original file bytes.
+origin_sites=[0x36DAFC,0x36DB3D]
+for rva in origin_sites:
+    i=dep_decoded[base+rva];o=i.operands[1]
+    addr=i.address+i.size+o.mem.disp
+    check(pebytes(addr,7)==b'ORIGIN\0','origin','actual serializer format literal')
+for seed in range(16):
+    original=bytes((seed+i)%256 for i in range(48));wrapper=bytearray(original);wrapper[:7]=b'ORIGIN\0'
+    check(wrapper[7:12]==original[7:12],'origin','unwritten copied header bytes retained')
+name=b'abcdefghijklmnopqrstuvwxyzABCDEF';fileview=bytearray(48);fileview[16:48]=name
+runtime=bytearray(fileview);struct.pack_into('<Q',runtime,32,0x1234567812345678);struct.pack_into('<I',runtime,40,17)
+check(runtime[16:48]!=fileview[16:48] and len(name)==32,'origin','name region overlaps runtime fields; no implicit terminator')
+
+parser=runpy.run_path(str(ROOT/'scripts/update-analysis-coverage.py'))
+refs=[]
+for c in load(AUTHOR/'report.json')['claims']:
+    refs.extend(parser['resolve_reference'](AUTHOR/'report.json',x) for x in c['evidence'])
+bad=[r for r in refs if r['status']!='exists']
+coverage_bodies=[parser['body_assembly'](parser['normalize_body'](f))[0] for f in e['functions']]
+coverage_spans=[bool(parser['original_spans'](parser['normalize_body'](f))) for f in e['functions']]
+open_blockers=[]
+if bad:open_blockers.append(dict(kind='unsupported evidence references',count=len(bad),references=sorted(set(x['reference'] for x in bad))))
+if not all(coverage_bodies) or not all(coverage_spans):open_blockers.append(dict(kind='normalized evidence not admitted by current coverage parser',metadataBodies=sum(coverage_bodies),originalByteSpans=sum(coverage_spans)))
+nonportable=sorted(set(d['source'] for d in deps if not d['source'].startswith('docs/research/')))
+if nonportable:open_blockers.append(dict(kind='dependency source requires portable frozen docs destination',sources=nonportable))
+receipt=dict(status='ACCEPTED_BOUNDED_FORMAT_SEMANTICS_PENDING_INTEGRATION_FIXES' if open_blockers else 'ACCEPTED_BOUNDED_AUDIO_BANK_FORMAT_STUDY',
+    authorManifestSha256=sha(AUTHOR/'manifest.json'),openBlockers=open_blockers,checks=dict(checks),totalChecks=sum(checks.values()),
+    originalSha256=hashlib.sha256(raw).hexdigest(),freshFunctions=20,freshInstructions=989,freshBytes=3297,reusedBodies=6,
+    independentModels=dict(scannerCases=scanner_cases+2,decodedHandlerInstructionsInterpreted=native_steps,byteLayoutCases=layout_cases,unsignedModuloCases=4102,strideCases=256),
+    durationExamples=duration_examples,sourcePins={p.relative_to(ROOT).as_posix():sha(p) for p in sorted(AUTHOR.iterdir()) if p.is_file()},
+    coverageIntegration=dict(resolvedReferences=len(refs)-len(bad),totalReferences=len(refs),completeBodies=sum(coverage_bodies),originalByteSpans=sum(coverage_spans),parserSha256=sha(ROOT/'scripts/update-analysis-coverage.py')),
+    dependencySources=sorted(set(d['source'] for d in deps)),
+    reviewerScriptSha256=sha(Path(__file__)),manualFindings=['EAX metadata loads zero-extend before signed64 conversion, unlike signed32 CVTDQ2PS of the scanner accumulator.',
+    '09FEE0 initializes its fallback maximum to zero; negative scanner values do not become a negative reported maximum.',
+    'Unsigned ID modulo and first-match order confirmed; synthetic duplicate/sentinel inputs preserve this distinction.',
+    'Native sequence-offset arithmetic wraps in 32 bits; only kinds 2, 4 and 12 use an 8-byte entry stride, with all other byte kinds using 4 bytes. This is not a validity enumeration.',
+    'Scanner signed descriptor fields can return to the same or an earlier cursor; model memory/iteration guards are not native guards.',
+    'ORIGIN literal writes seven bytes, preserves copied bytes7..11 and later overlaps its name area with runtime fields.'],
+    limitations=['Only selected declared arithmetic/format behavior is reviewed; no complete audio validity, audible duration, ownership, thread safety or safe native replay is established.',
+    'No product/native execution, game, GUI, build, IDB modification or author-file modification. Synthetic instructions are interpreted as integers in Python.'])
+(HERE/'review.json').write_text(json.dumps(receipt,indent=2)+'\n',encoding='utf-8')
+print(json.dumps(dict(status=receipt['status'],checks=receipt['totalChecks'],models=receipt['independentModels'],openBlockers=open_blockers,receiptSha256=sha(HERE/'review.json'))))

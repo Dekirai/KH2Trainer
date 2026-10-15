@@ -1,0 +1,61 @@
+Entwurf: lesende Audio-Metadaten im Asset Explorer
+================================================
+
+Noch kein Produktfeature. Voraussetzungen sind ein unabhängiger Formatreview
+und ein dokumentierter Vergleich der vorhandenen Package- und Loose-Dateien.
+
+Nutzerziel
+----------
+Beim Öffnen einer Audiodatei Version, Bank-ID und referenzierte Sound-IDs
+erkennen. Bei ORIGIN den gespeicherten Ersatznamen anzeigen. Beschädigte oder
+unvollständig verstandene Bereiche sollen benannt werden, ohne das Spiel mit
+diesen Daten zu laden.
+
+Ausgewählte Anfangsunterstützung
+-------------------------------
+- Signaturerkennung ORIGIN\0 und SEDBSSCF getrennt von Strukturprüfung.
+- ORIGIN: mindestens48 Bytes für die gespeicherte Serializerform verlangen.
+  DWORD+12 als gespeicherte Metadaten kennzeichnen; es ist nach Runtime-Start
+  kein unveränderlicher ID-Wert. Name nur innerhalb Bytes16..47 lesen, mit
+  explizitem Zustand für fehlenden Abschluss. Steuerzeichen escaped darstellen.
+  Bytes+32/+40 weder dereferenzieren noch pauschal als Laufzeitfelder etikettieren.
+- SCD zunächst Version3/4 mit dem belegten PC-Little-Endian-Header lesen.
+  Version1/2 und andere Byteordnungen erkennen, Details als nicht unterstützt
+  melden. Die Entscheidung ist eine Produktgrenze, keine native Versionsliste.
+- Headeranzahlen, Bank-ID, Dateilänge und Größenwert+16 getrennt anzeigen.
+  Eine Abweichung darf ohne weitere Erkenntnis weder als harmloses Padding
+  noch als ungültige Datei ausgegeben werden.
+- Tables: Sequenz, B, C und Aux. Offsets vorzeichenbehaftet lesen; negative
+  Offsets ablehnen. Count*4 in breiter Arithmetik berechnen. Jeden benötigten
+  Bytebereich gegen den tatsächlich begrenzten AssetPayload-Stream prüfen.
+- Eine gültige Tabelle allein macht ihre Ziele nicht gültig. Erst nach
+  eigener Zielprüfung die erforderlichen Sequenzheaderbytes lesen.
+  Überlappungen/gleiche Zieloffets als Beobachtung erhalten, ohne erfundene
+  Verbote; Null-Offsets und unvollständige Header getrennt kennzeichnen.
+- Sound-ID(sequence+12) und Anzahl der Track-Verweise(sequence byte0) anzeigen.
+  Doppelte IDs behalten. Modulo1000-Suchverhalten kurz erklären, falls dies
+  bei Zuordnung eines Nutzereingabewerts hilfreich ist.
+- Keine Zeitvorschau im ersten Schritt: vollständige Abschnitts- und Scanner-
+  Grenzen sowie die Bedeutung des Ergebnisses sind dafür noch zu klären.
+
+Implementierungsgrenzen
+-----------------------
+AssetArchiveReader/OpenReadAsync beibehaltener Quelle verwenden. Streams sind
+read-only und durch Eltern-BAR-Bereiche begrenzt. Keine Pfadauflösung anhand
+eines ORIGIN-Namens und keine automatischen Exporte. Quelldateiidentität und
+Abbruchtoken müssen ebenso geprüft werden wie bei den vorhandenen Vorschauen.
+
+Feste Mengenlimits für Tabellen/Zeilen und insgesamt gelesene Metadaten
+vorsehen. Bei Überschreitung einen ehrlichen Status anzeigen; keinen Scan des
+gesamten Spielverzeichnisses starten. Ungültige Daten sollen die vorhandene
+Hexvorschau weiter erlauben. Der UI-Verlauf darf alte Audioergebnisse nach
+Seitenwechsel, Fehler oder abgebrochener Auswahl nicht weiter anzeigen.
+
+Relevante Tests
+---------------
+Grenzen jeder Tabellen- und Zielspanne, Überlauf, negative Offsets, Nullanzahl,
+IDs mit Mehrfachvorkommen, nicht abgeschlossene ORIGIN-Namen, Versionsgrenzen,
+verkürzte Header, abgebrochene Reads, geänderte Quelle und verschachtelte BARs.
+WPF-Prüfung für dunkle Ansicht, lange Namen und Statuswechsel ohne sichtbares
+Fenster. Retailzeugen dienen einem Feld-/Grenzenvergleich und bleiben privat;
+gespeichert werden nur Identität, Hashes, Längen und Metadatenbeobachtungen.

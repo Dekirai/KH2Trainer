@@ -1,0 +1,120 @@
+{
+  "schema": "native-research-report-v1",
+  "title": "ATTACK_OBJ owner, callback receiver and bounded cleanup",
+  "scope": "Seven fresh complete IDA captures and three explicit dependencies. Concrete field origins, one constructor replacement and selected cleanup; no global ownership or live placement approval.",
+  "claims": [
+    {
+      "addr": "0x1403cf830",
+      "Finding": "The ATTACK constructor directly initializes DWORD+12 and DWORD+16 from Encode(arg2), and DWORD+20 from Encode(arg3). When BYTE(params+8)==1, it replaces DWORD+16 with Encode(global2A105D0), while the direct initial stores to +12/+20 remain distinct. Thus original owner, callback receiver and geometry source cannot be assumed identical.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cf830]",
+        "evidence.json#functions[addr=0x14040f1c0]",
+        "evidence.json#functions[addr=0x14040f610]",
+        "evidence.json#functions[addr=0x1403d1960]",
+        "model-results.json",
+        "anchors.json"
+      ],
+      "Limitations": "Exact original normal-control-flow writes only. Global2A105D0 lifetime, all later field writers and all caller argument identities are not established. Opaque callees are not asserted unable to mutate aliases."
+    },
+    {
+      "addr": "0x1403cf830",
+      "Finding": "The constructor increments DWORD+1464 through nonnull Decode(object+12), then through nonnull Decode(object+20). It performs no separate reference increment through object+16 after the replacement. Aliasing arg2/arg3 therefore results in two local increments; the DWORD arithmetic wraps.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cf830]",
+        "model-results.json",
+        "anchors.json"
+      ],
+      "Limitations": "A counter increment is not an independently proved Actor lifetime lease. Replacement receiver may coincide with one counted record. No global refcount discipline or concurrent access proof."
+    },
+    {
+      "addr": "0x1403cf830",
+      "Finding": "The direct object+40 binding starts as Encode(arg2+128), or encoded null for null arg2. Parameter BYTE+18 mask0x02 selects helper3D8A40; otherwise mask0x08 selects QWORD(Decode(object+16)+688)+128. The derived constructor overwrites +40 from Decode(object+20)+128 when neither mask0x02 nor0x08 is present.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cf830]",
+        "evidence.json#functions[addr=0x14040f1c0]",
+        "model-results.json",
+        "anchors.json"
+      ],
+      "Limitations": "Pointer origins are concrete, but the transform pointees and their validity are not re-proven. The mask0x08 and derived overrides have no local decoded-null rejection. No placement or Actor-transform-write API is established."
+    },
+    {
+      "addr": "0x1403cf830",
+      "Finding": "After its counter increments the constructor appends the contact to the global list headed2A24B40/tailed2A24B48, using the prior tail DWORD+196 and encoded-null for its own next link. It returns the original object pointer. Explicit nonnegative argument6 also sets object flags mask0x400; negative argument6 obtains an ID through3CF400.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cf830]",
+        "model-results.json",
+        "anchors.json"
+      ],
+      "Limitations": "Only these append and ID-selection paths are established. Embedded-list initializer3CF0F0 is an opaque boundary. No complete lifetime observation route is installed."
+    },
+    {
+      "addr": "0x14040f4c0",
+      "Finding": "The selected ATTACK_OBJ vtable slot0 resolves to40F4C0. Both40F4C0 and40F4A0 first store zero through QWORD(object+720), with no local null guard, then invoke3CFB10. The deleting wrapper optionally dispatches152570 or nullsub_1(object,728) according to flags1/4 and returns the original object;40F4A0 tail-forwards the base-cleanup result.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040f4c0]",
+        "evidence.json#functions[addr=0x14040f4a0]",
+        "evidence.json#functions[addr=0x14040f1c0]",
+        "evidence.json#functions[addr=0x1403cfb10]",
+        "model-results.json",
+        "anchors.json"
+      ],
+      "Limitations": "The external cell is supplied as argument5 to40F1C0; its allocator/owner identity is still open. Free/nullsub callees are boundary calls, not executed in this study. Static slot binding is not proof of every cleanup invocation."
+    },
+    {
+      "addr": "0x1403cfb10",
+      "Finding": "The actual nondeleting base cleanup decrements DWORD+1464 through Decode(object+12) and Decode(object+20), unlinks the object from the +196 global contact list, repairs its head/tail, and encodes null into its next link. These local instructions neither clear +12/+16/+20 nor decrement a separate +16 reference.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cfb10]",
+        "model-results.json",
+        "anchors.json"
+      ],
+      "Limitations": "The routine assumes valid membership and pointer decoding; there is no local missing-node recovery or counter saturation. Opaque callees may have other effects. No counter-to-Actorfree guarantee is inferred."
+    },
+    {
+      "addr": "0x1403cfb10",
+      "Finding": "When object flags mask0x400 is clear, cleanup enumerates3D2E50 records, clears the contact-ID bit from record+3224, zeros record+3320 only when equal to the retiring contact, clears that ID bit in remaining contacts at+60, and calls3CF3A0 with object+32. Mask0x400 bypasses this sweep and ID release, but does not bypass reference decrements, contact unlink or embedded-node cleanup.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cfb10]",
+        "evidence.json#functions[addr=0x1403cf7f0]",
+        "evidence.json#functions[addr=0x1403cf190]",
+        "model-results.json",
+        "anchors.json"
+      ],
+      "Limitations": "Enumeration coverage and3CF3A0 side effects are outside these bodies. The bit operations are ID bookkeeping rather than a proof that every external contact pointer is invalidated."
+    },
+    {
+      "addr": "0x1403cf7f0",
+      "Finding": "The bit remover reads unsigned DWORD(contact+32), uses wordIndex=id>>5 and bit=id&31, then clears that bit in DWORD(table+4+wordIndex*4). It returns the bit-clear mask, not a success boolean.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cf7f0]",
+        "model-results.json",
+        "anchors.json"
+      ],
+      "Limitations": "There is no local bounds check or table-length argument. Model indices are bounded synthetic examples and do not establish the maximum native ID."
+    },
+    {
+      "addr": "0x1403cf190",
+      "Finding": "The embedded cleanup unlinks its argument from global2A24AC0/2A24AC8 using encoded next at argument+80, updates the prior next/head/tail and writes encoded null to the removed next.3CFB10 tailcalls this routine with object+60, forwarding its raw return value.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cf190]",
+        "evidence.json#functions[addr=0x1403cfb10]",
+        "model-results.json",
+        "anchors.json"
+      ],
+      "Limitations": "Valid list membership and stable Ptr32 decoding are assumptions; missing-node and concurrent teardown behavior are not made safe. Return is not a placement result or an Actor pointer contract."
+    },
+    {
+      "addr": "0x1403cfcb0",
+      "Finding": "The base ATTACK vtable slot0 resolves to3CFCB0, a separate deleting cleanup body. Its recorded flow duplicates the +12/+20 decrements, list removal and conditional ID sweep before embedded cleanup, then conditionally dispatches152570 or nullsub_1(object,200) and returns the object.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cfcb0]",
+        "evidence.json#functions[addr=0x1403cfb10]",
+        "evidence.json#functions[addr=0x1403cf190]",
+        "evidence.json#functions[addr=0x1403cf7f0]",
+        "model-results.json",
+        "anchors.json"
+      ],
+      "Limitations": "This separate base slot is not substituted for the actual ATTACK_OBJ route40F4C0→3CFB10. No exhaustive destructor or subclass inventory is claimed."
+    }
+  ]
+}

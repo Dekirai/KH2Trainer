@@ -16,7 +16,7 @@ uintptr_t g_base=0,g_selectedVtable=0; DWORD g_gameThread=0; LONG g_disabled=0;
 Shared* g_shared=&shared;
 constexpr SIZE_T ImageSize=0x900000;
 DWORD fakeNow=100000,appId=0,timingId=0,timingProcess=0,fakeTimingExit=STILL_ACTIVE;
-bool exitQueryWorks=true;
+bool exitQueryWorks=true,throwTryLock=false,throwUnlock=false;
 HANDLE appHandle=reinterpret_cast<HANDLE>(uintptr_t(0x1234));
 HANDLE timingHandle=reinterpret_cast<HANDLE>(uintptr_t(0x5678));
 DWORD Now() { return fakeNow; }
@@ -33,7 +33,11 @@ bool Inside(const void* p,SIZE_T n) {
     return a>=g_base && n<=ImageSize && a-g_base<=ImageSize-n;
 }
 bool Overlap(uintptr_t a,SIZE_T n,uintptr_t b,SIZE_T size) { return b && a<b+size && b<a+n; }
-bool Readable(const void* p,SIZE_T n) { return Inside(p,n) && !Overlap(reinterpret_cast<uintptr_t>(p),n,denied,deniedSize); }
+uintptr_t throwRead=0;
+bool Readable(const void* p,SIZE_T n) {
+    if(throwRead && reinterpret_cast<uintptr_t>(p)==throwRead)RaiseException(EXCEPTION_ACCESS_VIOLATION,0,0,nullptr);
+    return Inside(p,n) && !Overlap(reinterpret_cast<uintptr_t>(p),n,denied,deniedSize);
+}
 bool Writable(const void* p,SIZE_T n) { return Readable(p,n) && !Overlap(reinterpret_cast<uintptr_t>(p),n,deniedWrite,deniedWriteSize); }
 bool IsInteger(double v,double lo,double hi) { return std::isfinite(v)&&v>=lo&&v<=hi&&floor(v)==v; }
 void SnapshotValue(unsigned slot,double value) { shared.values[slot]=value;shared.valid[slot/64]|=uint64_t(1)<<(slot%64); }
@@ -42,21 +46,29 @@ void SupportCapability(unsigned slot) { shared.supported[slot/64]|=uint64_t(1)<<
 using namespace display_preview;
 template<class T>T& At(uintptr_t rva) { return *reinterpret_cast<T*>(g_base+rva); }
 template<class T>T& GX(SIZE_T offset) { return At<T>(ObjectRva+offset); }
-unsigned checks=0,failures=0,locks=0,unlocks=0,brightCalls=0,colorCalls=0;
+unsigned checks=0,failures=0,locks=0,unlocks=0,brightCalls=0,colorCalls=0,blockingLocks=0,mutexTries=0;
 int lockResult=0,unlockResult=0; bool held=false,allCallsLocked=true;
 int16_t lastBrightness=0,lastType=0,lastSeverity=0;
 unsigned raiseCall=0; bool changeSettingsInBrightness=false;
 using Mutation=void(*)(); Mutation onLock=nullptr;
 void Check(bool b,const char* label) { ++checks;if(!b){++failures;printf("FAIL %s\n",label);} }
-int __cdecl MockLock(void* p) {
+int Acquire(void* p) {
     ++locks;Check(p==reinterpret_cast<void*>(g_base+ObjectRva+MutexOffset),"correct opaque mutex address");
     if(lockResult) return lockResult;
     Check(!held,"no recursive or unmatched acquisition");held=true;
     if(onLock)onLock();return 0;
 }
+int __cdecl MockLock(void* p) { ++blockingLocks;return Acquire(p); }
+int __cdecl MockTryLock(void* p) {
+    ++mutexTries;
+    if(throwTryLock)RaiseException(EXCEPTION_ACCESS_VIOLATION,0,0,nullptr);
+    return Acquire(p);
+}
 int __cdecl MockUnlock(void* p) {
     ++unlocks;Check(held&&p==reinterpret_cast<void*>(g_base+ObjectRva+MutexOffset),"matching mutex released exactly once");
-    held=false;return unlockResult;
+    held=false;
+    if(throwUnlock)RaiseException(EXCEPTION_ACCESS_VIOLATION,0,0,nullptr);
+    return unlockResult;
 }
 void __fastcall MockBrightness(int16_t value) {
     allCallsLocked&=held;++brightCalls;lastBrightness=value;
@@ -76,13 +88,14 @@ void Reset() {
     timingProcess=GetCurrentProcessId();fakeTimingExit=STILL_ACTIVE;exitQueryWorks=true;
     g_selectedVtable=g_base+0x100000;g_shared=&shared;shared={};shared.hostHeartbeat=fakeNow=100000;
     denied=deniedWrite=0;deniedSize=deniedWriteSize=0;
-    locks=unlocks=brightCalls=colorCalls=0;lockResult=unlockResult=0;held=false;allCallsLocked=true;
+    locks=unlocks=brightCalls=colorCalls=blockingLocks=mutexTries=0;lockResult=unlockResult=0;held=false;allCallsLocked=true;
+    throwTryLock=throwUnlock=false;throwRead=0;
     lastBrightness=lastType=lastSeverity=0;raiseCall=0;onLock=nullptr;changeSettingsInBrightness=false;
     GX<uintptr_t>(0)=g_base+VtableRva;GX<uintptr_t>(736)=g_base+0x200000;GX<uintptr_t>(1144)=g_base+0x210000;
     GX<HANDLE>(784)=appHandle;GX<HANDLE>(792)=timingHandle;GX<int>(808)=0;GX<uintptr_t>(1000)=g_base+0x220000;
     At<uintptr_t>(AppRva)=g_base+0x220000;At<uintptr_t>(0x220000)=g_selectedVtable;At<int>(0x220000+4752)=-1;
     At<int>(EpochRva)=-100;GX<float>(716)=0;GX<float>(23360)=1;GX<int>(23364)=1;GX<int>(23368)=5;
-    testLock=MockLock;testUnlock=MockUnlock;testBrightness=MockBrightness;testColor=MockColor;testRuntimeAvailable=true;
+    testLock=MockLock;testUnlock=MockUnlock;testTryLock=MockTryLock;testBrightness=MockBrightness;testColor=MockColor;testRuntimeAvailable=true;
     At<uintptr_t>(0x57B458)=reinterpret_cast<uintptr_t>(testLock);At<uintptr_t>(0x57B450)=reinterpret_cast<uintptr_t>(testUnlock);
     Seed(0x5061A0,BrightnessCode);Seed(0x5061F0,ColorCode);Seed(0x1268C0,GammaCode);Seed(0x125D00,ColorSetterCode);
     Seed(0x11C150,GetterCode);Seed(0x43AD04,LockCode);Seed(0x43AD0A,UnlockCode);
@@ -118,7 +131,7 @@ void TestInputs() {
         Reset();const auto r=Execute(304,value);
         Check(!r.code&&brightCalls==1&&colorCalls==0&&lastBrightness==value&&allCallsLocked,"every native brightness level exactly once under mutex");
         DisplaySnapshot(Context());
-        Check(Has(304)&&fabs(shared.values[304]-value)<0.00001,"brightness snapshot observes native scale including negative levels");
+        Check(Has(304)&&shared.values[304]==value,"brightness snapshot returns exact restorable integer including negative levels");
         Check(fabs(GX<float>(23360)-2.2/(2.2+value/50.0))<0.00001,"brightness uses native gamma relationship");
         DisplayTick(Context());DisplayReset(Context());Check(brightCalls==1&&colorCalls==0,"tick/reset never repeat or undo one-time preview");
     }
@@ -126,10 +139,48 @@ void TestInputs() {
         Reset();const auto r=Execute(306,type,severity);
         Check(!r.code&&brightCalls==0&&colorCalls==1&&lastType==type&&lastSeverity==(type?severity:0)&&allCallsLocked,"every supported mode/severity pair reaches native ABI exactly once");
     }
-    const double invalid[]={-51,51,-0.5,0.5,1e40,std::numeric_limits<double>::infinity(),-std::numeric_limits<double>::infinity(),std::numeric_limits<double>::quiet_NaN()};
+    const double invalid[]={-51,5001,-0.5,0.5,5000.5,32767,32768,65536,65586,-32768,-65586,1e40,std::numeric_limits<double>::infinity(),-std::numeric_limits<double>::infinity(),std::numeric_limits<double>::quiet_NaN()};
     for(double v:invalid){Reset();Reject("invalid brightness rejected before lock",304,v);}
     for(double v:{-1.,4.,1.5,std::numeric_limits<double>::quiet_NaN()}){Reset();Reject("invalid color mode rejected before lock",306,v,5);}
     for(double v:{0.,11.,1.5,std::numeric_limits<double>::quiet_NaN()})for(double mode:{0.,2.}){Reset();Reject("invalid severity rejected even when mode is disabled",306,mode,v);}
+}
+void TestFullBrightnessRoundtrip() {
+    // One fixture reset for the entire supported integer domain. Exercise the
+    // actual command/snapshot/restore route, not an isolated inverse formula.
+    Reset();BYTE settings[508]{};memcpy(settings,reinterpret_cast<void*>(g_base+0x715350),508);
+    bool settersExact=true,snapshotsExact=true,restoresExact=true,gammaExact=true;
+    unsigned levels=0;
+    for(int value=-50;value<=5000;++value) {
+        const double args[8]{static_cast<double>(value)};TrainerResult applied{};
+        const bool dispatched=DisplayHandle(Context(),304,args,applied);
+        settersExact&=dispatched&&!applied.code&&lastBrightness==value;
+        const float adjustment=static_cast<float>(value)/50.0f;
+        const float gamma=2.2f/(2.2f+adjustment);
+        gammaExact&=GX<float>(716)==adjustment&&GX<float>(23360)==gamma;
+        shared.valid[304/64]&=~(uint64_t(1)<<(304%64));
+        shared.values[304]=std::numeric_limits<double>::quiet_NaN();
+        DisplaySnapshot(Context());
+        const bool exact=Has(304)&&shared.values[304]==static_cast<double>(value);
+        snapshotsExact&=exact;
+        const double restoreArgs[8]{shared.values[304]};TrainerResult restored{};
+        restoresExact&=DisplayHandle(Context(),304,restoreArgs,restored)&&!restored.code&&lastBrightness==value&&
+            GX<float>(716)==adjustment&&GX<float>(23360)==gamma;
+        ++levels;
+    }
+    Check(levels==5051&&settersExact,"all 5051 accepted brightness integers reach the int16 setter without clamping or wrap");
+    Check(snapshotsExact,"all 5051 native float adjustments publish their exact original integer");
+    Check(restoresExact&&brightCalls==2*levels,"every sampled brightness can restore through native integer validation");
+    Check(gammaExact&&allCallsLocked&&!held&&locks==3*levels&&unlocks==locks,"full command/read/restore domain preserves native gamma and balanced mutex calls");
+    Check(!colorCalls&&GX<int>(23364)==1&&GX<int>(23368)==5&&
+        !memcmp(settings,reinterpret_cast<void*>(g_base+0x715350),508),"full brightness domain leaves color and loaded settings unchanged");
+    Check(blockingLocks==2*levels&&mutexTries==levels,"domain snapshots remain nonblocking while explicit commands use their validated lock");
+    const float exponent=GX<float>(23360);
+    Check(lastBrightness==5000&&GX<float>(716)==100.f&&fabs(static_cast<double>(exponent)-2.2/102.2)<1e-8,
+        "Flashbang5000 produces adjustment100 and exponent approximately0.0215264");
+    Check(exponent>0.f&&exponent<2.2f/3.2f&&std::pow(0.18f,exponent)>0.96f,
+        "the modeled gamma transform at5000 brightens a positive midtone substantially more than level50");
+    DisplayTick(Context());DisplayReset(Context());
+    Check(brightCalls==2*levels&&!colorCalls,"extended brightness still has no repeated tick/reset setter");
 }
 void TestLifetime() {
     Reset();g_disabled=1;Reject("disabled bridge rejected");
@@ -195,7 +246,8 @@ void TestMutexAndRestore() {
     Check(!Execute(305).code&&brightCalls==1&&colorCalls==1&&lastBrightness==-25&&lastType==2&&lastSeverity==6,"loaded restore calls both previews exactly once");
     Check(!memcmp(settings,reinterpret_cast<void*>(g_base+0x715350),508),"restore never writes configuration");
     Reset();changeSettingsInBrightness=true;Check(!Execute(305).code&&lastType==2&&lastSeverity==6,"restore uses immutable field snapshot after first setter");
-    for(int16_t value:{int16_t(-51),int16_t(51)}){Reset();At<int16_t>(FieldsRva+12)=value;Check(Execute(305).code!=0&&!brightCalls&&!colorCalls&&unlocks==1,"invalid loaded brightness produces no partial restore");}
+    for(int16_t value:{int16_t(-50),int16_t(50)}){Reset();At<int16_t>(FieldsRva+12)=value;Check(!Execute(305).code&&lastBrightness==value&&brightCalls==1&&colorCalls==1,"loaded brightness retains original inclusive -50..50 bounds");}
+    for(int16_t value:{int16_t(-51),int16_t(51),int16_t(5000),int16_t(32767),int16_t(-32768)}){Reset();At<int16_t>(FieldsRva+12)=value;Check(Execute(305).code!=0&&!brightCalls&&!colorCalls&&unlocks==1,"extended runtime range never broadens loaded brightness or performs partial restore");}
     for(int16_t value:{int16_t(-1),int16_t(4)}){Reset();At<int16_t>(FieldsRva+16)=value;Check(Execute(305).code!=0&&!brightCalls&&!colorCalls,"invalid loaded mode produces no partial restore");}
     for(int16_t value:{int16_t(0),int16_t(11)}){Reset();At<int16_t>(FieldsRva+18)=value;Check(Execute(305).code!=0&&!brightCalls&&!colorCalls,"invalid enabled loaded severity produces no partial restore");}
     Reset();At<int16_t>(FieldsRva+16)=0;At<int16_t>(FieldsRva+18)=-32768;
@@ -203,10 +255,25 @@ void TestMutexAndRestore() {
     for(uintptr_t rva:{uintptr_t(0x715350),uintptr_t(0x715354),uintptr_t(0x715358)}){Reset();At<BYTE>(rva)^=1;Check(Execute(305).code!=0&&!brightCalls&&!colorCalls,"invalid SET header prevents restore");}
     Reset();denied=g_base+FieldsRva+19;deniedSize=1;Check(Execute(305).code!=0&&!brightCalls&&!colorCalls,"unreadable last config byte prevents restore");
 }
+bool CatchSnapshot() { __try { DisplaySnapshot(Context()); } __except(EXCEPTION_EXECUTE_HANDLER){return true;}return false; }
 void TestSnapshotAndDispatch() {
-    Reset();for(float value:{-1.f,0.f,1.f}){GX<float>(716)=value;DisplaySnapshot(Context());Check(Has(304)&&shared.values[304]==value*50,"inclusive brightness snapshot bounds");}
-    for(float value:{-1.01f,1.01f,std::numeric_limits<float>::infinity(),std::numeric_limits<float>::quiet_NaN()}){
-        Reset();GX<float>(716)=value;DisplaySnapshot(Context());Check(!Has(304)&&locks==1&&unlocks==1,"invalid current brightness not published");
+    Reset();DisplaySnapshot(Context());Check(mutexTries==1&&!blockingLocks&&unlocks==1&&Has(304)&&Has(465),"passive display uses only nonblocking acquisition");
+    Reset();lockResult=3;held=true;DisplaySnapshot(Context());Check(mutexTries==1&&!blockingLocks&&!unlocks&&held&&!faulted&&!Has(304)&&!Has(465),"busy display does not release another owner's mutex or publish");
+    held=false;lockResult=0;DisplaySnapshot(Context());Check(mutexTries==2&&!blockingLocks&&unlocks==1&&Has(304),"a later display sample resumes after contention");
+    Reset();testTryLock=nullptr;DisplaySnapshot(Context());Check(!mutexTries&&!blockingLocks&&!unlocks&&!Has(304),"missing optional try export skips observation");
+    Check(Execute().code==0&&blockingLocks==1&&!mutexTries&&unlocks==1,"explicit display command still uses validated waiting lock");
+    Reset();onLock=[]{testTryLock=nullptr;};DisplaySnapshot(Context());Check(!Has(304)&&!Has(465)&&unlocks==1&&!blockingLocks,"changed try export invalidates lease and uses captured release");
+    Reset();throwTryLock=true;Check(CatchSnapshot()&&faulted&&!unlocks&&!blockingLocks&&!Has(304),"try-lock fault latches without guessing ownership");
+    Reset();throwUnlock=true;Check(CatchSnapshot()&&faulted&&unlocks==1&&!blockingLocks&&!Has(304),"passive unlock fault latches and publishes nothing");
+    Reset();onLock=[]{throwRead=g_base+EpochRva;};Check(CatchSnapshot()&&faulted&&unlocks==1&&!held&&!blockingLocks&&!Has(304),"passive capture fault releases acquired mutex through finally");
+    Reset();for(float value:{-1.f,0.f,1.f,100.f}){GX<float>(716)=value;DisplaySnapshot(Context());Check(Has(304)&&shared.values[304]==value*50,"inclusive extended brightness snapshot bounds");}
+    for(float value:{-1.01f,1.01f,0.01f,-0.03f,0.12345f,100.02f,
+        std::nextafter(0.02f,1.f),std::nextafter(100.f,0.f),std::nextafter(100.f,101.f),
+        std::numeric_limits<float>::denorm_min(),std::numeric_limits<float>::max(),
+        std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),std::numeric_limits<float>::quiet_NaN()}){
+        Reset();GX<float>(716)=value;DisplaySnapshot(Context());
+        Check(!Has(304)&&locks==1&&unlocks==1&&!blockingLocks&&mutexTries==1,"fractional non-native or out-of-range brightness cannot masquerade as a restorable integer");
+        Check(Has(465)&&shared.values[465]==21,"unrestorable brightness does not discard independent valid color snapshot");
     }
     Reset();lockResult=1;DisplaySnapshot(Context());Check(!Has(304)&&!unlocks,"failed snapshot lock publishes no value");
     Reset();unlockResult=1;DisplaySnapshot(Context());Check(!Has(304)&&unlocks==1,"failed snapshot unlock publishes no value");
@@ -217,6 +284,18 @@ void TestSnapshotAndDispatch() {
         Check(supported==(slot>=304&&slot<=306),"capabilities cover only allocated three slots");
     }
     for(unsigned slot:{303u,307u,511u}){TrainerResult r{123,L"unchanged"};double args[8]{};Check(!DisplayHandle(Context(),slot,args,r)&&r.code==123,"unowned command passed through");}
+}
+void TestHighBrightnessColorIsolation() {
+    Reset();Check(!Execute(304,5000).code,"high brightness preview available for conditional color isolation");
+    const float adjustment=GX<float>(716),gamma=GX<float>(23360);
+    BYTE settings[508]{};memcpy(settings,reinterpret_cast<void*>(g_base+0x715350),508);
+    Check(!CompareColor(0,1,5,3,10).code&&!CompareColor(1,3,10,1,5).code,
+        "conditional color applies and restores while Flashbang brightness is active");
+    Check(brightCalls==1&&colorCalls==2&&GX<float>(716)==adjustment&&GX<float>(23360)==gamma&&
+        !memcmp(settings,reinterpret_cast<void*>(g_base+0x715350),508),"conditional color leaves high runtime brightness gamma and loaded configuration unchanged");
+    DisplaySnapshot(Context());
+    Check(Has(304)&&shared.values[304]==5000&&Has(465)&&shared.values[465]==21,
+        "coherent snapshot independently retains high exact brightness and restored color pair");
 }
 void TestConditionalColor() {
     // Every canonical original/destination pair, both apply and restore, including disabled zero.
@@ -293,7 +372,7 @@ bool CatchConditionalSetter() {
 int main() {
     g_base=reinterpret_cast<uintptr_t>(VirtualAlloc(nullptr,ImageSize,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE));
     if(!g_base)return 2;
-    TestInputs();TestLifetime();TestMutexAndRestore();TestSnapshotAndDispatch();TestConditionalColor();
+    TestInputs();TestFullBrightnessRoundtrip();TestLifetime();TestMutexAndRestore();TestSnapshotAndDispatch();TestConditionalColor();TestHighBrightnessColorIsolation();
     Reset();Check(CatchConditionalSetter()&&unlocks==1&&!held,"conditional setter SEH still releases captured mutex exactly once");
     printf("DisplayGuardTests: %u checks, %u failures\n",checks,failures);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);return failures?1:0;

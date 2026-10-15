@@ -1,0 +1,10 @@
+"""Check frozen study membership and hashes without writing."""
+from pathlib import Path
+import json,hashlib
+H=Path(__file__).resolve().parent
+m=json.loads((H/'manifest.json').read_bytes())
+assert set(m['files'])=={p.name for p in H.iterdir() if p.is_file() and p.name!='manifest.json'}
+for name,pin in m['files'].items():
+ b=(H/name).read_bytes()
+ assert pin=={'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest()},name
+print(json.dumps({'status':'PASS','files':len(m['files']),'manifestSha256':hashlib.sha256((H/'manifest.json').read_bytes()).hexdigest()}))

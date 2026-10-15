@@ -60,6 +60,28 @@ internal static class FeatureLayoutUiChecks
         var formatted = features.Where(f => f.Definition.CapabilitySlot is >= 392 and <= 418 or >= 424 and <= 438 or >= 447 and <= 455).ToArray();
         Check(formatted.Length == 51, "The renderer, audio, editor, window and MSAA features are incomplete.");
         var snapshot = new TrainerSnapshot { Connected = true, Status = 1, SceneReady = true };
+        var references = features.Where(f => f.Definition.CapabilitySlot is >= 493 and <= 498).ToArray();
+        var referenceTab = sections.Single(s => s.Key == "advanced").Tabs.Single(t => t.Title == "Actor references");
+        Check(references.Length == 6 && referenceTab.Groups.SelectMany(g => g.Readouts).SequenceEqual(references) &&
+            !referenceTab.Groups.SelectMany(g => g.Controls).Any(), "Actor references must expose six readouts in Advanced with no action controls.");
+        foreach (var feature in references)
+        {
+            int slot = feature.Definition.ValueSlot;
+            snapshot.Supported[slot / 64] |= 1UL << (slot % 64);
+            feature.Update(snapshot);
+            Check(feature.IsReadOnly && !feature.IsEditable && !feature.ShowApplyButton && feature.LiveValue == "—",
+                "An absent actor reference observation is unavailable, never a fabricated zero: " + feature.Id);
+            snapshot.Valid[slot / 64] |= 1UL << (slot % 64);
+            foreach (double value in slot is 493 or 496 ? new[] { 0d, 2d, (double)uint.MaxValue } : new[] { 0d, 1d })
+            {
+                snapshot.Values[slot] = value; feature.Update(snapshot);
+                Check(feature.LiveValue == value.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    "Actor reference readout retains exact unsigned counter/flag value: " + feature.Id);
+            }
+            snapshot.Valid[slot / 64] &= ~(1UL << (slot % 64)); feature.Update(snapshot);
+            Check(feature.LiveValue == "—", "Losing an actor clears its previous actor reference readout: " + feature.Id);
+        }
+        Check(host.Calls.Count == 0, "Actor reference readout updates issue no game commands.");
         foreach (var feature in formatted)
         {
             int slot = feature.Definition.CapabilitySlot;

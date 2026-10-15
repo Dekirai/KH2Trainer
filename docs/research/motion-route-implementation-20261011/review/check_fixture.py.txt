@@ -1,0 +1,63 @@
+"""Read-only original-PE comparison for the new composed runtime fixture."""
+from pathlib import Path
+import hashlib,json,re,struct
+from capstone import Cs,CS_ARCH_X86,CS_MODE_64
+from capstone.x86_const import X86_OP_MEM,X86_REG_RIP
+H=Path(__file__).resolve().parent
+R=next(p for p in H.parents if (p/'src/KH2Trainer.Core').is_dir())
+P=Path(r'E:\SteamLibrary\steamapps\common\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-\KINGDOM HEARTS II FINAL MIX.exe')
+sha=lambda b:hashlib.sha256(b).hexdigest()
+raw=P.read_bytes()
+assert sha(raw)=='9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed'
+pe=struct.unpack_from('<I',raw,60)[0];opt=pe+24
+u16=lambda at:struct.unpack_from('<H',raw,at)[0]
+u32=lambda at:struct.unpack_from('<I',raw,at)[0]
+sec=opt+u16(pe+20)
+sections=[(u32(sec+40*i+12),u32(sec+40*i+16),u32(sec+40*i+20)) for i in range(u16(pe+6))]
+def span(rva,n):
+    matches=[p+rva-v for v,s,p in sections if v<=rva and rva+n<=v+s]
+    assert len(matches)==1 and n>0
+    return raw[matches[0]:matches[0]+n]
+assert raw[:2]==b'MZ' and raw[pe:pe+4]==b'PE\0\0' and u16(pe+4)==0x8664
+base=struct.unpack_from('<Q',raw,opt+24)[0];assert base==0x140000000
+drva,dsize=struct.unpack_from('<II',raw,opt+112+3*8)
+rows=[r for r in struct.iter_unpack('<III',span(drva,dsize)) if r[0]<=0x3c8cd0<r[1]]
+assert rows==[(0x3c8cd0,0x3c8def,0x6e6434)]
+body=span(0x3c8cd0,287);unwind=span(0x6e6434,24)
+plan=(R/'src/KH2Trainer.Bridge/MotionEntryPlan.h').read_text()
+test=(R/'tests/KH2Trainer.Bridge.Tests/MotionObservationRuntimeTests.cpp').read_text()
+def array(pattern,text):
+    return bytes(int(t,0) for t in re.findall(r'0x[0-9a-fA-F]+|\b[0-9]+\b',re.search(pattern,text,re.S).group(1)))
+assert array(r'Body3C8CD0\[\]\s*=\s*\{(.*?)\};',plan)==body
+assert array(r'const unsigned char unwind\[\]\s*=\s*\{(.*?)\};',test)==unwind
+stubs=re.findall(r'Jump\(fixtureModule\+0x([0-9a-f]+),reinterpret_cast<uintptr_t>\(&([A-Za-z]+)\)\);',test)
+assert stubs==[('40d7f0','GroupFixture'),('3c8a40','BindFixture'),('40d7d0','SuccessFixture')]
+cs=Cs(CS_ARCH_X86,CS_MODE_64);cs.detail=True
+ins=list(cs.disasm(body,base+0x3c8cd0));assert sum(i.size for i in ins)==len(body)
+by={i.address-base:i for i in ins}
+anchors={
+    0x3c8cf7:('call','0x14040d7f0'),
+    0x3c8d24:('js','0x1403c8d4c'),
+    0x3c8d5b:('call','0x1403c8a40'),
+    0x3c8d62:('je','0x1403c8dd5'),
+    0x3c8d6a:('call','0x14040d7d0'),
+    0x3c8d73:('mov','eax, 0xffffffff'),
+    0x3c8d8f:('jne','0x1403c8da0'),
+    0x3c8da5:('mov','rbx, qword ptr [rdi + 0xd8]'),
+    0x3c8dbf:('je','0x1403c8dd3'),
+    0x3c8dd3:('mov','al, 1')}
+for rva,wanted in anchors.items():assert (by[rva].mnemonic,by[rva].op_str)==wanted,hex(rva)
+assert not any(o.type==X86_OP_MEM and o.mem.base==X86_REG_RIP for i in ins for o in i.operands)
+result={
+    'status':'PASS','originalExeSha256':sha(raw),'bodyBytes':len(body),'bodyInstructions':len(ins),
+    'bodySha256':sha(body),'originalRuntimeFunction':list(rows[0]),'originalUnwindBytes':unwind.hex(' '),
+    'headerBodyMatchesOriginal':True,'runtimeFixtureUnwindMatchesOriginal':True,
+    'fixtureStubs':[{'rva':'0x'+rva,'target':name} for rva,name in stubs],
+    'branchAnchors':[{'rva':hex(rva),'mnemonic':m,'operands':o} for rva,(m,o) in anchors.items()],
+    'noRipRelativeDataOperand':True,
+    'boundedInterpretation':'Manual path inspection: selection -1 skips both 40D7A0 calls. Bind false returns AL0; true calls 40D7D0. Its fixture returns false, producing EAX=-1 and skipping the basis+0x120 write. Null C+216 skips the child lookup/recursion; success returns AL1. Original writes C+328/C+344/C+352 before Bind; success additionally C+44/C+48. ModelBase is an opaque pointer value used only in address arithmetic on these fixture paths, not an allocated resource.',
+    'limits':['Three helper implementations are explicit fixture functions; their original semantics are not executed.','No game state, live entry installation, resource lifetime, old writer drain or Scale behavior was tested.']}
+data=(json.dumps(result,indent=2)+'\n').encode()
+if '--write' in __import__('sys').argv:(H/'fixture-check.json').write_bytes(data)
+else:assert (H/'fixture-check.json').read_bytes()==data
+print(json.dumps({'status':'PASS','bodyBytes':len(body),'instructions':len(ins),'branchAnchors':len(anchors),'declaredStubs':len(stubs)}))

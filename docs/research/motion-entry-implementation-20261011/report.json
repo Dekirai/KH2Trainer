@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "Domain": "native",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "claims": [
+    {
+      "addr": "0x1403c8cd0",
+      "Finding": "The 287-byte normal-binding body begins with a 5-byte MOV [RSP+8],RBX and has no R11 operand. The original PE runtime entry spans 3C8CD0..3C8DEF with UNWIND_INFO 6E6434; its complete-prolog stack saves must not be copied unchanged into a 5-byte trampoline. The implemented prefix plan uses SAVE_NONVOL RBX at completed offset 5/current RSP+8 and resumes at 3C8CD5. The mixed RCX/EDX/XMM2/XMM3/AL entry is preserved by the isolated compiled wrapper.",
+      "Evidence": [
+        "../motion-resource-binding-20261011/evidence.json#functions[addr=0x1403c8cd0]",
+        "original-verification.json",
+        "review/original.json.txt",
+        "validation.json"
+      ],
+      "Limitations": "Original-byte and partial-prolog/ABI evidence, with isolated Windows unwind and synthetic continuation tests. No entry installed in KH2, whole-body native execution, resource lease, callback completeness, thread admission or Scale feature proof."
+    }
+  ]
+}

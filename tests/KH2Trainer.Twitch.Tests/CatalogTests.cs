@@ -40,7 +40,10 @@ internal static class CatalogTests
             var game = new FakeGame(features);
             game.Stock[1] = 5; game.Stock[2] = 5; game.Stock[3] = 5;
             game.Set("target_lock_mode", 2); game.Set("target_hp", 500); game.Set("target_revenge_threshold", 100);
+            game.Set("target_revenge", 25);
             game.Set("gummi.hp", 50);
+            game.Set("gummi.special_stock", 2); game.Set("gummi.special_progress", 50);
+            if (effect.Key == "timer-refill") { game.Set("player.gauge.mode", 2); game.Set("player.gauge.remaining", 20); game.Set("player.gauge.maximum", 100); }
             if (effect.Key == "revert") game.Set("player.form.id", 1);
             if (effect.Key is "heal" or "restore-mp" or "full-restore") { game.Set("player.hp", 10); game.Set("player.mp", 10); }
             var context = new EffectContext(effect, new Redemption("r", effect.Key, "Viewer", "", DateTimeOffset.UtcNow, IsTest: true),
@@ -59,10 +62,12 @@ internal static class CatalogTests
             }
             catch (Exception error) { check(false, $"{effect.Key}: starts and ends with valid commands ({error.Message})"); }
             var allowed = new HashSet<string>(effect.Features, StringComparer.Ordinal);
+            // Internal token ownership is a protocol operation, not a manually exposed feature.
+            if (effect.Group == "form" && effect.Features.Contains("drive.trigger")) allowed.Add("drive.revert_lock");
             var unlisted = game.Commands.Select(c => c.Feature).Where(f => !allowed.Contains(f)).Distinct().ToArray();
             check(unlisted.Length == 0, $"{effect.Key}: uses only its listed features ({string.Join(", ", unlisted)})");
             if (effect.IsTimed)
-                foreach (string feature in game.Commands.Select(c => c.Feature).Distinct().Where(f => map.Get(f).Kind != FeatureKind.Action))
+                foreach (string feature in game.Commands.Select(c => c.Feature).Distinct().Where(f => map.Contains(f) && map.Get(f).Kind != FeatureKind.Action))
                     (setByTimed.TryGetValue(feature, out var list) ? list : setByTimed[feature] = []).Add(effect);
         }
         foreach (var (feature, users) in setByTimed)

@@ -30,7 +30,7 @@ constexpr uintptr_t ObjectRva=0x8A0970, AppAddress=0x220000;
 DWORD fakeNow=100000,appId=0,timingId=0,timingProcess=0,fakeTimingExit=STILL_ACTIVE;
 HANDLE appHandle=reinterpret_cast<HANDLE>(uintptr_t(0x1234));
 HANDLE timingHandle=reinterpret_cast<HANDLE>(uintptr_t(0x5678));
-bool throwUnlock=false;
+bool throwUnlock=false,throwTryLock=false;
 bool exitQueryWorks=true,outerHeld=false,innerHeld=false,tryBusy=false,frequencyWorks=true,qpcWorks=true;
 DWORD Now() { return fakeNow; }
 DWORD ThreadId(HANDLE h) { return h==appHandle?appId:(h==timingHandle?timingId:0); }
@@ -38,7 +38,7 @@ DWORD ProcessIdOfThread(HANDLE h) { return h==timingHandle?timingProcess:0; }
 BOOL ExitCodeThread(HANDLE h,DWORD* result) { if(h!=timingHandle||!exitQueryWorks)return FALSE; *result=fakeTimingExit;return TRUE; }
 int64_t fakeFrequency=1000000,fakeQpc=20000000;
 uintptr_t denied=0,deniedWrite=0,throwRead=0; SIZE_T deniedSize=0,deniedWriteSize=0;
-unsigned checks=0,failures=0,locks=0,unlocks=0,tries=0,leaves=0,published=0,qpcCalls=0;
+unsigned checks=0,failures=0,locks=0,unlocks=0,tries=0,leaves=0,published=0,qpcCalls=0,blockingLocks=0,mutexTries=0;
 int fakeLockResult=0,fakeUnlockResult=0;
 using Mutation=void(*)(); Mutation onLock=nullptr,onInner=nullptr,onQpc=nullptr;
 void Check(bool b,const char* label) { ++checks;if(!b){++failures;printf("FAIL %s\n",label);} }
@@ -87,10 +87,16 @@ void SupportCapability(unsigned slot) { shared.supported[slot/64]|=uint64_t(1)<<
 template<class T>T& At(uintptr_t rva) { return *reinterpret_cast<T*>(g_base+rva); }
 template<class T>T& GX(SIZE_T offset) { return At<T>(ObjectRva+offset); }
 template<SIZE_T N>void Seed(uintptr_t rva,const BYTE(&bytes)[N]) { memcpy(reinterpret_cast<void*>(g_base+rva),bytes,N); }
-int __cdecl MockLock(void* p) {
+int Acquire(void* p) {
     ++locks;Check(p==reinterpret_cast<void*>(g_base+ObjectRva+30848),"opaque presentation mutex address");
     if(fakeLockResult)return fakeLockResult;
     Check(!outerHeld&&!innerHeld,"outer mutex acquired exactly once");outerHeld=true;if(onLock)onLock();return 0;
+}
+int __cdecl MockLock(void* p) { ++blockingLocks;return Acquire(p); }
+int __cdecl MockTryLock(void* p) {
+    ++mutexTries;
+    if(throwTryLock)RaiseException(EXCEPTION_ACCESS_VIOLATION,0,0,nullptr);
+    return Acquire(p);
 }
 int __cdecl MockUnlock(void* p) {
     ++unlocks;Check(outerHeld&&!innerHeld&&p==reinterpret_cast<void*>(g_base+ObjectRva+30848),"captured outer unlock called exactly once");outerHeld=false;
@@ -160,14 +166,14 @@ void Reset() {
     renderer_aa::relay=nullptr;renderer_aa::relayRel=0;renderer_aa::installed=renderer_aa::exposed=renderer_aa::lifetimeBound=false;
     renderer_aa::decisionValid=false;renderer_aa::requested=renderer_aa::lastNative=renderer_aa::lastChosen=0;
     denied=deniedWrite=throwRead=0;deniedSize=deniedWriteSize=0;throwUnlock=outerHeld=innerHeld=false;
-    locks=unlocks=published=allocations=frees=protects=flushes=swaps=originalCalls=0;fakeLockResult=fakeUnlockResult=0;
+    locks=unlocks=published=allocations=frees=protects=flushes=swaps=originalCalls=blockingLocks=mutexTries=0;fakeLockResult=fakeUnlockResult=0;throwTryLock=false;
     failProtect=failFlush=exceptionProtect=exceptionFlush=exceptionCas=0;afterProtectException=afterCasException=false;imageProtection=PAGE_EXECUTE_READ;permit=pin=true;
     denyAlloc=denyQuery=foreignCas=throwCas=failRestoreAlways=throwNative=false;nativeResult=2;onLock=onInner=onFlush=nullptr;
     GX<uintptr_t>(0)=g_base+display_preview::VtableRva;GX<uintptr_t>(736)=g_base+0x200000;GX<uintptr_t>(1144)=g_base+0x210000;
     GX<HANDLE>(784)=appHandle;GX<HANDLE>(792)=timingHandle;GX<int>(808)=0;GX<uintptr_t>(1000)=g_base+AppAddress;
     At<uintptr_t>(display_preview::AppRva)=g_base+AppAddress;At<uintptr_t>(AppAddress)=g_selectedVtable;At<int>(AppAddress+4752)=-1;
     At<int>(display_preview::EpochRva)=-100;
-    display_preview::testLock=MockLock;display_preview::testUnlock=MockUnlock;display_preview::testRuntimeAvailable=true;
+    display_preview::testLock=MockLock;display_preview::testUnlock=MockUnlock;display_preview::testTryLock=MockTryLock;display_preview::testRuntimeAvailable=true;
     At<uintptr_t>(0x57B458)=reinterpret_cast<uintptr_t>(MockLock);At<uintptr_t>(0x57B450)=reinterpret_cast<uintptr_t>(MockUnlock);
     Seed(0x5061A0,display_preview::BrightnessCode);Seed(0x5061F0,display_preview::ColorCode);Seed(0x1268C0,display_preview::GammaCode);
     Seed(0x125D00,display_preview::ColorSetterCode);Seed(0x11C150,display_preview::GetterCode);
@@ -246,7 +252,17 @@ void TestGuards() {
     throwNative=false;throwRead=g_base+display_preview::EpochRva;outerHeld=true;Check(Invoke()==2&&originalCalls==2&&renderer_aa::faulted,"only post-native own read failure is swallowed into pass-through");outerHeld=false;
     Reset();for(const auto& sig:renderer_aa::Signatures){At<BYTE>(sig.rva)^=1;Check(Apply().code!=0&&!swaps,"each critical complete native body pinned");At<BYTE>(sig.rva)^=1;}
 }
+bool CatchSnapshot() { __try { RendererAaSnapshot(Context()); } __except(EXCEPTION_EXECUTE_HANDLER){return true;}return false; }
 void TestTransactions() {
+    Reset();RendererAaSnapshot(Context());Check(mutexTries==1&&!blockingLocks&&unlocks==1&&Has(451),"passive MSAA readout uses only nonblocking acquisition");
+    Reset();fakeLockResult=3;RendererAaSnapshot(Context());Check(mutexTries==1&&!blockingLocks&&!unlocks&&published==2&&Has(449)&&Has(455)&&!Has(451)&&!renderer_aa::faulted,"busy MSAA preserves local status but omits renderer values");
+    fakeLockResult=0;RendererAaSnapshot(Context());Check(mutexTries==2&&!blockingLocks&&unlocks==1&&Has(451),"MSAA readout resumes after contention");
+    Reset();display_preview::testTryLock=nullptr;RendererAaSnapshot(Context());Check(!locks&&!unlocks&&!blockingLocks&&!Has(451),"missing optional try export skips MSAA capture");
+    Check(Apply().code==0&&blockingLocks==1&&!mutexTries&&unlocks==1,"MSAA policy command retains waiting lock");
+    Reset();onLock=[]{display_preview::testTryLock=nullptr;};RendererAaSnapshot(Context());Check(!Has(451)&&unlocks==1&&!blockingLocks,"MSAA discards lease after try export changes");
+    Reset();throwTryLock=true;Check(CatchSnapshot()&&renderer_aa::faulted&&display_preview::faulted&&!unlocks&&!blockingLocks&&!Has(451),"MSAA try fault latches both users without guessing ownership");
+    Reset();throwUnlock=true;Check(CatchSnapshot()&&renderer_aa::faulted&&display_preview::faulted&&unlocks==1&&!blockingLocks&&!Has(451),"MSAA snapshot unlock fault publishes no renderer values");
+    Reset();throwRead=g_base+display_preview::EpochRva;Check(CatchSnapshot()&&renderer_aa::faulted&&unlocks==1&&!outerHeld&&!blockingLocks&&!Has(451),"MSAA capture fault releases acquired lock via finally");
     Reset();fakeLockResult=1;Check(Apply().code!=0&&locks==1&&!unlocks&&!allocations,"failed acquisition never releases unowned mutex");
     Reset();fakeUnlockResult=1;Check(Apply().code!=0&&renderer_aa::faulted&&display_preview::faulted&&!renderer_aa::mode,"unlock return failure latches both clients");
     Reset();throwUnlock=true;Check(CatchApply()&&renderer_aa::faulted&&display_preview::faulted&&unlocks==1,"unlock exception still permanently latches");

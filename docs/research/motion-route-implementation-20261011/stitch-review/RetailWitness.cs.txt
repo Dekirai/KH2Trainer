@@ -1,0 +1,28 @@
+using KH2Trainer.Core;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+
+if (args.Length != 2) throw new ArgumentException("gameRoot outputPath");
+string root = Path.GetFullPath(args[0]);
+var reader = new AssetArchiveReader(new AssetReadLimits { MaximumDecodedBytes = 4 * 1024 * 1024 }, [root]);
+var index = reader.OpenPackageIndex(Path.Combine(root, "Image", "dt", "kh2_fifth.hed"));
+string key = Convert.ToHexString(MD5.HashData(Encoding.UTF8.GetBytes("obj/N_HB040_BTL.mdlx"))).ToLowerInvariant();
+var entry = index.Entries.Single(x => x.NameHash == key);
+if (entry.Ordinal != 8929 || entry.Offset != 10705281456 || entry.StoredLength != 1306960)
+    throw new InvalidDataException("Unexpected selected package entry");
+var package = reader.InspectPackageEntry(index, entry.Ordinal);
+await using var stream = await reader.OpenReadAsync(package.Original);
+if (stream.Length != 401568) throw new InvalidDataException("Unexpected decoded length");
+byte[] decoded = new byte[checked((int)stream.Length)];
+await stream.ReadExactlyAsync(decoded);
+byte[] loose = await File.ReadAllBytesAsync(Path.Combine(root, "Modding", "openkh", "data", "kh2", "obj", "N_HB040_BTL.mdlx"));
+string sha = Convert.ToHexString(SHA256.HashData(decoded)).ToLowerInvariant();
+if (!decoded.AsSpan().SequenceEqual(loose) || sha != "418339f324536a49c67d72d883cafab9529fd163256aad19be4eb153ed6f0243")
+    throw new InvalidDataException("Selected original package payload mismatch");
+await File.WriteAllTextAsync(args[1], JsonSerializer.Serialize(new {
+    status = "PASS", scope = "Independent selected-entry extraction through explicitly reused Core decoder; bytes retained in memory only",
+    entry.Ordinal, entry.Offset, entry.StoredLength, decodedLength = decoded.Length, sha256 = sha,
+    byteEquality = true, decoder = "Four current Core sources pinned separately in review receipt; no independent codec implementation claimed"
+}, new JsonSerializerOptions { WriteIndented = true }) + "\n");
+Console.WriteLine("PASS one original package payload: 401568 bytes, exact SHA and byte equality; metadata output only.");

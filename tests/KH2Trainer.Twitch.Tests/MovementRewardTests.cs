@@ -23,7 +23,7 @@ internal static class MovementRewardTests
     public static async Task RunAsync(IReadOnlyList<FeatureDefinition> features, Action<bool, string> check)
     {
         var map = new FeatureMap(features);
-        foreach (string key in new[] { "super-speed", "snail", "moon-jump" })
+        foreach (string key in new[] { "super-speed", "snail", "moon-jump", "heavy-jumps" })
         {
             var definition = EffectCatalog.Find(key)!;
             check(definition.AllowedRoles == EffectPlayerRoles.FieldPlayers, $"movement typed: {key} admits exactly the three proven roles");
@@ -95,13 +95,13 @@ internal static class MovementRewardTests
                 check(h.Sink.IsFulfilled("a") && h.Engine.ActiveEffects.Single().RemainingSeconds == remaining,
                     $"movement typed: {key}/{role} equal-value replacement/retired={retire} charges no cross-actor interval");
                 await h.Finish(key);
-                check(h.Game.Movement.Values.Matches(coincident, key == "moon-jump" ? MovementMask.Air : MovementMask.Speed),
+                check(h.Game.Movement.Values.Matches(coincident, key is "moon-jump" or "heavy-jumps" ? MovementMask.Air : MovementMask.Speed),
                     $"movement typed: {key}/{role} restores replacement's originals, never Sora's");
                 if (!retire)
                 {
                     check(h.Engine.PendingCleanupCount == 1, $"movement typed: {key} living off-current actor cleanup remains tracked");
                     h.Game.SwitchMovementActor(PlayerRole.Sora, default, existingGeneration: old); for (int i = 0; i < 3; i++) await h.Tick(1);
-                    check(h.Game.Movement.Values.Matches(oldOriginal, key == "moon-jump" ? MovementMask.Air : MovementMask.Speed) && h.Engine.PendingCleanupCount == 0,
+                    check(h.Game.Movement.Values.Matches(oldOriginal, key is "moon-jump" or "heavy-jumps" ? MovementMask.Air : MovementMask.Speed) && h.Engine.PendingCleanupCount == 0,
                         $"movement typed: {key} old actor gets only its own originals when it returns");
                 }
                 else check(h.Engine.PendingCleanupCount == 0, $"movement typed: {key} retired generation needs no pointer write");

@@ -289,6 +289,7 @@ struct Queue {
     BYTE room[10]{};
 } queue{};
 constexpr DWORD kTimeout=30000;
+#include "DriveRevertLockSupport.inl"
 void Finish(Outcome outcome) { queue.phase=Idle; queue.outcome=outcome; }
 bool SameScene(const TrainerContext& c) {
     return c.base==g_base && c.sceneReady && At<BYTE>(0x9BA8D0) && !At<uintptr_t>(0x9BA928) &&
@@ -341,6 +342,8 @@ void CaptureScene(const TrainerContext& c,unsigned requested) {
 
 bool DriveHandle(const TrainerContext& c,unsigned slot,const double args[8],TrainerResult& result) {
     using namespace drive_features;
+    if(slot==revert_lock::Slot)return revert_lock::Handle(c,args,result);
+    if(slot>revert_lock::Slot && slot<=revert_lock::LastSlot) {result={1,L"This Revert lock value is read-only."};return true;}
     if(slot!=122 && slot!=123 && slot!=126) return false;
     if(!AllowedThread()) { result={1,L"Drive requests require the game thread and a connected trainer."}; return true; }
     if(slot==126) {
@@ -373,6 +376,7 @@ bool DriveHandle(const TrainerContext& c,unsigned slot,const double args[8],Trai
 }
 void DriveTick(const TrainerContext& c) {
     using namespace drive_features;
+    revert_lock::Tick(c);
     if(queue.phase==Idle) return;
     if(!AllowedThread()) { Finish(HostExpired); return; }
     if(!SameScene(c)) { Finish(SceneChanged); return; }
@@ -401,12 +405,17 @@ void DriveTick(const TrainerContext& c) {
         Finish(Completed);
     }
 }
-void DriveCapabilities() { for(unsigned slot=122;slot<=127;++slot) SupportCapability(slot); }
-void DriveSnapshot(const TrainerContext&) {
-    SnapshotValue(124,drive_features::queue.target); SnapshotValue(125,drive_features::queue.phase); SnapshotValue(127,drive_features::queue.outcome);
+void DriveCapabilities() {
+    for(unsigned slot=122;slot<=127;++slot) SupportCapability(slot);
+    for(unsigned slot=drive_features::revert_lock::Slot;slot<=drive_features::revert_lock::LastSlot;++slot)SupportCapability(slot);
 }
-void DriveReset(const TrainerContext&) {
+void DriveSnapshot(const TrainerContext& c) {
+    SnapshotValue(124,drive_features::queue.target); SnapshotValue(125,drive_features::queue.phase); SnapshotValue(127,drive_features::queue.outcome);
+    drive_features::revert_lock::Snapshot(c);
+}
+void DriveReset(const TrainerContext& c) {
     using namespace drive_features;
+    revert_lock::Cleanup(c);
     if(queue.phase!=Idle) Finish(AllowedThread()?Cancelled:HostExpired);
     // Never cancel/free the engine's active fiber, refund gauges or edit form IDs.
 }

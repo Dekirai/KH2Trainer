@@ -1,0 +1,140 @@
+ORIGIN-Ressourcen für Voice: Erzeugung, geliehene Audiodaten und Freigabe
+=====================================================================
+
+Stand: 11.10.2026. Statische Teilanalyse, unabhängige Prüfung steht aus.
+Dieses Ergebnis bleibt vorerst unter artifacts und gehört nicht zu v0.12.15.
+
+Ergebnis
+--------
+Ein ORIGIN-Wrapper ist kein eigenständiger Besitzer seiner Audiodaten. Auf dem
+erfassten Voice-Pfad enthält er einen Zeiger auf einen ReplaceEntry-Buffer.
+Voice-Start registriert diesen Buffer im Modus 2. Der spätere Bank-Destruktor
+gibt ihn in diesem Modus nicht frei; das übernimmt der ReplaceEntry-Destruktor.
+Bank-Invalidierung, Bank-Destruktion und die Freigabe des Replacement-Buffers
+sind damit unterschiedliche Schritte. Ihre sichere Reihenfolge für sämtliche
+Actor- und Audio-Pfade ist noch nicht bewiesen.
+
+Unter ausdrücklich geprüften Voraussetzungen behandelt die untere Audio-
+Initialisierung den Buffer als veränderlich: Nach der Initialisierung aller
+64 Bank-Buckets mit Knotenoffset 104 und bei erhaltenen Offsets sowie intakten,
+getrennten Bankobjekten bleiben Payload +8 und Alternativspeicher +40 über die
+Listeneinfügung erhalten. Dann schreibt ActualBank Byte +15 jeder Sequenz auf
+0xFF. Ein ursprünglicher Datei-Hash beschreibt diesen Runtime-Buffer nicht mehr
+vollständig. Ein allgemeiner Ausschluss anderer Offset-Schreiber fehlt weiterhin.
+
+Konkrete Befunde
+---------------
+1. Der Importer 36E230 ruft den Serializer 36D8B0 auf. Dieser kann bei einem
+   vorhandenen passenden Replacement-Listeneintrag 48 Byte große ORIGIN-Wrapper
+   für BAR-Typen 31, 34 und 48 schreiben. Er erzeugt den Listeneintrag nicht selbst.
+   ORIGIN+12 enthält dabei
+   zunächst extrahierte SeBlock-Metadaten oder Null für VAG/IopVoice. Der Importer
+   öffnet Dateien zum Schreiben und wurde nicht ausgeführt. Seine Existenz
+   beweist keine Nutzung für eine bestimmte ausgelieferte Ressource.
+
+2. BAR-Vorbereitung 3A64F0 sucht einen bereits geladenen Replacement-Namen.
+   ReplaceEntry+96 wird ORIGIN+32, dessen Größenfeld +80 wird ORIGIN+40. Ein
+   fehlender Treffer nullt Zeiger und Größe. ORIGIN+12 bleibt erhalten. Die
+   genaue Suche 12DB50 lädt selbst keine Datei und übernimmt keine Referenz.
+   Im Paketmodus 3 wird der eingebettete Name benutzt; andernfalls wird ein
+   Name mit .win32.scd erzeugt. Erfolgreiches Binden nullt zusätzlich Byte +31.
+
+3. Voice-Start 1DFD70 ersetzt ORIGIN+12 durch die unteren 32 Bit des Payload-
+   Zeigers. Es ist daher kein unveränderliches ID-Feld. Zwei 64-Bit-Zeiger
+   könnten denselben Schlüssel ergeben. Auch ein gültiger Zeiger mit unteren
+   32 Bit Null würde diesen Startpfad passieren; BAR-Cleanup überspringt
+   dagegen Schlüssel Null. Das sind geprüfte Rechenfälle, keine beobachteten
+   Spielzustände oder nachgewiesenen Abstürze.
+
+4. BankEntry registriert im Modus 2 direkt den vorhandenen Buffer. Der Modus 0
+   nutzt einen separaten Transfer, der Speicher reserviert und Daten kopiert.
+   Destruktor 136060 überspringt im Modus 2 sowohl _aligned_free als auch das
+   Nullsetzen seines Payload-Zeigers. Seine Wartephasen garantieren anhand
+   dieser Analyse keine allgemeine Terminierung.
+
+5. Invalidierung 1363B0 entfernt passende SoundRecords und markiert den Bank-
+   Schlüssel mit 0xFFFF. Die BankEntry bleibt zunächst in ihrer Liste.
+   Verbraucher 13C470 entfernt sie später nur bei passendem Marker und positiver
+   unterer Freigabeprüfung 078BE0. Ein Invalidierungsaufruf allein beweist nicht,
+   dass sämtliche Zugriffe auf die SCD-Daten beendet sind.
+
+6. BAR-Cleanup 3A6A10 invalidiert ORIGIN-Banken für Typen 34/48, jedoch nicht
+   für Typ 31 in derselben Switch-Verzweigung. Danach erreicht es gegebenenfalls
+   ResourceEntry-Destruktor 12D8E0 und ReplaceEntry-Destruktor 129D30. Letzterer
+   gibt den Buffer frei und nullt seinen eigenen Zeiger. Die erfassten Körper
+   nullen die ausgeliehenen ORIGIN+32/+40-Felder nicht. Andere Callbacks und
+   spätere Schreiber sind damit nicht ausgeschlossen.
+
+7. Die ausgewählte BTLOBJ-Konstruktion bindet BAR-Typ 34 als VOICE_EE-Ressource.
+   Die Voice-Komponente und der spätere EE-Request speichern denselben Wrapper-
+   Zeiger. Die zuvor untersuchte N_EX650_BTL10-Konstruktion kann ohne eine solche
+   Voice-Bindung bleiben. Hier wird weder eine tatsächliche Bindung dieses NPC
+   noch ein hörbarer Ton behauptet.
+
+8. Der SoundDriver-Konstruktor 091250 ruft 0889B0 auf. Zwei Schleifendurchläufe
+   mit je 32 Stores setzen für alle 64 Buckets den Knotenoffset auf 104. Wenn
+   dieser Zustand bis zur Einfügung erhalten bleibt, schreibt 08C1A0 in das
+   Bankobjekt nur bei +104/+112/+120 und beim vorherigen Bankobjekt bei +112.
+   Bei intakten, getrennten Objekten überlappt dies weder Payload +8 noch
+   Alternativspeicher +40, Vtable, Flag oder Sequenzzahl. Ohne diesen Zustand
+   gilt der Schluss nicht; Modell-Gegenproben mit Offset 0 und 24 zeigen das.
+
+9. Unter diesen Voraussetzungen und dem konkret geprüften SoundDriver/ActualBank-
+   Vtable-Pfad speichert die untere Bank den SCD-Zeiger weiter. Initialisierung
+   09FBD0 löst über 09FD20 Sequenzadressen als Bufferbasis plus vorzeichenbehaftete
+   DWORD-Offsets auf und schreibt jeweils Byte +15 = 0xFF, sofern Flag-Bit 3
+   nicht gesetzt ist. Die Initialisierung verwendet nichtnegative Indizes;
+   der Hilfszugriff selbst besitzt keine Prüfung auf negative Eingaben. Spätere
+   oder konkurrierende Änderungen der Bucket-Offsets sind nicht ausgeschlossen.
+
+Prüfung
+-------
+42 frische vollständige ASM-Funktionskörper, 3.907 Instruktionen und 16.067
+Originalbytes sind erfasst. Davon sind 151 Byte ausdrücklich zugeordnete
+Switch-Tabellen oder nachgestellte Füllbytes, keine ausgelassenen Instruktionen.
+Der Verifier prüft alle ASM- und Pseudocode-Seiten, Original-PE-SHA256, 93 feste
+Instruktionsanker, 68 positive Querverweise, zwei Switches mit 96 Fällen,
+konkrete Vtable-Ziele, vier RTTI-Identitäten und alle 64 initialisierten Bucket-
+Offsets. Das Verhaltensmodell enthält 306 begrenzte Fälle einschließlich
+Gegenproben zur beanstandeten Erhaltungsannahme. Das ist kein vollständiger
+Semantiknachweis für 42 Funktionen.
+
+Die Review-Ergänzung steht getrennt in bucket-offset-capture.json und
+review-amendment.json. review-amendment-before.json hält die vorherigen Claims,
+Manifestwerte und Hashes fest. Die Originalbytes der ersten 40 Körper sind
+unverändert; hinzu kamen ausschließlich die zwei Initialisierungskörper.
+
+Reproduzieren:
+  py -3 -B artifacts/voice-origin-resources-20261011/verify.py --check
+
+Die IDB war bei der Aufnahme untätig; auto_analysis_ready war false. Es wurde
+keine Autoanalyse erzwungen. Querverweise dienen als positive Belege, nicht als
+vollständiger Ausschluss weiterer Schreiber. Keine Spielausführung, kein Attach,
+keine Injection, keine GUI-Aktion, keine Originaldatei- oder Save-Änderung.
+
+Was sich daraus entwickeln lässt
+-------------------------------
+Eine Ressourcenanzeige könnte später zwischen vorhandener Voice-Komponente,
+gebundenem ORIGIN-Wrapper, geladenem SCD-Payload, angenommenem Request und
+registrierter Bank unterscheiden. Das wäre für fehlende Stimmen, benutzerdefinierte
+Sprachpakete und die Fehlersuche beim Austausch von Audiodaten nützlich. Zuvor
+müssen die Datenlesegrenzen und die Lebensdauer der jeweiligen Objekte abgesichert
+werden. Dieser Bericht implementiert keine Audioänderung und keinen Hot Reload.
+
+Nächste konkrete Targets
+-----------------------
+- Unteres SoundDriver-Bank-Löschen über 078B50, Vtable-Slot +56, und 09D460.
+- Aufrufreihenfolge zwischen Actor-Voice, EE-Requests, Ressourcen-Callbacks,
+  ResourceEntry-Freigabe und später Bank-Destruktion.
+- Ein unveränderter Original-BAR mit Typ 34 und zugehörigem Replacement für einen
+  BTLNPC, dessen Konstruktor tatsächlich VOICE_EE bindet.
+- Weitere ORIGIN+12/+32-Schreiber und Aliaspfade mit Instruktionsanalyse.
+- Unabhängige Review vor einer Übernahme in Dokumentation oder Produkt.
+
+Vorwissen
+---------
+ResourceEntry/ReplaceEntry-Eigentum und BAR-Vorbereitung überschneiden sich mit
+drive-provider-binding und actor-free-closure. Diese früheren Ergebnisse werden
+im Bericht nicht als erstmals entdeckte Funktionen ausgegeben. Neu zusammengeführt
+werden der konkrete Voice-Modus 2, die aufgeschobene Bank-Freigabe, die wechselnde
+Bedeutung von ORIGIN+12 und die tatsächlichen Schreibzugriffe auf SCD-Sequenzen.

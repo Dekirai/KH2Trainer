@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "study": "attack-slot-reuse-20261013",
+  "status": "bounded-static-study-complete",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "claims": [
+    {
+      "addr": "0x1403d25d0",
+      "Finding": "After matching attack DWORD+200 and decoded +20, a mismatch in attack DWORD+24 or the entry tag causes the manager to call deferred marking on the old attack, construct a new ATTACK_OBJ with the same external slot address, and write the new pointer into that slot at 3D26ED. The manager does not locally retarget old+720 or require marking success before replacement. Under no intervening helper/writer changes, old and new retain the same external slot address.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d25d0]",
+        "evidence.json#functions[addr=0x1403d0eb0]",
+        "evidence.json#functions[addr=0x14040f1c0]",
+        "probe-results.json"
+      ],
+      "Limitations": "Valid matching slot, successful allocation and constructor return are required. Opaque helper effects, reentrancy and other writers are not ruled out. The fixture explicitly supplies its memory and helper boundaries; no live caller sequence or reachable normal-game failure is proved."
+    },
+    {
+      "addr": "0x14040f4c0",
+      "Finding": "The original ATTACK_OBJ deleting wrapper loads QWORD(old+720) at 40F4D9 and stores zero through it at 40F4E0 before common cleanup, without comparing the slot content with old. If the retained address names a valid slot already replaced with new, that local store clears the new registration. Two staged original-instruction fixtures reproduce precisely that store after manager replacement.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040f4c0]",
+        "evidence.json#functions[addr=0x14040f1c0]",
+        "evidence.json#functions[addr=0x1403d25d0]",
+        "probe-results.json"
+      ],
+      "Limitations": "The later destructor call and unchanged valid old+720 are explicit sequence assumptions. Common cleanup is opaque in the fixture and could have further effects. This proves neither live reachability nor a use-after-free, leak or overall lifetime failure."
+    },
+    {
+      "addr": "0x1403d29b0",
+      "Finding": "The complete adapter calls 3D25D0 using the manager at secondArg+3088; its pointer cells therefore lie at secondArg+3104+16*i. The original data cell 5C62E8 points to this adapter. The newly captured xrefs enumerate 42 code references to the manager routine, this study uses the selected adapter body. The full42 are independently recorded in the separate attack-manager-adapters-20261013 study.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d29b0]",
+        "evidence.json#functions[addr=0x1403d25d0]",
+        "evidence.json",
+        "original-study.zip",
+        "../attack-manager-adapters-20261013/report.json"
+      ],
+      "Limitations": "The separate adapter study supplies the shared local argument mapping; xrefs still do not prove execution with changed parameters. Current runtime descriptor, owner-cell lifetime and external input validity remain prerequisites.",
+      "RawCaptureMembers": [
+        "root-capture/xrefs.json"
+      ]
+    },
+    {
+      "addr": "0x14040f610",
+      "Finding": "ATTACK_OBJ virtual+24 is 40F610. Its complete body can mark this through 3D0EB0 after selected helper results or an eligible update yielding zero counted entries. It contains no explicit local retargeting/invalidation of the saved owner-cell pointer+720. The contact consumer chooses virtual0 for already-marked entries and virtual+24 otherwise; marking during an update does not retroactively choose the destructor branch of that same iteration.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040f610]",
+        "evidence.json#functions[addr=0x1403cff40]",
+        "evidence.json#functions[addr=0x1403d0eb0]",
+        "evidence.json"
+      ],
+      "Limitations": "Transitive helper writes, callback ordering and reentrancy are not closed. Absence of an explicit local +720 repair is not an all-writer or all-alias guarantee. No fixed frame or scheduling delay follows from the selected branch order."
+    },
+    {
+      "addr": "0x1404323b0",
+      "Finding": "The six-instruction adapter decodes the DWORD at its input address and tailcalls 3D0EB0. It does not locally clear that input cell or explicitly access the target object's saved owner-cell pointer+720.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404323b0]",
+        "evidence.json#functions[addr=0x1403d0eb0]",
+        "original-study.zip"
+      ],
+      "Limitations": "Input provenance, actual caller sequence and indirect effects outside the decoded helper boundary are not established. This adapter alone does not prove a reachable replacement/destruction sequence.",
+      "RawCaptureMembers": [
+        "root-capture/0x1404323B0-insns.json"
+      ]
+    }
+  ],
+  "verification": "verification.json",
+  "probe": "probe-results.json",
+  "readiness": "Root captures used; global autoanalysis completion not independently observed.",
+  "mutations": "Documentation imports frozen original study; no game or native code execution. This source snapshot is newer than immutablev0.12.22."
+}

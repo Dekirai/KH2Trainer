@@ -1,0 +1,87 @@
+"""Write only this external review receipt after rechecking the frozen study."""
+from pathlib import Path
+import hashlib,json,subprocess,sys
+H=Path(__file__).resolve().parent;R=H.parents[1];S=R/'artifacts/audio-bank-retirement-20261011'
+EXPECTED='cdf7273dda00f8c2ed21320c38c4087edf176f2831dbfb6fc1a23e4fcb7c7d6b'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def load(p):return json.loads(p.read_text(encoding='utf-8-sig'))
+assert sha(S/'manifest.json')==EXPECTED
+before={p.name:sha(p) for p in S.iterdir() if p.is_file()}
+commands=[['-B',str(H/'review.py')],['-B',str(S/'verify.py'),'--check'],['-B',str(H/'integration_delta.py')]]
+runs=[]
+for name,args in zip(['independent-check.txt','author-check.txt','integration-delta-check.txt'],commands):
+ p=subprocess.run([sys.executable,*args],cwd=R,capture_output=True,text=True)
+ (H/name).write_text(p.stdout+p.stderr,encoding='utf-8')
+ assert p.returncode==0,(name,p.stdout,p.stderr)
+ runs.append({'command':['python',*args],'exitCode':p.returncode,'log':name,'sha256':sha(H/name)})
+assert before=={p.name:sha(p) for p in S.iterdir() if p.is_file()},'author verification must not mutate study'
+checks=load(H/'checks.json');report=load(S/'report.json')
+notes={
+ '0x140078b50':'Global lock identity verified from original PE imports. Force bypasses only the initial layout gate; missing driver can return true.',
+ '0x140078be0':'Missing driver or layout returns true before concrete readiness checks. This is not quiescence.',
+ '0x140091d00':'Signed WORD branch and all selected helper branches independently interpreted. Revised predicate wording precisely names virtual+656 and virtual+632.',
+ '0x140091a70':'Stop work precedes fresh lookup and final gates. Force does not override final eligibility.',
+ '0x14009a780':'Concrete list walk and two virtual slots support the precise predicate; method implementations remain bounded.',
+ '0x1400986a0':'Actual body independently interpreted for mixed pending lists, absent/unmatched/matched active keys and signed state boundaries.',
+ '0x1400981c0':'Actual body interpreted; exact list survivors, recycled nodes, pending count, status and active cancellation marks checked. Two native state loads do not create an atomic sample.',
+ '0x14008a570':'32 native-body simulations confirm stream unlink/type-three flag clear before cancellation, persistent partial effects on failure and success-only main/hash/pool work. Flag-clear path proceeds without cancellation.',
+ '0x14009fa70':'All eight low flag combinations interpreted with explicit deallocator stubs. Native body leaves payload+8 and auxiliary+40 untouched; called helpers are not expanded by this model.',
+ '0x140136060':'Manual branch trace confirms both loop exits and mode2 skip of aligned_free plus field clear. Import identity checked; eventual progress is not claimed.',
+ '0x14007d3f0':'Stop chain and virtual slots checked against complete original-byte bodies. Conversion generality and downstream stop semantics remain open.',
+ '0x14006b1d0':'Manual native list trace verifies the record+60 handle comparison; original vtable cell independently verified.',
+ '0x14006d910':'Page iteration and 039D30 record writes/destructor/unlink sequence checked; downstream destructors are outside closure.',
+ '0x140088fc0':'Index computation, owner marker, full handle equality and unlock-before-return checked; local upper bound is absent.',
+ '0x140088f20':'40 actual-body traces verify generation wrap and collision rescan with synthetic live lists. They do not establish every counter epoch or termination at full occupancy.',
+ '0x140089390':'40 instruction traces start at the allocation/header segment and stop before construction on admission. Free-pool pop precedes gates; generation precedes SSCF; version zero admission is distinct from valid initialization.',
+ '0x140089c90':'Separate factory initialization fields, external inputs and stream flag checked; no ActualBank payload assumptions applied to this subclass.',
+ '0x1400ba4a0':'16 actual primitive traces verify 16-bit wrap and adjacent-byte preservation. Signed consumer boundary verified independently.',
+ '0x1400bb050':'Both RootSound WORD writer sites and signed bank ID lookup sequence checked. The presence of paired sites is not global reference balance.',
+ '0x140091250':'Constructor/publication sequence and original virtual cells/RTTI checked. Presence in every running game is not asserted.',
+ '0x1400889b0':'Actual initializer segment interpreted through both unrolled passes: 64 zeroed bucket records with node offset104, main56 and stream80. Later mutation or alias exclusion is not proven.',
+ '0x14009fbd0':'Conditional prior payload-mutation chain rechecked against original bytes and explicitly reused08C1A0. Retained104/intact/disjoint/no relevant intervening writes remain necessary premises.'
+}
+assert set(notes)=={c['address'] for c in report['claims']} and len(notes)==22
+text='''# Unabhängiger Review: Audio-Bankfreigabe
+
+**Ergebnis: akzeptiert im beschriebenen statischen Umfang.** Es bleiben keine offenen Review-Blocker. Die Studie bleibt separat unter `artifacts`; dieser Receipt ändert weder Produktdateien noch das Paket v0.12.16.
+
+## Geprüft
+
+- 40 vollständige frische IDA-Körper: 3.108 Instruktionen und 13.520 Originalbytes; sieben nachgestellte CC-Bytes sind als Padding ausgewiesen.
+- Original-PE-SHA256, Seitenzusammenführung, Endcursor, Capstone-Decodierung, 118 semantische Anker, 892 positiv kodierte Referenzen, zehn Vtable-Ziele, drei RTTI-Identitäten sowie Lock-/Free-Importnamen.
+- Der zusätzliche Körper 08C1A0 ist ausdrücklich eine wiederverwendete Abhängigkeit und zählt nicht als 41. frischer Körper.
+- 10.050 unabhängige Checks; 477 eigene Simulationen anhand tatsächlich dekodierter Instruktionen. Sie umfassen Streamprüfung/Abbruch, Freigabebedingungen, Factory-Gates, Generationen, Freigabereihenfolge, WORD-Arithmetik, Destruktorflags und alle 64 Bucket-Initialisierer.
+- Der unveränderte Autoren-Verifier besteht ebenfalls: 527 Modellfälle und 224 daraus abgeleitete 091D00-Traces.
+
+## Ergebnis der inhaltlichen Prüfung
+
+Die Studie unterscheidet zutreffend zwischen Freigabeprüfung, Stop, Request-Abbruch, Listenentfernung und Destruktor. Fehlende Infrastruktur kann true liefern. Fehlgeschlagener Abbruch kann bereits wartende Requests und die Streamliste verändert haben. Das erlaubt keine Schlussfolgerung auf vollständig beendete Leser.
+
+Ein Ausdruck in Claim 091D00 wurde präzisiert: Er beschreibt jetzt direkt das Match über Virtual+656 und das false-Ergebnis von Virtual+632. Weitere Methodensemantik wird damit nicht vorausgesetzt. Die korrigierte Fassung ist im angenommenen Manifest eingefroren.
+
+Mode2 behält den geliehenen Payload. Die bedingte ActualBank-Mutation hängt weiterhin von erhaltenen Bucket-Offsets104, intakten getrennten Objekten und fehlenden intervenierenden relevanten Schreibzugriffen ab. Die Factory-Gates garantieren keine vollständige Initialisierung; insbesondere Version0 passiert das Header-Gate, aber nicht den ausgewiesenen Initializer-Vertrag.
+
+## Grenzen
+
+Die eigenen Simulationen verwenden synthetischen Speicher und ausdrücklich ersetzte Helfer-Rückgaben; sie führen keinen Originalcode aus. Sie belegen ausgewählte Branches und Reihenfolgen, keine Erreichbarkeit eines Spielzustands, Nebenläufigkeit, sichere Ressourcenlebensdauer, vollständige Schreiberliste oder sichere Audio-Ersetzung. Zwei gelesene Zustandswerte werden durch den Test nicht atomar. Der Verifier war während der IDA-Aufnahme nicht mit abgeschlossener Autoanalyse belegt.
+
+Kein Spielstart, keine GUI-, Attach-, Injection-, Save-, Importer- oder Originalschreibaktion. Kein Produktbuild. Der genaue Umfang, alle 22 Claim-Entscheidungen und Pins stehen in `review.json`.
+'''
+text=text.replace('10.050',f"{checks['checks']:,}".replace(',','.'))
+text+='\n## Transportformat-Nachprüfung\n\nDer neue Freeze ändert 34 Belegverweise, ergänzt die unveränderten vollständigen Captureobjekte für den Coverageparser und macht Abhängigkeitspfade portabel. Alle alten Evidencefelder lassen sich zum byteidentischen zuvor geprüften Evidence-Dokument zurückbilden. Capturedateien, Modelle, Findings und Einschränkungen sind unverändert. 121 Belegverweise und alle 40 Funktionskörper werden vom unveränderten Coverageparser erkannt. Die zusätzliche Deltaprüfung steht in integration-delta.json.\n'
+(H/'report.md').write_text(text,encoding='utf-8')
+pins={p.name:{'bytes':p.stat().st_size,'sha256':sha(p)} for p in H.iterdir() if p.is_file() and p.name not in ('review.json',)}
+out={
+ 'schema':1,'date':'2026-10-11','reviewer':'/root/origin_voice_resources','status':'ACCEPTED_BOUNDED_STATIC_STUDY','independentReviewComplete':True,'openBlockers':[],
+ 'study':str(S.relative_to(R)).replace('\\','/'),'studyManifestSha256':EXPECTED,'studyEvidenceSha256':sha(S/'evidence.json'),'originalSha256':'9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed',
+ 'counts':{'freshBodies':40,'instructions':3108,'bodyBytes':13520,'instructionBytes':13513,'trailingCCBytes':7,'reusedDependencyBodies':1,'anchors':118,'positiveReferences':892,'virtualTargets':10,'rttiIdentities':3,'claims':22,'independentChecks':checks['checks'],'ownInstructionSimulationCases':checks['simulationCases'],'ownSimulationGroups':checks['simulationGroups'],'authorModelCases':527,'authorDecodedTraces':224},
+ 'claimReview':[{'address':c['address'],'status':'ACCEPTED_WITH_STATED_LIMITATIONS','note':notes[c['address']]} for c in report['claims']],
+ 'resolvedReviewNotes':[{'address':'0x140091d00','change':'Replace nonretired shorthand with explicit virtual+656 match and virtual+632 false predicate.','newFrozenManifest':EXPECTED}],
+ 'method':'Independent PE mapping/import parsing, Capstone decoding and capture/page verification; manually checked 22 bounded claims; own tiny instruction interpreter over original-decoded bodies with sparse synthetic memory and explicit helper stubs. Unsupported instructions and calls fail. Author verifier run separately and checked read-only.',
+ 'simulationLimits':['No original native execution.','Only named selected bodies/segments are interpreted; helpers and locks are synthetic.','Factory simulation starts at allocation/header segment and stops before initialization.','Initializer simulation covers offset/bucket initialization before unrelated pool allocation.','Sample values and abstract graph cases establish no game reachability.','No scheduling, all-writers, lifetime, ABA permanence, fully occupied generation-loop termination or virtual implementation closure.'],
+ 'gameExecution':False,'guiActions':False,'processAttachOrInjection':False,'originalWrites':False,'productChanges':False,'fullBuild':False,'releaseIntegration':'Excluded from v0.12.16; external review receipt only.',
+ 'runs':runs,'reviewArtifacts':pins,'studyUnchangedByReview':True,'integrationDelta':load(H/'integration-delta.json'),
+ 'nextTargets':['Upper ResourceEntry/ReplaceEntry cleanup order against BankEntry and actor/EE voice borrowers.','Reader virtual interfaces and actual active-stream state transitions.','Intervening writers and aliases for retained offsets, bank fields and replacement buffers.','Caller lock/handle bounds and reference-balance invariants.']
+}
+(H/'review.json').write_text(json.dumps(out,indent=2,ensure_ascii=True)+'\n',encoding='utf-8')
+print(json.dumps({'status':out['status'],'manifestSha256':EXPECTED,'reviewSha256':sha(H/'review.json'),'independentChecks':checks['checks'],'ownInstructionSimulationCases':checks['simulationCases']}))

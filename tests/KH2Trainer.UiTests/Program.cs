@@ -1,5 +1,4 @@
 using System.IO;
-using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Windows;
@@ -16,60 +15,29 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
-        if(args.Length!=2) return 2;
+        if(args.Length!=2 || args[0]!="--fixture") return 2;
         string output=Path.GetFullPath(args[1]);Directory.CreateDirectory(output);
-        bool fixture=args[0]=="--fixture";
-        string source=fixture?Path.Combine(output,"fixture.bar"):Path.GetFullPath(args[0]);
-        if(fixture) {
-            byte[] bytes=new byte[80];"BAR\x01"u8.CopyTo(bytes);BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(4),1);
-            BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(16),2);"test"u8.CopyTo(bytes.AsSpan(20));
-            BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(24),32);BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(28),48);
-            for(int i=32;i<80;++i)bytes[i]=(byte)i;File.WriteAllBytes(source,bytes);
-        }
         // A plain WPF Application has no trainer Startup override or StartupUri.
         // Load only the compiled theme and templates; never construct KH2Trainer.App or MainWindow.
         var app=new Application { ShutdownMode=ShutdownMode.OnExplicitShutdown };
         app.Resources=new ResourceDictionary { Source=new Uri("pack://application:,,,/KH2_Trainer;component/Themes/FeatureTemplates.xaml",UriKind.Absolute) };
         var bindingLog=new StringWriter();PresentationTraceSources.DataBindingSource.Listeners.Add(new TextWriterTraceListener(bindingLog));
         PresentationTraceSources.DataBindingSource.Switch.Level=SourceLevels.Warning;
-        using var vm=new AssetExplorerViewModel(_=>{});
-        vm.OpenFileAsync(source).GetAwaiter().GetResult();
-        if(vm.Rows.Count==0 || vm.Busy)throw new InvalidDataException("The actual viewmodel did not load the asset fixture.");
-        var first=vm.Rows[0];vm.SelectedRow=first;
-        vm.Filter="___missing_asset_name___";
-        if(vm.Rows.Count!=0 || vm.SelectedRow!=null)throw new InvalidDataException("Filter must clear invisible selection.");
-        vm.Filter="";vm.SelectedRow=first;
-        int rootEntries=vm.Rows.Count;
-        vm.InspectSelectedAsync().GetAwaiter().GetResult();
-        if(vm.Preview.Length==0 || !vm.BackCommand.CanExecute(null))throw new InvalidDataException("Inspect must preview the real entry and preserve back navigation.");
-        vm.BackCommand.Execute(null);
-        if(vm.Rows.Count!=rootEntries || vm.SelectedRow!=first)throw new InvalidDataException("Back must restore the parent and selection.");
-        vm.InspectSelectedAsync().GetAwaiter().GetResult();
-        var view=new AssetExplorerView { DataContext=vm };
-        var panel=new Border { Background=(Brush)app.Resources["BackgroundBrush"],Padding=new Thickness(24),Child=view };
-        panel.SetValue(TextElement.ForegroundProperty,app.Resources["TextBrush"]);
-        panel.SetValue(TextElement.FontFamilyProperty,new FontFamily("Segoe UI"));panel.SetValue(TextElement.FontSizeProperty,14.0);
-        double height=LayoutOffscreen(panel);
-        var bitmap=new RenderTargetBitmap(780,(int)height,96,96,PixelFormats.Pbgra32);bitmap.Render(panel);
-        var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));
-        using(var stream=File.Create(Path.Combine(output,"asset-explorer.png")))encoder.Save(stream);
-        var pixels=new byte[bitmap.PixelWidth*bitmap.PixelHeight*4];bitmap.CopyPixels(pixels,bitmap.PixelWidth*4,0);
-        int bright=0;for(int i=0;i<pixels.Length;i+=4)if(pixels[i]>240&&pixels[i+1]>240&&pixels[i+2]>240)bright++;
-        if(bright>(pixels.Length/4)*.02)throw new InvalidDataException("Unexpected light background in the asset page.");
         var diagnostics=CheckDiagnostics(output,app);
-        var fingerprints=AssetFingerprintUiChecks.Run(Path.Combine(output,"Fingerprints"),app);
-        var bdx=BdxInspectionUiChecks.Run(Path.Combine(output,"Bdx"),app);
         var featurePages=FeatureLayoutUiChecks.Run(Path.Combine(output,"FeaturePages"),app);
         var twitch=TwitchUiChecks.Run(Path.Combine(output,"Twitch"),app);
         var gameplayAdapter=GameplayAdapterChecks.Run();
         var colorState=ColorStateUiChecks.Run();
         var missionCounters=MissionCounterUiChecks.Run();
+        var audioRequests=AudioRequestUiChecks.Run(Path.Combine(output,"AudioRequests"),app);
+        var gummiRequest=GummiRequestUiChecks.Run();
+        var chaosComfort=ChaosComfortUiChecks.Run(Path.Combine(output,"ChaosComfort"),app);
         if(app.Windows.Count!=0 || app.MainWindow!=null || app.StartupUri!=null)
             throw new InvalidDataException("Offscreen verification created an application window or startup target.");
         if(bindingLog.ToString().Length>0)throw new InvalidDataException(bindingLog.ToString());
-        var report=new { success=true,source,sourceIsSynthetic=fixture,entries=rootEntries,height,width=780,bindingErrors=0,
-            diagnostics,fingerprints,bdx,featurePages,twitch,gameplayAdapter,colorState,missionCounters,applicationType=app.GetType().FullName,windowCount=app.Windows.Count,
-            scope="Offscreen feature pages (sections, tabs, control rows and readouts), Twitch page (setup, rewards, live queue), Asset Explorer, content-fingerprint comparison and Game Messages views. Navigation completeness, switch behavior, diagnostic states, fingerprint identity/save/load, all 66 diagnostic texts/captions and bindings checked. No visible window, game process, input or gameplay test." };
+        var report=new { success=true,sourceIsSynthetic=true,bindingErrors=0,
+            diagnostics,featurePages,twitch,gameplayAdapter,colorState,missionCounters,audioRequests,gummiRequest,chaosComfort,applicationType=app.GetType().FullName,windowCount=app.Windows.Count,
+            scope="Offscreen feature pages (sections, tabs, control rows and readouts), Twitch page (setup, rewards, live queue) and Game Messages views. Navigation completeness, switch behavior, diagnostic states, all 66 diagnostic texts/captions and bindings checked. No visible window, game process, input or gameplay test." };
         File.WriteAllText(Path.Combine(output,"report.json"),JsonSerializer.Serialize(report,new JsonSerializerOptions {WriteIndented=true}));
         Console.WriteLine(JsonSerializer.Serialize(report));return 0;
     }

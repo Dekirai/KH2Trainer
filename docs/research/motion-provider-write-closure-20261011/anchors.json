@@ -1,0 +1,730 @@
+{
+  "anchors": [
+    {
+      "addr": "0x14014f2ff",
+      "function": "0x14014f1e0",
+      "meaning": "Retail caller clears RCX immediately before the configuration setter.",
+      "ida": "xor ecx, ecx",
+      "independentDecode": "xor ecx, ecx",
+      "bytes": "33 c9"
+    },
+    {
+      "addr": "0x14014f301",
+      "function": "0x14014f1e0",
+      "meaning": "Only direct codecaller of 12EE70 in fresh IDA Xrefs.",
+      "ida": "call kh2_set_resource_replacement_context",
+      "independentDecode": "call 0x14012ee70",
+      "bytes": "e8 6a fb fd ff"
+    },
+    {
+      "addr": "0x14012ee77",
+      "function": "0x14012ee70",
+      "meaning": "Only direct write to the handler-table global 8AEF38.",
+      "ida": "mov cs:qword_1408AEF38, rcx",
+      "independentDecode": "mov qword ptr [rip + 0x7800ba], rcx",
+      "bytes": "48 89 0d ba 00 78 00"
+    },
+    {
+      "addr": "0x14012cf16",
+      "function": "0x14012cd80",
+      "meaning": "ResourceEntry handler index starts at -1.",
+      "ida": "mov dword ptr [r15+64Ch], 0FFFFFFFFh",
+      "independentDecode": "mov dword ptr [r15 + 0x64c], 0xffffffff",
+      "bytes": "41 c7 87 4c 06 00 00 ff ff ff ff"
+    },
+    {
+      "addr": "0x14012e696",
+      "function": "0x14012e5c0",
+      "meaning": "Load handler-table pointer after constructing and linking currentEntry.",
+      "ida": "mov rax, cs:qword_1408AEF38",
+      "independentDecode": "mov rax, qword ptr [rip + 0x78089b]",
+      "bytes": "48 8b 05 9b 08 78 00"
+    },
+    {
+      "addr": "0x14012e6a0",
+      "function": "0x14012e5c0",
+      "meaning": "Null table skips the whole matching/callback loop.",
+      "ida": "jz loc_14012E835",
+      "independentDecode": "je 0x14012e835",
+      "bytes": "0f 84 8f 01 00 00"
+    },
+    {
+      "addr": "0x14012e82a",
+      "function": "0x14012e5c0",
+      "meaning": "Matched non-null table load callback (outside ordinary null-table path).",
+      "ida": "call qword ptr [rax+rdi+10h]",
+      "independentDecode": "call qword ptr [rax + rdi + 0x10]",
+      "bytes": "ff 54 38 10"
+    },
+    {
+      "addr": "0x14012e82e",
+      "function": "0x14012e5c0",
+      "meaning": "Handler index recorded only after the matched callback.",
+      "ida": "mov [r13+64Ch], ebp",
+      "independentDecode": "mov dword ptr [r13 + 0x64c], ebp",
+      "bytes": "41 89 ad 4c 06 00 00"
+    },
+    {
+      "addr": "0x1403f98b4",
+      "function": "0x1403f9850",
+      "meaning": "Ordinary reader retires overlapping registration before reading.",
+      "ida": "call sub_14012EF30",
+      "independentDecode": "call 0x14012ef30",
+      "bytes": "e8 77 56 d3 ff"
+    },
+    {
+      "addr": "0x1403f98da",
+      "function": "0x1403f9850",
+      "meaning": "Synchronous call to 106700 with destination in R8.",
+      "ida": "call sub_140106700",
+      "independentDecode": "call 0x140106700",
+      "bytes": "e8 21 ce d0 ff"
+    },
+    {
+      "addr": "0x1403f997a",
+      "function": "0x1403f9850",
+      "meaning": "Reader mode3 selects already-created currentEntry.",
+      "ida": "cmp cs:dword_14079CFC8, 3",
+      "independentDecode": "cmp dword ptr [rip + 0x3a3647], 3",
+      "bytes": "83 3d 47 36 3a 00 03"
+    },
+    {
+      "addr": "0x1403f99c3",
+      "function": "0x1403f9850",
+      "meaning": "ResourceEntry encoded pointer merged into BAR metadata.",
+      "ida": "or [rbx+0Ch], ecx",
+      "independentDecode": "or dword ptr [rbx + 0xc], ecx",
+      "bytes": "09 4b 0c"
+    },
+    {
+      "addr": "0x1403f99cb",
+      "function": "0x1403f9850",
+      "meaning": "Encoded pointer low bits merged into BYTE3 metadata bits.",
+      "ida": "or [rbx+3], al",
+      "independentDecode": "or byte ptr [rbx + 3], al",
+      "bytes": "08 43 03"
+    },
+    {
+      "addr": "0x140106740",
+      "function": "0x140106700",
+      "meaning": "Direct Package_ReadBase call.",
+      "ida": "call kh2_Package_ReadBase",
+      "independentDecode": "call 0x140107620",
+      "bytes": "e8 db 0e 00 00"
+    },
+    {
+      "addr": "0x140106781",
+      "function": "0x140106700",
+      "meaning": "Primary name, length and destination passed to registration.",
+      "ida": "call sub_14012F070",
+      "independentDecode": "call 0x14012f070",
+      "bytes": "e8 ea 88 02 00"
+    },
+    {
+      "addr": "0x1401076a7",
+      "function": "0x140107620",
+      "meaning": "Compressed input read into temporary buffer through imported CRT _read.",
+      "ida": "call cs:__imp__read",
+      "independentDecode": "call qword ptr [rip + 0x4743eb]",
+      "bytes": "ff 15 eb 43 47 00"
+    },
+    {
+      "addr": "0x1401076d0",
+      "function": "0x140107620",
+      "meaning": "In-process codec called with caller destination.",
+      "ida": "call sub_1404696F0",
+      "independentDecode": "call 0x1404696f0",
+      "bytes": "e8 1b 20 36 00"
+    },
+    {
+      "addr": "0x1401076dd",
+      "function": "0x140107620",
+      "meaning": "Temporary compressed input freed before nominal return.",
+      "ida": "call cs:__imp__aligned_free",
+      "independentDecode": "call qword ptr [rip + 0x4740a5]",
+      "bytes": "ff 15 a5 40 47 00"
+    },
+    {
+      "addr": "0x1401076e3",
+      "function": "0x140107620",
+      "meaning": "Compressed branch reloads nominal size, ignoring codec result.",
+      "ida": "mov eax, [rbx+12Ch]",
+      "independentDecode": "mov eax, dword ptr [rbx + 0x12c]",
+      "bytes": "8b 83 2c 01 00 00"
+    },
+    {
+      "addr": "0x140107704",
+      "function": "0x140107620",
+      "meaning": "Stored branch reads directly into destination.",
+      "ida": "call cs:__imp__read",
+      "independentDecode": "call qword ptr [rip + 0x47438e]",
+      "bytes": "ff 15 8e 43 47 00"
+    },
+    {
+      "addr": "0x140107728",
+      "function": "0x140107620",
+      "meaning": "Stored branch reloads nominal size.",
+      "ida": "mov eax, [rbx+12Ch]",
+      "independentDecode": "mov eax, dword ptr [rbx + 0x12c]",
+      "bytes": "8b 83 2c 01 00 00"
+    },
+    {
+      "addr": "0x140107744",
+      "function": "0x140107620",
+      "meaning": "Raw branch directly reads into destination.",
+      "ida": "call cs:__imp__read",
+      "independentDecode": "call qword ptr [rip + 0x47434e]",
+      "bytes": "ff 15 4e 43 47 00"
+    },
+    {
+      "addr": "0x14010774a",
+      "function": "0x140107620",
+      "meaning": "Raw branch reloads nominal size, ignoring actual read result.",
+      "ida": "mov eax, [rbx+12Ch]",
+      "independentDecode": "mov eax, dword ptr [rbx + 0x12c]",
+      "bytes": "8b 83 2c 01 00 00"
+    },
+    {
+      "addr": "0x140469710",
+      "function": "0x1404696f0",
+      "meaning": "Caller output pointer stored in stack-local codec structure.",
+      "ida": "mov [rsp+88h+var_58], rcx",
+      "independentDecode": "mov qword ptr [rsp + 0x30], rcx",
+      "bytes": "48 89 4c 24 30"
+    },
+    {
+      "addr": "0x140469746",
+      "function": "0x1404696f0",
+      "meaning": "Codec work call executes before cleanup and return.",
+      "ida": "call sub_14046BFB0",
+      "independentDecode": "call 0x14046bfb0",
+      "bytes": "e8 65 28 00 00"
+    },
+    {
+      "addr": "0x140469757",
+      "function": "0x1404696f0",
+      "meaning": "Non-success codec work path ends stream before returning.",
+      "ida": "call sub_14046D630",
+      "independentDecode": "call 0x14046d630",
+      "bytes": "e8 d4 3e 00 00"
+    },
+    {
+      "addr": "0x14046979c",
+      "function": "0x1404696f0",
+      "meaning": "Success codec work path ends stream before returning.",
+      "ida": "call sub_14046D630",
+      "independentDecode": "call 0x14046d630",
+      "bytes": "e8 8f 3e 00 00"
+    },
+    {
+      "addr": "0x14012cde3",
+      "function": "0x14012cd80",
+      "meaning": "Primary alias retained at ResourceEntry+16.",
+      "ida": "mov [r15+10h], rsi",
+      "independentDecode": "mov qword ptr [r15 + 0x10], rsi",
+      "bytes": "49 89 77 10"
+    },
+    {
+      "addr": "0x14012cf08",
+      "function": "0x14012cd80",
+      "meaning": "Primary alias retained at ResourceEntry+1624.",
+      "ida": "mov [r15+658h], rsi",
+      "independentDecode": "mov qword ptr [r15 + 0x658], rsi",
+      "bytes": "49 89 b7 58 06 00 00"
+    },
+    {
+      "addr": "0x14039e7ab",
+      "function": "0x14039e690",
+      "meaning": "Relocation finds retained entry using old source and name.",
+      "ida": "call sub_14012DF90",
+      "independentDecode": "call 0x14012df90",
+      "bytes": "e8 e0 f7 d8 ff"
+    },
+    {
+      "addr": "0x14039e7bd",
+      "function": "0x14039e690",
+      "meaning": "Relocation rewrites retained primary alias+1624.",
+      "ida": "mov [rax+658h], r8",
+      "independentDecode": "mov qword ptr [rax + 0x658], r8",
+      "bytes": "4c 89 80 58 06 00 00"
+    },
+    {
+      "addr": "0x14039e7c4",
+      "function": "0x14039e690",
+      "meaning": "Relocation rewrites metadata alias+16.",
+      "ida": "mov [rax+10h], r8",
+      "independentDecode": "mov qword ptr [rax + 0x10], r8",
+      "bytes": "4c 89 40 10"
+    },
+    {
+      "addr": "0x14012e1a5",
+      "function": "0x14012e180",
+      "meaning": "Range lookup reads retained primary alias+1624.",
+      "ida": "mov rcx, [r8+658h]",
+      "independentDecode": "mov rcx, qword ptr [r8 + 0x658]",
+      "bytes": "49 8b 88 58 06 00 00"
+    },
+    {
+      "addr": "0x14012e1d0",
+      "function": "0x14012e180",
+      "meaning": "EDX0 leaves registry links unchanged.",
+      "ida": "jz short loc_14012E21D",
+      "independentDecode": "je 0x14012e21d",
+      "bytes": "74 4b"
+    },
+    {
+      "addr": "0x14012e211",
+      "function": "0x14012e180",
+      "meaning": "Detach clears only Entry+8 link, not primary aliases.",
+      "ida": "mov qword ptr [r8+8], 0",
+      "independentDecode": "mov qword ptr [r8 + 8], 0",
+      "bytes": "49 c7 40 08 00 00 00 00"
+    },
+    {
+      "addr": "0x14012e219",
+      "function": "0x14012e180",
+      "meaning": "Detach decrements context count.",
+      "ida": "dec dword ptr [r11+18h]",
+      "independentDecode": "dec dword ptr [r11 + 0x18]",
+      "bytes": "41 ff 4b 18"
+    },
+    {
+      "addr": "0x14012e21d",
+      "function": "0x14012e180",
+      "meaning": "Detached or retained entry returned to caller.",
+      "ida": "mov rax, r8",
+      "independentDecode": "mov rax, r8",
+      "bytes": "49 8b c0"
+    },
+    {
+      "addr": "0x14012e4b3",
+      "function": "0x14012e460",
+      "meaning": "Negative handler index skips table unload callback.",
+      "ida": "jle short loc_14012E4D0",
+      "independentDecode": "jle 0x14012e4d0",
+      "bytes": "7e 1b"
+    },
+    {
+      "addr": "0x14012e58c",
+      "function": "0x14012e460",
+      "meaning": "Entry retirement invokes deleting destructor after unlink.",
+      "ida": "call qword ptr [rax]",
+      "independentDecode": "call qword ptr [rax]",
+      "bytes": "ff 10"
+    },
+    {
+      "addr": "0x14012da0f",
+      "function": "0x14012d8e0",
+      "meaning": "Destructor passes metadata+16 to conditional disk name-table writer.",
+      "ida": "call kh2_write_replacement_name_table",
+      "independentDecode": "call 0x14012d5a0",
+      "bytes": "e8 8c fb ff ff"
+    },
+    {
+      "addr": "0x14012da3b",
+      "function": "0x14012d8e0",
+      "meaning": "Destructor frees the entry object itself.",
+      "ida": "call j_j_free",
+      "independentDecode": "call 0x1404390a0",
+      "bytes": "e8 60 b6 30 00"
+    },
+    {
+      "addr": "0x14012e888",
+      "function": "0x14012e860",
+      "meaning": "Context teardown clears individual ResourceEntry links.",
+      "ida": "mov [rax], rdi",
+      "independentDecode": "mov qword ptr [rax], rdi",
+      "bytes": "48 89 38"
+    },
+    {
+      "addr": "0x14012e966",
+      "function": "0x14012e860",
+      "meaning": "Context teardown clears global pointer.",
+      "ida": "mov cs:qword_1408AEF30, rdi",
+      "independentDecode": "mov qword ptr [rip + 0x7805c3], rdi",
+      "bytes": "48 89 3d c3 05 78 00"
+    },
+    {
+      "addr": "0x14012ea6b",
+      "function": "0x14012ea20",
+      "meaning": "Context construction publishes new global pointer.",
+      "ida": "mov cs:qword_1408AEF30, rax",
+      "independentDecode": "mov qword ptr [rip + 0x7804be], rax",
+      "bytes": "48 89 05 be 04 78 00"
+    },
+    {
+      "addr": "0x1403a660e",
+      "function": "0x1403a64f0",
+      "meaning": "BAR replacement preparation dispatch uses original two-stage table.",
+      "ida": "jmp rdx; switch jump",
+      "independentDecode": "jmp rdx",
+      "bytes": "ff e2"
+    },
+    {
+      "addr": "0x1403a6613",
+      "function": "0x1403a64f0",
+      "meaning": "Type17 dispatch recursively prepares nested BAR.",
+      "ida": "call kh2_prepare_bar_runtime_replacements",
+      "independentDecode": "call 0x1403a64f0",
+      "bytes": "e8 d8 fe ff ff"
+    },
+    {
+      "addr": "0x1403a6790",
+      "function": "0x1403a64f0",
+      "meaning": "Type9 default dispatch advances to next entry without a specialized replacement callback.",
+      "ida": "inc r12d; jumptable 00000001403A660E default case, cases 2,3,5-16,18,19,21-29,32,33,35-45,47",
+      "independentDecode": "inc r12d",
+      "bytes": "41 ff c4"
+    }
+  ],
+  "handlerGlobalReferences": [
+    {
+      "addr": "0x14012dbb8",
+      "body": "0x14012dbb0",
+      "operation": "mov rax, qword ptr [rip + 0x781379]",
+      "writesHandlerGlobal": false
+    },
+    {
+      "addr": "0x14012dc1e",
+      "body": "0x14012dbb0",
+      "operation": "mov rdi, qword ptr [rip + 0x781313]",
+      "writesHandlerGlobal": false
+    },
+    {
+      "addr": "0x14012dc85",
+      "body": "0x14012dbb0",
+      "operation": "mov rdi, qword ptr [rip + 0x7812ac]",
+      "writesHandlerGlobal": false
+    },
+    {
+      "addr": "0x14012e4b8",
+      "body": "0x14012e460",
+      "operation": "mov rax, qword ptr [rip + 0x780a79]",
+      "writesHandlerGlobal": false
+    },
+    {
+      "addr": "0x14012e696",
+      "body": "0x14012e5c0",
+      "operation": "mov rax, qword ptr [rip + 0x78089b]",
+      "writesHandlerGlobal": false
+    },
+    {
+      "addr": "0x14012e6e5",
+      "body": "0x14012e5c0",
+      "operation": "mov rdi, qword ptr [rip + 0x78084c]",
+      "writesHandlerGlobal": false
+    },
+    {
+      "addr": "0x14012e746",
+      "body": "0x14012e5c0",
+      "operation": "mov rdi, qword ptr [rip + 0x7807eb]",
+      "writesHandlerGlobal": false
+    },
+    {
+      "addr": "0x14012ee77",
+      "body": "0x14012ee70",
+      "operation": "mov qword ptr [rip + 0x7800ba], rcx",
+      "writesHandlerGlobal": true
+    },
+    {
+      "addr": "0x14012efc9",
+      "body": "0x14012ef80",
+      "operation": "mov rax, qword ptr [rip + 0x77ff68]",
+      "writesHandlerGlobal": false
+    }
+  ],
+  "handlerSetterCallsites": [
+    "0x14014f301"
+  ],
+  "contextGlobalReferences": [
+    {
+      "addr": "0x14012dda0",
+      "function": "0x14012dda0",
+      "role": "replacement-range lookup",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 05 89 11 78 00",
+      "independentDecode": "mov rax, qword ptr [rip + 0x781189]"
+    },
+    {
+      "addr": "0x14012de44",
+      "function": "0x14012de20",
+      "role": "normalized-name lookup",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 05 e5 10 78 00",
+      "independentDecode": "mov rax, qword ptr [rip + 0x7810e5]"
+    },
+    {
+      "addr": "0x14012dfb9",
+      "function": "0x14012df90",
+      "role": "name and exact-primary alias lookup",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 05 70 0f 78 00",
+      "independentDecode": "mov rax, qword ptr [rip + 0x780f70]"
+    },
+    {
+      "addr": "0x14012e100",
+      "function": "0x14012e100",
+      "role": "primary-overlap lookup",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 05 29 0e 78 00",
+      "independentDecode": "mov rax, qword ptr [rip + 0x780e29]"
+    },
+    {
+      "addr": "0x14012e180",
+      "function": "0x14012e180",
+      "role": "primary-range lookup and optional detach",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "4c 8b 1d a9 0d 78 00",
+      "independentDecode": "mov r11, qword ptr [rip + 0x780da9]"
+    },
+    {
+      "addr": "0x14012e230",
+      "function": "0x14012e230",
+      "role": "16-byte digest lookup",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 05 f9 0c 78 00",
+      "independentDecode": "mov rax, qword ptr [rip + 0x780cf9]"
+    },
+    {
+      "addr": "0x14012e31a",
+      "function": "0x14012e310",
+      "role": "replacement type and name lookup",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 05 0f 0c 78 00",
+      "independentDecode": "mov rax, qword ptr [rip + 0x780c0f]"
+    },
+    {
+      "addr": "0x14012e474",
+      "function": "0x14012e460",
+      "role": "entry retirement",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 05 b5 0a 78 00",
+      "independentDecode": "mov rax, qword ptr [rip + 0x780ab5]"
+    },
+    {
+      "addr": "0x14012e533",
+      "function": "0x14012e460",
+      "role": "entry retirement",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 15 f6 09 78 00",
+      "independentDecode": "mov rdx, qword ptr [rip + 0x7809f6]"
+    },
+    {
+      "addr": "0x14012e605",
+      "function": "0x14012e5c0",
+      "role": "entry creation and dispatch",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "4c 8b 0d 24 09 78 00",
+      "independentDecode": "mov r9, qword ptr [rip + 0x780924]"
+    },
+    {
+      "addr": "0x14012e62e",
+      "function": "0x14012e5c0",
+      "role": "entry creation and dispatch",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 05 fb 08 78 00",
+      "independentDecode": "mov rax, qword ptr [rip + 0x7808fb]"
+    },
+    {
+      "addr": "0x14012e65e",
+      "function": "0x14012e5c0",
+      "role": "entry creation and dispatch",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 05 cb 08 78 00",
+      "independentDecode": "mov rax, qword ptr [rip + 0x7808cb]"
+    },
+    {
+      "addr": "0x14012e68b",
+      "function": "0x14012e5c0",
+      "role": "entry creation and dispatch",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 05 9e 08 78 00",
+      "independentDecode": "mov rax, qword ptr [rip + 0x78089e]"
+    },
+    {
+      "addr": "0x14012e835",
+      "function": "0x14012e5c0",
+      "role": "entry creation and dispatch",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 05 f4 06 78 00",
+      "independentDecode": "mov rax, qword ptr [rip + 0x7806f4]"
+    },
+    {
+      "addr": "0x14012e866",
+      "function": "0x14012e860",
+      "role": "context retirement",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 15 c3 06 78 00",
+      "independentDecode": "mov rdx, qword ptr [rip + 0x7806c3]"
+    },
+    {
+      "addr": "0x14012e89b",
+      "function": "0x14012e860",
+      "role": "context retirement",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "4c 8b 05 8e 06 78 00",
+      "independentDecode": "mov r8, qword ptr [rip + 0x78068e]"
+    },
+    {
+      "addr": "0x14012e907",
+      "function": "0x14012e860",
+      "role": "context retirement",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "4c 8b 05 22 06 78 00",
+      "independentDecode": "mov r8, qword ptr [rip + 0x780622]"
+    },
+    {
+      "addr": "0x14012e91d",
+      "function": "0x14012e860",
+      "role": "context retirement",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "4c 8b 05 0c 06 78 00",
+      "independentDecode": "mov r8, qword ptr [rip + 0x78060c]"
+    },
+    {
+      "addr": "0x14012e966",
+      "function": "0x14012e860",
+      "role": "context retirement",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": true,
+      "bytes": "48 89 3d c3 05 78 00",
+      "independentDecode": "mov qword ptr [rip + 0x7805c3], rdi"
+    },
+    {
+      "addr": "0x14012e985",
+      "function": "0x14012e980",
+      "role": "RootFileData lookup",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 05 a4 05 78 00",
+      "independentDecode": "mov rax, qword ptr [rip + 0x7805a4]"
+    },
+    {
+      "addr": "0x14012ea6b",
+      "function": "0x14012ea20",
+      "role": "context construction",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": true,
+      "bytes": "48 89 05 be 04 78 00",
+      "independentDecode": "mov qword ptr [rip + 0x7804be], rax"
+    },
+    {
+      "addr": "0x14012ea79",
+      "function": "0x14012ea20",
+      "role": "context construction",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 05 b0 04 78 00",
+      "independentDecode": "mov rax, qword ptr [rip + 0x7804b0]"
+    },
+    {
+      "addr": "0x14012eb83",
+      "function": "0x14012eb70",
+      "role": "RootFileData and dependency-name insertion",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 05 a6 03 78 00",
+      "independentDecode": "mov rax, qword ptr [rip + 0x7803a6]"
+    },
+    {
+      "addr": "0x14012ee28",
+      "function": "0x14012eb70",
+      "role": "RootFileData and dependency-name insertion",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 05 01 01 78 00",
+      "independentDecode": "mov rax, qword ptr [rip + 0x780101]"
+    },
+    {
+      "addr": "0x14012eeac",
+      "function": "0x14012eea0",
+      "role": "range lookup and optional caller callback before retirement",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 05 7d 00 78 00",
+      "independentDecode": "mov rax, qword ptr [rip + 0x78007d]"
+    },
+    {
+      "addr": "0x14012ef8f",
+      "function": "0x14012ef80",
+      "role": "group-zero retirement",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 1d 9a ff 77 00",
+      "independentDecode": "mov rbx, qword ptr [rip + 0x77ff9a]"
+    },
+    {
+      "addr": "0x14012efe3",
+      "function": "0x14012ef80",
+      "role": "group-zero retirement",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 15 46 ff 77 00",
+      "independentDecode": "mov rdx, qword ptr [rip + 0x77ff46]"
+    },
+    {
+      "addr": "0x1403f9992",
+      "function": "0x1403f9850",
+      "role": "ordinary reader currentEntry access",
+      "fullBodyInStudy": true,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 05 97 55 4b 00",
+      "independentDecode": "mov rax, qword ptr [rip + 0x4b5597]"
+    },
+    {
+      "addr": "0x1403f9b15",
+      "function": "0x1403f99e0",
+      "role": "alternate reader, outside admitted ordinary path",
+      "fullBodyInStudy": false,
+      "writesContextGlobal": false,
+      "bytes": "48 8b 05 14 54 4b 00",
+      "independentDecode": "mov rax, qword ptr [rip + 0x4b5414]"
+    }
+  ],
+  "barPreparationSwitch": {
+    "indexTable": {
+      "addr": "0x1403a680c",
+      "bytes": "00 03 03 01 03 03 03 03 03 03 03 03 03 03 03 03 00 03 03 00 03 03 03 03 03 03 03 03 03 00 02 03 03 02 03 03 03 03 03 03 03 03 03 03 03 00 03 02"
+    },
+    "targetTable": {
+      "addr": "0x1403a67fc",
+      "bytes": "10 66 3a 00 1d 66 3a 00 74 66 3a 00 90 67 3a 00"
+    },
+    "selectedTargets": {
+      "9": "0x1403a6790",
+      "17": "0x1403a6610"
+    }
+  },
+  "imports": {
+    "0x14057ba08": {
+      "dll": "api-ms-win-crt-stdio-l1-1-0.dll",
+      "name": "_lseeki64"
+    },
+    "0x14057ba98": {
+      "dll": "api-ms-win-crt-stdio-l1-1-0.dll",
+      "name": "_read"
+    },
+    "0x14057b788": {
+      "dll": "api-ms-win-crt-heap-l1-1-0.dll",
+      "name": "_aligned_free"
+    }
+  }
+}

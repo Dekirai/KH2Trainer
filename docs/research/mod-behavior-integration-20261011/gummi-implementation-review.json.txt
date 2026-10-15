@@ -1,0 +1,98 @@
+{
+  "status": "accepted_source_contract_and_native_guard_wire_validation",
+  "reviewer": "independent /root/review_bank3_extended",
+  "openBlockers": [],
+  "implementationManifestSha256": "fe05fde841cdf36bfad5b52fe240080d7d95189c3872c2555ba9055d66a57884",
+  "staticStudyManifestSha256": "2995ef76f490cdca02bb11c24baf0ffc52fe8ea2c9ae5bf9385a2b30ae94892d",
+  "staticStudyReviewSha256": "8d57a4dc62d8697f5b3d887e98e399de4c1c408421aaf39f28e33205b7e21911",
+  "staticChecks": 86,
+  "productionSignatureSpans": 16,
+  "productionSignatureBytes": 3241,
+  "nativeTestsIndependentlyRebuiltAndRun": [
+    {
+      "name": "GummiExtraGuardTests",
+      "checks": 1087,
+      "failures": 0,
+      "log": "logs/native-GummiExtraGuardTests.txt",
+      "logSha256": "4dbfe9d52f1c58b13a15e75163fde0b7b5fe89de92387fb5bdb08f12e0bcd736",
+      "binarySha256": "82a209a6d55defb34e4a77cd9e5bf77eccd7f9b68af294315ac894e5eefc9250"
+    },
+    {
+      "name": "GummiRequestBridgeTests",
+      "checks": 15,
+      "failures": 0,
+      "log": "logs/native-GummiRequestBridgeTests.txt",
+      "logSha256": "a110a42cb4eebc0b9eb509a89397235b9da8720b06d658dd57ac78102246fcb4",
+      "binarySha256": "5a42a9f50e00a04daf6e731a0a31d586d06a48548f0d3462c451b51b2a81cdb8"
+    },
+    {
+      "name": "PlayerBridgeTests",
+      "checks": 665,
+      "failures": 0,
+      "log": "logs/native-PlayerBridgeTests.txt",
+      "logSha256": "4e62eff40dd5e4e647593a47768e370e1786d55c2e16fdba6ba5d5903c59a422",
+      "binarySha256": "1b1332e322fc96827a7a93ef764bb9baaa9f1b0f1b4709134605b91d262e9751"
+    }
+  ],
+  "nativeAssertionsIncludingExistingTests": 1767,
+  "sourcePins": {
+    "src/KH2Trainer.Bridge/GummiExtraFeatures.inl": "bdc0e8db3a5ea5fe13f7c57b3dbac54c95635d48410f3236a8c8c3c90b14de15",
+    "tests/KH2Trainer.Bridge.Tests/GummiExtraGuardTests.cpp": "f9df28c2553aeea787bbfa0c99167b11d0ca058e223f7a38994bf24da0d2bf08",
+    "src/KH2Trainer/Data/features.json": "a16fadcf3782a1830c33ead367302a9bbab4a9e633781da9612f3fc7f034f994",
+    "src/KH2Trainer.Bridge/TrainerBridge.cpp": "d078e6e96f1817b9ef21b9691e2f9a33c60d844c4a3a9a8a826fc1576ecd5e3c",
+    "src/KH2Trainer.Bridge/GummiFeatures.inl": "0d404130b58f9c35e2635ce787e1be35d61ac3090a9d58f8b69dbb9af978e09b",
+    "src/KH2Trainer/ViewModels/FeatureViewModel.cs": "0a2e4d05534d90013fbca12e60bdf135b088488014ddce118d68f2861ab3a0fd",
+    "src/KH2Trainer/ViewModels/Navigation.cs": "ad3076dedaab8dd04d3af779fd3161ed53003fc27869ae3a4b10ff9dbbad7a5d",
+    "src/KH2Trainer.Core/ProfileStore.cs": "3e7b1bcef2ba51361eb8b1eed05879537e364a7dca0ae895a6c02f44c3405211",
+    "tests/KH2Trainer.Bridge.Tests/GummiRequestBridgeTests.cpp": "6a132778e7dd454fdcacf2bdfe045285072c1293a4bd4ad3825d40012997d808",
+    "tests/KH2Trainer.Bridge.Tests/PlayerBridgeTests.cpp": "870f017790f2f8a108660ce9ff62247349bd67d71f877c0e4e777b359b7a980f",
+    "tests/KH2Trainer.Bridge.Tests/run-tests.ps1": "93c007fb6322a14bdf96d4ad7cd02a96e633a933656a883559859f78e3f2e9fb",
+    "tests/KH2Trainer.Core.Tests/GummiRequestCatalogTests.cs": "f27f74b034b47e1ed064fc1cd804ede6ecb801bbbb116f770f541063dcafec47",
+    "tests/KH2Trainer.Core.Tests/Program.cs": "db172546b10866cc35d3d08860fa43b9a9dcac08ece1dc630c76b16e9e14ab6c",
+    "tests/KH2Trainer.UiTests/GummiRequestUiChecks.cs": "5e41e1857ae24199410d81f7a17e8201923e0fe53a1a5402c901165ac68fda92",
+    "tests/KH2Trainer.UiTests/Program.cs": "8b56a11be41afa6a33bc2501fefb33725f5e5112037ea4722a558d863e8b9eac",
+    "scripts/generate-manual.py": "041463159254c232cab804ab906299adfb0983fde8b4991e9f603868192827da"
+  },
+  "go": "Proceed to coordinated full build and package checks without source changes.",
+  "remainingAcceptance": [
+    "Complete managed test execution",
+    "Full offscreen UI suite",
+    "Full release build and package integrity"
+  ],
+  "limits": [
+    "No live game, GUI, injection, attach, save, mod, Twitch or IDB actions.",
+    "The production ABI test executes only the original five-byte setter in private synthetic memory; downstream consumers remain unexecuted.",
+    "No guarantee of later resource ownership, request consumption, projectile creation or hits.",
+    "The 1767 native assertions include existing tests; no static-model tests are added to that number."
+  ],
+  "files": {
+    "check.py": {
+      "sha256": "160dc98c9b756e956f3788b9b2181b67379fa770c4b13a667e752100a8e19994",
+      "bytes": 8589
+    },
+    "checks.json": {
+      "sha256": "8fae7461b0905828c13342734a8c9e611484515868ed6909b82d27d3e1ba7675",
+      "bytes": 6119
+    },
+    "finalize.py": {
+      "sha256": "a54a7c17c23031a332288f8927abf24185fc9a0120c05b64c97efaf8a8b35051",
+      "bytes": 1967
+    },
+    "logs/native-GummiExtraGuardTests.txt": {
+      "sha256": "4dbfe9d52f1c58b13a15e75163fde0b7b5fe89de92387fb5bdb08f12e0bcd736",
+      "bytes": 113
+    },
+    "logs/native-GummiRequestBridgeTests.txt": {
+      "sha256": "a110a42cb4eebc0b9eb509a89397235b9da8720b06d658dd57ac78102246fcb4",
+      "bytes": 420
+    },
+    "logs/native-PlayerBridgeTests.txt": {
+      "sha256": "4e62eff40dd5e4e647593a47768e370e1786d55c2e16fdba6ba5d5903c59a422",
+      "bytes": 419
+    },
+    "review.md": {
+      "sha256": "21654be5e401c857964444d93ac7d11616b13d92647cc9216b95bc188d493666",
+      "bytes": 4558
+    }
+  }
+}

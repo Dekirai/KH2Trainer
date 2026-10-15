@@ -1,0 +1,130 @@
+{
+  "schema": 1,
+  "study": "actor-counter-lifecycle-20261013",
+  "status": "bounded-static-study-complete",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "claims": [
+    {
+      "addr": "0x1403e1790",
+      "Finding": "After FindEvent returns, this complete body writes context DWORD+56=0 before testing the signed result. For a result <=0, a nonnull context QWORD+96 causes DEC DWORD(target+1464) at 3E17E3, followed by setting mask0x2 in context+56. A prior release bit is not preserved or tested. For result >0 it tail-calls 41B320; the complete 41B320 body sets the execution entry and stack data, and has no explicit Actor+1464 increment or context+56 release-bit test. Thus the repeat resistance proved for 3E1A00/3E1410 does not extend to 3E1790 across this flag reset.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1790]",
+        "evidence.json#functions[addr=0x14041b320]",
+        "evidence.json#functions[addr=0x1403e1410]"
+      ],
+      "Limitations": "Local instruction semantics only. FindEvent and earlier/later callers may affect state. No valid reachable sequence that starts an already released context, double decrement, underflow, or gameplay bug is demonstrated. Arbitrary pointer aliasing is not excluded by this static study."
+    },
+    {
+      "addr": "0x1403b5f30",
+      "Finding": "The selected Actor setup passes its input pointer as Allocate3E1730 arg2, stores the result in input+1456, invokes the event0 temporary-context helper3E1840, then calls 3E1790 with event1. The verified Allocate and constructor path pass that same input as constructor arg4/context+96 and increment its DWORD+1464 when nonnull. This is a concrete construction-before-start caller, consistent with the previously selected 3B44D0 path.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b5f30]",
+        "evidence.json#functions[addr=0x1403e1730]",
+        "evidence.json#functions[addr=0x1403e1240]",
+        "evidence.json#functions[addr=0x1403e1840]",
+        "evidence.json#functions[addr=0x1403b44d0]"
+      ],
+      "Limitations": "The intervening event0 execution is not a pure operation, and the pointer is reloaded from input+1456 afterwards. Therefore this does not prove that the exact newly allocated context and its release flag remain unchanged before 3E1790. Allocation failure, script callbacks, all Actor setup callers and net counter balance are not closed."
+    },
+    {
+      "addr": "0x1403c6150",
+      "Finding": "The body decodes input DWORD+4 and conditionally calls 3D7E90 when that object's DWORD+1736 mask0x4 is set. It then decodes input DWORD+0 and passes the resulting existing context to 3E1790 with event21, null arguments and count0. This selected caller does not locally allocate a fresh context, increment Actor+1464, or test context+56 mask0x2 before the start call.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c6150]",
+        "evidence.json#functions[addr=0x1403e1790]"
+      ],
+      "Limitations": "The input's producer, prior context release state, presence of event21, optional 3D7E90 side effects, and actual caller sequence remain open. Existing-pointer use is not evidence that a released context is reused, nor proof of a missing increment in reachable gameplay."
+    },
+    {
+      "addr": "0x1403e1970",
+      "Finding": "On successful allocation, this body constructs a separate 112-byte context using source QWORD+0, +88 and +96 as constructor args2/3/4. It sets new-context+56 mask0x1, stores arg2 in DWORD+60, calls 41B320 with args3/4/5, and returns the new context. It does not locally append the context to a parent/global list. Because constructor+96 is inherited, a nonnull owner receives another direct DWORD+1464 increment for this independently allocated context.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1970]",
+        "evidence.json#functions[addr=0x1403e1240]",
+        "evidence.json#functions[addr=0x14041b320]"
+      ],
+      "Limitations": "Claim assumes execution reaches construction and normal return with valid inputs. No graceful allocation-failure handling is claimed: the local failure branch uses zero as the context and reaches subsequent field access. The caller determines subsequent ownership, scheduling and cleanup. Multiple contexts may share an owner, so this is not a count of unique Actors or attacks."
+    },
+    {
+      "addr": "0x1403e1e30",
+      "Finding": "This second allocation path also inherits source+96 as constructor arg4, giving each successfully constructed child its own Actor reference contribution. After setting child+56 mask0x1, child DWORD+60 and the execution entry, it appends the child to the parent's QWORD head+72/tail+80 list. An empty list sets both head and tail; a nonempty list receives a packed child link in old-tail DWORD+68. Both branches clear the child's DWORD+68 through EncodeNullable(null). In the nonempty branch, the tail pointer is updated to the child after clearing that link.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1e30]",
+        "evidence.json#functions[addr=0x1403e1240]",
+        "evidence.json#functions[addr=0x14041b320]"
+      ],
+      "Limitations": "Selected successful local append only; no global graph/acyclicity guarantee, allocation-failure safety, or concurrent mutation proof. The list fields are distinct from Actor+1464, and list length alone does not establish the counter's value. Packed pointer codec behavior is reused from prior evidence; codec internals are not re-audited here."
+    },
+    {
+      "addr": "0x1403e1c80",
+      "Finding": "Beyond the previously proved current-context release block, this complete body continues through parent QWORD+72 even after the parent's mask0x2 is set. It saves each child's decoded DWORD+68 next link before recursively calling 3E1C80(child,parent). Only a recursive return of1 causes unlinking from the head or predecessor, tail repair when needed, clearing the removed child's packed next link, 3E1410 cleanup and allocator virtual+16. The outer return is1 only if the parent's mask0x2 is set and its child head is null. Therefore release of a context's own Actor contribution and completion/removal of its child tree are separate local conditions.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1c80]",
+        "evidence.json#functions[addr=0x1403e1e30]",
+        "evidence.json#functions[addr=0x1403e1410]"
+      ],
+      "Limitations": "Valid serial list traversal is assumed; script callbacks can change state and are not fully analyzed. This is not a claim of frame timing, tree termination, thread safety, whole-cleanup idempotence, or a guaranteed counter equal to active children."
+    },
+    {
+      "addr": "0x1403e1f00",
+      "Finding": "This explicit removal path scans parent+72 and selects children when (child DWORD+60 & arg2)==arg3. It saves the next decoded link, unlinks each selected child, repairs tail+80, clears the child's packed DWORD+68 link, calls 3E1410, then allocator virtual+16. It does not require the child-update return1 condition used by 3E1C80. Thus child context cleanup can release a still-held Actor reference through the common guarded cleanup even when initiated by this separate filter path.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1f00]",
+        "evidence.json#functions[addr=0x1403e1c80]",
+        "evidence.json#functions[addr=0x1403e1410]"
+      ],
+      "Limitations": "The entry condition is a bitmask equality, not a proved script ID/type taxonomy. The Actor decrement remains conditional on context+56 mask0x2 and nonnull+96 when cleanup reaches its guard; earlier cleanup callbacks may change state. No all-caller or reentrancy guarantee."
+    },
+    {
+      "addr": "0x1403e1530",
+      "Finding": "The child-cleanup adapter first invokes 3E1410. Only if flags mask0x1 is set does it dispatch further: flags mask0x4 clear calls the global allocator's virtual+16 with the context; mask0x4 set calls 031DD0(context,112). The parent destructor3E1410 saves each child's next link and calls this adapter with flags1, so that selected child-destruction branch performs cleanup before the allocator dispatch.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e1530]",
+        "evidence.json#functions[addr=0x1403e1410]"
+      ],
+      "Limitations": "Flag4 alone does not trigger the second dispatch. No freeing behavior is inferred from the name of 031DD0, and allocator implementation is outside this study. Earlier callbacks and resource frees mean whole cleanup is not proved idempotent even though its final counter decrement has a release-bit guard."
+    },
+    {
+      "addr": "0x14026ae40",
+      "Finding": "If input QWORD+0 is nonnull, this body passes that old context to 3E1910 and clears the slot. It then allocates a new context with owner arg2=0, stores it in the slot and starts it through 3E1790 (event3/default null args for negative input event; otherwise caller event/args/count). The verified 3E1910 appends the supplied context to global head/tail2A25090/2A25098 using packed DWORD+68 links. The separate full-list cleanup3E15A0 saves each next link, calls 3E1410 then allocator virtual+16, and finally clears both globals. This establishes a selected transfer-to-global-list path rather than immediate cleanup of the old context in 26AE40 itself.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14026ae40]",
+        "evidence.json#functions[addr=0x1403e1910]",
+        "evidence.json#functions[addr=0x1403e15a0]",
+        "evidence.json#functions[addr=0x1403e1730]",
+        "evidence.json#functions[addr=0x1403e1240]",
+        "evidence.json#functions[addr=0x1403e1410]"
+      ],
+      "Limitations": "The newly allocated context has no Actor owner on this local path; the old context's owner provenance is not closed. The time or inevitability of a later global drain is not proved. No global-list scheduling, duplicate insertion, script completion or allocator safety claim."
+    }
+  ],
+  "globalLimitations": [
+    "Static original-byte and instruction review only; no live game, native execution, interpreted instruction fixture, injection, UI, Twitch or save modification.",
+    "The previous seven Actor-reference-counter claims remain dependencies. New claims describe additional writer/reset and context-lifecycle behavior; verified body count is not a count of newly discovered functions.",
+    "Selected caller evidence does not close all14 code xrefs to3E1790. Release-bit resets mean prior serial guarded-decrement findings must keep their while-the-bit-remains-set limitation.",
+    "Actor+1464 also has attack and command sources, so context count, child-list length, current script state and the raw counter are not interchangeable.",
+    "No reachable underflow, use-after-free, double free, missing reference acquisition or gameplay crash is proved. Arbitrary pointer aliasing, concurrency, allocation failure and callback reentrancy are outside the selected valid-path interpretation.",
+    "Global IDA analysis completion was not independently observed. All selected captured ranges are complete for their stated scope, with original PE verification; the unnamed range is kept separate."
+  ],
+  "findings": [
+    {
+      "addr": "0x1403e1810",
+      "Finding": "In the bounded original range3E1810..3E1840, the first instruction clears context DWORD+56. If signed EDX>0, a conditional jump transfers to41B320. Otherwise a nonnull context QWORD+96 causes DEC DWORD(target+1464) at3E182B, and context+56 receives mask0x2 before RET. Twelve instructions occupy43 bytes; the remaining5 bytes are CC alignment. This is an additional direct counter-write site with the same flag-reset-before-release shape, using a direct entry argument rather than calling FindEvent locally.",
+      "Evidence": [
+        "evidence.json#code_ranges[addr=0x1403e1810]",
+        "evidence.json",
+        "evidence.zip",
+        "evidence.json#functions[addr=0x14041b320]"
+      ],
+      "Limitations": "Both lookup3E1810 and lookup3E182B report no function; the entry xref query reports zero. This range is not added to complete-function counts or treated as a proved reachable routine. No function boundary, calling convention, Actor provenance, caller or execution path is asserted beyond the shown instructions.",
+      "RawCaptureMembers": [
+        "study/root-capture/instructions.json",
+        "study/root-capture/lookup.json",
+        "study/root-capture/xrefs.json"
+      ]
+    }
+  ],
+  "archive": "evidence.zip",
+  "provenance": "provenance.json",
+  "completeSemanticAnalysis": false
+}

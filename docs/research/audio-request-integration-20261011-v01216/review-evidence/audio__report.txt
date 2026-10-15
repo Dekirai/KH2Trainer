@@ -1,0 +1,136 @@
+Independent review: Audio request observations, slots 482-484
+============================================================
+Status: ACCEPTED within the scope below. No outstanding blocker found.
+
+Design evidence
+---------------
+Pinned design manifest:
+0fdfdde07ceacb75c6326043959401c5ce4051145d44a2a3355f8d10f88537a6
+The original review began at manifest b4dfd5f7aac24bb1ba0cb86f8ef9acd1cb72b763094b3843f0789d8b9bd65ec1.
+The final design freeze adds portable verifier paths and historical source
+snapshots. capture.json and design.txt retain their exact original hashes.
+
+review_design.py independently opens the original EXE as read-only, verifies
+its SHA256, maps PE sections, decodes selected bytes with Capstone and joins
+the complete IDA instruction address lists. It checks ten bodies, including
+the six fresh design captures and four bodies from the earlier Voice study.
+All eight production signature arrays match the complete original bodies:
+00DA30, 1DD4E0, 1DD4F0, 1DD510, 1DD8D0, 1DDF10, 1DE230, 1DE7C0.
+Their combined signature extent is 1,520 bytes.
+
+The independent scalar review checks access widths and direct positive
+references to AD9390 (signed DWORD), AD93C0 (byte), AD93C4 (signed DWORD).
+The three reservers compare inhibit against zero, free against 16 with JLE,
+and interval against 24 with JG. All 4,212 bounded tuples agree with those
+native branch predicates. The final count is recorded in design-review.json;
+the initial phase passed 13,153 checks before the extra snapshot manifest pins.
+
+00DA30 initializes free capacity to 80. 1DD8D0 returns an index and increments
+free during retirement, then resets the interval at the end of the pass.
+Independent evaluation of 00DA30's SIMD constant loads/stores additionally
+confirms all 80 initial free indices are exactly 0 through 79, covering the
+320-byte free-index table. Its record loop count is 80 and stride is 56.
+1DE7C0 resets interval and inhibit, but does not restore free capacity to 80.
+These fields therefore do not count audible voices, reliably record transient
+requests or establish a rate. The accepted free range 0-80 is a scalar bound,
+not proof that the native pool is structurally consistent.
+
+Native implementation and production route
+-----------------------------------------
+The new helper reads exactly nine state bytes per copy: four, one, four.
+It separately reads 1,520 bytes for the eight code signatures. It does not
+walk request lists, pool entries, resource/bank/Actor/camera objects or invoke
+audio code, DecodePacked or the sound critical section. No game write, new
+thread, scheduler hook or protocol expansion is added.
+
+Code review confirms base/context, bound game thread, disabled state, IPC
+mapping and fresh host checks; no scene dependency. Each tuple uses signed
+free 0-80, signed interval 0-25 and canonical inhibit 0/1. Both copies must
+validate and compare equal before any of the three values is published.
+The limits mask uses the same copied fields. A final context/host check is
+performed. TrainerFrame clears old values and validity before sampling and
+publishes under the existing snapshot sequence. Read-only commands 1482-1484
+are claimed explicitly before the generic progression fallback.
+
+The four new integration points in TrainerBridge.cpp are its include,
+handler dispatch, capabilities and snapshot invocation. Existing UpdateHook
+calls OnFrame after the original Update returns; OnFrame requires successful
+result, the active App and the bound game thread before TrainerFrame runs.
+
+Reviewer-owned production_route_review.cpp includes the real TrainerBridge.cpp
+without any test defines or replaced Windows APIs. Its synthetic module is
+non-executable, and it is PAGE_READONLY during every observed call. Thus an
+attempt to execute original game code or write to that module would fault.
+The fixture runs all bounded tuples, all invalid inhibit bytes, signed edge
+values, signature corruption, actual inaccessible pages, base/host/thread
+guards, and 15 actual TrainerFrame calls. It checks all eight mask cases,
+capabilities, scene independence, 1482-1484 rejection, previous-value clearing,
+host expiry and OnFrame early App/thread/result/disabled rejection.
+Result: 22,380 checks, zero failures; no game or visible UI access.
+
+The author's targeted AudioRequestGuardTests were separately rebuilt and
+rerun in this review directory: 21,097 checks, zero failures. This runner also
+compiled the production TrainerBridge.cpp with no test defines. Its isolated
+adapters check each individual scalar byte, every signature byte, mismatching
+copies, interval/clock wrap boundaries, context changes and only the allowed
+read spans. These are author tests rerun independently, not a second author
+claim of reviewer-owned test design.
+
+Managed integration
+-------------------
+Reviewer-owned ManagedReview.cs links the actual FeatureVm, formatting and
+navigation sources and references actual Core catalog/profile logic. It
+embeds the current features.json and checks the three unique slots and their
+read-only, no-command, no-profile, no-progression and scene-independent flags.
+It verifies all eight labels, invalid masks, capacity units, the capability/
+validity/scene matrix, disconnected state, full-catalog Audio > Requests
+placement and profile rejection even for valid measured endpoints.
+Result: 89 checks, zero failures; build has zero warnings and errors.
+No Application window is constructed and no transport command is issued.
+The product text states that equal reads do not synchronize the pool and
+that absence of a sampled limit does not guarantee playback.
+
+Final layout follow-up
+----------------------
+The final XAML adds a second auto-height row and a trigger specifically for
+audio.requests.gates. Its complete status is placed below the description,
+with wrapping enabled and ellipsis disabled. Other readouts do not enter
+this trigger. Root's final offscreen UI receipt records 49 checks, eight
+780-pixel renders, no binding errors and zero windows. This review inspected
+the final test code and receipt, and visually inspected masks 0 and 7: all
+three reasons are visible in the longest status, with a dark background and
+no clipping. These are reviewed root renders, not independently rerun UI
+tests. The XAML, UI test files, version 0.12.16 project and render hashes are
+included in review.json. The final native report's six bounded writer claims
+were read against the independently decoded bodies; no broader writer or
+lifetime claim is accepted.
+The final normalized evidence.json preserves the full six original captured
+disassemblies, bytes, sizes and hashes; this equivalence is checked separately.
+
+Reproduction
+------------
+From the repository root:
+1. py -3 -B artifacts/review-audio-request-implementation-20261011/review_design.py
+2. PowerShell: & artifacts/review-audio-request-implementation-20261011/run_production_review.ps1
+3. dotnet build artifacts/review-audio-request-implementation-20261011/ManagedReview.csproj
+   -c Release -p:UseArtifactsOutput=true
+   -p:ArtifactsPath=<absolute review directory>/managed-build --nologo
+4. Run managed-build/bin/ManagedReview/release/ManagedReview.exe with the
+   absolute managed-review.json output path as its only argument.
+5. tests/KH2Trainer.Bridge.Tests/run-tests.ps1 -Suite AudioRequestGuardTests
+   -OutputDirectory <review>/author-tests -LogDirectory <review>/author-tests
+
+Limits
+------
+- Equal scalar copies are not an atomic snapshot, lock or ABA detector.
+  Intermediate mutations and changes immediately after sampling can be missed.
+- Positive selected xrefs and ten bodies do not close indirect/alias writers,
+  every consumer or global pool ownership/lifetime/thread ordering.
+- No selected game instructions, real game process, attach, injection, native
+  audio call, original-file write, save or GUI operation was performed.
+- Successful OnFrame UI/key processing and the real Update call were not
+  executed. Their routing was reviewed; synthetic TrainerFrame and its helper
+  were executed directly. Early OnFrame rejection paths were executed.
+- The managed fixture tests actual linked source logic. The final packaged
+  trainer assembly, visual layout and live behavior require separate checks.
+- This review applies to the file hashes in review.json, not later edits.

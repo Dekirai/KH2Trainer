@@ -17,7 +17,7 @@ public static class CategoryLayout
         new("world", "World", "", "Travel, party, time, missions and Mickey rescues."),
         new("display", "Camera & Display", "", "Camera, display previews, window size and anti-aliasing."),
         new("gummi", "Gummi Ship", "", "Ship status, flight controls and the Gummi editor."),
-        new("audio", "Audio", "", "Volume mix, spatial listeners and mixer diagnostics."),
+        new("audio", "Audio", "", "Volume mix, spatial listeners, mixer and request diagnostics."),
         new("advanced", "Advanced", "", "Developer tools, shortcuts and engine diagnostics."),
         new("more", "More", "", "Additional catalog features."),
     ];
@@ -57,12 +57,14 @@ public static class CategoryLayout
         new("Audio Mix", "audio", "Mix"),
         new("Spatial Audio", "audio", "Spatial"),
         new("Audio Diagnostics", "audio", "Mixer"),
+        new("Audio Requests", "audio", "Requests"),
         new("Developer Tools", "advanced", "Tools"),
         new("Keyboard Shortcuts", "advanced", "Tools"),
         new("Graphics Diagnostics", "advanced", "Graphics"),
         new("Display automation", "advanced", "Graphics"),
         new("Combat automation", "advanced", "Combat"),
         new("Gameplay state", "advanced", "Player control"),
+        new("Actor reference diagnostics", "advanced", "Actor references"),
         new("Renderer Timing", "advanced", "Renderer"),
         new("Renderer Resources", "advanced", "Renderer"),
         new("Collision diagnostics", "advanced", "Collision"),
@@ -152,7 +154,7 @@ public sealed class FeatureSectionVm : PageVm
     public TabVm SelectedTab { get => selectedTab; set { if (value != null) Set(ref selectedTab, value); } }
 }
 
-/// <summary>Wraps a tool view model (Asset Explorer, Game Messages, ...) for the sidebar.</summary>
+/// <summary>Wraps a tool view model, such as Game Messages, for the sidebar.</summary>
 public sealed class ToolPageVm(string title, string icon, string subtitle, object content, string group = "TOOLS") : PageVm
 {
     public override string Title => title;

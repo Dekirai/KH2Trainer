@@ -10,6 +10,8 @@
 #include <string.h>
 #include <limits>
 #include <initializer_list>
+#include <utility>
+#include <wchar.h>
 namespace {
 uintptr_t g_base=0; DWORD g_gameThread=0; volatile LONG g_disabled=0;
 struct TrainerContext { uintptr_t base,player,status; bool sceneReady; };
@@ -17,12 +19,21 @@ struct TrainerResult { LONG code; const wchar_t* text; };
 struct Shared { DWORD hostHeartbeat; double values[512]; uint64_t valid[8],supported[8]; } shared{};
 Shared* g_shared=&shared;
 void(*onCodeRead)()=nullptr;
+void(*onRequestCodeRead)()=nullptr;
+unsigned requestCodeReads=0,mutateOnRequestCodeRead=1;
+uintptr_t deniedRead=0,deniedWrite=0;size_t deniedReadSize=0;
+BYTE requestMutationExpected[0x1410]{};bool capturedRequestMutation=false;
 bool afterCall=false;unsigned postCallReads=0;
 bool switchPlayerOnSecondRead=false; unsigned playerReads=0;
 template<class T>T& At(uintptr_t rva){return *reinterpret_cast<T*>(g_base+rva);}
 bool Readable(const void* p,size_t count) {
     if(afterCall)++postCallReads;
     const uintptr_t start=reinterpret_cast<uintptr_t>(p);
+    if(start==g_base+0x2312B0 && ++requestCodeReads==mutateOnRequestCodeRead && onRequestCodeRead){
+        auto f=onRequestCodeRead;onRequestCodeRead=nullptr;f();
+        memcpy(requestMutationExpected,reinterpret_cast<void*>(g_base+0x50000),sizeof(requestMutationExpected));capturedRequestMutation=true;
+    }
+    if(deniedRead && start==deniedRead && count==deniedReadSize)return false;
     if(onCodeRead && start==g_base+0x225CD0){auto f=onCodeRead;onCodeRead=nullptr;f();}
     if(!start || count>UINTPTR_MAX-start)return false;
     if(switchPlayerOnSecondRead && start==g_base+0xAF0540 && ++playerReads==2) At<uintptr_t>(0xAF0540)=g_base+0x52000;
@@ -40,6 +51,7 @@ bool Readable(const void* p,size_t count) {
     return true;
 }
 bool Writable(const void* p,size_t count) {
+    if(deniedWrite && reinterpret_cast<uintptr_t>(p)==deniedWrite)return false;
     if(!Readable(p,count))return false;
     uintptr_t cursor=reinterpret_cast<uintptr_t>(p),end=cursor+count;
     while(cursor<end) {
@@ -75,6 +87,10 @@ void __fastcall Charge(uintptr_t q,int n){
     if(progress>=100){while(stock<9){progress-=100;++stock;if(stock>=9)break;if(progress<100){afterCall=true;return;}}progress=100;gummi_extra::Field<unsigned>(q,68)|=4;}
     afterCall=true;
 }
+void __fastcall Request(uintptr_t q){
+    ++calls;lastKind=485;lastObject=q;lastArg=0;
+    gummi_extra::Field<unsigned>(q,68)|=2;afterCall=true;
+}
 TrainerResult Command(unsigned slot,double value=0){double args[8]={value};TrainerResult r{};Check(GummiExtraHandle(host,slot,args,r),"command handled");return r;}
 void ClearSnapshot(){memset(shared.valid,0,sizeof(shared.valid));memset(shared.values,0,sizeof(shared.values));}
 bool Valid(unsigned s){return(shared.valid[s/64]&(uint64_t(1)<<(s%64)))!=0;}
@@ -88,6 +104,8 @@ void Player(uintptr_t rva){
 void Ready(){
     g_shared=&shared;g_disabled=0;g_gameThread=GetCurrentThreadId();shared.hostHeartbeat=GetTickCount();
     host={g_base,0,0,false};afterCall=false;postCallReads=0;onCodeRead=nullptr;calls=0;switchPlayerOnSecondRead=false;playerReads=0;
+    onRequestCodeRead=nullptr;requestCodeReads=0;mutateOnRequestCodeRead=1;deniedRead=deniedWrite=0;deniedReadSize=0;
+    capturedRequestMutation=false;
     At<uintptr_t>(gummi::ModuleRva)=g_base+gummi::ModuleVtableRva;
     At<uintptr_t>(gummi::ModuleRva+8)=g_base+0x90000;
     At<int>(gummi::ModuleRva+36)=1;At<uint32_t>(gummi::ModuleRva+20)=0;
@@ -117,6 +135,8 @@ void Ready(){
     At<int>(0x50000+4872+60)=2;At<float>(0x50000+4872+64)=0;At<unsigned>(0x50000+4872+68)=1;
     At<float>(0x50000+1512)=12.5f;
     for(const auto& sig:gummi_extra::code)memcpy(reinterpret_cast<void*>(g_base+sig.rva),sig.data,sig.size);
+    for(const auto& sig:gummi_extra::requestCode)memcpy(reinterpret_cast<void*>(g_base+sig.rva),sig.data,sig.size);
+    At<float>(gummi_extra::RequestStepRva)=1.0f;
     At<uint32_t>(0x9A8788)=3;At<uint32_t>(0x716C04)=2;
     At<uint32_t>(gummi::ScoreRva)=1209;At<BYTE>(gummi::ScoreLockRva)=0;
     At<int>(0x72B2C4)=12;At<int>(0x72B2C0)=7;At<int>(0x72B2C8)=15;
@@ -126,11 +146,119 @@ void Ready(){
     memcpy(reinterpret_cast<void*>(g_base+gummi::AddScoreRva),gummi::ScoreCode,sizeof(gummi::ScoreCode));
 }
 void Rejected(unsigned slot,const char* why,double value=100){const unsigned oldCalls=calls;const auto r=Command(slot,value);Check(r.code!=0&&calls==oldCalls,why);}
+constexpr uintptr_t RequestCombo=0x50000+4872;
+void RequestReady(){Ready();At<unsigned>(RequestCombo+68)=9;}
+void Continuation(float time=20){RequestReady();At<int>(RequestCombo)=3;At<int>(RequestCombo+52)=2;At<int>(RequestCombo+32+8)=1;At<int>(RequestCombo+60)=0;At<float>(RequestCombo+64)=time;}
+void RequestRejected(const char* why) {
+    BYTE before[0x1410];memcpy(before,reinterpret_cast<void*>(g_base+0x50000),sizeof(before));
+    const unsigned oldCalls=calls;auto r=Command(485);
+    Check(r.code!=0&&calls==oldCalls,why);
+    Check(memcmp(before,reinterpret_cast<void*>(g_base+0x50000),sizeof(before))==0,"request refusal writes no player bytes");
+}
+void RequestAccepted(const char* why) {
+    BYTE before[0x1410];memcpy(before,reinterpret_cast<void*>(g_base+0x50000),sizeof(before));
+    *reinterpret_cast<unsigned*>(before+4872+68)|=2;
+    auto r=Command(485);
+    Check(r.code==0&&calls==1&&lastKind==485&&lastObject==g_base+RequestCombo,why);
+    Check(memcmp(before,reinterpret_cast<void*>(g_base+0x50000),sizeof(before))==0,"request mutates only flag mask2, all other ship bytes unchanged");
+    Check(postCallReads==0,"request discards pointers after dispatch");
+    Check(wcsstr(r.text,L"request queued once")!=nullptr,"request acknowledgement makes no attack guarantee");
+}
+void RequestTests() {
+    for(int stock:{1,9}){RequestReady();At<int>(RequestCombo+60)=stock;RequestAccepted("start stock boundary accepted once");}
+    RequestReady();At<unsigned>(RequestCombo+68)=13;At<int>(RequestCombo+60)=9;At<int>(RequestCombo+56)=100;RequestAccepted("full-latched start leaves stock/progress/latch for native update");
+    for(int first=0;first<5;++first){RequestReady();for(int i=0;i<5;++i)At<int>(RequestCombo+32+4*i)=i==first?1:0;At<int>(RequestCombo+52)=first;RequestAccepted("each native first stage accepted");}
+    for(unsigned companions=1;companions<=3;++companions){
+        RequestReady();for(int i=0;i<5;++i)At<int>(RequestCombo+32+4*i)=0;
+        At<unsigned>(RequestCombo+68)=1;At<int>(RequestCombo+52)=5;
+        // Deliberately unreadable pointers: this is a scalar request, not graph validation.
+        At<uintptr_t>(RequestCombo+16)=(companions&1)?1:0;At<uintptr_t>(RequestCombo+24)=(companions&2)?2:0;
+        RequestAccepted("companion-only input request does not dereference deferred objects");
+    }
+    for(float time:{10.0f,20.0f,50.0f}){Continuation(time);RequestAccepted("inclusive continuation window with zero stock accepted");}
+    for(int stage=1;stage<5;++stage){Continuation();At<int>(RequestCombo+52)=stage;At<int>(RequestCombo+32+4*stage)=1;RequestAccepted("each continuation stage accepted");}
+    RequestReady();At<float>(gummi_extra::RequestStepRva)=0;RequestAccepted("zero native step is finite and allowed");
+    for(int phase:{1,2,4,5,-1,6}){RequestReady();At<int>(RequestCombo)=phase;RequestRejected("non-admissible phase rejected");}
+    RequestReady();At<int>(RequestCombo+60)=0;RequestRejected("empty stock cannot start");
+    for(float time:{nextafterf(10.0f,0.0f),nextafterf(50.0f,100.0f)}){Continuation(time);RequestRejected("adjacent float outside continuation window rejected");}
+    for(unsigned flag:{0u,8u,11u,0x19u,0xffffffffu}){RequestReady();At<unsigned>(RequestCombo+68)=flag;RequestRejected("absent installed, pending and unknown flags rejected");}
+    RequestReady();At<unsigned>(RequestCombo+68)=1;RequestRejected("main-count flag missing");
+    RequestReady();for(int i=0;i<5;++i)At<int>(RequestCombo+32+4*i)=0;At<int>(RequestCombo+52)=5;RequestRejected("main flag without any main count");
+    RequestReady();for(int i=0;i<5;++i)At<int>(RequestCombo+32+4*i)=0;At<unsigned>(RequestCombo+68)=1;At<int>(RequestCombo+52)=5;RequestRejected("no main count or companion cannot represent installation");
+    RequestReady();At<unsigned>(RequestCombo+68)=13;RequestRejected("saturated start requires full stock and progress");
+    RequestReady();At<unsigned>(RequestCombo+68)=13;At<int>(RequestCombo+60)=9;RequestRejected("saturated start requires progress100");
+    for(int index:{-1,1,5,6}){RequestReady();At<int>(RequestCombo+52)=index;RequestRejected("start requires first positive count index");}
+    for(int index:{-1,0,5,6}){Continuation();At<int>(RequestCombo+52)=index;RequestRejected("continuation index must be1..4");}
+    Continuation();At<int>(RequestCombo+40)=0;RequestRejected("continuation count must be positive");
+    for(int stock:{-1,10}){RequestReady();At<int>(RequestCombo+60)=stock;RequestRejected("stock range");}
+    for(int progress:{-1,101}){RequestReady();At<int>(RequestCombo+56)=progress;RequestRejected("progress range");}
+    for(unsigned i=0;i<5;++i)for(int count:{-1,1001}){RequestReady();At<int>(RequestCombo+32+4*i)=count;RequestRejected("every stage count range");}
+    for(float value:{-1.0f,std::numeric_limits<float>::infinity(),std::numeric_limits<float>::quiet_NaN()}){
+        RequestReady();At<float>(RequestCombo+64)=value;RequestRejected("invalid elapsed time");
+        RequestReady();At<float>(gummi_extra::RequestStepRva)=value;RequestRejected("invalid native step");
+    }
+    RequestReady();At<float>(RequestCombo+64)=std::numeric_limits<float>::max();At<float>(gummi_extra::RequestStepRva)=std::numeric_limits<float>::max();RequestRejected("native time addition overflow rejected");
+    RequestReady();At<uintptr_t>(RequestCombo+8)=0;RequestRejected("main owner missing");
+    RequestReady();At<uintptr_t>(0x50000+1160)=0;RequestRejected("main vtable mismatch");
+    RequestReady();At<uintptr_t>(0x50000+1160+200)=0;RequestRejected("main state backlink mismatch");
+    RequestReady();deniedWrite=g_base+RequestCombo+68;RequestRejected("flag DWORD not writable");
+    for(auto span:{std::pair<unsigned,size_t>{0,4},{8,8},{16,8},{24,8},{32,4},{36,4},{40,4},{44,4},{48,4},{52,4},{56,4},{60,4},{64,4},{68,4}}){
+        RequestReady();deniedRead=g_base+RequestCombo+span.first;deniedReadSize=span.second;RequestRejected("each individual request span read checked");
+    }
+    for(auto span:{std::pair<uintptr_t,size_t>{0x50000+1160,8},{0x50000+1160+200,8},{gummi_extra::RequestStepRva,4}}){
+        RequestReady();deniedRead=g_base+span.first;deniedReadSize=span.second;RequestRejected("main identity and global step reads checked");
+    }
+    for(const auto& sig:gummi_extra::requestCode){
+        RequestReady();At<BYTE>(sig.rva+sig.size-1)^=1;RequestRejected("each complete request code/constant signature checked");
+        RequestReady();deniedRead=g_base+sig.rva;deniedReadSize=sig.size;RequestRejected("each signature span checked readable");
+    }
+    for(unsigned i=0;i<8;++i)for(double value:{1.,std::numeric_limits<double>::quiet_NaN(),std::numeric_limits<double>::infinity()}){
+        RequestReady();double args[8]{};args[i]=value;TrainerResult r{};Check(GummiExtraHandle(host,485,args,r)&&r.code!=0&&calls==0,"all eight unused arguments must be finite zero");
+    }
+    RequestReady();TrainerResult result{};Check(GummiExtraHandle(host,485,nullptr,result)&&result.code!=0&&calls==0,"request null args rejected");
+    // Shared host/module/player gates apply to this action independently of charge tests.
+    void(*gates[])()={
+        [](){host.base=0;},[](){g_disabled=1;},[](){g_shared=nullptr;},[](){g_gameThread=0;},[](){g_gameThread++;},
+        [](){shared.hostHeartbeat=0;},[](){shared.hostHeartbeat=GetTickCount()-5001;},[](){shared.hostHeartbeat=GetTickCount()+1000;},
+        [](){At<uintptr_t>(gummi::ModuleRva)=0;},[](){At<int>(gummi::ModuleRva+36)=2;},[](){At<uintptr_t>(gummi::ModeListRva)=0;},
+        [](){At<uint32_t>(gummi::ModuleRva+20)=DWORD(gummi::ModuleRva);},[](){At<uintptr_t>(gummi::HeapRva)=0;},
+        [](){At<uintptr_t>(gummi::ModuleHeapRva)=0;},[](){At<uintptr_t>(gummi::SchedulerRva)=0;},[](){At<uintptr_t>(gummi::ModuleRva+8)=1;},
+        [](){At<int>(gummi::MissionPhaseRva)=7;},[](){At<uintptr_t>(gummi::PlayerRva)=0;},[](){At<uint32_t>(0x50000)=0;},
+        [](){At<uintptr_t>(gummi::DescriptorRva)=0;},[](){At<uintptr_t>(0x50570)=0;},[](){At<uintptr_t>(0x50550)=0;},
+        [](){At<int>(0x505D8)=3;},[](){At<float>(0x50578)=0;},[](){At<float>(0x50578)=std::numeric_limits<float>::quiet_NaN();},
+        [](){At<int>(0x5057C)=0;},[](){At<unsigned>(0x5140C)=0x10;},[](){At<unsigned>(0x5140C)=0x40000;}
+    };
+    for(auto gate:gates){RequestReady();gate();RequestRejected("independent request context gate");}
+    // Every second-sample mismatch is rejected; the fixture's deliberate writes
+    // are not attributed to the command. Counter snapshots start after mutation.
+    void(*changes[])()={
+        [](){At<int>(RequestCombo+56)++;},[](){At<int>(RequestCombo+60)++;},[](){At<float>(RequestCombo+64)=1;},
+        [](){At<float>(gummi_extra::RequestStepRva)=.5f;},[](){At<int>(RequestCombo+32)++;},
+        [](){At<int>(RequestCombo+36)++;},[](){At<int>(RequestCombo+40)++;},[](){At<int>(RequestCombo+44)++;},[](){At<int>(RequestCombo+48)++;},
+        [](){At<uintptr_t>(RequestCombo+16)=1;},[](){At<uintptr_t>(RequestCombo+24)=2;},[](){At<unsigned>(RequestCombo+68)|=2;},
+        [](){At<int>(RequestCombo)=2;},[](){At<int>(RequestCombo+52)=1;},[](){At<uintptr_t>(gummi::PlayerRva)=g_base+0x52000;},
+        [](){At<uint32_t>(0x9A8788)++;},[](){At<uint32_t>(0x716C04)++;},[](){At<uintptr_t>(gummi::HeapRva)=g_base+0xA1000;At<uintptr_t>(gummi::ModuleHeapRva)=g_base+0xA1000;}
+    };
+    for(auto change:changes){
+        RequestReady();onRequestCodeRead=change;const auto r=Command(485);Check(r.code!=0&&calls==0,"every captured scalar/lifetime revalidated after first sample");
+        Check(capturedRequestMutation&&!memcmp(requestMutationExpected,reinterpret_cast<void*>(g_base+0x50000),sizeof(requestMutationExpected)),"changed sample rejection adds no player writes");
+    }
+    for(auto change:{+[](){host.base=0;},+[](){shared.hostHeartbeat=0;},+[](){g_gameThread=0;},+[](){g_disabled=1;},+[](){g_shared=nullptr;}}){
+        RequestReady();onRequestCodeRead=change;mutateOnRequestCodeRead=2;const auto r=Command(485);Check(r.code!=0&&calls==0,"host/base/thread/disable rechecked after second sample");
+        Check(capturedRequestMutation&&!memcmp(requestMutationExpected,reinterpret_cast<void*>(g_base+0x50000),sizeof(requestMutationExpected)),"final host rejection adds no player writes");
+    }
+    RequestReady();onRequestCodeRead=[](){deniedWrite=g_base+RequestCombo+68;};auto r=Command(485);Check(r.code!=0&&calls==0,"flag writeability freshly rechecked");
+    RequestReady();onRequestCodeRead=[](){At<BYTE>(gummi_extra::RequestSetterRva+4)^=1;};r=Command(485);Check(r.code!=0&&calls==0,"setter mutation before first signature completion rejected");
+    RequestReady();onRequestCodeRead=[](){At<BYTE>(gummi_extra::RequestSetterRva+4)^=1;};mutateOnRequestCodeRead=2;r=Command(485);Check(r.code!=0&&calls==0,"setter signature rechecked after second sample");
+    RequestReady();RequestAccepted("first explicit request");afterCall=false;calls=0;RequestRejected("pending request cannot replay before native consumer clears it");
+    RequestReady();GummiExtraCapabilities();Check((shared.supported[485/64]&(uint64_t(1)<<(485%64)))!=0,"request capability485 exposed");
+    double args[8]{};Check(!GummiExtraHandle(host,484,args,result)&&!GummiExtraHandle(host,486,args,result),"adjacent485 commands remain outside handler");
+}
 }
 int main(){
     constexpr size_t allocation=0xC00000;
     g_base=reinterpret_cast<uintptr_t>(VirtualAlloc(nullptr,allocation,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE));if(!g_base)return 2;
-    gummi_extra::testMobility=Mobility;gummi_extra::testRoll=Roll;gummi_extra::testLockon=Lockon;gummi_extra::testCharge=Charge;
+    gummi_extra::testMobility=Mobility;gummi_extra::testRoll=Roll;gummi_extra::testLockon=Lockon;gummi_extra::testCharge=Charge;gummi_extra::testRequest=Request;
     for(unsigned slot=320;slot<=322;++slot)for(int value:{-100,0,50,200,1000}){
         if((slot==322&&value<0)||(slot<322&&value>200))continue;
         Ready();const unsigned off=36+4*(slot-320);const int old=At<int>(0x50570+off);
@@ -240,5 +368,6 @@ int main(){
     Ready();GummiExtraCapabilities();for(unsigned s=320;s<=329;++s)Check((shared.supported[s/64]&(uint64_t(1)<<(s%64)))!=0,"exact capability range");
     Check(!(shared.supported[319/64]&(uint64_t(1)<<(319%64)))&&!(shared.supported[330/64]&(uint64_t(1)<<(330%64))),"adjacent slots remain free");
     double args[8]{};TrainerResult result{};Check(!GummiExtraHandle(host,319,args,result)&&!GummiExtraHandle(host,324,args,result),"read-only/reserved slot writes rejected");
+    RequestTests();
     printf("GummiExtraGuardTests: %u checks, %u failures\n",checks,failures);VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);return failures?1:0;
 }

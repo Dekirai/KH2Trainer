@@ -1,0 +1,16 @@
+{
+  "addr": "0x14012e180",
+  "code": "// Static analysis (SHA256 9002b2de...49ed). Analysis label: kh2_find_resource_by_original_buffer. [Static RE, IDA native x64] Finds ResourceEntry by original source buffer range; optional list removal behavior.\n__int64 __fastcall kh2_find_resource_by_original_buffer(unsigned __int64 a1, int a2)\n{\n  _QWORD *v2; // r11\n  __int64 v4; // r8\n  __int64 v5; // r9\n  unsigned __int64 v6; // rcx\n  __int64 v7; // rax\n  __int64 v8; // rdx\n  __int64 v9; // rcx\n\n  v2 = qword_1408AEF30; /*0x14012e180*/\n  v4 = *((_QWORD *)qword_1408AEF30 + 1); /*0x14012e18a*/\n  if ( !v4 ) /*0x14012e191*/\n    goto LABEL_3; /*0x14012e191*/\n  v5 = *(_QWORD *)(v4 + 8); /*0x14012e193*/\n  while ( 1 ) /*0x14012e19c*/\n  {\n    if ( !v4 ) /*0x14012e19f*/\n      return 0; /*0x14012e221*/\n    v6 = *(_QWORD *)(v4 + 1624); /*0x14012e1a5*/\n    if ( v6 <= a1 && a1 < v6 + *(unsigned int *)(v4 + 1600) ) /*0x14012e1be*/\n      break; /*0x14012e1be*/\n    v4 = v5; /*0x14012e1c0*/\n    if ( v5 ) /*0x14012e1c6*/\n      v5 = *(_QWORD *)(v5 + 8); /*0x14012e1c8*/\n    else\nLABEL_3:\n      v5 = 0; /*0x14012e199*/\n  }\n  if ( a2 ) /*0x14012e1d0*/\n  {\n    v7 = *((_QWORD *)qword_1408AEF30 + 1); /*0x14012e1d2*/\n    v8 = 0; /*0x14012e1d6*/\n    if ( v7 ) /*0x14012e1db*/\n    {\n      while ( 1 ) /*0x14012e1e0*/\n      {\n        v9 = *(_QWORD *)(v7 + 8); /*0x14012e1e0*/\n        if ( v4 == v7 ) /*0x14012e1e7*/\n          break; /*0x14012e1e7*/\n        v8 = v7; /*0x14012e1e9*/\n        v7 = *(_QWORD *)(v7 + 8); /*0x14012e1ec*/\n        if ( !v9 ) /*0x14012e1f2*/\n          return v4; /*0x14012e1f7*/\n      }\n      if ( v8 ) /*0x14012e1fb*/\n        *(_QWORD *)(v8 + 8) = v9; /*0x14012e1fd*/\n      else\n        *((_QWORD *)qword_1408AEF30 + 1) = v9; /*0x14012e203*/\n      if ( v4 == v2[2] ) /*0x14012e20b*/\n        v2[2] = v8; /*0x14012e20d*/\n      *(_QWORD *)(v4 + 8) = 0; /*0x14012e211*/\n      --*((_DWORD *)v2 + 6); /*0x14012e219*/\n    }\n  }\n  return v4; /*0x14012e1f7*/\n}",
+  "line_count": 58,
+  "total_lines": 58,
+  "truncated": false,
+  "cursor": {
+    "done": true
+  },
+  "refs": [
+    {
+      "addr": "0x1408aef30",
+      "name": "qword_1408AEF30"
+    }
+  ]
+}

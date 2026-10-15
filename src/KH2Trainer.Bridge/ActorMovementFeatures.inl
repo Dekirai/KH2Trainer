@@ -7,6 +7,7 @@
 #include "PlayerRoleSupport.inl"
 namespace actor_movement {
 constexpr unsigned First=344,Last=347;
+constexpr unsigned HeavyJumpSlot=487;
 constexpr unsigned Offsets[]={296,300,312,304};
 constexpr double Minima[]={0,0,0.1,0};
 constexpr double Maxima[]={32,64,100,1000};
@@ -58,6 +59,25 @@ bool MovementReady(const TrainerContext& c,bool allowPause=false) {
 }
 bool ActorMovementHandle(const TrainerContext& c,unsigned slot,const double args[8],TrainerResult& result) {
     using namespace actor_movement;
+    if(slot==HeavyJumpSlot) {
+        if(!combat::HostFresh() || !MovementReady(c)) {
+            result={3,L"A supported living player in a stable playable scene is required."};return true;
+        }
+        const float fall=combat::Field<float>(c.player,312),height=combat::Field<float>(c.player,304);
+        if(!combat::FiniteRange(fall,Minima[2],Maxima[2]) ||
+           !combat::FiniteRange(height,Minima[3],Maxima[3]) ||
+           !Writable(reinterpret_cast<void*>(c.player+312),sizeof(float)) ||
+           !Writable(reinterpret_cast<void*>(c.player+304),sizeof(float))) {
+            result={3,L"The current air movement values are unavailable or outside the supported range."};return true;
+        }
+        // One command samples both current fields before changing either.
+        // This is the base-height fallback, not the High Jump ability height.
+        const float nextFall=fall>50.0f?100.0f:fall*2.0f;
+        const float nextHeight=height*0.5f;
+        combat::Field<float>(c.player,312)=nextFall;
+        combat::Field<float>(c.player,304)=nextHeight;
+        result={0,L"Base jump height halved and fall-speed limit doubled (maximum 100). High Jump and special actions may use other heights; active jumps are not restarted."};return true;
+    }
     if(slot<First||slot>Last) return false;
     const unsigned index=slot-First;
     if(!combat::FiniteRange(args[0],Minima[index],Maxima[index])) {
@@ -87,4 +107,5 @@ void ActorMovementSnapshot(const TrainerContext& c) {
 }
 void ActorMovementCapabilities() {
     for(unsigned slot=actor_movement::First;slot<=actor_movement::Last;++slot) SupportCapability(slot);
+    SupportCapability(actor_movement::HeavyJumpSlot);
 }

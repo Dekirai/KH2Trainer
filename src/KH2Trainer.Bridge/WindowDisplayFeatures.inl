@@ -147,7 +147,9 @@ bool Execute(const TrainerContext& c,const Plan* plan,State& copied,TrainerResul
             return false;
         }
         void* const mutex=reinterpret_cast<void*>(before.display.object+display_preview::MutexOffset);
-        if(before.display.lock(mutex)!=0) {
+        // Only explicit commands may wait for presentation. Passive reads
+        // skip this sample if the presentation thread currently owns it.
+        if((plan?before.display.lock(mutex):display_preview::TryLock(before.display))!=0) {
             result={1,L"The native presentation mutex could not be acquired."};return false;
         }
         bool completed=false,released=false;

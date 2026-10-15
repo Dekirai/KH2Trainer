@@ -370,7 +370,12 @@ int main() {
     for(unsigned slot=431;slot<=438;++slot) Check(Supported(slot),"Window display capability is integrated");
     for(unsigned slot=447;slot<=455;++slot) Check(Supported(slot),"MSAA policy capability is integrated");
     for(unsigned slot=477;slot<=481;++slot) Check(Supported(slot),"checked mission counter actions and read-only combo capabilities are integrated");
-    Check(!Supported(482),"mission additions leave the next protocol slot reserved");
+    for(unsigned slot=482;slot<=484;++slot) Check(Supported(slot),"scalar audio request observations are integrated");
+    Check(Supported(485)&&Supported(486)&&Supported(487),
+        "Gummi special request, target HP reduction and heavy jumps occupy485..487");
+    for(unsigned slot=488;slot<=492;++slot) Check(Supported(slot),"Drive Revert lock ownership capabilities are integrated");
+    for(unsigned slot=493;slot<=498;++slot) Check(Supported(slot),"Actor contact readout capabilities are integrated");
+    Check(!Supported(499),"adjacent capability499 remains reserved");
     for(unsigned slot : {319u,330u,343u,348u,351u,362u,367u,374u,375u,419u,420u,421u,422u,423u,439u,446u}) Check(!Supported(slot),"adjacent unused slots remain reserved");
     Request(1432,0); TrainerFrame();
     Check(shared.resultCode!=0 && wcsstr(shared.resultText,L"renderer") && !Valid(433),"maximize dispatch rejects an absent renderer before callout");
@@ -412,6 +417,34 @@ int main() {
               "combo wire command cannot write read-only values");
     }
     Check(!Valid(479)&&!Valid(480)&&!Valid(481),"absent combo has no fabricated wire snapshot");
+    for(LONG command:{1482L,1483L,1484L}) {
+        Request(command,1);TrainerFrame();
+        Check(shared.responseSequence==shared.requestSequence&&shared.resultCode==1&&wcsstr(shared.resultText,L"Audio request observations are read-only"),
+              "audio readout commands stop at explicit rejection before generic fallback");
+    }
+    Check(!Valid(482)&&!Valid(483)&&!Valid(484),"unverified request writer signatures publish no audio counters");
+    {
+        // The actual production feature has no test hooks. Only synthetic image
+        // bytes are seeded; these bodies are never called or made executable.
+        BYTE oldCode[2048]{};SIZE_T used=0;
+        BYTE oldCounters[56]{};memcpy(oldCounters,reinterpret_cast<void*>(g_base+audio_requests::FreeRva),sizeof(oldCounters));
+        for(const auto& code:audio_request_signatures::Writers) {
+            memcpy(oldCode+used,reinterpret_cast<void*>(g_base+code.rva),code.size);used+=code.size;
+            memcpy(reinterpret_cast<void*>(g_base+code.rva),code.bytes,code.size);
+        }
+        At<int32_t>(audio_requests::FreeRva)=17;At<int32_t>(audio_requests::IntervalRva)=24;At<BYTE>(audio_requests::InhibitRva)=0;
+        g_snapshotSchedule={};shared.hostHeartbeat=GetTickCount();TrainerFrame();
+        Check(Valid(482)&&Valid(483)&&Valid(484)&&shared.values[482]==17&&shared.values[483]==24&&shared.values[484]==0,
+              "real TrainerFrame publishes resident request scalars without an audio graph");
+        At<int32_t>(audio_requests::FreeRva)=16;At<int32_t>(audio_requests::IntervalRva)=25;At<BYTE>(audio_requests::InhibitRva)=1;
+        g_snapshotSchedule={};TrainerFrame();Check(Valid(482)&&Valid(483)&&Valid(484)&&shared.values[484]==7,
+              "actual frame exposes all three simultaneous admission limits");
+        At<BYTE>(audio_request_signatures::Writers[0].rva)^=1;g_snapshotSchedule={};TrainerFrame();
+        Check(!Valid(482)&&!Valid(483)&&!Valid(484),"next sampled frame clears stale request observations on writer mismatch");
+        used=0;for(const auto& code:audio_request_signatures::Writers) {memcpy(reinterpret_cast<void*>(g_base+code.rva),oldCode+used,code.size);used+=code.size;}
+        memcpy(reinterpret_cast<void*>(g_base+audio_requests::FreeRva),oldCounters,sizeof(oldCounters));
+    }
+
     Request(1240,30); TrainerFrame();
     Check(shared.responseSequence==shared.requestSequence && shared.resultCode==3 && wcsstr(shared.resultText,L"free camera") && !Valid(240),
           "Camera roll IPC reaches its own held-camera guard without changing native camera state");

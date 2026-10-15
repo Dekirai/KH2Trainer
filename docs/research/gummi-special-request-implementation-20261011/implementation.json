@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "status": "native implementation and isolated tests complete; independent product review pending",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "study": {
+    "path": "docs/research/gummi-gameplay-continuation-20261011",
+    "manifestSha256": "2995ef76f490cdca02bb11c24baf0ffc52fe8ea2c9ae5bf9385a2b30ae94892d",
+    "artifactFallback": "artifacts/gummi-gameplay-continuation-20261011"
+  },
+  "sourcePins": [
+    {
+      "path": "src/KH2Trainer.Bridge/GummiExtraFeatures.inl",
+      "snapshot": "source-snapshots/src/KH2Trainer.Bridge/GummiExtraFeatures.inl",
+      "sha256": "bdc0e8db3a5ea5fe13f7c57b3dbac54c95635d48410f3236a8c8c3c90b14de15"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/GummiExtraGuardTests.cpp",
+      "snapshot": "source-snapshots/tests/KH2Trainer.Bridge.Tests/GummiExtraGuardTests.cpp",
+      "sha256": "f9df28c2553aeea787bbfa0c99167b11d0ca058e223f7a38994bf24da0d2bf08"
+    }
+  ],
+  "action": {
+    "featureId": "gummi.request_special_attack",
+    "command": 1485,
+    "capability": 485,
+    "nativeSetterRva": "0x2312b0",
+    "abi": "void(__fastcall*)(uintptr_t), RCX inline combo; no useful return",
+    "writeFootprint": "OR DWORD[combo+68] with mask2 only",
+    "resultMeaning": "queued request only; native update can discard it and future resources are not certified"
+  },
+  "testEvidence": [
+    {
+      "path": "native-GummiExtraGuardTests.txt",
+      "sha256": "4dbfe9d52f1c58b13a15e75163fde0b7b5fe89de92387fb5bdb08f12e0bcd736",
+      "suite": "GummiExtraGuardTests",
+      "checks": 1087,
+      "previousV17Checks": 492,
+      "additionalAssertions": 595,
+      "owner": "this subagent",
+      "hookScope": "The native setter is a mock with the verified OR2 footprint; revalidation changes are deliberately injected by Readable fixture callbacks."
+    },
+    {
+      "path": "root-wire-test.txt",
+      "sha256": "aa229887d062244e6b9228e27c7ee22b8fd90b095bc818e1c69504bd8c4841ad",
+      "suite": "GummiRequestBridgeTests",
+      "checks": 15,
+      "owner": "root",
+      "hookScope": "Actual TrainerFrame1485 and shipping Gummi route, no Gummi test hooks. Only a private synthetic page containing the five original setter bytes is executable; consumer/dispatchers cannot execute."
+    }
+  ],
+  "productionRouteSourceContext": {
+    "path": "context/GummiRequestBridgeTests.cpp",
+    "sha256": "6a132778e7dd454fdcacf2bdfe045285072c1293a4bd4ad3825d40012997d808"
+  },
+  "commands": [
+    ".\\tests\\KH2Trainer.Bridge.Tests\\run-tests.ps1 -Suite GummiExtraGuardTests -OutputDirectory artifacts/gummi-special-request-implementation-20261011/bin -LogDirectory artifacts/gummi-special-request-implementation-20261011",
+    "Root independently ran GummiRequestBridgeTests, log copied verbatim from artifacts/gummi-request-wire-v18.",
+    "py -B artifacts/gummi-special-request-implementation-20261011/verify.py --check-current-product"
+  ],
+  "limits": [
+    "No live game/GUI/injection/attach/save actions.",
+    "No claim of projectile creation, hits, or future validity of companion/part/weapon-instance resources.",
+    "Original study model checks are static semantics, not additional product test counts.",
+    "Existing Charge/Snapshot implementation is byte-identical after removing only this new handler block/route/capability."
+  ]
+}

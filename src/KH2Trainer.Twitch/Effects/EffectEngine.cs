@@ -190,7 +190,7 @@ public sealed class EffectEngine
             }
             // Pending Drive cancellation only removes trainer work; no actor action is permitted here.
             bool mayCancel = !item.Effect.Context.Established && item.Effect.Definition.CancelPending != null && game.IsConnected;
-            if ((!ready && !mayCancel && !item.Effect.Context.HasActorLease) || now - item.LastTry < RestoreInterval) continue;
+            if ((!ready && !mayCancel && !item.Effect.Context.HasActorLease && !item.Effect.Context.HasDriveRevertCleanup) || now - item.LastTry < RestoreInterval) continue;
             item.LastTry = now;
             await EndAsync(item.Effect, item.Reason, now, item.Why);
             changed = true;
@@ -215,7 +215,7 @@ public sealed class EffectEngine
                 continue;
             }
             // Freeze Frame's own release must be retried while the field is still paused.
-            if ((!ready && !item.Context.HasActorLease) || now - item.LastTry < RestoreInterval) continue;
+            if ((!ready && !item.Context.HasActorLease && !item.Context.HasDriveRevertCleanup) || now - item.LastTry < RestoreInterval) continue;
             item.LastTry = now;
             await item.Context.RestoreAsync();
             if (!item.Context.HasPendingRestores) { restoring.Remove(item); changed = true; }
@@ -230,6 +230,14 @@ public sealed class EffectEngine
         foreach (var effect in active.ToArray())
         {
             effect.Context.SinceStart = now - effect.Started;
+            // Fresh loss must be observed before ActiveCheck can pause the ordinary form monitor.
+            var ownership = effect.Context.DriveRevertProgress;
+            if (ownership.Status != EffectStatus.Running)
+            {
+                await EndAsync(effect, EndReason.EndedByGame, now, ownership.Reason);
+                changed = true;
+                continue;
+            }
             var startLimit = effect.Definition.MaxWaitSeconds > 0 ? TimeSpan.FromSeconds(effect.Definition.MaxWaitSeconds) : engine.MaxWait;
             if (effect.Context.HasActorLease && !effect.Context.Established && effect.Context.SinceStart > startLimit)
             {
@@ -487,7 +495,9 @@ public sealed class EffectEngine
             if (feature.RequiresScene && !game.SceneReady) return Readiness.Wait("Waiting for gameplay (loading, menu or cutscene)");
             if (!game.Supports(feature.CapabilitySlot)) return Readiness.Wait("Waiting until the game allows it");
         }
-        return includeEffectCheck ? definition.Check?.Invoke(context) ?? Readiness.Ready : Readiness.Ready;
+        if (!includeEffectCheck) return Readiness.Ready;
+        return releasing != null && definition.CheckAfterRelease != null
+            ? definition.CheckAfterRelease(context, releasing) : definition.Check?.Invoke(context) ?? Readiness.Ready;
     }
 
     /// <summary>Ends a running effect early (for example from the streamer's Live panel).</summary>
@@ -544,7 +554,7 @@ public sealed class EffectEngine
             // Effects that never took hold are refunded by EndAsync; the others were already paid for.
             foreach (var effect in active.ToArray()) await EndAsync(effect, EndReason.Stopped, now, reason);
             foreach (var item in restoring.ToArray())
-                if (item.Context.ControlReadiness().Kind == ReadinessKind.Ready || item.Context.HasActorLease)
+                if (item.Context.ControlReadiness().Kind == ReadinessKind.Ready || item.Context.HasActorLease || item.Context.HasDriveRevertCleanup)
                 { await item.Context.RestoreAsync(); if (!item.Context.HasPendingRestores) restoring.Remove(item); }
         }
         finally { gate.Release(); }
@@ -554,6 +564,8 @@ public sealed class EffectEngine
     /// <summary>Ends an effect. Returns false when its end step failed (for example the game refused a revert).</summary>
     private async Task<bool> EndAsync(Active effect, EndReason reason, DateTimeOffset now, string? why)
     {
+        // End the lock intent even when player control or pending-Drive cancellation must wait.
+        await effect.Context.ReleaseDriveRevertLockAsync();
         if (!effect.Context.Established && effect.Definition.CancelPending is { } cancel)
         {
             try { await cancel(effect.Context); }

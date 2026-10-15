@@ -1,0 +1,217 @@
+{
+  "status": "SOURCE_NAMING_CORRECTED_PENDING_ROOT_BUILD",
+  "nativeChecks": 4242,
+  "nativeSuites": {
+    "ActorContactDiagnosticsTests": {
+      "checks": 122,
+      "log": {
+        "path": "artifacts/actor-contact-implementation-20261013/logs/native-ActorContactDiagnosticsTests.txt",
+        "bytes": 392,
+        "sha256": "679396a7f179b9fb0f303f76fb4e08736b83d519f50690d4dd63e4983d4ed7ce"
+      }
+    },
+    "CombatGuardTests": {
+      "checks": 2333,
+      "log": {
+        "path": "artifacts/actor-contact-implementation-20261013/logs/native-CombatGuardTests.txt",
+        "bytes": 405,
+        "sha256": "e9bece49e4e6f3149a8351a93e3c6042bec9f97e7a0bfccc1213c5ff752da06a"
+      }
+    },
+    "GameplayStateGuardTests": {
+      "checks": 1066,
+      "log": {
+        "path": "artifacts/actor-contact-implementation-20261013/logs/native-GameplayStateGuardTests.txt",
+        "bytes": 122,
+        "sha256": "1e53b1221761a792726292d2948f0d224923a656c932c70aa7b5b9f079e96b65"
+      }
+    },
+    "GummiRequestBridgeTests": {
+      "checks": 15,
+      "log": {
+        "path": "artifacts/actor-contact-implementation-20261013/logs/native-GummiRequestBridgeTests.txt",
+        "bytes": 396,
+        "sha256": "ec2c68d6fc6c3bf8248967f2f4ac3779f4fb780cb4973644a3a6c20c6fce5930"
+      }
+    },
+    "PlayerBridgeTests": {
+      "checks": 677,
+      "log": {
+        "path": "artifacts/actor-contact-implementation-20261013/logs/native-PlayerBridgeTests.txt",
+        "bytes": 395,
+        "sha256": "3f2e673b1e5230b7482df9a6888b8496748b67769bc7c737ebfaba322c7d6c26"
+      }
+    },
+    "TrainerPerformanceTests": {
+      "checks": 29,
+      "log": {
+        "path": "artifacts/actor-contact-implementation-20261013/logs/native-TrainerPerformanceTests.txt",
+        "bytes": 713,
+        "sha256": "ca0144e162a490083b846ffa6d90142da7676223fb38e421dfea86c6253ea81e"
+      }
+    }
+  },
+  "coreChecks": 3492,
+  "uiChecks": 3501,
+  "uiRenders": 57,
+  "catalogFeatures": 370,
+  "rewardsUnchanged": 65,
+  "prior364FeaturesUnchanged": true,
+  "mapping": [
+    {
+      "Id": "actor.sora.reference_count",
+      "CommandId": 0,
+      "CapabilitySlot": 493,
+      "ValueSlot": 493
+    },
+    {
+      "Id": "actor.sora.retirement_requested",
+      "CommandId": 0,
+      "CapabilitySlot": 494,
+      "ValueSlot": 494
+    },
+    {
+      "Id": "actor.sora.retirement_marked",
+      "CommandId": 0,
+      "CapabilitySlot": 495,
+      "ValueSlot": 495
+    },
+    {
+      "Id": "actor.target.reference_count",
+      "CommandId": 0,
+      "CapabilitySlot": 496,
+      "ValueSlot": 496
+    },
+    {
+      "Id": "actor.target.retirement_requested",
+      "CommandId": 0,
+      "CapabilitySlot": 497,
+      "ValueSlot": 497
+    },
+    {
+      "Id": "actor.target.retirement_marked",
+      "CommandId": 0,
+      "CapabilitySlot": 498,
+      "ValueSlot": 498
+    }
+  ],
+  "implementation": [
+    "Current Sora raw counter and two independent flags reuse the existing completed GameplayState inspection; retirement input blocking remains observable, while unknown identity/loading/transition/absent player suppress values.",
+    "Current target observation retains lock bindings, full bounded active-list membership, enemy category, status backpointer, absent save links and health ranges; only zero HP and retirement/action flags are excluded from the separate strict action predicate.",
+    "CombatSnapshot calls ObserveTarget once and reuses it for prior HP/revenge and new readouts. TargetActionReady preserves the original writable-action admission conditions.",
+    "Readouts copy Actor DWORD+1464 and bits0x10000000/0x80000 from DWORD+288. They install no hooks, retain no actor pointers and call no native predicates.",
+    "A counted private tail node proves one existing target list traversal, one existing player inspection list traversal and exactly two combined; the existing100ms publication cadence remains intact.",
+    "Counter is an unsigned DWORD reference count with script VM, actor command and attack/contact sources; it counts neither attacks nor unique objects. Two contact reference fields can alias. Neither counter0 nor a retirement flag proves safe destruction or next-frame completion."
+  ],
+  "validation": [
+    "Full production bridge included in synthetic native test executable; isolated private memory only. Read-only non-executable image plus poisoned actor VM pointers remains unchanged after snapshots.",
+    "Unsigned boundary values through UINT32_MAX, independent flags, stale/absent publication clearing, foreign bindings, complete-list cycles/membership, bad status/ranges, Sora role/forms and rejected target mutations covered.",
+    "Before the semantic rename, embedded WPF catalog/navigation and FeatureVm formatting were verified offscreen. The saved dark Actor contacts PNG and managed test logs predate the renamed Actor references tab and descriptions; they do not verify the current wording. No visible windows or input.",
+    "The UI fixture explicitly used SkipNativeBridgeBuild=true and reused the existing embedded bridge; no production DLL, package, version, README or research document was rebuilt or changed by this integration work."
+  ],
+  "validationProvenance": {
+    "priorTestedSourceReceipt": {
+      "path": "artifacts/actor-contact-implementation-20261013/report-before-semantic-rename.json",
+      "bytes": 8692,
+      "sha256": "89e3039a9d99837375e275f7bed98f539175edc2103af9036f7cfa7be48ff2bc"
+    },
+    "changedSincePriorTestRuns": [
+      "src/KH2Trainer/Data/features.json",
+      "src/KH2Trainer/ViewModels/Navigation.cs",
+      "tests/KH2Trainer.Core.Tests/ActorContactCatalogTests.cs",
+      "tests/KH2Trainer.UiTests/FeatureLayoutUiChecks.cs"
+    ],
+    "nativeSourceAndTestsUnchanged": true,
+    "currentManagedNamingCompiledOrTested": false,
+    "rootFullBuildRequiredForCurrentNaming": true,
+    "note": "Native checks still refer to byte-identical native sources and tests. Core3492/UI3501/57 are preserved prior-run totals, not current renamed-source validation. The root requested no build or test run during this correction."
+  },
+  "sourcePins": [
+    {
+      "path": "src/KH2Trainer.Bridge/CombatFeatures.inl",
+      "bytes": 10193,
+      "sha256": "049b2d2ead335549d63facaf2aca5ebe542845c10a69fa925f2ba71a9f02a127"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/GameplayStateSupport.inl",
+      "bytes": 47024,
+      "sha256": "57f22229efda62376425053958c7e8545e40733dc19dfbbbac9735b12f5aa7a0"
+    },
+    {
+      "path": "src/KH2Trainer/Data/features.json",
+      "bytes": 420441,
+      "sha256": "ac50dfef5f53217bbd6a5ff64a2fd48f5d58fffd1f51e4e0d23c395c53e4314f"
+    },
+    {
+      "path": "src/KH2Trainer/ViewModels/Navigation.cs",
+      "bytes": 8122,
+      "sha256": "e3abf20e58a8fb79665a688390e92fdbb5fce0f2d895216ac034a11889eb4c41"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/ActorContactDiagnosticsTests.cpp",
+      "bytes": 13747,
+      "sha256": "289592152e6e3e2dc0f0b651c3878ffb635cf47ccd0b31f039a1a095d768e34c"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/CombatGuardTests.cpp",
+      "bytes": 41855,
+      "sha256": "83b8c8cac51ff9489da2a12e643d088af5af448e3cab74c32319b2351bd006b6"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/PlayerBridgeTests.cpp",
+      "bytes": 54295,
+      "sha256": "27fc637970bd7667760d86a9fefba26fa459d5b1b9684c676477fe4eb8aa3816"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/GummiRequestBridgeTests.cpp",
+      "bytes": 6328,
+      "sha256": "04ac2a39ff15a64d55e928abd94d4230b08d7c2702de289a0ab1a05b12d65322"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/run-tests.ps1",
+      "bytes": 8439,
+      "sha256": "527b7098cdd250346a35d4e8ad823a9401e407e1bfbfdabe8a26f2f9cc3014a7"
+    },
+    {
+      "path": "tests/KH2Trainer.Core.Tests/ActorContactCatalogTests.cs",
+      "bytes": 2048,
+      "sha256": "d07ea166d5b18b84f2fdd9798166a1eb92ba14e5458fffb271ce302c607a1829"
+    },
+    {
+      "path": "tests/KH2Trainer.Core.Tests/Program.cs",
+      "bytes": 20416,
+      "sha256": "7b5ceec35d72a80b3d93d832d993a187492366732ee3f9679039e3d2e42c0bd2"
+    },
+    {
+      "path": "tests/KH2Trainer.UiTests/FeatureLayoutUiChecks.cs",
+      "bytes": 20973,
+      "sha256": "bb801efe1023a655d581859cd776d1463cf028fb59f9b36398bb64afb7f3448e"
+    }
+  ],
+  "coreLog": {
+    "path": "artifacts/actor-contact-implementation-20261013/core-tests.log",
+    "bytes": 177568,
+    "sha256": "39ff2d0ced7a4dd9c79d087edbeb88706fb867a810c3dbbed7316d0ecf260339"
+  },
+  "uiReport": {
+    "path": "artifacts/actor-contact-implementation-20261013/ui/report.json",
+    "bytes": 10050,
+    "sha256": "97462d4ce029822657f54527498249e2be7b0a4cbbf73220d46bd0d3d030e74b"
+  },
+  "uiLog": {
+    "path": "artifacts/actor-contact-implementation-20261013/ui-tests.log",
+    "bytes": 6421,
+    "sha256": "bcdf47f0e9972788a5b9a232510aa6d0d5835a33b3123e8bd5cfc2a14bf15420"
+  },
+  "uiImage": {
+    "path": "artifacts/actor-contact-implementation-20261013/ui/FeaturePages/advanced-actor-contacts.png",
+    "bytes": 11581,
+    "sha256": "5ad195e8f291d41dcb024404479258ec2301b6df3e4a5a977ea57021d5da86df"
+  },
+  "baselineSourceArchive": {
+    "path": "artifacts/packages/KH2_Trainer_v0.12.22/Source.zip",
+    "bytes": 35775792,
+    "sha256": "788f1d44b495ab507d32d5e2f28b5561f4d5b33a6a69e1bfd1def9f75c588498"
+  },
+  "scope": "Source-only implementation and targeted synthetic regression suites. No packaged release, live game, injected code, Twitch account, real save, native getter invocation or GUI input. Existing all-repository work outside the owned file list is preserved."
+}

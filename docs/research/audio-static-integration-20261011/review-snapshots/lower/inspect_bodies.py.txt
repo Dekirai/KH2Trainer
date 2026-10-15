@@ -1,0 +1,13 @@
+from pathlib import Path
+import json
+R=Path(__file__).resolve().parents[2]
+S=R/'artifacts/audio-bank-retirement-20261011'
+selected={0x078b50,0x078be0,0x091d00,0x091a70,0x09a780,0x0986a0,0x0981c0,0x08a570,0x088fc0,0x088f20,0x089390,0x09fa70,0x136060,0x06b1d0,0x039d30}
+e=json.loads((S/'evidence.json').read_text(encoding='utf-8-sig'))
+out=[]
+for f in e['functions']:
+ if int(f['addr'],16)-0x140000000 in selected:
+  out+=['\n'+f['addr']+' size '+str(f['size'])]
+  out += [i['addr']+' '+i['mnemonic']+' '+i['operands'] for i in f['instructions']]
+(Path(__file__).resolve().parent/'selected-asm.txt').write_text('\n'.join(out)+'\n')
+print('Selected assembly exported to review artifacts')

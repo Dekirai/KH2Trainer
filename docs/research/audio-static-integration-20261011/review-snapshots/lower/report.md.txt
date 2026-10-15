@@ -1,0 +1,29 @@
+# Unabhängiger Review: Audio-Bankfreigabe
+
+**Ergebnis: akzeptiert im beschriebenen statischen Umfang.** Es bleiben keine offenen Review-Blocker. Die Studie bleibt separat unter `artifacts`; dieser Receipt ändert weder Produktdateien noch das Paket v0.12.16.
+
+## Geprüft
+
+- 40 vollständige frische IDA-Körper: 3.108 Instruktionen und 13.520 Originalbytes; sieben nachgestellte CC-Bytes sind als Padding ausgewiesen.
+- Original-PE-SHA256, Seitenzusammenführung, Endcursor, Capstone-Decodierung, 118 semantische Anker, 892 positiv kodierte Referenzen, zehn Vtable-Ziele, drei RTTI-Identitäten sowie Lock-/Free-Importnamen.
+- Der zusätzliche Körper 08C1A0 ist ausdrücklich eine wiederverwendete Abhängigkeit und zählt nicht als 41. frischer Körper.
+- 10.095 unabhängige Checks; 477 eigene Simulationen anhand tatsächlich dekodierter Instruktionen. Sie umfassen Streamprüfung/Abbruch, Freigabebedingungen, Factory-Gates, Generationen, Freigabereihenfolge, WORD-Arithmetik, Destruktorflags und alle 64 Bucket-Initialisierer.
+- Der unveränderte Autoren-Verifier besteht ebenfalls: 527 Modellfälle und 224 daraus abgeleitete 091D00-Traces.
+
+## Ergebnis der inhaltlichen Prüfung
+
+Die Studie unterscheidet zutreffend zwischen Freigabeprüfung, Stop, Request-Abbruch, Listenentfernung und Destruktor. Fehlende Infrastruktur kann true liefern. Fehlgeschlagener Abbruch kann bereits wartende Requests und die Streamliste verändert haben. Das erlaubt keine Schlussfolgerung auf vollständig beendete Leser.
+
+Ein Ausdruck in Claim 091D00 wurde präzisiert: Er beschreibt jetzt direkt das Match über Virtual+656 und das false-Ergebnis von Virtual+632. Weitere Methodensemantik wird damit nicht vorausgesetzt. Die korrigierte Fassung ist im angenommenen Manifest eingefroren.
+
+Mode2 behält den geliehenen Payload. Die bedingte ActualBank-Mutation hängt weiterhin von erhaltenen Bucket-Offsets104, intakten getrennten Objekten und fehlenden intervenierenden relevanten Schreibzugriffen ab. Die Factory-Gates garantieren keine vollständige Initialisierung; insbesondere Version0 passiert das Header-Gate, aber nicht den ausgewiesenen Initializer-Vertrag.
+
+## Grenzen
+
+Die eigenen Simulationen verwenden synthetischen Speicher und ausdrücklich ersetzte Helfer-Rückgaben; sie führen keinen Originalcode aus. Sie belegen ausgewählte Branches und Reihenfolgen, keine Erreichbarkeit eines Spielzustands, Nebenläufigkeit, sichere Ressourcenlebensdauer, vollständige Schreiberliste oder sichere Audio-Ersetzung. Zwei gelesene Zustandswerte werden durch den Test nicht atomar. Der Verifier war während der IDA-Aufnahme nicht mit abgeschlossener Autoanalyse belegt.
+
+Kein Spielstart, keine GUI-, Attach-, Injection-, Save-, Importer- oder Originalschreibaktion. Kein Produktbuild. Der genaue Umfang, alle 22 Claim-Entscheidungen und Pins stehen in `review.json`.
+
+## Transportformat-Nachprüfung
+
+Der neue Freeze ändert 34 Belegverweise, ergänzt die unveränderten vollständigen Captureobjekte für den Coverageparser und macht Abhängigkeitspfade portabel. Alle alten Evidencefelder lassen sich zum byteidentischen zuvor geprüften Evidence-Dokument zurückbilden. Capturedateien, Modelle, Findings und Einschränkungen sind unverändert. 121 Belegverweise und alle 40 Funktionskörper werden vom unveränderten Coverageparser erkannt. Die zusätzliche Deltaprüfung steht in integration-delta.json.

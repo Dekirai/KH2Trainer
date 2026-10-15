@@ -1,0 +1,63 @@
+// Independent integration regression. Reuses the author's explicitly declared
+// private original-body fixture, not its test sequence or any game process.
+#define main AuthorRuntimeTestsMain
+#include "../../tests/KH2Trainer.Bridge.Tests/MotionObservationRuntimeTests.cpp"
+#undef main
+
+int main() {
+    Check(CreateSource(),"review: exact private original body and three fixture callees available");
+    if(!fixtureModule || !nativeEntry)return 1;
+    const uintptr_t base=reinterpret_cast<uintptr_t>(fixtureModule);
+    struct PrepareFailureIdentity;
+    using PrepareFailure=motion_observation::Runtime<PrepareFailureIdentity>;
+    auto& prepared=motion_observation::RuntimeTestAccess::Original<PrepareFailure>();
+    auto& prepareRouter=motion_observation::RuntimeTestAccess::Router<PrepareFailure>();
+    prepareRouter.testFailPin=1;
+    Check(!PrepareFailure::Start(base,GetCurrentThreadId(),Before,After,&contextMarker),
+        "review: router preparation fails after original and observer binding");
+    auto state=PrepareFailure::InspectOnOwner();
+    const auto sealedAddress=prepared.Entry();
+    Check(state.phase==motion_observation::Phase::Fault && state.error==motion_observation::Error::RouterPrepare,
+        "review: post-bind preparation failure is classified");
+    Check(sealedAddress && prepared.Status()==motion_original::State::Bound && !state.unpublishedCleanupPending,
+        "review: bound original remains sealed after router preparation failure");
+    state=PrepareFailure::Tick();
+    Check(prepared.Entry()==sealedAddress && prepared.Status()==motion_original::State::Bound &&
+        !state.exposed && !state.patched && !state.unpublishedCleanupPending,
+        "review: failed owner tick cannot release a sealed original");
+    Call baseline{};baseline.routed=false;
+    Check(!Invoke(baseline),"review: failed preparation leaves ordinary original entry usable");
+
+    struct CommitFailureIdentity;
+    using CommitFailure=motion_observation::Runtime<CommitFailureIdentity>;
+    auto& committed=motion_observation::RuntimeTestAccess::Original<CommitFailure>();
+    auto& commitRouter=motion_observation::RuntimeTestAccess::Router<CommitFailure>();
+    commitRouter.testFlushFailure=true;commitRouter.testRollbackProtectFailure=true;
+    Check(!CommitFailure::Start(base,GetCurrentThreadId(),Before,After,&contextMarker),
+        "review: real CAS then flush and rollback failures reach runtime Fault");
+    const auto residentAddress=committed.Entry();
+    state=CommitFailure::Tick();
+    Check(state.phase==motion_observation::Phase::Fault && state.error==motion_observation::Error::RouterCommit &&
+        state.exposed && state.patched && state.rollbackFailed && !state.observerFault,
+        "review: runtime retains exact post-CAS failure and exposure state");
+    Check(residentAddress && committed.Status()==motion_original::State::Bound && !state.unpublishedCleanupPending &&
+        fixtureModule[Def().rva]==0xcc,
+        "review: failed rollback leaves real gate and bound original resident");
+    Call success{};success.succeed=true;success.zeroBlend=true;
+    Check(!Invoke(success),"review: actual original success path still traverses faulted runtime");
+    Check(committed.Entry()==residentAddress && CommitFailure::Tick().error==motion_observation::Error::RouterCommit,
+        "review: forwarding cannot silently clear failure or release original");
+    Call nativeFailure{};nativeFailure.raise=true;
+    Check(Invoke(nativeFailure)==NativeException,
+        "review: native exception still crosses original unwind and observer after failed install");
+    state=CommitFailure::Tick();
+    Check(state.error==motion_observation::Error::RouterCommit && state.observerFault && state.patched &&
+        committed.Entry()==residentAddress && !state.unpublishedCleanupPending,
+        "review: later original failure preserves initial install error and seals storage");
+    Check(commitRouter.TestRemoveAfterJoin(),"review: isolated fixture-only removal after all calls finished");
+    Check(commitRouter.Exposed() && fixtureModule[Def().rva]==Def().original[0] &&
+        !memcmp(fixtureModule+Def().rva+1,Def().original+1,Def().originalSize-1),
+        "review: test removal preserves sticky exposure and exact source bytes");
+    printf("RuntimeFailureReviewTests: %ld checks, %ld failures. Two post-bind failure scenarios with declared private original-body fixture.\n",checks,failures);
+    return failures?1:0;
+}

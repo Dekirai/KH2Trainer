@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "scope": "PreparedCopy source review and targeted tests, plus all existing convenience-copy tests. Private virtual-address provider; no OS gate or game lifetime proof.",
+  "sourcePins": [
+    {
+      "path": "src/KH2Trainer.Bridge/MotionPayloadCopy.h",
+      "sha256": "245ab6c1703228b7c714aa4a5187bba966fd627d9f407b284a408722b0310fb4",
+      "bytes": 16688,
+      "snapshot": "sources/MotionPayloadCopy.h"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/MotionPayloadCopyTests.cpp",
+      "sha256": "e881a908f4d24357b32bb98a7b89e42c3438685b2fff9d745170cf4f50b34ef5",
+      "bytes": 29185,
+      "snapshot": "sources/MotionPayloadCopyTests.cpp"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/run-tests.ps1",
+      "sha256": "451ee403ff84816541469290e8a02f7226e926e8d33f3829130036c8414edb47",
+      "bytes": 8194,
+      "snapshot": "sources/run-tests.ps1"
+    }
+  ],
+  "log": {
+    "path": "artifacts/motion-prepared-copy-tests-20261011/logs/native-MotionPayloadCopyTests.txt",
+    "sha256": "8616d83c3ef7266c3714d3fbcd9417d1f9995850a746ce1b8aaab9cfa84d36be",
+    "bytes": 215
+  },
+  "result": {
+    "checks": 432,
+    "failures": 0,
+    "focusedCases": 99
+  },
+  "priorSuite": {
+    "checks": 292,
+    "focusedCases": 74,
+    "preserved": true
+  },
+  "copyMeasurement": {
+    "calls": 19,
+    "operatorNewCalls": 0,
+    "operatorDeleteCalls": 0,
+    "window": "Immediately before and after the synchronous PreparedCopy::Copy invocation, including its fixture callbacks; no held OS lock."
+  },
+  "newCoverage": [
+    "Four accepted ordinary profiles 81/91/A1/B1 at both BAR levels and rejected C1 at either level; prior 41 rejection retained.",
+    "Real PreparedCopy call windows instrument both global operator new and sized/unsized operator delete, including callbacks. No calls to either during Copy.",
+    "Prepare allocates both buffers before Copy; Take exports used bytes only and transfers independent ownership after Copy.",
+    "Unprepared and consumed-workspace Copy rejects without reaching Capture; a successful Take cannot be repeated.",
+    "Reprepare permits a different payload without modifying a prior taken result.",
+    "Success followed by partial read failure cannot publish the older successful bytes, identity or selection.",
+    "Failed TakeResult is a repeatable empty status read and retains preparation; a later Copy succeeds with fresh bytes without reprepare. Only successful Take consumes preparation.",
+    "Capture/read/current/witness and payload/table-budget failures retain no publishable result and perform no heap operation during Copy.",
+    "Two actual allocation-failed repreparations and one invalid-limit reprepare invalidate previous success."
+  ],
+  "command": "& tests/KH2Trainer.Bridge.Tests/run-tests.ps1 -Suite MotionPayloadCopyTests -OutputDirectory artifacts/motion-prepared-copy-tests-20261011/bin -LogDirectory artifacts/motion-prepared-copy-tests-20261011/logs",
+  "productionCompile": "Same suite source separately compiled with MOTION_PAYLOAD_COPY_PRODUCTION_COMPILE; both convenience and prepared paths compiled without fixture allocator replacement.",
+  "compilerOutputs": [
+    {
+      "path": "artifacts/motion-prepared-copy-tests-20261011/bin/MotionPayloadCopyTests.obj",
+      "sha256": "35393cac82c38e3076dae50bb41beeb25cf23c8e8ac1e3a62055ed7d7e73cd97",
+      "bytes": 165651
+    },
+    {
+      "path": "artifacts/motion-prepared-copy-tests-20261011/bin/MotionPayloadCopyTests.Production.obj",
+      "sha256": "5af91caba34cd65e645d90cf83e2dbeb78a050b1abaf95696340f108018c41d4",
+      "bytes": 71014
+    },
+    {
+      "path": "artifacts/motion-prepared-copy-tests-20261011/bin/MotionPayloadCopyTests.exe",
+      "sha256": "8661fb4be8df5e0f4b2221a3dae32f05bd8f3fb3286dbfa0a08dbc548f4257fb",
+      "bytes": 190464
+    }
+  ],
+  "changesByThisAgent": [
+    "tests/KH2Trainer.Bridge.Tests/MotionPayloadCopyTests.cpp",
+    "artifacts/motion-prepared-copy-tests-20261011/*"
+  ],
+  "limits": [
+    "No held OS lock, hook installation, worker coordination or resource-admission implementation is exercised.",
+    "The inCopy marker measures the exact synchronous Copy call in this single-threaded test; it is not a lock or lifetime mechanism.",
+    "Own provider callbacks contain no allocation or native fault; read failures return false, including partial writes. No new SEH execution claim.",
+    "Profile80 support is Root-authorized from the separate native cache/worker evidence; these tests verify parser policy, not new Original-PE semantics.",
+    "Most fixture convenience calls use explicit 32-byte/3-entry budgets to avoid unnecessary default64MiB preparation. Boundary and rejection cases retain their explicit distinct budgets.",
+    "No complete payload format validity, skeleton/playback correctness, game integration, package or release guarantee."
+  ]
+}

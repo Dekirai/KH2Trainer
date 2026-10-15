@@ -1,0 +1,57 @@
+from pathlib import Path
+import json,hashlib,copy,importlib.util,sys,subprocess
+sys.dont_write_bytecode=True
+H=Path(__file__).resolve().parent;R=H.parents[1];S=R/'artifacts/audio-bank-retirement-20261011'
+def load(p):return json.loads(p.read_text(encoding='utf-8-sig'))
+def sha(b):return hashlib.sha256(b).hexdigest()
+def serial(x):return (json.dumps(x,indent=2,ensure_ascii=False)+'\n').replace('\n','\r\n').encode()
+checks=0
+def ck(value,label):
+ global checks
+ checks+=1
+ if not value:raise AssertionError(label)
+prior=load(H/'review-before-integration.json');before=load(S/'integration-before.json');e=load(S/'evidence.json');report=load(S/'report.json')
+ck(sha((H/'review-before-integration.json').read_bytes())=='a9d409403244d1d94d3cd14613528976b485be1231e6635c7b9a826e9b07ec76','original peer receipt exact')
+ck(sha(serial(before['manifest']))==prior['studyManifestSha256'],'reconstructed historical manifest exact')
+oldreport=json.loads(before['reportJson']);ck(sha(serial(oldreport))==before['manifest']['files']['report.json']['sha256'],'historical report exact')
+changed=[]
+for a,b in zip(oldreport['claims'],report['claims']):
+ ck({k:v for k,v in a.items() if k!='evidence'}=={k:v for k,v in b.items() if k!='evidence'},'semantic claim fields unchanged')
+ ck(len(a['evidence'])==len(b['evidence']),'reference count stable')
+ for x,y in zip(a['evidence'],b['evidence']):
+  if x!=y:ck(x=='evidence.json#anchors' or x.startswith('model-results.json#'),'only unsupported source fragments');ck(y==x.split('#')[0],'only fragment removed');changed.append([x,y])
+ck(len(changed)==34,'exact fragment delta')
+recovered=copy.deepcopy(e)
+for f in recovered['functions']:
+ for key in ('disassembly','pages','pseudocode','sourceMetadata'):del f[key]
+ f['originalBytes']=bytes.fromhex(f['originalBytes']).hex()
+ck(sha(serial(recovered))==prior['studyEvidenceSha256'],'entire old evidence reconstructed byte for byte')
+unchanged=[];changedfiles=[]
+for name,pin in before['manifest']['files'].items():
+ if sha((S/name).read_bytes())==pin['sha256']:unchanged.append(name)
+ else:changedfiles.append(name)
+ck(set(changedfiles)=={'evidence.json','report.json','provenance.json','verify.py'},'bounded old-file delta')
+for f in e['functions']:
+ meta=f['sourceMetadata'];cap=load(S/meta['captureFile']);orig=next(x for x in cap['functions'] if x['addr']==f['addr'])
+ ck(sha((S/meta['captureFile']).read_bytes())==meta['captureSha256'],'added source pin')
+ ck(all(f[k]==orig[k] for k in ('disassembly','pages','pseudocode')),'added capture objects exact')
+ ck(meta['document']=={k:v for k,v in cap.items() if k!='functions'},'added capture metadata exact')
+for d in load(S/'provenance.json')['dependencies']:
+ p=(S if d.get('base')=='study' else R)/d['path'];ck(sha(p.read_bytes())==d['sha256'],'explicit relocated dependency pin')
+ if 'copiedFrom' in d:ck(p.read_bytes()==(R/d['copiedFrom']).read_bytes(),'copied prior receipt is byte identical')
+parserpath=R/'scripts/update-analysis-coverage.py';ck(sha(parserpath.read_bytes())=='546d0defdacd8857d7f2461283516348ca28776d13e253d8d954ad43622cc1b2','coverage parser unchanged')
+spec=importlib.util.spec_from_file_location('lower_independent_parser',parserpath);p=importlib.util.module_from_spec(spec);spec.loader.exec_module(p)
+refs=[x for c in report['claims'] for x in c['evidence']]
+for ref in refs:ck(p.resolve_reference(S/'report.json',ref)['status']=='exists','actual parser accepts reference')
+total=0;compare=p.pe_comparer(p.DEFAULT_BINARY)
+for f in e['functions']:
+ ok,addrs,why=p.body_assembly(f);spans=p.original_spans(f);ck(ok and bool(addrs),'actual parser complete body')
+ for a,b in spans:ck(compare(a,b),'actual parser original bytes');total+=len(b)
+ck(total==13520,'actual parser sees all bytes')
+# Reuse author module definitions at a hypothetical docs depth without creating
+# docs files or calling build/main. The import is pinned by the new manifest.
+sys.path.insert(0,str(S));ns={'__file__':str(R/'docs/research/audio-bank-retirement-20261011/verify.py'),'__name__':'portable_review'}
+exec(compile((S/'verify.py').read_text(encoding='utf-8'),'portable-review','exec'),ns);ck(ns['ROOT']==R,'portable docs root')
+out={'status':'ACCEPTED_TRANSPORT_DELTA','checks':checks,'oldManifestSha256':prior['studyManifestSha256'],'newManifestSha256':sha((S/'manifest.json').read_bytes()),'oldEvidenceByteExactReconstruction':True,'semanticFieldsUnchanged':True,'changedOldFiles':changedfiles,'unchangedOldFiles':unchanged,'changedReferences':len(changed),'resolvedReferences':len(refs),'completeParserBodies':len(e['functions']),'parserOriginalBytes':total,'portableDocsRoot':True,'limits':'Transport and reference resolution only; original static findings retain their existing limits. No coverage regeneration, product changes or original execution.'}
+(H/'integration-delta.json').write_text(json.dumps(out,indent=2)+'\n')
+print(json.dumps(out))

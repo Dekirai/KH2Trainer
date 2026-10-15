@@ -1,0 +1,196 @@
+from pathlib import Path
+import json,hashlib,struct,itertools,sys
+from capstone import Cs,CS_ARCH_X86,CS_MODE_64
+from capstone.x86_const import X86_OP_IMM,X86_OP_MEM,X86_REG_RIP
+sys.dont_write_bytecode=True
+import vm
+H=Path(__file__).resolve().parent;R=H.parents[1];S=R/'artifacts/voice-resource-teardown-20261011';BASE=0x140000000;MASK=(1<<64)-1
+EXPECTED='66f8724f2eacc3a959888c046ceb00a6e1422709600eb4dc33868cd83a47b18b'
+def load(p):return json.loads(p.read_text(encoding='utf-8-sig'))
+def sha(b):return hashlib.sha256(b).hexdigest()
+checks=0
+def ck(value,label):
+ global checks
+ checks+=1
+ if not value:raise AssertionError(label)
+ck(sha((S/'manifest.json').read_bytes())==EXPECTED,'final frozen study manifest')
+manifest=load(S/'manifest.json')['files'];ck(set(manifest)=={p.name for p in S.iterdir() if p.is_file() and p.name!='manifest.json'},'exact frozen members')
+for name,pin in manifest.items():
+ b=(S/name).read_bytes();ck(len(b)==pin['bytes'] and sha(b)==pin['sha256'],'final frozen member '+name)
+raw=Path(r'E:\SteamLibrary\steamapps\common\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-\KINGDOM HEARTS II FINAL MIX.exe').read_bytes()
+ck(sha(raw)=='9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed','original PE identity')
+pe=struct.unpack_from('<I',raw,60)[0];opt=pe+24;n=struct.unpack_from('<H',raw,pe+6)[0];optlen=struct.unpack_from('<H',raw,pe+20)[0]
+ck(raw[pe:pe+4]==b'PE\0\0' and struct.unpack_from('<Q',raw,opt+24)[0]==BASE,'PE64 image base')
+sections=[struct.unpack_from('<IIII',raw,opt+optlen+40*i+8) for i in range(n)]
+def read(a,n):
+ r=a-BASE;matches=[p+r-v for vs,v,size,p in sections if v<=r and r+n<=v+size]
+ if len(matches)!=1:raise AssertionError(('bounded original span',hex(a),n))
+ return raw[matches[0]:matches[0]+n]
+cs=Cs(CS_ARCH_X86,CS_MODE_64);cs.detail=True;ins={};bodyrows=[];e=load(S/'evidence.json');original_captures={}
+for name in ('capture.json','capture-2.json'):
+ c=load(S/name);ck(c['originalSha256']==sha(raw) and c['databaseHealth']['auto_analysis_ready'] is False,'fresh capture provenance')
+ for f in c['functions']:
+  original_captures[f['addr']]=(name,f)
+  rows=[]
+  for p in f['pages']:
+   ck(p['offset']==len(rows) and p['instruction_count']==len(p['asm']['lines']),'ASM page position/count');rows+=p['asm']['lines']
+  ck(f['pages'][-1]['cursor']=={'done':True} and f['disassembly']['asm']['lines']==rows,'ASM cursor/join')
+  ck(all(p['total_instructions']==len(rows) for p in f['pages']),'ASM totals')
+  pp=f['pseudocode']['pages'];line=0
+  for p in pp:
+   ck(p['offset']==line and p['line_count']==len(p['code'].splitlines()) and not p.get('truncated',False),'pseudo page position/count');line+=p['line_count']
+  ck(pp[-1]['cursor']=={'done':True} and '\n'.join(p['code'] for p in pp)==f['pseudocode']['code'],'pseudo terminal/join')
+  ck(all(p['total_lines']==line for p in pp),'pseudo totals')
+for group in ('functions','dependencies'):
+ for f in e[group]:
+  a=int(f['addr'],16);b=bytes.fromhex(f['originalBytes']);ck(len(b)==f['size'] and b==read(a,len(b)) and sha(b)==f['sha256'],'entire original function '+f['addr'])
+  if group=='functions':
+   capture=original_captures[f['addr']][1];ck(bytes(int(x,16) for x in capture['idaBytes'].split())==b,'fresh bytes to normalized evidence')
+   rows=capture['disassembly']['asm']['lines']
+  else:
+   dependency=next(x for x in load(S/'dependencies.json')['functions'] if x['addr']==f['addr']);ck(bytes.fromhex(dependency['originalBytes'])==b,'reused dependency bytes');rows=dependency['asm']
+  cursor=a
+  for row,irow in zip(rows,f['instructions']):
+   pc=int(row['addr'],16);ck(pc==cursor,'contiguous captured instruction span')
+   i=next(cs.disasm(b[pc-a:],pc,count=1));cursor+=i.size;ck(pc not in ins,'unique instruction address');ins[pc]=i
+   ck((irow['addr'],irow['size'],irow['bytes'],irow['mnemonic'],irow['operands'])==(hex(pc),i.size,i.bytes.hex(),i.mnemonic,i.op_str),'independent original decode')
+  ck(len(rows)==len(f['instructions']),'instruction count exact')
+  tail=b[cursor-a:]
+  if tail:
+   if a==BASE+0x3a6120:ck(cursor==BASE+0x3a625a and len(tail)==80 and tail[:2]==b'\x66\x90','post-copy original tail classification')
+   elif a==BASE+0x3a62b0:ck(cursor==BASE+0x3a6360 and len(tail)==66,'pre-copy original tail classification')
+   elif a==BASE+0x3a6a10:ck(f['freshCapture'] is False,'reused release switch data is not fresh')
+   else:ck(tail==b'\xcc'*len(tail),'other explicit padding')
+  bodyrows.append({'addr':f['addr'],'group':group,'bytes':len(b),'instructions':len(rows),'trailingBytes':len(tail)})
+ck(len(original_captures)==19 and len(e['dependencies'])==16,'fresh and reused body counts')
+for a in e['anchors']:
+ i=ins[int(a['addr'],16)];ck((i.bytes.hex(),i.mnemonic,i.op_str)==(a['bytes'],a['mnemonic'],a['operands']),'semantic anchor original instruction')
+for ref in e['positiveRefs']:
+ i=ins[int(ref['site'],16)];targets={o.imm for o in i.operands if o.type==X86_OP_IMM}|{i.address+i.size+o.mem.disp for o in i.operands if o.type==X86_OP_MEM and o.mem.base==X86_REG_RIP}
+ ck(int(ref['target'],16) in targets,'positive reference encoded in original instruction')
+for d in e['data']:
+ b=read(int(d['addr'],16),8);ck(b.hex()==d['hex'] and struct.unpack('<Q',b)[0]==int(d['target'],16),'original destructor vtable cell')
+for f,jpt,mapaddr,count in [(0x3a6120,0x3a625c,0x3a627c,8),(0x3a62b0,0x3a6360,0x3a6374,5)]:
+ targets=struct.unpack('<'+'I'*count,read(BASE+jpt,4*count));mapping=read(BASE+mapaddr,46);item=next(x for x in e['switches'] if x['function']==hex(BASE+f))
+ ck(list(targets)==item['targets'] and mapping.hex()==item['caseMap'],'entire original dispatch tables')
+ for kind,index in enumerate(mapping,1):
+  target=targets[index];ck(item['cases'][kind-1]=={'type':kind,'target':hex(BASE+target)},'original switch case')
+  if kind==34:ck(target==(0x3a6226 if f==0x3a6120 else 0x3a6338),'type34 stop dispatch')
+vm.ins=ins;VM=vm.VM;Memory=vm.Memory
+def rip(rva,index=0):
+ i=ins[BASE+rva];o=i.operands[index];assert o.type==X86_OP_MEM and o.mem.base==X86_REG_RIP
+ return i.address+i.size+o.mem.disp
+def at(v,a,n,value):v.mem.put(a,n,value,False)
+cases=[]
+def record(group,inputs,result):cases.append({'group':group,'inputs':inputs,'result':result})
+def resource_list(v,items):
+ root=0x300000;nodes=[0x400000+i*0x1000 for i in range(len(items))];at(v,rip(0x12e100,1),8,root)
+ at(v,root+8,8,nodes[0] if nodes else 0);at(v,root+16,8,nodes[-1] if nodes else 0);at(v,root+24,4,len(nodes))
+ for i,((start,length),node) in enumerate(zip(items,nodes)):
+  at(v,node+8,8,nodes[i+1] if i+1<len(nodes) else 0);at(v,node+1624,8,start);at(v,node+1600,4,length)
+ return root,nodes
+# Full function traversals, including first-match ordering, zero-size records,
+# reversed queries, adjacency and modulo-64 arithmetic.
+intervals=[(0,0),(0,16),(1,1),(8,8),(16,0),(16,16),(MASK-7,16),(MASK,0xffffffff)]
+queries=[(0,0),(0,1),(1,1),(7,8),(8,8),(9,9),(15,16),(16,17),(16,32),(32,16),(MASK,0),(MASK-4,MASK),(0,MASK)]
+for first,second,query in itertools.product(intervals,intervals,queries):
+ v=VM(0x12e100);root,nodes=resource_list(v,[first,second]);v.setreg('rcx',query[0]);v.setreg('rdx',query[1]);v.run()
+ def matches(pair):
+  lo,length=pair;end=(lo+(length&0xffffffff))&MASK;ql,qh=query
+  return (lo==ql and end==qh) or lo<ql<end or lo<qh<end or ql<lo<qh or ql<end<qh
+ expected=next((n for pair,n in zip([first,second],nodes) if matches(pair)),0)
+ ck(v.getreg('rax')==expected,'full native range traversal and first match');record('range-list',[first,second,query],v.getreg('rax'))
+
+for point,field,callback in itertools.product([0,1,7,8,15,16,17,31,32,MASK],[0,1,0xffffffff],[False,True]):
+ v=VM(0x12eea0);root,nodes=resource_list(v,[(8,8),(16,16)]);v.setreg('rcx',point);v.setreg('rdx',0x600000 if callback else 0)
+ for node in nodes:at(v,node+1604,4,field)
+ def cb(v):v.events.append(('callback',v.getreg('rcx')));return 0
+ def retire(v):ck(v.getreg('edx')==0,'point retirement tail flag zero');v.events.append(('retire',v.getreg('rcx')));return 0
+ v.calls={0x600000:cb,BASE+0x12e460:retire};v.run();chosen=0 if point==0 else next((n for (lo,size),n in zip([(8,8),(16,16)],nodes) if lo<=point<lo+size),0)
+ expected=[] if not chosen else ([('callback',chosen)] if callback else [])+[('retire',chosen)]
+ ck(v.events==expected,'point selection ignores1604 and caller callback precedes retirement');record('point-retirement',[point,field,callback],v.events)
+
+for used,match in itertools.product(range(8),[-1,0,1,2]):
+ v=VM(0x3cdea7);cache=rip(0x3cdea9,1);v.setreg('eax',0x600000);v.setreg('ebx',5);at(v,0x600030,2,7);v.stops={BASE+0x3cdf16,BASE+0x3cdfcb}
+ for k in range(4):
+  at(v,cache+12*k,4,(used>>k)&1 if k<3 else 0xa4);at(v,cache+12*k+4,4,5 if k==match else 15);at(v,cache+12*k+8,4,7)
+ v.run();chosen=match if match>=0 else next((k for k in range(3) if not used>>k&1),3)
+ ck(v.pc==(BASE+0x3cdfcb if match>=0 else BASE+0x3cdf16),'cache match/vacancy route')
+ ck(v.mem.get(cache+12*chosen,4)&1==1 and v.mem.get(cache+12*chosen+4,4)==5 and v.mem.get(cache+12*chosen+8,4)==7,'selected cache writes including conditional index3')
+ writes=[a for a,n,val in v.mem.writes if cache<=a<cache+48]
+ ck(writes==[cache+12*chosen] if match>=0 else writes==[cache+12*chosen+j for j in (0,4,8)],'cache exact write destinations');record('cache-match-vacancy',[used,match],chosen)
+
+# Sweep the actual native list with explicit callback/destructor stubs.
+for gates,callback in itertools.product(itertools.product([0,1,0xffffffff],repeat=3),[False,True]):
+ v=VM(0x12ef80);root,nodes=resource_list(v,[(1,1)]*3);table=0x600000;at(v,rip(0x12efc9,1),8,table);at(v,table+24,8,0x700000 if callback else 0)
+ for node,gate in zip(nodes,gates):at(v,node+1604,4,gate);at(v,node+1612,4,0);at(v,node,8,0x600100)
+ at(v,0x600100,8,0x700100)
+ def cb(v):v.events.append(('callback',v.getreg('rcx')));return 0
+ def destroy(v):
+  node=v.getreg('rcx');ck(v.getreg('edx')==1 and v.mem.get(node+8,8)==0,'sweep unlink before destructor flags1');v.events.append(('destructor',node));return 0
+ v.calls={0x700000:cb,0x700100:destroy};v.run();freed=[n for n,g in zip(nodes,gates) if not g];kept=[n for n,g in zip(nodes,gates) if g]
+ expected=[event for n in freed for event in ([('callback',n)] if callback else [])+[('destructor',n)]]
+ ck(v.events==expected,'sweep gate and callback/destructor order')
+ ck(v.mem.get(root+24,4)==len(kept) and v.mem.get(root+8,8)==(kept[0] if kept else 0) and v.mem.get(root+16,8)==(kept[-1] if kept else 0),'sweep resulting list head tail count')
+ record('sweep',[list(gates),callback],{'freed':freed,'kept':kept})
+
+# Run both complete scanners with synthetic identity encode/decode helpers.
+# Actual jump tables are original PE bytes, including all out-of-map inputs.
+for kind,alias,size,post in itertools.product(list(range(50))+[65535],[0,1,2,3],[0,48],[False,True]):
+ start=0x3a6120 if post else 0x3a62b0;v=VM(start);old=0x500000;bar=old+0x1000 if post else old;ptr=old+0x80
+ v.setreg('rcx',bar);at(v,bar+4,4,1);at(v,bar+8,4,old);at(v,bar+16,2,kind);at(v,bar+18,2,alias);at(v,bar+24,4,ptr);at(v,bar+28,4,size)
+ for a,n in [(0x3a625c,32+46),(0x3a6360,20+46)]:
+  for j,x in enumerate(read(BASE+a,n)):at(v,BASE+a+j,1,x)
+ def action(label):
+  def f(v):v.events.append((label,v.getreg('rcx')));return 0
+  return f
+ v.calls={BASE+0x4ad240:lambda v:v.getreg('rcx')&0xffffffff,BASE+0x4ad270:lambda v:v.getreg('ecx')}
+ for rva in [0x3a6120,0x3a62b0,0x1a7f50,0x1a3b80,0x157730,0x1c5f50,0x2bde70,0x2c4530,0x1a7de0,0x1c5f10,0x1de5c0]:v.calls[BASE+rva]=action(hex(rva))
+ v.run();stop=[event for event in v.events if event[0]=='0x1de5c0'];expected_pointer=ptr+(0x1000 if post and size else 0)
+ ck(stop==([('0x1de5c0',expected_pointer)] if kind==34 and size and alias&1==0 else []),'actual scanner exact type34 route and relocated pointer')
+ ck(v.mem.get(bar+24,4)==expected_pointer,'post scanner relocates nonzero-sized entries before alias gate')
+ ck(v.mem.get(bar+8,4)==bar,'scanner stored encoded base')
+ record('bar-scanners',[kind,alias,size,post],{'pointer':expected_pointer,'stop':stop})
+
+def nested(parent,start):
+ child=VM(start,parent.mem);child.setreg('rsp',parent.getreg('rsp')-0x1000)
+ for reg in ('rcx','rdx','r8','r9'):child.setreg(reg,parent.getreg(reg))
+ child.calls=parent.calls;child.events=parent.events;child.run();return child.getreg('rax')
+
+for kind,state,pointer,origin in itertools.product([5,6,7],[0,1,2,4],[0x500000,0x500100,0x500200],[False,True]):
+ v=VM(0x1de5c0);v.setreg('rcx',0x500000);nodes=[0x400000,0x400100,0x400200];head=rip(0x1de5e5,1);at(v,head,8,nodes[0])
+ for k,node in enumerate(nodes):
+  at(v,node+32,4,nodes[k+1] if k+1<len(nodes) else 0);at(v,node+24,8,pointer if k==1 else 0x500100);at(v,node+53,1,kind if k==1 else 6);at(v,node+52,1,state);at(v,node+16,4,7)
+ literal=rip(0x1de5d2,1);signature=read(literal,7)
+ for j,x in enumerate(signature):at(v,literal+j,1,x);at(v,0x500000+j,1,x if origin else ord('X'))
+ at(v,0x50000c,4,0xffff0003)
+ def lowerstop(v):v.events.append(('lower-stop',v.getreg('rcx')));return 0
+ def invalidate(v):ck(v.getreg('ecx')==0xffff0003 and v.getreg('edx')==2,'ORIGIN invalidate exact key/group');v.events.append(('invalidate',v.getreg('ecx')));return 0
+ v.calls={BASE+0x4ad270:lambda v:v.getreg('ecx'),BASE+0x1de320:lambda v:nested(v,0x1de320),BASE+0x1dfd00:lowerstop,BASE+0x1363b0:invalidate}
+ v.run();matched=kind==6 and pointer==0x500000
+ ck(v.events==([('lower-stop',0x500000)]+([('invalidate',0xffff0003)] if origin else []) if matched else []),'actual exact-pointer stop before conditional ORIGIN invalidation')
+ ck([v.mem.get(n+52,1) for n in nodes]==[state,4 if matched else state,state],'actual nested request state4 only for match')
+ ck([v.mem.get(n+24,8) for n in nodes]==[0x500100,pointer,0x500100],'request pointers never rebound by stop helper')
+ record('exact-pointer-stop',[kind,state,pointer,origin],v.events)
+
+for flags in itertools.product([0,0x500000],repeat=3):
+ v=VM(0x3e61e0);obj=0x400000;v.setreg('rcx',obj)
+ for off,p in zip([16,24,32],flags):at(v,obj+off,8,p)
+ def release(v):v.events.append(v.getreg('rcx'));return 0
+ v.calls={BASE+0x39da10:release};v.run()
+ ck(v.events==[p for p in flags if p] and all(v.mem.get(obj+off,8)==0 for off in [16,24,32]),'actual resource decrements before all pointer clears')
+ record('actor-resource-release',list(flags),v.events)
+
+for key,length,result in itertools.product([0,20,21,22,0xffffffff],[-1,0,1,0x7fffffff],[0,1]):
+ v=VM(0x1df3c0);buf=0x500000;v.setreg('ecx',key);v.setreg('rdx',buf);v.setreg('r8d',length)
+ def invalidate(v):v.events.append(('invalidate',v.getreg('ecx'),v.getreg('edx')));return 0
+ def register(v):v.events.append(('register',v.getreg('ecx'),v.getreg('rdx'),v.getreg('r8d'),v.getreg('r9d'),v.mem.get(v.getreg('rsp')+32,4)));return result
+ def retire(v):v.events.append(('retire',v.getreg('rcx'),v.getreg('rdx'),v.getreg('r8d')));return 99
+ v.calls={BASE+0x1363b0:invalidate,BASE+0x13b2e0:register,BASE+0x12ef30:retire};v.run()
+ expected=[('invalidate',key,1),('register',key,buf,length&0xffffffff,1,0),('retire',buf,(buf+length)&MASK,0)]
+ ck(v.events==expected and v.getreg('eax')==result,'group1 actual call order mode0 signed range and unconditioned retirement')
+ record('group1-handoff',[key,length,result],v.events)
+
+out={'status':'PASS_INDEPENDENT_CHECKS_MANUAL_REVIEW_PENDING','checks':checks,'evidenceSha256':sha((S/'evidence.json').read_bytes()),'bodies':bodyrows,'cases':len(cases),'groups':dict((g,sum(c['group']==g for c in cases)) for g in sorted(set(c['group'] for c in cases))),'simulations':cases,'scope':'Independent complete PE bytes, page joins, Capstone operands and selected original instruction simulations over synthetic memory/helper returns. No native execution, physical cache allocation, concurrency, scheduling or global lifetime guarantee.'}
+(H/'checks.json').write_text(json.dumps(out,indent=2)+'\n')
+print(json.dumps({k:v for k,v in out.items() if k not in ('bodies','simulations')}))

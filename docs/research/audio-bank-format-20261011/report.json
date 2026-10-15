@@ -1,0 +1,210 @@
+{
+  "schema": 1,
+  "title": "ActualBank file readers, sequence metadata and duration scanner",
+  "date": "2026-10-11",
+  "status": "BOUNDED_STATIC_STUDY_PENDING_INDEPENDENT_REVIEW",
+  "freshFunctionBodies": 20,
+  "scope": "20 complete fresh captures and6 reused dependencies. Complete capture is not complete semantics. No product, coverage or package changes.",
+  "claims": [
+    {
+      "address": "0x14007c540",
+      "finding": "The varargs formatting wrapper passes SIZE_MAX as the output count to __stdio_common_vsprintf. With the reused serializer call using literal ORIGIN, this writes six characters plus NUL, preserving bytes7..11 of the previously copied header.",
+      "limitations": "The seven-byte result relies on the exact literal/no-format-arguments call in reused36D8B0; this wrapper is not a bounded string writer.",
+      "evidence": [
+        "evidence.json#functions[addr=0x14007c540]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x14009fdb0",
+      "finding": "ActualBank virtual+32 reads count WORD+154, defaults index>=count to0 using a signed comparison, and returns payload+signedDWORD(offsetTable+4*selected), with table base DWORD+140.",
+      "limitations": "Negative indexes pass the signed comparison. Count0 still selects0. No file-size or offset validation occurs in this body; tableB is called a track table only from the captured09FEE0/B78F0 consumer.",
+      "evidence": [
+        "evidence.json#functions[addr=0x14009fdb0]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x14009fde0",
+      "finding": "ActualBank virtual+40 implements local tableC lookup using WORD+156 and DWORD+144, plus bit0x8000 delegation through another bank and bit0x4000 local stripping. The latter branches use signed fallback-to-zero indexes.",
+      "limitations": "The 0x8000 path assumes a driver pointer. A null remote lookup falls back locally without clearing that flag. Other driver virtual implementations and tableC payload semantics are not established.",
+      "evidence": [
+        "evidence.json#functions[addr=0x14009fde0]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x14009fea0",
+      "finding": "ActualBank virtual+48 selects a sequence index with the signed count+152 comparison. Auxiliary mode returns aux+164*index+32; raw mode returns payload+signedDWORD at the table addressed by DWORD+148.",
+      "limitations": "No selected span, object lifetime, zero-count or negative-index check is supplied here. The128-byte auxiliary record size comes from the separately captured snapshot copy.",
+      "evidence": [
+        "evidence.json#functions[addr=0x14009fea0]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x14009fee0",
+      "finding": "The duration-like float reader first reads DWORD at aux+164*index+160, otherwise optional sequence section0x2000 +4. Both are zero-extended32-bit values converted via signed64-bit CVTSI2SS and scaled by single-precision0.001. Without that metadata it takes the maximum of zero and the B78F0 values over sequence track references.",
+      "limitations": "Decompiler double/signed-int types are misleading here. The fallback accumulator is signed32-bit while metadata is unsigned32-bit. This is a calculation over descriptors, not proof of audible duration or successful loading.",
+      "evidence": [
+        "evidence.json#functions[addr=0x14009fee0]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x1400a0010",
+      "finding": "Find-index reduces unsigned input modulo1000 and returns the first sequence whose WORD+12 matches, or UINT32_MAX. Auxiliary entries use164-byte stride. Raw flag0x40 mode optionally obtains backend payload via virtual+56/+8 before search and calls virtual+64 afterward.",
+      "limitations": "The virtual+24 result is dereferenced without a null check. Backend validity/lifetime and semantic completeness of the lock/unlock interface are not established; this is not a safe ID validation entry point.",
+      "evidence": [
+        "evidence.json#functions[addr=0x1400a0010]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x1400a0110",
+      "finding": "Find-sequence uses the same unsigned modulo1000 first-match search. It returns the auxiliary sequence pointer or the raw virtual+24 pointer; raw flag0x40 processing calls backend virtual+64 before returning the saved pointer.",
+      "limitations": "The returned raw pointer has no new ownership established by this body. Full synchronization and backend virtual contracts are outside the study.",
+      "evidence": [
+        "evidence.json#functions[addr=0x1400a0110]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x1400a0230",
+      "finding": "Find-auxiliary reduces the key modulo1000, finds a sequence WORD+12, and returns aux+164*index+32 or raw virtual+48(index). Raw flag0x40 processing performs backend virtual+64 before returning.",
+      "limitations": "The32-byte offset is within the compact record, not a serialized file header. Borrowed pointer lifetime and every backend are unresolved.",
+      "evidence": [
+        "evidence.json#functions[addr=0x1400a0230]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x1400a0380",
+      "finding": "The concrete sequence-count getter returns zero-extended WORD at ActualBank+152.",
+      "limitations": "It does not check object identity, readability, current loading state or table integrity.",
+      "evidence": [
+        "evidence.json#functions[addr=0x1400a0380]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x1400a0390",
+      "finding": "Snapshot construction copies32 bytes of each sequence and128 bytes of its auxiliary record into164-byte records, overwrites byte15 with0xff and stores optional section0x2000 DWORD+4 at record+160, default0. It finally publishes aux=output and payload=0, including the zero-count branch.",
+      "limitations": "There is no output capacity check or free of the previous payload in this body. A cached duration0 is not the fallback track scanner result. Input/output overlap and source mutation are not proven safe.",
+      "evidence": [
+        "evidence.json#functions[addr=0x1400a0390]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x1400a04b0",
+      "finding": "Rebind calls08C250 to unlink the current hash entry, stores the new pointer in bank+8 and invokes the concrete object virtual+16 initializer.",
+      "limitations": "No payload free, size validation or ownership transfer is established by this body. Reinitialization may mutate sequence cache bytes through09FBD0; this is not an offline validation API.",
+      "evidence": [
+        "evidence.json#functions[addr=0x1400a04b0]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x1400a4340",
+      "finding": "The optional0x2000 section starts after version-sized basic data and enabled0x100,0x400,0x800,0x8000 sections. Section lengths come respectively from DWORD+0, BYTE+0, BYTE+1 and WORD+2. Its absence returns0.",
+      "limitations": "Offsets accumulate in32-bit registers and then zero-extend. No source extents or arithmetic overflow checks are provided here. A present section pointer does not establish that its duration field is readable.",
+      "evidence": [
+        "evidence.json#functions[addr=0x1400a4340]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x1400a45b0",
+      "finding": "The sequence-entry getter rejects an unsigned byte index >=sequence byte0, sums enabled optional section lengths including version4 extended+4, and chooses8-byte stride for kind2,4,12; all other byte kinds use4-byte stride.",
+      "limitations": "The stride set is derived from the AL mask/exception and exhaustively modeled for256 kinds. It is not a type enumeration or proof that all such formats occur in retail data.",
+      "evidence": [
+        "evidence.json#functions[addr=0x1400a45b0]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x1400b78f0",
+      "finding": "The duration scanner dispatches64 WORD opcodes through a13-target table. Opcode3 adds DWORD to a wrapping signed32 accumulator; opcodes0,14,16,53 return float(accumulator)*0.001. Unknown or designated-default opcodes return0. Fixed and variable handlers advance a wrapping signed32 cursor.",
+      "limitations": "No input length or iteration limit is passed. Signed fields in cases61/63 permit nonprogressing or backwards arithmetic in synthetic data. This is not a full audio bytecode decoder, loop-duration resolver or observed retail crash.",
+      "evidence": [
+        "evidence.json#functions[addr=0x1400b78f0]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x14008abd0",
+      "finding": "Under the selected sound critical section, the getter walks the native bank list and returns the first bank+32 handle with flag+128 bit0 set, else0.09FDE0 uses this handle on its concrete SoundDriver delegation path.",
+      "limitations": "This is first-match list order, not an exclusive singleton or lifetime lease. It does not retain the selected bank.",
+      "evidence": [
+        "evidence.json#functions[addr=0x14008abd0]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x1400a4080",
+      "finding": "SoundBasicDesc size is8 for version1,16 for versions2/3 and32 for version4. Other unsigned version values call the SCD Version assertion callback and return0 if that callback returns.",
+      "limitations": "This header size is distinct from the ScdHeader size used for top-level offset tables. The assertion callback may not return; unsupported versions are not valid merely because a fallback0 is present.",
+      "evidence": [
+        "evidence.json#functions[addr=0x1400a4080]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x1400a4180",
+      "finding": "Optional section0x400 is present when flags DWORD+4 bit0x400 is set and starts after basic data plus the optional0x100 DWORD length.",
+      "limitations": "The caller must supply a readable descriptor; there is no initial null or extent check. Other uses of the returned section are not fully decoded.",
+      "evidence": [
+        "evidence.json#functions[addr=0x1400a4180]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x1400a4210",
+      "finding": "Optional section0x800 returns0 for a null sequence or absent flag. Its offset includes basic data, optional0x100 DWORD length and optional0x400 BYTE+0 length.",
+      "limitations": "The null guard applies only to this helper; a nonnull pointer and every declared length remain unvalidated.",
+      "evidence": [
+        "evidence.json#functions[addr=0x1400a4210]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x1400a42a0",
+      "finding": "Optional section0x8000 begins after basic data and sections0x100,0x400,0x800, with length fields DWORD+0,BYTE+0,BYTE+1. An absent flag returns0.",
+      "limitations": "This helper has no initial null guard or bounds validation; calculations retain the native32-bit wrap behavior.",
+      "evidence": [
+        "evidence.json#functions[addr=0x1400a42a0]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    },
+    {
+      "address": "0x1400a4410",
+      "finding": "The extended section is present only when version>=4 and byte(sequence+16) bit0 is set. It follows basic data and all enabled0x100,0x400,0x800,0x8000,0x2000 sections. A45B0 adds its DWORD+4 to locate entries.",
+      "limitations": "Version>=4 is only this local predicate. Unsupported version values still reach the basic-size assertion helper. No complete format validity or exact meaning of the extended record is claimed.",
+      "evidence": [
+        "evidence.json#functions[addr=0x1400a4410]",
+        "anchors.json",
+        "model-results.json"
+      ]
+    }
+  ]
+}

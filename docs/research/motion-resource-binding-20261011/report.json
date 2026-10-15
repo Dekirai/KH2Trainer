@@ -1,0 +1,291 @@
+{
+  "schemaVersion": 1,
+  "title": "Motion resource binding and bounded cache-span proposal",
+  "status": "STATIC_EVIDENCE_AND_LIMITED_IMPLEMENTATION_PROPOSAL",
+  "originalExeSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "claims": [
+    {
+      "addr": "0x1401c5f20",
+      "Finding": "The type-9 initializer sets RDX=RCX+144, reads the DWORD there and dispatches kind0 to1D2610 or kind1 to1DAFB0; unsupported kinds return zero.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401c5f20]",
+        "evidence.json#functions[addr=0x1401d2610]",
+        "evidence.json#functions[addr=0x1401dafb0]"
+      ],
+      "Limitations": "No size argument or backing reservation validation is introduced."
+    },
+    {
+      "addr": "0x1401c3840",
+      "Finding": "The common Motion initializer writes payload pointer at Motion+8, initializes four QWORD work fields+16..+40 to zero and installs the base vtable.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401c3840]"
+      ],
+      "Limitations": "No stored payload length or generation appears in this complete body."
+    },
+    {
+      "addr": "0x1401d2610",
+      "Finding": "Prototype0 construction calls1C3840, installs vtable5B4958 and passes the payload-relative table at+24 with the unsigned-short difference(+18 minus+16) to1A88F0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401d2610]"
+      ],
+      "Limitations": "This is in-place fixup setup, not a root-data bounds check or an allocation."
+    },
+    {
+      "addr": "0x1401dafb0",
+      "Finding": "RAW construction calls1C3840 and installs vtable5B4A38.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401dafb0]"
+      ],
+      "Limitations": "The complete body adds no payload length or resource ownership token."
+    },
+    {
+      "addr": "0x1403a6840",
+      "Finding": "BAR fixup visits16-byte entries with nonzero+12 size, resolves+8 entry pointers and dispatches type9 to1C5F20; certain BAR types recurse.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a6840]",
+        "evidence.json#functions[addr=0x1401c5f20]"
+      ],
+      "Limitations": "Existing BAR labels are prior analysis. No claim that entry-declared lengths establish an outer allocation boundary."
+    },
+    {
+      "addr": "0x1403c8a40",
+      "Finding": "Binding first releases an optional DWORD reference through C+432, calls cleanup3C7300 and40E5C0; a null selected BAR clears C+24. Otherwise it stores the type9 entry pointer at C+24, stores a type16 trigger pointer at C+32 and resets IDs/frame/blend state. It calls the new Motion virtual duration and conditionally virtual bounds/3C73C0 before return.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c8a40]",
+        "evidence.json#functions[addr=0x1403c7300]",
+        "evidence.json#functions[addr=0x1403c73c0]"
+      ],
+      "Limitations": "C=Actor+344. Assumes native valid BAR entries; no safe parsing API. Return-time invalidation is too late for these internal consumers."
+    },
+    {
+      "addr": "0x1403c7300",
+      "Finding": "Cleanup decrements/clears the optional C+432 DWORD counter, stops eight sound handles, marks linked objects for retirement, clears list heads and invokes then clears C+520 callback. The complete body does not directly clear C+24.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c7300]"
+      ],
+      "Limitations": "Releasing this counter does not by itself free the MSET. Callback targets and all indirect writes are not enumerated."
+    },
+    {
+      "addr": "0x1403c8cd0",
+      "Finding": "Normal selection writes C+328=owner+128 and clears C+344/+352 before binding; it searches override C+8 first and falls back to primary C+0, calls3C8A40, stores resolvedID C+44 and propagates selection to child controllers.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c8cd0]",
+        "evidence.json#functions[addr=0x14040d7a0]",
+        "evidence.json#functions[addr=0x1403c8a40]"
+      ],
+      "Limitations": "The earlier context stores require pre-store invalidation; C8A40 entry alone does not precede them."
+    },
+    {
+      "addr": "0x1403c65e0",
+      "Finding": "Tagged selection tries variants0..3. Failure releases/clears C+432, cleans up and clears C+24. Success writes C+328/C+344, clears C+352, binds the selected BAR, then stores/increments an optional caller-provided DWORD reference at C+432.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c65e0]",
+        "evidence.json#functions[addr=0x1403c8a40]"
+      ],
+      "Limitations": "Counter acquire occurs after binding callbacks, not as an atomic resource snapshot. The counter is not a generation."
+    },
+    {
+      "addr": "0x1403c6cc0",
+      "Finding": "Cross-Actor motion selection passes source controller root context and source owner+1464 as the optional reference counter through3C64A0; destination Actor+696 receives the source primary BAR afterward.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c6cc0]",
+        "evidence.json#functions[addr=0x1403c64a0]",
+        "evidence.json#functions[addr=0x1403c65e0]"
+      ],
+      "Limitations": "Reference counter belongs to the source Actor in this path, not to every Motion allocation."
+    },
+    {
+      "addr": "0x1403d93e0",
+      "Finding": "Another alternate-motion caller passes a decoded BAR, context at source+24 and counter source+80 through3C63E0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d93e0]",
+        "evidence.json#functions[addr=0x1403c63e0]",
+        "evidence.json#functions[addr=0x1403c64a0]",
+        "evidence.json#functions[addr=0x1403c65e0]"
+      ],
+      "Limitations": "Demonstrates that C+432 is not universally Actor+1464. Source object lifetime and type are outside this study."
+    },
+    {
+      "addr": "0x1403c6740",
+      "Finding": "The native update can consume a queued transition, invoke its callback, then select/bind a queued alternate BAR through3C64A0 or use3C88C0 for the normal path.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c6740]",
+        "evidence.json#functions[addr=0x1403c64a0]",
+        "evidence.json#functions[addr=0x1403c88c0]"
+      ],
+      "Limitations": "A queued action may change binding during native update. This claim does not enumerate all frame/projection inputs or replace a pre-use schedule proof."
+    },
+    {
+      "addr": "0x1403c8460",
+      "Finding": "The primary-bank setter is a single QWORD store of RDX into[C] followed by return; it does not update C+24.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c8460]",
+        "evidence.json#functions[addr=0x1403da940]",
+        "evidence.json#functions[addr=0x1403ef750]"
+      ],
+      "Limitations": "A complete body statement, not an all-writers proof."
+    },
+    {
+      "addr": "0x1403c7c10",
+      "Finding": "The override selector maps the requested ID, searches primary C+0 and writes a found nested BAR to C+8; no current Motion publication occurs here.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c7c10]",
+        "evidence.json#functions[addr=0x14042f460]",
+        "evidence.json#functions[addr=0x14040d7a0]"
+      ],
+      "Limitations": "Failed lookup leaves the prior override. Includes the real BDX caller42F460 as context."
+    },
+    {
+      "addr": "0x1403c7c40",
+      "Finding": "A direct override setter writes RDX to C+8 and returns.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c7c40]"
+      ],
+      "Limitations": "No code caller was established by the captured IDB xrefs; this is a native writer boundary, not proof of live invocation."
+    },
+    {
+      "addr": "0x1403c8f10",
+      "Finding": "The override clear body zeros QWORD C+8 and returns; BDX caller42F490 reaches it with Actor+344.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c8f10]",
+        "evidence.json#functions[addr=0x14042f490]"
+      ],
+      "Limitations": "Changing override alone need not change the present Motion pointer."
+    },
+    {
+      "addr": "0x1403da940",
+      "Finding": "The actor initialization path reads Actor+2352 and, if nonnull, calls3C8460 with Actor+344 and that resource base.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403da940]",
+        "evidence.json#functions[addr=0x1403c8460]"
+      ],
+      "Limitations": "The constructor has other unrelated resource work; only this binding edge is claimed."
+    },
+    {
+      "addr": "0x1403b3200",
+      "Finding": "The base Actor initializer calls3E63D0 with Actor+2320 and the actor type/object entry, establishing the embedded resource-holder offset used in the MSET chain.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b3200]",
+        "evidence.json#functions[addr=0x1403e63d0]"
+      ],
+      "Limitations": "No claim about every field in the large constructor."
+    },
+    {
+      "addr": "0x1403e6120",
+      "Finding": "Resource-holder acquisition obtains cache resources via39CC40 and writes bases at holder+16,+24,+32; the optional motion path uses3E0BD0 and stores at+32, hence Actor+2352 for holder Actor+2320.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e6120]",
+        "evidence.json#functions[addr=0x14039cc40]",
+        "evidence.json#functions[addr=0x1403e0bd0]"
+      ],
+      "Limitations": "3E0BD0 supports object-defined paths and _MEMO.mset names; filename identity is not native allocation identity."
+    },
+    {
+      "addr": "0x1403e63d0",
+      "Finding": "Replacing the resource holder releases nonnull bases+16,+24,+32 via39DA10, zeroes those fields, sets type/object-entry fields and tailcalls3E6120.3E6370 provides another release/reset/reacquire route;3E61E0 releases/reset without reacquisition.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403e63d0]",
+        "evidence.json#functions[addr=0x1403e6370]",
+        "evidence.json#functions[addr=0x1403e61e0]",
+        "evidence.json#functions[addr=0x1403e6120]",
+        "evidence.json#functions[addr=0x14039da10]"
+      ],
+      "Limitations": "Releases are cache reference decrements, not immediate allocation frees."
+    },
+    {
+      "addr": "0x14039cc40",
+      "Finding": "Cache acquisition resolves a node by name/category through39E1E0, increments its WORD+2 and returns QWORD+88 resource base.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039cc40]",
+        "evidence.json#functions[addr=0x14039e1e0]"
+      ],
+      "Limitations": "This function does not return a size, generation or guaranteed readiness; malformed/missing inputs can be unsafe. Do not call it for a trainer observation."
+    },
+    {
+      "addr": "0x14039da10",
+      "Finding": "Cache release searches the cache list for QWORD+88 equal to the supplied base and decrements WORD+2 of the matching node.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039da10]"
+      ],
+      "Limitations": "It does not immediately free payload bytes. No generation or overflow protection is supplied."
+    },
+    {
+      "addr": "0x14039e000",
+      "Finding": "Cache registration can reuse a named node or allocate a120-byte descriptor. New nodes receive QWORD+80 equal to a128-rounded supplied size; when supplied size is zero, the file-size query result is first rounded to2048. It initializes bases+88/+96 and registers the node.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039e000]"
+      ],
+      "Limitations": "+80 is a reservation/copy extent, not necessarily exact file length. Reuse can preserve descriptor identity; overflow/negative file-size cases are not validated for trainer use."
+    },
+    {
+      "addr": "0x14039d590",
+      "Finding": "The cache layout pass reorders nodes, resets flags+68 and assigns destination+88 using the QWORD+80 extents, starting positive-class regions from image RVA BF33C0 and decrementing negative-class storage from off_140749740. It can discard cached entries with BAR release/unlink/descriptor release.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039d590]"
+      ],
+      "Limitations": "A native layout mechanism, not proof that arbitrary observed nodes own disjoint memory. Region budgets and historical subtype reuse require validation; no universal generation exists."
+    },
+    {
+      "addr": "0x14039d460",
+      "Finding": "After39D590, nonnegative-class nodes whose destination+extent fits29F33F0 proceed to39E690; selected excess/retired entries undergo BAR release, unlink and descriptor release.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039d460]",
+        "evidence.json#functions[addr=0x14039d590]",
+        "evidence.json#functions[addr=0x14039e690]",
+        "evidence.json#functions[addr=0x1403a6a10]",
+        "evidence.json#functions[addr=0x14039e2a0]"
+      ],
+      "Limitations": "Signed category and unsigned address comparison matter. This path is one arena boundary check, not all native allocation paths."
+    },
+    {
+      "addr": "0x14039e690",
+      "Finding": "Cache relocation marks a node in progress, compares destination+88 with prior base+96, recursively resolves overlaps, schedules a read if no retained source exists, or unfixes the old BAR, copies16-byte chunks in address-dependent direction, refixes the destination and finalizes. The differing-base path replaces+96 with+88.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039e690]"
+      ],
+      "Limitations": "+80 drives copying and is expected aligned. In-progress/failed/subbank states cannot be admitted as stable spans; a descriptor or payload address may be reused."
+    },
+    {
+      "addr": "0x14039e900",
+      "Finding": "Finalization normally writes readiness byte+1=3, but type2 container expansion can replace matching cache entries and create120-byte child descriptors with+80 rounded from BAR entry+12 and both bases pointing directly into parent data before parent descriptor release.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039e900]"
+      ],
+      "Limitations": "These child descriptors show why an arbitrary node's rounded+80 must not be treated as an independently owned allocation. No Tiny/Giant support for this path is approved."
+    },
+    {
+      "addr": "0x14039e2a0",
+      "Finding": "The unlink operation removes a cache node from the packed-next+112 list and clears its next link.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14039e2a0]",
+        "evidence.json#functions[addr=0x14039d460]",
+        "evidence.json#functions[addr=0x14039e900]"
+      ],
+      "Limitations": "Callers can release BAR internals before unlink, so an unlink-only observer would be too late."
+    },
+    {
+      "addr": "0x1403a6a10",
+      "Finding": "The complete BAR release dispatch recursively handles nested containers and specialized resource types; type9 has no dedicated destructor case in this body. Other resource-associated metadata may be released at the end.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a6a10]"
+      ],
+      "Limitations": "Absence of type9 cleanup here does not establish persistent backing bytes. Cache arena relocation/reuse determines their lifetime. Existing analysis label is not new evidence."
+    },
+    {
+      "addr": "0x1401d2660",
+      "Finding": "The Prototype0 scalar-deleting destructor resets vtable via1C3880 and conditionally calls the deallocation thunk when its flag bit0 is set; RAW1DAFF0 has the corresponding pattern.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401d2660]",
+        "evidence.json#functions[addr=0x1401daff0]",
+        "evidence.json#functions[addr=0x1401c3880]"
+      ],
+      "Limitations": "No captured BAR type9 release call reaches these destructors. Do not infer that in-place Motion prefix or separate payload is freed on every controller cleanup."
+    }
+  ],
+  "globalLimitations": [
+    "Read-only static study; no game execution or memory snapshot; IDA auto_analysis_ready=false and is_analyzing=false; no analysis was forced.",
+    "Complete original-matching bodies are a bounded evidence set, not all-writers or whole-binary proof.",
+    "Existing projection/ownership/bounds studies are dependencies, not newly claimed accomplishments.",
+    "Policy cases prove their bounded models only; no installed detour, ABI preservation, runtime actor readiness or scale behavior was tested."
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "status": "accepted",
+  "scope": "Independent manual source/test review of the bounded, disconnected MotionPayloadCopy component against the frozen native selection contract. No test rerun or live-resource approval.",
+  "sourcePins": {
+    "src/KH2Trainer.Bridge/MotionPayloadCopy.h": "228fe6b32b38c031423294a5a52cdfc18a75d07de23b290db96bab0282e93181",
+    "tests/KH2Trainer.Bridge.Tests/MotionPayloadCopyTests.cpp": "0a21374cbdd43a1bc17dfe272fb017b9149648f5350ff1a04992112e4109f311",
+    "tests/KH2Trainer.Bridge.Tests/run-tests.ps1": "451ee403ff84816541469290e8a02f7226e926e8d33f3829130036c8414edb47"
+  },
+  "contract": {
+    "path": "artifacts/motion-native-copy-contract-20261011/contract.md",
+    "sha256": "3b86a666a27c05ede443738d1800e105d15fd16755d9a607c13d502e03fba6fe"
+  },
+  "testEvidence": {
+    "path": "artifacts/motion-payload-copy-tests-20261011/logs/native-MotionPayloadCopyTests.txt",
+    "sha256": "5f83487bfeb8717562f685fd5f9506f5089643667ca1a22fe3c61d2c9069d363",
+    "checks": 292,
+    "focusedCases": 74,
+    "failures": 0,
+    "runBy": "review_mission_integration; source, runner and existing output inspected independently, not rerun",
+    "productionCompile": "Runner separately compiles the unchanged header through MOTION_PAYLOAD_COPY_PRODUCTION_COMPILE before the private fixture executable. Both existing x64 COFF objects pinned.",
+    "objects": [
+      {
+        "path": "artifacts/motion-payload-copy-tests-20261011/bin/MotionPayloadCopyTests.obj",
+        "sha256": "7393ec6b466712f5f6e9cd7937c6518dbf4f6e0e6b54f2ca7810ce2f22992700",
+        "bytes": 126193
+      },
+      {
+        "path": "artifacts/motion-payload-copy-tests-20261011/bin/MotionPayloadCopyTests.Production.obj",
+        "sha256": "8ab98a810fcb9f05300c92c34243a28bc9673d8cd7d5b613c518543b3e2d594f",
+        "bytes": 62191
+      }
+    ]
+  },
+  "reviewedObligations": [
+    {
+      "location": "MotionPayloadCopy.h:31-46,88-106",
+      "conclusion": "ReadScope is explicitly a trusted external synchronization/lifetime boundary, requires known non-reused revisions and exact nonthrowing fault-contained reads. Span/token validation cannot establish that boundary. Failed Current or Read terminates this call."
+    },
+    {
+      "location": "MotionPayloadCopy.h:75-96,133-156,170-176",
+      "conclusion": "Nonwrapping disjoint admissions and subtraction-based containment bound every entered source span. Counts are signed positive and limited before multiplication/allocation; the configured hard caps bound inner metadata to 1 MiB and payload to 64 MiB. Inner length comes from the selected outer entry, independently of the larger reservation."
+    },
+    {
+      "location": "MotionPayloadCopy.h:118-126,177-228",
+      "conclusion": "Read-only packed decoding uses retained 64-region witness, marker/alignment policy and OR. Header self pointers, supported profile, owner/root/normal-context policy, physical outer ordinal/type17/link0, historical primary variant, and first type9/link0 follow the contract. An invalid first type9 cannot fall through to a later candidate."
+    },
+    {
+      "location": "MotionPayloadCopy.h:217-245",
+      "conclusion": "The selected pointer must equal current C+24. The 148-byte minimum and Motion+8==Motion+144 precede payload copying; payload kind0/1 must match its exact module-relative vtable. Only private payload bytes and copied identity/selection are published after metadata rechecks and a final Current. Allocation/read/revocation failures publish empty results."
+    },
+    {
+      "location": "MotionPayloadCopyTests.cpp:15-23,160-264",
+      "conclusion": "Fixtures cover mixed ordinal/tag selection, first-invalid rejection, exact/short parent ends, signed count/index failures, decoder/profile/context mismatch, 147/148-byte minimum, two actual allocation failures, partial/terminal reads, revocation including final Current, changed metadata/revisions, and retained result lifetime after scope destruction. Source byte preservation is checked on ordinary success/failure cases; intentionally mutating providers are separately labeled."
+    },
+    {
+      "location": "run-tests.ps1:51 and src/tests reference search",
+      "conclusion": "The suite is registered with a separate production compile. Repository source references to the component are confined to the new header and its test; TrainerBridge has no inclusion or consumer, so this component changes no installed gameplay route."
+    }
+  ],
+  "findings": [],
+  "limitations": [
+    "No production ReadScope exists or is approved here. Actor/cache/binding/decoder serialization, unobserved writers, relocation, aliases, resource release and permitted thread admission remain external prerequisites.",
+    "Metadata rereads and matching revisions detect some dishonest providers; they cannot retroactively make a source read safe or prevent release/reuse. Payload consistency relies on the held scope, not on a second payload comparison.",
+    "The whole outer table is bounded, but only the selected outer row is read; unrelated rows are not certified. The complete inner table is copied and checked solely to support first-type9 selection.",
+    "The 292 checks are the author's isolated virtual-address fixtures, not new independent executions, Core parser tests, native game calls or proof of valid playback/skeleton/scale.",
+    "Reviewer performed no builds, test reruns, product edits, game actions, IDA queries or release changes. Acceptance is limited to this disconnected component and its declared contract."
+  ],
+  "productOrGameChangesByReviewer": false
+}

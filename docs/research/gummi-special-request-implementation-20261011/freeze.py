@@ -1,0 +1,20 @@
+"""Snapshot only the owned native implementation and existing isolated test records."""
+import hashlib,json,pathlib,subprocess,sys
+HERE=pathlib.Path(__file__).resolve().parent
+ROOT=next(p for p in HERE.parents if (p/'src/KH2Trainer.Core').is_dir())
+def sha(b):return hashlib.sha256(b).hexdigest()
+def save(path,data):path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(data)
+paths=['src/KH2Trainer.Bridge/GummiExtraFeatures.inl','tests/KH2Trainer.Bridge.Tests/GummiExtraGuardTests.cpp']
+pins=[]
+for name in paths:
+    data=(ROOT/name).read_bytes();snap='source-snapshots/'+name;save(HERE/snap,data);pins.append({'path':name,'snapshot':snap,'sha256':sha(data)})
+wire=ROOT/'artifacts/gummi-request-wire-v18/native-GummiRequestBridgeTests.txt';save(HERE/'root-wire-test.txt',wire.read_bytes())
+wireSource=ROOT/'tests/KH2Trainer.Bridge.Tests/GummiRequestBridgeTests.cpp';save(HERE/'context/GummiRequestBridgeTests.cpp',wireSource.read_bytes())
+info={'schema':1,'status':'native implementation and isolated tests complete; independent product review pending','originalSha256':'9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed','study':{'path':'docs/research/gummi-gameplay-continuation-20261011','manifestSha256':'2995ef76f490cdca02bb11c24baf0ffc52fe8ea2c9ae5bf9385a2b30ae94892d','artifactFallback':'artifacts/gummi-gameplay-continuation-20261011'},'sourcePins':pins,'action':{'featureId':'gummi.request_special_attack','command':1485,'capability':485,'nativeSetterRva':'0x2312b0','abi':'void(__fastcall*)(uintptr_t), RCX inline combo; no useful return','writeFootprint':'OR DWORD[combo+68] with mask2 only','resultMeaning':'queued request only; native update can discard it and future resources are not certified'},'testEvidence':[{'path':'native-GummiExtraGuardTests.txt','sha256':sha((HERE/'native-GummiExtraGuardTests.txt').read_bytes()),'suite':'GummiExtraGuardTests','checks':1087,'previousV17Checks':492,'additionalAssertions':595,'owner':'this subagent','hookScope':'The native setter is a mock with the verified OR2 footprint; revalidation changes are deliberately injected by Readable fixture callbacks.'},{'path':'root-wire-test.txt','sha256':sha(wire.read_bytes()),'suite':'GummiRequestBridgeTests','checks':15,'owner':'root','hookScope':'Actual TrainerFrame1485 and shipping Gummi route, no Gummi test hooks. Only a private synthetic page containing the five original setter bytes is executable; consumer/dispatchers cannot execute.'}],'productionRouteSourceContext':{'path':'context/GummiRequestBridgeTests.cpp','sha256':sha(wireSource.read_bytes())},'commands':['.\\tests\\KH2Trainer.Bridge.Tests\\run-tests.ps1 -Suite GummiExtraGuardTests -OutputDirectory artifacts/gummi-special-request-implementation-20261011/bin -LogDirectory artifacts/gummi-special-request-implementation-20261011','Root independently ran GummiRequestBridgeTests, log copied verbatim from artifacts/gummi-request-wire-v18.','py -B artifacts/gummi-special-request-implementation-20261011/verify.py --check-current-product'],'limits':['No live game/GUI/injection/attach/save actions.','No claim of projectile creation, hits, or future validity of companion/part/weapon-instance resources.','Original study model checks are static semantics, not additional product test counts.','Existing Charge/Snapshot implementation is byte-identical after removing only this new handler block/route/capability.']}
+save(HERE/'implementation.json',(json.dumps(info,indent=2)+'\n').encode())
+subprocess.run([sys.executable,'-B',str(HERE/'verify.py'),'--write','--check-current-product'],check=True)
+# Compiler files are retained separately; only their recorded hashes enter this study.
+files=[{'path':p.relative_to(HERE).as_posix(),'bytes':p.stat().st_size,'sha256':sha(p.read_bytes())} for p in sorted(HERE.rglob('*')) if p.is_file() and p!=HERE/'manifest.json']
+data=(json.dumps({'schema':1,'files':files},indent=2)+'\n').encode();save(HERE/'manifest.json',data)
+subprocess.run([sys.executable,'-B',str(HERE/'verify.py'),'--check-current-product'],check=True)
+print('Manifest SHA256:',sha(data))

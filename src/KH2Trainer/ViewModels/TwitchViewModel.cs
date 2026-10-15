@@ -51,6 +51,8 @@ internal sealed class TrainerGameControl(ITwitchHost shell) : IGameControl
         ? MovementSnapshot.FromSnapshot(Current, unchecked((uint)Environment.TickCount)) : MovementSnapshot.Unavailable;
     public DamageGuardSnapshot DamageGuard => shell.IsConnected
         ? DamageGuardSnapshot.FromSnapshot(Current, unchecked((uint)Environment.TickCount)) : DamageGuardSnapshot.Unavailable;
+    public DriveRevertLockSnapshot DriveRevertLock => shell.IsConnected
+        ? DriveRevertLockSnapshot.FromSnapshot(Current, unchecked((uint)Environment.TickCount)) : DriveRevertLockSnapshot.Unavailable;
     public LockOnPairSnapshot LockOnPair => shell.IsConnected
         ? LockOnPairSnapshot.FromSnapshot(Current, unchecked((uint)Environment.TickCount)) : LockOnPairSnapshot.Unavailable;
     public MovementOperationHandle? PendingMovement => (shell as ITwitchMovementHost)?.PendingMovement;

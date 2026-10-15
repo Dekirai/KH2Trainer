@@ -1,0 +1,44 @@
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#include <stdio.h>
+#include "initial-wrapper.h"
+// Independent counterexample for the initial all-callback-exceptions policy.
+// Synthetic typed callees only. No trampoline, game code or process access.
+constexpr DWORD NativeCode=0xe0734211;
+motion_observer::Observer BeforeOwner,AfterOwner;
+struct Case { motion_observer::OriginalFn entry;bool inBefore;unsigned outer=0,inner=0,afterOuter=0,afterInner=0; };
+static Case* current=nullptr;
+uint64_t __fastcall Before(void*,uintptr_t controller){
+    if(controller==0 && current->inBefore)current->entry(1,7,1.0f,2.0f);
+    return controller+17;
+}
+uint8_t __fastcall Original(uintptr_t controller,int32_t,float,float){
+    if(controller==1){++current->inner;RaiseException(NativeCode,0,0,nullptr);return 0;}
+    ++current->outer;return 0x81;
+}
+void __fastcall After(void*,uintptr_t controller,uint64_t,bool,bool){
+    if(controller==1){++current->afterInner;return;}
+    ++current->afterOuter;
+    if(!current->inBefore)current->entry(1,7,1.0f,2.0f);
+}
+DWORD Call(uint8_t& result){
+    __try { result=current->entry(0,9,3.0f,4.0f); }
+    __except(EXCEPTION_EXECUTE_HANDLER){return GetExceptionCode();}
+    return 0;
+}
+int main(){
+    Case before{&motion_observer::Entrypoints<BeforeOwner>::Select,true};
+    Case after{&motion_observer::Entrypoints<AfterOwner>::Select,false};
+    bool allReproduced=true;
+    for(Case* c:{&before,&after}){
+        current=c;auto& owner=c->inBefore?BeforeOwner:AfterOwner;
+        if(!owner.Bind(Original,Before,After,nullptr))return 2;
+        uint8_t result=0;DWORD code=Call(result);
+        const bool swallowed=code==0&&result==0x81&&c->inner==1&&c->outer==1&&c->afterInner==1&&c->afterOuter==1&&owner.Faulted();
+        printf("nested-native-from-%s: caught=%08lx result=%02x outerOriginal=%u innerOriginal=%u outerAfter=%u innerAfter=%u fault=%u swallowed=%u\n",c->inBefore?"Before":"After",code,result,c->outer,c->inner,c->afterOuter,c->afterInner,owner.Faulted(),swallowed);
+        allReproduced=allReproduced&&swallowed;
+    }
+    printf("NestedCallbackExceptionReview: original exception swallowing %s in both callback positions.\n",allReproduced?"REPRODUCED":"NOT REPRODUCED");
+    return allReproduced?0:1;
+}

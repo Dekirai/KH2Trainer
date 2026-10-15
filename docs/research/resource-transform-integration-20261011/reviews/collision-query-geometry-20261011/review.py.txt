@@ -1,0 +1,101 @@
+"""Independent original-byte and bounded semantic review; writes this folder only."""
+import hashlib, importlib.util, json, math, struct, sys
+from pathlib import Path
+from capstone import Cs, CS_ARCH_X86, CS_MODE_64
+from capstone.x86_const import X86_OP_IMM
+sys.dont_write_bytecode=True
+H=Path(__file__).resolve().parent; R=H.parents[1]
+S=R/'artifacts/collision-query-geometry-20261011'
+load=lambda p:json.loads(p.read_text(encoding='utf-8-sig'))
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+checks=0
+def need(v,msg):
+    global checks
+    checks+=1
+    if not v:raise AssertionError(msg)
+manifest=load(S/'manifest.json')
+for name,pin in manifest['files'].items():
+    need(sha(S/name)==pin['sha256'] and (S/name).stat().st_size==pin['bytes'],('author member',name))
+exe=Path(r'E:\SteamLibrary\steamapps\common\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-\KINGDOM HEARTS II FINAL MIX.exe')
+b=exe.read_bytes(); need(hashlib.sha256(b).hexdigest()=='9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed','original PE identity')
+pe=struct.unpack_from('<I',b,60)[0]; ns=struct.unpack_from('<H',b,pe+6)[0]; opt=struct.unpack_from('<H',b,pe+20)[0]
+B=struct.unpack_from('<Q',b,pe+48)[0]
+sections=[struct.unpack_from('<8sIIII',b,pe+24+opt+i*40) for i in range(ns)]
+def original(a,n):
+    r=a-B
+    for _,_,start,size,off in sections:
+        if start<=r and r+n<=start+size:return b[off+r-start:off+r-start+n]
+    raise AssertionError(('original range',hex(a),n))
+cs=Cs(CS_ARCH_X86,CS_MODE_64);cs.detail=True
+e=load(S/'evidence.json'); index={}; bodies={}
+sp=importlib.util.spec_from_file_location('coverage_reader',R/'scripts/update-analysis-coverage.py')
+cov=importlib.util.module_from_spec(sp);sp.loader.exec_module(cov)
+for f in e['functions']:
+    a=int(f['addr'],16); raw=bytes.fromhex(f['originalBytes']); bodies[a]=f
+    need(raw==original(a,f['size']) and len(raw)==f['size'],('original function bytes',f['addr']))
+    ok,rows,reason=cov.body_assembly(f); need(ok,('complete IDA body',f['addr'],reason))
+    need(len(rows)==len(f['instructions']),'complete instruction count')
+    covered=set()
+    for row in f['instructions']:
+        at=int(row['addr'],16); dec=list(cs.disasm(raw[at-a:at-a+row['size']],at))
+        need(len(dec)==1 and dec[0].bytes.hex(' ')==row['bytes'] and dec[0].mnemonic==row['mnemonic'] and dec[0].op_str==row['operands'],'original instruction decode')
+        index[at-B]=dec[0]; span=set(range(at-a,at-a+dec[0].size))
+        need(not covered&span,'nonoverlap');covered|=span
+    for gap in f['noninstructionSpans']:
+        at=int(gap['addr'],16);data=bytes.fromhex(gap['bytes']);span=set(range(at-a,at-a+len(data)))
+        need(data==original(at,len(data)) and not span&covered,'inline data/padding');covered|=span
+    need(covered==set(range(len(raw))),'complete extent accounting')
+for item in e['originalPeData']:
+    raw=bytes.fromhex(item['originalBytes']); need(raw==original(int(item['addr'],16),len(raw)),'original data')
+for pin in e['dependencies']:
+    need(sha(R/pin['path']/'manifest.json')==pin['manifestSha256'],'dependency manifest')
+    need(sha(R/pin['path']/'evidence.json')==pin['evidenceSha256'],'dependency evidence')
+for path in sorted(H.glob('fresh-ida-*.json')):
+    fresh=load(path);a=int(fresh['addr'],16); saved=bodies[a]['disassembly']
+    need(fresh['cursor'].get('done') and fresh['instruction_count']==saved['total_instructions'],'fresh IDA completeness')
+    need([(x['addr'],x['instruction']) for x in fresh['asm']['lines']]==[(x['addr'],x['instruction']) for x in saved['asm']['lines']],'fresh IDA agrees with retained capture')
+def exact(rva,m,op):need((index[rva].mnemonic,index[rva].op_str)==(m,op),('critical original instruction',hex(rva)))
+def call(rva,target):
+    i=index[rva];need(i.mnemonic=='call' and i.operands[0].type==X86_OP_IMM and i.operands[0].imm==B+target,('call',hex(rva)))
+exact(0x17435a,'mov','ecx, 0x3ff'); exact(0x17435f,'cmp','ax, cx');exact(0x174362,'jae','0x1401743cf')
+exact(0x1743ab,'movsx','r8d, ax');call(0x1743c1,0x1741c0)
+exact(0x18b515,'comiss','xmm8, xmm7');exact(0x18b519,'jae','0x14018b5c2')
+exact(0x18b548,'ja','0x14018b5c2');exact(0x18b54d,'ja','0x14018b5c2')
+call(0x18b5a0,0x1a8e60);call(0x18b5b5,0x18b760)
+exact(0x173dd4,'comiss','xmm6, xmm0');exact(0x173dd7,'jbe','0x140173ded')
+call(0x173de4,0x1a8e60);call(0x173e56,0x13f900)
+call(0x1710da,0x163fc0);call(0x171120,0x173b30)
+call(0x40c33a,0x171090);call(0x40c34c,0x171350)
+call(0x3f3d92,0x171030);call(0x3f3da5,0x1a8e60)
+call(0x3d0c75,0x171090);call(0x3d0ce7,0x171090);call(0x3d0cff,0x3d1960)
+need(struct.unpack('<f',original(B+0x5b22d4,4))[0]==struct.unpack('<f',struct.pack('<f',1e14))[0],'nearest-distance initial bound')
+
+# Independent mathematical witnesses for the finite fixture geometry. This is
+# deliberately not a second game interpreter and proves only the stated shapes.
+def inside_xz(x,z,verts):
+    signs=[]
+    for (a,bb),(c,d) in zip(verts,verts[1:]+verts[:1]):signs.append((c-a)*(z-bb)-(d-bb)*(x-a))
+    return all(v>=0 for v in signs) or all(v<=0 for v in signs)
+miss=[(20,-10),(30,10),(40,-10)];hit=[(-10,-10),(0,10),(10,-10)]
+need(not inside_xz(0,0,miss) and inside_xz(0,0,hit),'independent triangle witness')
+polys=[miss]*1023+[hit]
+need(not any(inside_xz(0,0,p) for p in polys[:1023]) and inside_xz(0,0,polys[-1]),'candidate truncation excludes the sole intersecting triangle')
+need((10-5)/(10-5)==1 and (10-7)/(10-5)<1,'shortened endpoint static tie/nearer witness')
+models=load(S/'model-results.json');names={c['name']:c for c in models['cases']}
+need(names['1024th sole geometric hit omitted']['hit'] is False and names['same 1024th polygon queried alone hits']['hit'] is True,'instruction-model counterexample')
+need(names['equal moving/static endpoint selects static']['node']=='0x0','modeled endpoint tie')
+need(names['inconsistent matrices can return off-segment point']['point']==[100.,0.,0.,1.],'unvalidated matrix pair counterexample')
+need(models['summary']=={'cases':35,'instructionSteps':438101,'uniqueInstructionsExecuted':932,'fullQueryCases':22},'bounded modeled scope')
+report=load(S/'report.json')
+for claim in report['claims']:
+    need(int(claim['addr'],16) in bodies and bool(claim['Limitations']),'bounded claim')
+    for ref in claim['Evidence']:need(cov.resolve_reference(S/'report.json',ref)['status']=='exists','canonical evidence reference')
+out={'status':'accepted_bounded_static_review','openBlockers':[],'checks':checks,'authorManifestSha256':sha(S/'manifest.json'),
+     'bodies':len(bodies),'originalInstructions':len(index),'freshIdaBodies':3,
+     'authorVerifierReproduced':{'checks':5234,'verificationSha256':sha(S/'verification.json'),'scope':'All 35 synthetic cases reproduced using author model; independent review is separate.'},
+     'manualReview':['Selected original collector cap and recursive signed child path','COMISS ordered/unordered branches, primitive temporary writes, strict outer distance selection','Matrix transform before W normalization and no homogeneous divide','Combined moving/static order and endpoint tie; explicit moving-effect stub','Higher wrappers use validity flags even when point output remains plausible or stale','Interpreter integer aliases/flags and Float32 behavior assessed for these selected cases'],
+     'independentWitness':'Finite XZ triangle geometry and shortened-endpoint arithmetic checked separately from the author interpreter.',
+     'limits':['No game execution or lifetime proof. Actual matrix pairing, resource ownership, final movement writer and volume clearance remain open.',
+               'The author interpreter and synthetic table layout are bounded models; no claim of all Float32 inputs or MXCSR configurations.',
+               'Fresh IDA captures were read without autoanalysis; whole-database semantic completeness is not established.']}
+(H/'review.json').write_text(json.dumps(out,indent=2)+'\n',encoding='utf-8');print(json.dumps(out,indent=2))

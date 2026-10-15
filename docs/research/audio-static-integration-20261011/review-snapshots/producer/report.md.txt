@@ -1,0 +1,40 @@
+# Unabhängiger Review: Audio-Request-Erzeuger
+
+Akzeptiert für den begrenzten statischen Umfang. Geprüft ist der finale Manifestpin
+`6606e9232c1b7cf221f42ed77256399b713dea2c37628b3f682fb73667e529e0`.
+
+Die unabhängige Prüfung vergleicht sämtliche Capture-Spannen mit der gepinnten
+Original-EXE, dekodiert 863 verschiedene Instruktionen und gleicht die vollständigen
+IDA-Instruktionslisten einschließlich des disjunkten Resolver-Tails ab.
+
+Ein eigener kleiner Python-Interpreter verfolgt die fünf vollständigen Erzeuger
+mit positiven, null und negativen IDs, fehlgeschlagener Reservierung, mehreren
+Resolverresultaten und expliziten negativen Bankwerten. Er modelliert die externen
+Aufrufe mit festgelegten Ergebnissen und überschreibt danach volatile Register.
+Die Typ-0-Fälle umfassen einen passenden, leeren und erfolglos durchlaufenen
+synthetischen Listenkopf. Der Interpreter führt keine nativen Instruktionen aus.
+
+Zusätzlich durchläuft er beide selektiven Cancel-Helper für alle 256 Typbytes und
+für passende/abweichende Bankwerte. Die Listen bleiben dabei künstlich stabil;
+reale Cancel-Effekte, Scheduling und Lebensdauer werden dadurch nicht geprüft.
+Das Ergebnis sind 1.391 Traces mit 40.744 interpretierten Instruktionen und
+6.277 Prüfaussagen. Der Autoren-Verifier wurde ebenfalls mit `--check` ausgeführt.
+
+## Im Review korrigierter Befund
+
+Der 16-Byte-Kopierhelfer liest und schreibt vier DWORDs nacheinander. Bei
+überlappenden Bereichen sind bereits gelesene und ursprüngliche Bytes deshalb
+nicht allgemein gleich. Sieben Fälle wurden direkt über die erfassten Instruktionen
+geprüft: Bei Ziel = Quelle +4 wird `[55,66,77,88]` zu `[55,55,55,55]`; bei +8 zu
+`[55,66,55,66]`. Der finale Claim nennt die Voraussetzung disjunkter bzw. identischer
+Bereiche und vermeidet eine `memmove`-Garantie. Die Erzeugermodelle verwenden
+getrennte Quell- und Zielbereiche; nur diese sieben zusätzlichen Traces prüfen
+Überlappung im wirklichen Helperkörper.
+
+Die übrigen 23 begrenzten Claims wurden gegen die Instruktionsfolgen geprüft.
+Insbesondere sind Request-Handle, State 2, ein null Poll-Aggregat und eine
+erste passende Banktabellenzeile weiterhin keine Wiedergabegarantie. Die
+Reset-/Loader-Pfade sind keine freigegebenen Traineraktionen.
+
+Keine Produktänderung, kein Spielstart, keine Injection und keine Änderung
+an Spiel-, Save- oder Moddateien.

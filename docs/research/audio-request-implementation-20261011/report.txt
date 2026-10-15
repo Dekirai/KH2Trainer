@@ -1,0 +1,51 @@
+Native Audio-Anfragediagnose: Umsetzung 2026-10-11
+================================================
+
+Die Bridge stellt die Slots 482 (freie Poolplätze), 483 (Reservierungen seit
+dem letzten nativen Audio-Durchlauf/Reset) und 484 (beobachtete Zugangsschranken)
+bereit. Alle drei sind reine Beobachtungen. Die entsprechenden Kommandos
+1482..1484 enden ausdrücklich in einer read-only-Ablehnung.
+
+Der neue Helper liest genau drei feste Speicherstellen mit insgesamt neun
+Bytes. Vorher prüft er den Bridge-Kontext, frischen Host, Game-Thread und acht
+Originalsignaturen der relevanten Writer. Beide aufeinanderfolgenden Kopien
+müssen im erlaubten Bereich liegen und übereinstimmen. Vor der gemeinsamen
+Veröffentlichung werden Kontext, Hostfrische und Shared-State-Identität erneut
+geprüft. Ungültige Samples behalten keine alten Werte: TrainerFrame leert die
+Valid-Bits zu Beginn seines bestehenden sequenzierten Snapshots.
+
+Die Maske erklärt:
+  1: Das native Sperrbyte ist gesetzt.
+  2: FreeCount ist <=16; die untersuchten Reservierer wahren eine Reserve.
+  4: IntervalCount ist >24; die nächste Reservierung überschreitet das Limit.
+Kombinationen bleiben erhalten. Maskenwert0 heißt lediglich, dass diese drei
+gemessenen Schranken nicht anschlagen. Er belegt weder Ressourcenverfügbarkeit
+noch tatsächliche Wiedergabe. Post-Update kann den Intervallzähler unmittelbar
+nach dem Reset bereits als0 sehen. Daraus folgt keine Ereignisrate/-historie.
+
+Der bisherige Mixer ist byte-identisch. Der neue Code erwirbt keinen Audio-CS,
+führt keine native Audiofunktion aus und dereferenziert keine Bank-, Actor-,
+Kamera-, Audioressourcen- oder Request-Zeiger. Zwei gleiche Tupel sind keine
+atomare Mehrfeldmessung, Synchronisation oder ABA-Garantie.
+
+Prüfungen
+---------
+- AudioRequestGuardTests: 21.097 Prüfungen. Alle gültigen Zählerkombinationen,
+  alle acht Masken, Grenzwerte, falsche Vorzeichen, sämtliche einzelnen Bytes
+  der acht Signaturen, unlesbare einzelne Scalarbytes, abweichende Kopien,
+  Host-/Thread-/Disableverlust und erneute Hostprüfung vor Veröffentlichung.
+- Counterspan bleibt bei unveränderten Fixtures byteweise identisch.
+- Die Fixture bietet keine benutzbaren Audio-/Bank-/Actor-/Requestobjekte;
+  Readable akzeptiert ausschließlich Code und die neun Scalarbytes.
+- AudioGuardTests: 618 Prüfungen, bestehender Mixer unverändert.
+- PlayerBridgeTests: 665 Prüfungen einschließlich echter TrainerFrame-Route,
+  Commands1482..1484, Capability-Bits und dem Entfernen veralteter Samples.
+- TrainerBridge.cpp wurde zusätzlich ohne Testdefines als echte
+  Produktionseinheit kompiliert. Kein Link/Fullbuild und keine Ausführung
+  nativer Spielinstruktionen. Alle gezielten Läufe ohne Compilerwarnungen.
+
+Signaturen stammen aus acht vollständigen Originalrümpfen, insgesamt1.520
+Bytes. build_signatures.py --check vergleicht Header und eingefrorene Belege
+erneut gegen die Original-EXE. Native unabhängige Review ist separat vorgesehen.
+Managed-Katalog, Oberfläche, Version und Produktdokumentation sind hier nicht
+geändert worden. Es fand kein Spiel-/GUI-/Attach-/Injection-Test statt.

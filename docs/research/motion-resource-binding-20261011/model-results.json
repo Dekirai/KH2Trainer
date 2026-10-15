@@ -1,0 +1,212 @@
+{
+  "status": "PASS",
+  "scope": "19 original-byte/Capstone instruction anchors, one complete cleanup-store check, and 12 explicit policy/counterexample cases. No native function execution, no installed hook, no live allocation read.",
+  "instructionAnchors": [
+    {
+      "addr": "0x1401c3847",
+      "bytes": "48 89 51 08",
+      "instruction": "mov qword ptr [rcx + 8], rdx",
+      "meaning": "Payload base stored without a length"
+    },
+    {
+      "addr": "0x1403c8aff",
+      "bytes": "48 89 43 18",
+      "instruction": "mov qword ptr [rbx + 0x18], rax",
+      "meaning": "Motion pointer publication"
+    },
+    {
+      "addr": "0x1403c8b09",
+      "bytes": "ff 52 08",
+      "instruction": "call qword ptr [rdx + 8]",
+      "meaning": "Duration consumer after Motion store"
+    },
+    {
+      "addr": "0x1403c8bd3",
+      "bytes": "ff 50 20",
+      "instruction": "call qword ptr [rax + 0x20]",
+      "meaning": "Bounds consumer inside bind"
+    },
+    {
+      "addr": "0x1403c8ca6",
+      "bytes": "e8 15 e7 ff ff",
+      "instruction": "call 0x1403c73c0",
+      "meaning": "Conditional pose preparation before bind returns"
+    },
+    {
+      "addr": "0x1403c7325",
+      "bytes": "ff 08",
+      "instruction": "dec dword ptr [rax]",
+      "meaning": "Borrowed counter released in cleanup"
+    },
+    {
+      "addr": "0x1403c7327",
+      "bytes": "48 89 a9 b0 01 00 00",
+      "instruction": "mov qword ptr [rcx + 0x1b0], rbp",
+      "meaning": "Borrowed counter pointer cleared"
+    },
+    {
+      "addr": "0x1403c73a2",
+      "bytes": "ff d0",
+      "instruction": "call rax",
+      "meaning": "Cleanup callback after counter release"
+    },
+    {
+      "addr": "0x1403c66d2",
+      "bytes": "48 89 87 48 01 00 00",
+      "instruction": "mov qword ptr [rdi + 0x148], rax",
+      "meaning": "Alternate root context before bind"
+    },
+    {
+      "addr": "0x1403c6708",
+      "bytes": "e8 33 23 00 00",
+      "instruction": "call 0x1403c8a40",
+      "meaning": "Alternate binding call"
+    },
+    {
+      "addr": "0x1403c6733",
+      "bytes": "ff 00",
+      "instruction": "inc dword ptr [rax]",
+      "meaning": "Borrowed source acquisition after bind"
+    },
+    {
+      "addr": "0x1403c8d0d",
+      "bytes": "48 89 87 48 01 00 00",
+      "instruction": "mov qword ptr [rdi + 0x148], rax",
+      "meaning": "Normal root context before bind"
+    },
+    {
+      "addr": "0x1403c8d5b",
+      "bytes": "e8 e0 fc ff ff",
+      "instruction": "call 0x1403c8a40",
+      "meaning": "Normal binding call"
+    },
+    {
+      "addr": "0x14039e138",
+      "bytes": "48 89 70 50",
+      "instruction": "mov qword ptr [rax + 0x50], rsi",
+      "meaning": "Rounded reservation stored"
+    },
+    {
+      "addr": "0x14039d855",
+      "bytes": "48 89 4b 58",
+      "instruction": "mov qword ptr [rbx + 0x58], rcx",
+      "meaning": "Cache destination publication"
+    },
+    {
+      "addr": "0x14039e794",
+      "bytes": "e8 17 7b 00 00",
+      "instruction": "call 0x1403a62b0",
+      "meaning": "Unfix before relocation copy"
+    },
+    {
+      "addr": "0x14039e87f",
+      "bytes": "e8 9c 78 00 00",
+      "instruction": "call 0x1403a6120",
+      "meaning": "Fixup after relocation copy"
+    },
+    {
+      "addr": "0x14039e8a0",
+      "bytes": "48 89 43 60",
+      "instruction": "mov qword ptr [rbx + 0x60], rax",
+      "meaning": "Previous base replaced"
+    },
+    {
+      "addr": "0x1403e61aa",
+      "bytes": "48 89 43 20",
+      "instruction": "mov qword ptr [rbx + 0x20], rax",
+      "meaning": "Holder motion bank pointer"
+    }
+  ],
+  "cleanupDirectMotionStoreAbsent": true,
+  "cases": [
+    {
+      "case": "Rounded outer reservation plus exact child gives bounded payload",
+      "result": [
+        4752,
+        368
+      ],
+      "expected": [
+        4752,
+        368
+      ],
+      "status": "PASS"
+    },
+    {
+      "case": "Child may end exactly at nested end",
+      "result": [
+        6288,
+        112
+      ],
+      "expected": [
+        6288,
+        112
+      ],
+      "status": "PASS"
+    },
+    {
+      "case": "One byte past nested end is rejected",
+      "result": null,
+      "expected": null,
+      "status": "PASS"
+    },
+    {
+      "case": "Nested BAR beyond reservation is rejected",
+      "result": null,
+      "expected": null,
+      "status": "PASS"
+    },
+    {
+      "case": "Entry shorter than runtime prefix is rejected",
+      "result": null,
+      "expected": null,
+      "status": "PASS"
+    },
+    {
+      "case": "Different live Motion payload pointer is rejected",
+      "result": null,
+      "expected": null,
+      "status": "PASS"
+    },
+    {
+      "case": "Qword end overflow is rejected",
+      "result": false,
+      "expected": false,
+      "status": "PASS"
+    },
+    {
+      "case": "Zero reservation is rejected",
+      "result": false,
+      "expected": false,
+      "status": "PASS"
+    },
+    {
+      "case": "Negative child count is rejected",
+      "result": false,
+      "expected": false,
+      "status": "PASS"
+    },
+    {
+      "case": "Same pointer and restored counter can conceal release/rebind",
+      "result": true,
+      "expected": true,
+      "status": "PASS"
+    },
+    {
+      "case": "Primary setter can change bank while current Motion stays equal",
+      "result": true,
+      "expected": true,
+      "status": "PASS"
+    },
+    {
+      "case": "Entry invalidation precedes callback but return invalidation does not",
+      "result": true,
+      "expected": true,
+      "status": "PASS"
+    }
+  ],
+  "summary": {
+    "instructionAnchors": 19,
+    "policyCases": 12,
+    "failures": 0
+  }
+}

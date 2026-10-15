@@ -1,0 +1,22 @@
+@echo off
+setlocal
+call "%~dp0..\..\scripts\setup-toolchain.cmd" >nul 2>&1
+if errorlevel 1 exit /b 1
+cd /d "%~dp0"
+if not exist bin mkdir bin
+cl /nologo /std:c++17 /O2 /W4 /MT /EHsc /DUNICODE /D_UNICODE /DMOTION_BREAKPOINT_PRODUCTION_COMPILE /c ..\..\tests\KH2Trainer.Bridge.Tests\MotionBreakpointRouterTests.cpp /Fobin\RouterProduction.obj
+if errorlevel 1 exit /b 1
+cl /nologo /std:c++17 /O2 /W4 /MT /EHsc /DUNICODE /D_UNICODE /DMOTION_RUNTIME_PRODUCTION_COMPILE /c ..\..\tests\KH2Trainer.Bridge.Tests\MotionObservationRuntimeTests.cpp /Fobin\RuntimeProduction.obj
+if errorlevel 1 exit /b 1
+cl /nologo /std:c++17 /O2 /W4 /MT /EHsc /DUNICODE /D_UNICODE ..\..\tests\KH2Trainer.Bridge.Tests\MotionBreakpointRouterTests.cpp /Fobin\MotionBreakpointRouterTests.obj /Febin\MotionBreakpointRouterTests.exe /link /INCREMENTAL:NO /DYNAMICBASE /NXCOMPAT
+if errorlevel 1 exit /b 1
+bin\MotionBreakpointRouterTests.exe > router-tests.txt
+if errorlevel 1 exit /b 1
+cl /nologo /std:c++17 /O2 /W4 /MT /EHsc /DUNICODE /D_UNICODE ..\..\tests\KH2Trainer.Bridge.Tests\MotionObservationRuntimeTests.cpp /Fobin\MotionObservationRuntimeTests.obj /Febin\MotionObservationRuntimeTests.exe /link /INCREMENTAL:NO /DYNAMICBASE /NXCOMPAT
+if errorlevel 1 exit /b 1
+bin\MotionObservationRuntimeTests.exe > runtime-tests.txt
+if errorlevel 1 exit /b 1
+cl /nologo /std:c++17 /O2 /W4 /MT /EHsc /DUNICODE /D_UNICODE RuntimeFailureReviewTests.cpp /Fobin\RuntimeFailureReviewTests.obj /Febin\RuntimeFailureReviewTests.exe /link /INCREMENTAL:NO /DYNAMICBASE /NXCOMPAT
+if errorlevel 1 exit /b 1
+bin\RuntimeFailureReviewTests.exe > runtime-failure-review-tests.txt
+exit /b %errorlevel%

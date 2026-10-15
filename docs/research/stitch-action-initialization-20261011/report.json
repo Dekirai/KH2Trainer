@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "Domain": "native",
+  "title": "Stitch action initialization and a retail stored-script witness",
+  "status": "bounded_static_evidence",
+  "claims": [
+    {
+      "addr": "0x1400096b0",
+      "Finding": "The straight-line initializer writes seven 72-byte Stitch table records at RVA724340. Their function fields +8 become 1C7F40,1C8950,1CA6E0,1C8100,1C8610,1C8700,1C8440 in index order; +16/+20/+24 are zero.",
+      "Evidence": ["evidence.json#functions[addr=0x1400096b0]", "model-results.json"],
+      "Limitations": "Conditional on executing this body with valid writable table and stack. No all-writers, concurrency, live-state or complete-record-zeroing claim."
+    },
+    {
+      "addr": "0x1400096b0",
+      "Finding": "MOVSD loads eight stack bytes although only their low DWORD is set. Record+28 consequently retains the high stack DWORD; the compared 20-byte member key at record+8 remains fully initialized.",
+      "Evidence": ["evidence.json#functions[addr=0x1400096b0]", "dependencies.json#functions[addr=0x1401cd150]", "model-results.json"],
+      "Limitations": "This is the local stored-byte behavior. No semantics for padding+28 are established. The model varies one uniform stack-byte poison across256 cases."
+    },
+    {
+      "addr": "0x1404391d8",
+      "Finding": "The verified startup prefix on its state-zero branch calls _initterm_e, and after a zero result passes first=57BCA8 and last=584E18 to471C64. The imported _initterm contract walks that table; original slot57D230 contains0096B0, explaining the previously open registration route.",
+      "Evidence": ["evidence.json#code_ranges[addr=0x1404391d8]", "evidence.json#functions[addr=0x140471c64]", "imports.json", "external-contract.json"],
+      "Limitations": "External CRT behavior is a documented premise; its loaded implementation and actual startup execution were not observed. Earlier initializers may stop progress. Full startup ASM is explicitly complete:false because IDA omits original instruction start439317 and decodes its second byte as RET. No process-entry-to-startup guarantee."
+    },
+    {
+      "addr": "0x1401cd150",
+      "Finding": "Combining the new initialized table with the already captured constructor (+24=7,+32=724340) and member lookup yields row4 for key1C8610, row5 for1C8700 and row6 for1C8440 when their three key DWORDs are zero. These are precisely the525/526/527 callback selection keys.",
+      "Evidence": ["evidence.json#functions[addr=0x1400096b0]", "dependencies.json#functions[addr=0x1401c6d00]", "dependencies.json#functions[addr=0x1401cd150]", "dependencies.json#functions[addr=0x1401c7bf0]", "model-results.json"],
+      "Limitations": "Requires valid personality/table and preserved initialized contents. Lookup and callback are explicitly reused evidence. Unsupported actions, a changed table, wrong personality or a null result remain unsafe at the callback's previously identified unchecked dereference."
+    },
+    {
+      "addr": "0x14053fa00",
+      "Finding": "One selected original HED/PKG payload obj/N_HB040_BTL.mdlx equals the loose asset byte-for-byte. Its BAR type3 entry2 n_hb contains event-rooted stored BDX callsites7:26 at PCs87,121,155, immediately preceded by action constants525,526,527 respectively.",
+      "Evidence": ["retail.json", "script-evidence.json", "dependencies.json#functions[addr=0x14053fa00]", "dependencies.json#functions[addr=0x1401b2870]"],
+      "Limitations": "A concrete stored retail-script user, not an observed live call. Syntactic paths include conditional edges and unknown native effects; execution feasibility, event invocation and current Actor binding are not proved. Only one selected payload was decoded from the package."
+    },
+    {
+      "addr": "0x140536480",
+      "Finding": "The same retail script contains10:3 at PC394 and10:4 at PC1041. Each is immediately preceded by addressing offset20 from the current frame's slot-zero pointer; the three7:26 calls address offset80 instead. The previously captured native adapters connect these descriptors to personality virtual+72/+80 and Actor+4000 respectively.",
+      "Evidence": ["script-evidence.json", "dependencies.json#functions[addr=0x14041c900]", "dependencies.json#functions[addr=0x140536480]", "dependencies.json#functions[addr=0x1405364b0]", "dependencies.json#functions[addr=0x1401b4b80]", "dependencies.json#functions[addr=0x14053fa00]"],
+      "Limitations": "The two addressed wrappers and their Actors are not asserted identical. Symbolic addressing and syntactic event paths are static observations; prior native setup and valid dispatch objects remain prerequisites."
+    },
+    {
+      "addr": "0x1401c7e00",
+      "Finding": "The new stored10:4 callsite gives a concrete retail-script source for the previously established conditional Stitch virtual+80 reset route, including its unconditional cached-Actor+60=1.0 store. Thus its possible same-value ownership takeover has a stored-script witness in addition to a native adapter.",
+      "Evidence": ["script-evidence.json", "dependencies.json#functions[addr=0x1405364b0]", "dependencies.json#functions[addr=0x1401c7e00]", "dependencies.json#functions[addr=0x1401c9d60]"],
+      "Limitations": "The cached scalar Actor and dispatched context Actor may differ. No actual execution, reset-before-next-consumer, resource lifetime, all-summon behavior or Tiny/Giant feature readiness is established."
+    }
+  ],
+  "remaining": [
+    "Current loaded table contents, personality and both script wrapper bindings are unobserved.",
+    "The external CRT and complete process-entry chain were not captured; local startup registration is conditional.",
+    "Stored script CFG reachability is not dynamic event execution or matched call/return proof.",
+    "No ownership epoch, scale pre-use interception, allocator lifetime or concurrency contract is supplied by this study."
+  ]
+}

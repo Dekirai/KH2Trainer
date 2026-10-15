@@ -1,0 +1,55 @@
+using KH2Trainer.Core;
+using System.Buffers.Binary;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+
+if (args.Length != 2) throw new ArgumentException("gameRoot output.json");
+string root = Path.GetFullPath(args[0]);
+string output = Path.GetFullPath(args[1]);
+string here = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../.."));
+if (!output.StartsWith(here + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+    throw new ArgumentException("Output must stay in this isolated artifact directory.");
+string[] names = ["se/se000.win32.scd", "se/se001.win32.scd", "se/se999.win32.scd", "bgm/music050.win32.scd", "bgm/music051.win32.scd", "bgm/music530.win32.scd", "voice/us/gumibattle/gumi.win32.scd", "voice/us/battle/al0_sora.win32.scd", "obj/P_EX100.a.us", "obj/M_EX950.a.us"];
+var selectedNames = names.ToDictionary(n => Convert.ToHexString(MD5.HashData(Encoding.UTF8.GetBytes(n))).ToLowerInvariant());
+var limits = new AssetReadLimits { MaximumDecodedBytes = 64 * 1024 * 1024, MaximumDepth = 4 };
+var reader = new AssetArchiveReader(limits, [root]);
+string hash(byte[] b) => Convert.ToHexString(SHA256.HashData(b)).ToLowerInvariant();
+async Task<byte[]> Read(AssetPayload payload)
+{
+    if (payload.Length > limits.MaximumDecodedBytes) throw new InvalidDataException("Selected payload exceeds bounded probe limit.");
+    await using var stream = await reader.OpenReadAsync(payload);
+    byte[] data = new byte[checked((int)stream.Length)]; await stream.ReadExactlyAsync(data); return data;
+}
+var results = new List<object>();
+var indices = new List<object>();
+foreach (string hed in Directory.GetFiles(Path.Combine(root, "Image", "dt"), "kh2_*.hed").Order())
+{
+    var index = reader.OpenPackageIndex(hed);
+    indices.Add(new { hed = Path.GetFileName(hed), index.HeaderSha256, count = index.Entries.Count });
+    foreach (var entry in index.Entries.Where(e => selectedNames.ContainsKey(e.NameHash)))
+    {
+        if (!entry.IsAvailable) { results.Add(new { entry.Name, hed = Path.GetFileName(hed), entry.Ordinal, available = false }); continue; }
+        var package = reader.InspectPackageEntry(index, entry.Ordinal);
+        var original = await Read(package.Original);
+        var audioChildren = new List<object>();
+        if (original.AsSpan(0, Math.Min(4, original.Length)).SequenceEqual("BAR\x01"u8))
+        {
+            var bar = await reader.ReadBarAsync(package.Original);
+            foreach (var child in bar.Entries.Where(c => c.Type is 31 or 34 or 48))
+            {
+                var bytes = await Read(child.Payload);
+                audioChildren.Add(new { child.Ordinal, child.Type, child.Tag, child.RelativeOffset, child.Length, sha256 = hash(bytes), prefix64 = Convert.ToHexString(bytes.AsSpan(0, Math.Min(64, bytes.Length))) });
+            }
+        }
+        var remasters = new List<object>();
+        foreach (var remaster in package.Remastered)
+        {
+            var data = await Read(remaster.Payload);
+            remasters.Add(new { remaster.Ordinal, remaster.Name, remaster.LogicalOffset, remaster.OriginalAssetOffset, remaster.StoredOffset, remaster.StoredMode, length = data.Length, sha256 = hash(data), prefix16 = Convert.ToHexString(data.AsSpan(0, Math.Min(16, data.Length))) });
+        }
+        results.Add(new { Name = selectedNames[entry.NameHash], hed = Path.GetFileName(hed), entry.Ordinal, entry.NameHash, entry.Offset, entry.StoredLength, entry.OriginalLength, package.StoredMode, original = new { length = original.Length, sha256 = hash(original), prefix64 = Convert.ToHexString(original.AsSpan(0, Math.Min(64, original.Length))) }, audioChildren, remasters });
+    }
+}
+File.WriteAllText(output, JsonSerializer.Serialize(new { scope = "Bounded metadata-only archive inventory; no payload exports.", indices, results }, new JsonSerializerOptions { WriteIndented = true }));
+Console.WriteLine($"Selected archive records: {results.Count}.");

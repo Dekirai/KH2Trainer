@@ -1,0 +1,449 @@
+{
+  "anchors": [
+    {
+      "addr": "0x14039cc89",
+      "function": "0x14039cc40",
+      "meaning": "reference increment",
+      "bytes": "66 ff 43 02",
+      "ida": "inc word ptr [rbx+2]",
+      "independentDecode": "inc word ptr [rbx + 2]"
+    },
+    {
+      "addr": "0x14039da46",
+      "function": "0x14039da10",
+      "meaning": "reference decrement",
+      "bytes": "66 01 48 02",
+      "ida": "add [rax+2], cx",
+      "independentDecode": "add word ptr [rax + 2], cx"
+    },
+    {
+      "addr": "0x14039d855",
+      "function": "0x14039d590",
+      "meaning": "planned destination store",
+      "bytes": "48 89 4b 58",
+      "ida": "mov [rbx+58h], rcx",
+      "independentDecode": "mov qword ptr [rbx + 0x58], rcx"
+    },
+    {
+      "addr": "0x14039e768",
+      "function": "0x14039e690",
+      "meaning": "pending cache state",
+      "bytes": "c6 43 01 01",
+      "ida": "mov byte ptr [rbx+1], 1",
+      "independentDecode": "mov byte ptr [rbx + 1], 1"
+    },
+    {
+      "addr": "0x14039e773",
+      "function": "0x14039e690",
+      "meaning": "cache submit",
+      "bytes": "e8 58 24 00 00",
+      "ida": "call sub_1403A0BD0",
+      "independentDecode": "call 0x1403a0bd0"
+    },
+    {
+      "addr": "0x14039e8a0",
+      "function": "0x14039e690",
+      "meaning": "equal bases before async completion",
+      "bytes": "48 89 43 60",
+      "ida": "mov [rbx+60h], rax",
+      "independentDecode": "mov qword ptr [rbx + 0x60], rax"
+    },
+    {
+      "addr": "0x14039e794",
+      "function": "0x14039e690",
+      "meaning": "unfixup before synchronous copy",
+      "bytes": "e8 17 7b 00 00",
+      "ida": "call sub_1403A62B0",
+      "independentDecode": "call 0x1403a62b0"
+    },
+    {
+      "addr": "0x14039e832",
+      "function": "0x14039e690",
+      "meaning": "forward copy store",
+      "bytes": "0f 11 41 f0",
+      "ida": "movups xmmword ptr [rcx-10h], xmm0",
+      "independentDecode": "movups xmmword ptr [rcx - 0x10], xmm0"
+    },
+    {
+      "addr": "0x14039e871",
+      "function": "0x14039e690",
+      "meaning": "backward copy store",
+      "bytes": "0f 11 41 10",
+      "ida": "movups xmmword ptr [rcx+10h], xmm0",
+      "independentDecode": "movups xmmword ptr [rcx + 0x10], xmm0"
+    },
+    {
+      "addr": "0x14039e87f",
+      "function": "0x14039e690",
+      "meaning": "postmove fixup",
+      "bytes": "e8 9c 78 00 00",
+      "ida": "call sub_1403A6120",
+      "independentDecode": "call 0x1403a6120"
+    },
+    {
+      "addr": "0x1403a0754",
+      "function": "0x1403a0710",
+      "meaning": "first queue publication",
+      "bytes": "48 89 1d cd ce 66 02",
+      "ida": "mov cs:qword_142A0D628, rbx",
+      "independentDecode": "mov qword ptr [rip + 0x266cecd], rbx"
+    },
+    {
+      "addr": "0x1403a0775",
+      "function": "0x1403a0710",
+      "meaning": "nonempty queue publication",
+      "bytes": "48 89 1d ac ce 66 02",
+      "ida": "mov cs:qword_142A0D628, rbx",
+      "independentDecode": "mov qword ptr [rip + 0x266ceac], rbx"
+    },
+    {
+      "addr": "0x1403a0bf7",
+      "function": "0x1403a0bd0",
+      "meaning": "submit can be suppressed",
+      "bytes": "75 35",
+      "ida": "jnz short loc_1403A0C2E",
+      "independentDecode": "jne 0x1403a0c2e"
+    },
+    {
+      "addr": "0x1403a0c22",
+      "function": "0x1403a0bd0",
+      "meaning": "destination after enqueue",
+      "bytes": "48 89 70 38",
+      "ida": "mov [rax+38h], rsi",
+      "independentDecode": "mov qword ptr [rax + 0x38], rsi"
+    },
+    {
+      "addr": "0x1403a0c26",
+      "function": "0x1403a0bd0",
+      "meaning": "callback after enqueue",
+      "bytes": "48 89 78 40",
+      "ida": "mov [rax+40h], rdi",
+      "independentDecode": "mov qword ptr [rax + 0x40], rdi"
+    },
+    {
+      "addr": "0x1403a0c2a",
+      "function": "0x1403a0bd0",
+      "meaning": "context after enqueue",
+      "bytes": "48 89 58 48",
+      "ida": "mov [rax+48h], rbx",
+      "independentDecode": "mov qword ptr [rax + 0x48], rbx"
+    },
+    {
+      "addr": "0x1403a0ce2",
+      "function": "0x1403a0c60",
+      "meaning": "worker state1",
+      "bytes": "c7 43 04 01 00 00 00",
+      "ida": "mov dword ptr [rbx+4], 1",
+      "independentDecode": "mov dword ptr [rbx + 4], 1"
+    },
+    {
+      "addr": "0x1403a0cfa",
+      "function": "0x1403a0c60",
+      "meaning": "default reader call",
+      "bytes": "e8 51 8b 05 00",
+      "ida": "call sub_1403F9850",
+      "independentDecode": "call 0x1403f9850"
+    },
+    {
+      "addr": "0x1403a0d08",
+      "function": "0x1403a0c60",
+      "meaning": "worker result",
+      "bytes": "48 89 43 50",
+      "ida": "mov [rbx+50h], rax",
+      "independentDecode": "mov qword ptr [rbx + 0x50], rax"
+    },
+    {
+      "addr": "0x1403a0d52",
+      "function": "0x1403a0c60",
+      "meaning": "header80",
+      "bytes": "0c 80",
+      "ida": "or al, 80h",
+      "independentDecode": "or al, 0x80"
+    },
+    {
+      "addr": "0x1403a0d62",
+      "function": "0x1403a0c60",
+      "meaning": "header profile store",
+      "bytes": "88 41 03",
+      "ida": "mov [rcx+3], al",
+      "independentDecode": "mov byte ptr [rcx + 3], al"
+    },
+    {
+      "addr": "0x1403a0d76",
+      "function": "0x1403a0c60",
+      "meaning": "prepare before ready",
+      "bytes": "e8 75 57 00 00",
+      "ida": "call kh2_prepare_bar_runtime_replacements",
+      "independentDecode": "call 0x1403a64f0"
+    },
+    {
+      "addr": "0x1403a0d7b",
+      "function": "0x1403a0c60",
+      "meaning": "worker state2",
+      "bytes": "c7 43 04 02 00 00 00",
+      "ida": "mov dword ptr [rbx+4], 2",
+      "independentDecode": "mov dword ptr [rbx + 4], 2"
+    },
+    {
+      "addr": "0x1403a0d82",
+      "function": "0x1403a0c60",
+      "meaning": "next queue iteration",
+      "bytes": "e9 e9 fe ff ff",
+      "ida": "jmp loc_1403A0C70",
+      "independentDecode": "jmp 0x1403a0c70"
+    },
+    {
+      "addr": "0x1403a07eb",
+      "function": "0x1403a0790",
+      "meaning": "consumer requires state2",
+      "bytes": "83 7b 04 02",
+      "ida": "cmp dword ptr [rbx+4], 2",
+      "independentDecode": "cmp dword ptr [rbx + 4], 2"
+    },
+    {
+      "addr": "0x1403a0821",
+      "function": "0x1403a0790",
+      "meaning": "consumer fixup",
+      "bytes": "e8 1a 60 00 00",
+      "ida": "call sub_1403A6840",
+      "independentDecode": "call 0x1403a6840"
+    },
+    {
+      "addr": "0x1403a0828",
+      "function": "0x1403a0790",
+      "meaning": "zero result clears destination",
+      "bytes": "48 89 6b 38",
+      "ida": "mov [rbx+38h], rbp",
+      "independentDecode": "mov qword ptr [rbx + 0x38], rbp"
+    },
+    {
+      "addr": "0x1403a0841",
+      "function": "0x1403a0790",
+      "meaning": "callback before unlink",
+      "bytes": "ff d0",
+      "ida": "call rax",
+      "independentDecode": "call rax"
+    },
+    {
+      "addr": "0x1403a0853",
+      "function": "0x1403a0790",
+      "meaning": "head unlink",
+      "bytes": "48 89 05 ce cd 66 02",
+      "ida": "mov cs:qword_142A0D628, rax",
+      "independentDecode": "mov qword ptr [rip + 0x266cdce], rax"
+    },
+    {
+      "addr": "0x1403a08c4",
+      "function": "0x1403a0790",
+      "meaning": "request free",
+      "bytes": "ff 50 10",
+      "ida": "call qword ptr [rax+10h]",
+      "independentDecode": "call qword ptr [rax + 0x10]"
+    },
+    {
+      "addr": "0x14039dee0",
+      "code_range": "0x14039dee0",
+      "meaning": "callback zero test",
+      "bytes": "48 85 d2",
+      "ida": "test rdx, rdx",
+      "independentDecode": "test rdx, rdx"
+    },
+    {
+      "addr": "0x14039dee8",
+      "code_range": "0x14039dee0",
+      "meaning": "nonzero finalize",
+      "bytes": "e9 13 0a 00 00",
+      "ida": "jmp sub_14039E900",
+      "independentDecode": "jmp 0x14039e900"
+    },
+    {
+      "addr": "0x14039deed",
+      "code_range": "0x14039dee0",
+      "meaning": "zero cache failure",
+      "bytes": "41 c6 40 01 ff",
+      "ida": "mov byte ptr [r8+1], 0FFh",
+      "independentDecode": "mov byte ptr [r8 + 1], 0xff"
+    },
+    {
+      "addr": "0x14039ebb2",
+      "function": "0x14039e900",
+      "meaning": "ordinary state3",
+      "bytes": "c6 45 01 03",
+      "ida": "mov byte ptr [rbp+1], 3",
+      "independentDecode": "mov byte ptr [rbp + 1], 3"
+    },
+    {
+      "addr": "0x1403a09d0",
+      "function": "0x1403a09c0",
+      "meaning": "worker callback registration",
+      "bytes": "4c 8d 05 89 02 00 00",
+      "ida": "lea r8, sub_1403A0C60",
+      "independentDecode": "lea r8, [rip + 0x289]"
+    },
+    {
+      "addr": "0x1403a09e3",
+      "function": "0x1403a09c0",
+      "meaning": "worker creation path",
+      "bytes": "e8 88 e2 db ff",
+      "ida": "call sub_14015EC70",
+      "independentDecode": "call 0x14015ec70"
+    },
+    {
+      "addr": "0x1403a09ef",
+      "function": "0x1403a09c0",
+      "meaning": "completion registration",
+      "bytes": "4c 8d 0d 9a fd ff ff",
+      "ida": "lea r9, sub_1403A0790",
+      "independentDecode": "lea r9, [rip - 0x266]"
+    },
+    {
+      "addr": "0x1403a09fe",
+      "function": "0x1403a09c0",
+      "meaning": "scheduler registration",
+      "bytes": "e8 6d ed da ff",
+      "ida": "call sub_14014F770",
+      "independentDecode": "call 0x14014f770"
+    },
+    {
+      "addr": "0x14016ca0e",
+      "function": "0x14016c9d0",
+      "meaning": "actual CreateThread",
+      "bytes": "ff 15 5c e8 40 00",
+      "ida": "call cs:__imp_CreateThread",
+      "independentDecode": "call qword ptr [rip + 0x40e85c]"
+    },
+    {
+      "addr": "0x14015ed56",
+      "function": "0x14015ed20",
+      "meaning": "worker slot callback",
+      "bytes": "ff d0",
+      "ida": "call rax",
+      "independentDecode": "call rax"
+    },
+    {
+      "addr": "0x1403a6883",
+      "function": "0x1403a6840",
+      "meaning": "header profile mask",
+      "bytes": "80 e1 c0",
+      "ida": "and cl, 0C0h",
+      "independentDecode": "and cl, 0xc0"
+    },
+    {
+      "addr": "0x1403a6889",
+      "function": "0x1403a6840",
+      "meaning": "special profile exactly40",
+      "bytes": "80 f9 40",
+      "ida": "cmp cl, 40h ; '@'",
+      "independentDecode": "cmp cl, 0x40"
+    },
+    {
+      "addr": "0x1403a688c",
+      "function": "0x1403a6840",
+      "meaning": "other profiles ordinary",
+      "bytes": "75 20",
+      "ida": "jnz short loc_1403A68AE",
+      "independentDecode": "jne 0x1403a68ae"
+    },
+    {
+      "addr": "0x1403a6901",
+      "function": "0x1403a6840",
+      "meaning": "packed entry publication",
+      "bytes": "89 03",
+      "ida": "mov [rbx], eax",
+      "independentDecode": "mov dword ptr [rbx], eax"
+    },
+    {
+      "addr": "0x1403a6955",
+      "function": "0x1403a6840",
+      "meaning": "type9 constructor",
+      "bytes": "e8 c6 f5 e1 ff",
+      "ida": "call sub_1401C5F20",
+      "independentDecode": "call 0x1401c5f20"
+    },
+    {
+      "addr": "0x1401c5f20",
+      "function": "0x1401c5f20",
+      "meaning": "payload starts at144",
+      "bytes": "48 8d 91 90 00 00 00",
+      "ida": "lea rdx, [rcx+90h]",
+      "independentDecode": "lea rdx, [rcx + 0x90]"
+    },
+    {
+      "addr": "0x1401c3847",
+      "function": "0x1401c3840",
+      "meaning": "payload pointer field",
+      "bytes": "48 89 51 08",
+      "ida": "mov [rcx+8], rdx",
+      "independentDecode": "mov qword ptr [rcx + 8], rdx"
+    },
+    {
+      "addr": "0x1401d2629",
+      "function": "0x1401d2610",
+      "meaning": "Prototype0 vtable",
+      "bytes": "48 89 03",
+      "ida": "mov [rbx], rax",
+      "independentDecode": "mov qword ptr [rbx], rax"
+    },
+    {
+      "addr": "0x1401dafc5",
+      "function": "0x1401dafb0",
+      "meaning": "RAW vtable",
+      "bytes": "48 89 03",
+      "ida": "mov [rbx], rax",
+      "independentDecode": "mov qword ptr [rbx], rax"
+    },
+    {
+      "addr": "0x14039e02f",
+      "function": "0x14039e000",
+      "meaning": "existing node state reset",
+      "bytes": "c6 40 01 00",
+      "ida": "mov byte ptr [rax+1], 0",
+      "independentDecode": "mov byte ptr [rax + 1], 0"
+    },
+    {
+      "addr": "0x14039e128",
+      "function": "0x14039e000",
+      "meaning": "new node initialization",
+      "bytes": "44 89 30",
+      "ida": "mov [rax], r14d",
+      "independentDecode": "mov dword ptr [rax], r14d"
+    },
+    {
+      "addr": "0x14039e138",
+      "function": "0x14039e000",
+      "meaning": "new reservation extent",
+      "bytes": "48 89 70 50",
+      "ida": "mov [rax+50h], rsi",
+      "independentDecode": "mov qword ptr [rax + 0x50], rsi"
+    },
+    {
+      "addr": "0x14039ea6c",
+      "function": "0x14039e900",
+      "meaning": "child previous base",
+      "bytes": "48 89 43 60",
+      "ida": "mov [rbx+60h], rax",
+      "independentDecode": "mov qword ptr [rbx + 0x60], rax"
+    },
+    {
+      "addr": "0x14039ea70",
+      "function": "0x14039e900",
+      "meaning": "child current base",
+      "bytes": "48 89 43 58",
+      "ida": "mov [rbx+58h], rax",
+      "independentDecode": "mov qword ptr [rbx + 0x58], rax"
+    },
+    {
+      "addr": "0x14039eadd",
+      "function": "0x14039e900",
+      "meaning": "parent unlink",
+      "bytes": "e8 be f7 ff ff",
+      "ida": "call sub_14039E2A0",
+      "independentDecode": "call 0x14039e2a0"
+    }
+  ],
+  "noWordRefcountAccessBodies": [
+    "0x14039d590",
+    "0x14039e690"
+  ],
+  "scope": "Selected instruction anchors + full extent byte comparison; not native execution."
+}

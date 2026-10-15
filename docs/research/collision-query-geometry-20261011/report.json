@@ -1,0 +1,196 @@
+{
+  "schema": 1,
+  "Domain": "native",
+  "title": "Directed collision segment query and placement limits",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "scope": "Bounded original-byte study and synthetic instruction interpretation. No product change or safe-teleport approval.",
+  "claims": [
+    {
+      "addr": "0x140173b30",
+      "Finding": "Takes RCX=context, RDX=two float4 endpoints, R8=output float4, R9=output polygon WORD, and stack argument5=category. If context BYTE+229 is zero, transforms both input float4s by matrix+164; then constructs local origin and end-minus-start, forcing both stored W values to1. It collects candidates and tests triangle/quad polygons. Successful primitive points compete by strict XYZ squared distance below initial float32(1e14); equal distances keep the first. It always writes polygon FFFF on no selection and leaves caller point unchanged. On selection, optional matrix+100 transforms the chosen float4 and it returns AL=1. No t value is exported.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140173b30]",
+        "evidence.json#functions[addr=0x14018b4d0]",
+        "evidence.json#functions[addr=0x1401a8f20]",
+        "evidence.json#functions[addr=0x14013f900]",
+        "evidence.json#functions[addr=0x1401741c0]",
+        "model-results.json"
+      ],
+      "Limitations": "Only retained, readable tables and finite, coherent affine inverse/forward matrices justify treating the output as a world-segment point, subject to float32 rounding. There is no local inverse-pair or finite validation. Query success alone establishes neither actor clearance nor safe placement. Body was already captured in the earlier actor-query study; this is a fresh byte-identical capture with stronger whole-chain models."
+    },
+    {
+      "addr": "0x14018b4d0",
+      "Finding": "Uses XYZ dot products: dn=dot(normal,direction); ordered dn>=0 rejects. It computes t=(dot(normal,vertex0)-dot(normal,origin))/dn and rejects ordered t>1 or t<0. Otherwise it writes float32(origin+t*direction), forces output.W=1, then tests polygon edges. Endpoints0/1 are inclusive. Edge rejection returns false after writing that output. COMISS unordered behavior lets a NaN denominator/t pass these gates under masked exceptions.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14018b4d0]",
+        "evidence.json#functions[addr=0x140140200]",
+        "evidence.json#functions[addr=0x14013fcc0]",
+        "evidence.json#functions[addr=0x14013fce0]",
+        "evidence.json#functions[addr=0x14018b760]",
+        "model-results.json"
+      ],
+      "Limitations": "This primitive output is a temporary inside173B30. A NaN primitive result is not selected by the enclosing strict distance test. No normalized normal, finite validation or exception-mask guarantee is claimed. Reconfirmed earlier body; decompiler comparison spelling alone is insufficient for unordered behavior."
+    },
+    {
+      "addr": "0x14018b760",
+      "Finding": "For the3/4 vertex counts supplied by173B30, walks edges in orders[1,2,0] or[1,2,3,0]. For each, computes cross(point-vertex,nextVertex-vertex), then XYZ dot with normal, rejecting only ordered values greater than float32(0.01).",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14018b760]",
+        "evidence.json#functions[addr=0x140142120]",
+        "evidence.json#functions[addr=0x140140200]",
+        "model-results.json"
+      ],
+      "Limitations": "This is an oriented edge test with an absolute normal-dependent tolerance, not an orientation-independent inside test. The helper itself does not bound arbitrary vertex counts; the query supplies3/4. NaN edge values do not take the JA rejection under masked exceptions. Prior body reused."
+    },
+    {
+      "addr": "0x14013f900",
+      "Finding": "Multiplies each output component by all four input components using scalar float32 multiply/adds and returns the output pointer. Translation therefore depends on input W; output W is computed and no homogeneous division is performed.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14013f900]",
+        "model-results.json"
+      ],
+      "Limitations": "Only this multiplication and its use in173B30 are established. The code does not prove that context matrices form an affine inverse pair; synthetic inconsistent-pair and W cases intentionally demonstrate the missing premise. Prior body reused."
+    },
+    {
+      "addr": "0x140184970",
+      "Finding": "Reads a signed DWORD quantization index and uses it directly in two four-float tables: margins[1,10,20,100], scales[1,0.1,0.05,0.01]. It expands lower/upper float bounds, optionally scales for nonzero index, follows asymmetric conversion-limit branches, truncates via CVTTSS2SI and writes only low16 bits.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140184970]"
+      ],
+      "Limitations": "The native body receives neither table-index bounds nor a finite/representable-coordinate proof. This reconfirms the earlier quantization finding; it is not a general saturating AABB encoder. New models run ordinary finite index0 as part of full queries, not all float32 values."
+    },
+    {
+      "addr": "0x1401741c0",
+      "Finding": "Traverses32-byte nodes,20-byte leaves and16-byte polygon records with inclusive signed16 AABB overlap and shared context filter/category checks. Leaf and polygon index ranges come directly from WORD fields. An accepted candidate is appended only while count<1023; reaching that cap returns from the current invocation. Child WORD FFFF terminates children; other child WORDs are sign-extended, recursively used as node indices, with at most8 child slots per node and no local cycle/depth/index validation.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401741c0]",
+        "evidence.json#functions[addr=0x1401842d0]",
+        "model-results.json"
+      ],
+      "Limitations": "The cap is on accepted candidates, not true geometric hits. A complete query model shows a missed sole hit at candidate1024, with the same polygon hitting when isolated. Negative-child/self-cycle cases stop in fixture memory/depth guards; they are not native protections or demonstrated retail crashes. Earlier traversal finding is strengthened by whole-query consequence."
+    },
+    {
+      "addr": "0x140163fc0",
+      "Finding": "The already-captured moving-list query overwrites its output point, the mutable input segment endpoint, polygon and borrowed node on each accepted173B30 result. It changes shared context filters before testing.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140163fc0]",
+        "evidence.json#functions[addr=0x140173b30]",
+        "evidence.json#functions[addr=0x1401745c0]",
+        "model-results.json"
+      ],
+      "Limitations": "Calling this shortening requires each result to lie on the current segment; the present query models establish the finite/coherent-matrix premise and counterexamples, not actual node transform ownership. Combined-wrapper models use an explicitly disclosed effect stub for this moving-list function. Encoded-pointer lifetime/decoder and predicate dependencies are not fully modeled."
+    },
+    {
+      "addr": "0x140171090",
+      "Finding": "Initializes output node=NULL, runs moving query163FC0, copies its polygon result, then runs static ABD448 through173B30 with zero shared filters and the same possibly changed segment. A static hit replaces polygon and point and resets node=NULL; a static miss returns the prior moving boolean and preserves its output.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140171090]",
+        "evidence.json#functions[addr=0x140163fc0]",
+        "evidence.json#functions[addr=0x140173b30]",
+        "model-results.json"
+      ],
+      "Limitations": "Under the segment-hit premise, a static hit at the already shortened endpoint is accepted and therefore wins an equal-location moving/static tie. Synthetic caller models run the complete static chain but stub moving-list effects. Global wrapper/resource lifetime and NULL safety are not supplied."
+    },
+    {
+      "addr": "0x140171160",
+      "Finding": "Calls moving query163FC0 before static173B30 with zero filters and the same mutable segment, then returns bitwise OR of both booleans. Polygon/node are local scratch outputs.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140171160]",
+        "evidence.json#functions[addr=0x140163fc0]",
+        "evidence.json#functions[addr=0x140173b30]"
+      ],
+      "Limitations": "This wrapper shares171090 ordering but does not export hit identity. No actor volume, lease, or unchanged shared-context guarantee follows."
+    },
+    {
+      "addr": "0x140171210",
+      "Finding": "Sets output node=NULL. If global ABD450 is NULL it returns false. Otherwise it queries category15 with zero filters; only success copies its local polygon WORD into caller polygon. On a miss the caller polygon and point are left unchanged.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140171210]",
+        "evidence.json#functions[addr=0x140173b30]"
+      ],
+      "Limitations": "Unlike173B30, this wrapper does not guarantee caller polygon=FFFF on failure. The global NULL test is not a generation/lifetime guarantee."
+    },
+    {
+      "addr": "0x1401712b0",
+      "Finding": "Runs moving then static queries with mask=value512, mode0 and category15, returning OR of the booleans. Original ASM preserves full64-bit segment/output pointers in RSI/RDI and RCX/RDX.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401712b0]",
+        "evidence.json#functions[addr=0x140163fc0]",
+        "evidence.json#functions[addr=0x140173b30]"
+      ],
+      "Limitations": "The decompiler displays narrowing casts for pointers here; those casts are not the ABI. No permission to call with stale graph or wrapper pointers is established."
+    },
+    {
+      "addr": "0x140171030",
+      "Finding": "Uses global ABD448, writes shared filter(mask15,value4,mode1,bypass1), then calls173B30 with caller category and a local polygon output.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140171030]",
+        "evidence.json#functions[addr=0x1401745c0]",
+        "evidence.json#functions[addr=0x140173b30]"
+      ],
+      "Limitations": "Filter state is changed in the shared wrapper. No snapshot or NULL/lifetime guard is present in this short wrapper. Its category and orientation behavior are not a general floor predicate."
+    },
+    {
+      "addr": "0x140171350",
+      "Finding": "Writes zero shared filters on ABD448 and forwards segment, point, polygon and category to173B30. The related1713C0 uses the same zero-filter route with a local discarded polygon.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140171350]",
+        "evidence.json#functions[addr=0x1401713c0]",
+        "evidence.json#functions[addr=0x1401745c0]",
+        "evidence.json#functions[addr=0x140173b30]"
+      ],
+      "Limitations": "This is forwarding, not validation or resource acquisition. Complete1713C0 is support evidence rather than an additional semantic-coverage claim."
+    },
+    {
+      "addr": "0x140171420",
+      "Finding": "Writes shared filter(mask15,value=argument4,mode0,bypass0) on ABD448, then tail-jumps to173B30 with category=argument5.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140171420]",
+        "evidence.json#functions[addr=0x1401745c0]",
+        "evidence.json#functions[addr=0x140173b30]"
+      ],
+      "Limitations": "The tail JMP is present in ASM even though a call-only graph can omit it. No ownership or all-caller closure is inferred."
+    },
+    {
+      "addr": "0x14040c2b0",
+      "Finding": "Copies start/end to local float4s and explicitly forces both W=1. It initializes result DWORD+20=-1. Flag bit16 chooses combined171090 and passes low16 bits as category; otherwise it uses static171350 with the full DWORD flag/category and sets result node+24=NULL. Only a true query result replaces result+20 by the returned WORD polygon. It returns whether result+20!=-1.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040c2b0]",
+        "evidence.json#functions[addr=0x140171090]",
+        "evidence.json#functions[addr=0x140171350]",
+        "model-results.json"
+      ],
+      "Limitations": "Output float4 at result+0 can remain stale after a miss; consumers must use the returned boolean/sentinel. W normalization addresses one input premise but does not validate matrix pairs, resources, candidates, slope or body clearance."
+    },
+    {
+      "addr": "0x1403f3cc0",
+      "Finding": "Takes RCX=input point, RDX=output point, R8D=category. Builds a vertical segment from input.Y-50 to input.Y+100, copying input W into both endpoints, then calls171030. On failure copies the original input point to output and returns false.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403f3cc0]",
+        "evidence.json#functions[addr=0x140171030]",
+        "model-results.json"
+      ],
+      "Limitations": "A usable-looking fallback coordinate is not a collision hit. This is a directed vertical probe under its native filter; without its caller context it is not a general floor/placement API."
+    },
+    {
+      "addr": "0x1403d0bb0",
+      "Finding": "The selected actor path requires resource BYTE+18 mask0x01 and accepts only its documented actor-flag branch. It queries combined category4 using copied endpoints with W=1. On failure and nonzero resource BYTE+40, retries from the original end point to that point plus the unsigned byte in Y, again W=1. A hit calls3D1960 with actor, polygon, hit point and address of node result.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d0bb0]",
+        "evidence.json#functions[addr=0x140171090]"
+      ],
+      "Limitations": "Only this local gating/probe/call order is claimed. Callee3D1960 is not captured here; neither its mutation semantics nor whole Actor lifetime, placement suitability or complete movement behavior is established."
+    }
+  ],
+  "supportOnly": [
+    "0x1401713c0"
+  ],
+  "openDependencies": [
+    "Actual retained BAR/table extent and generation handoff during a query",
+    "Writer closure for both matrices and current moving-node context; consistent affine inverse relationship",
+    "Volume/clearance, actor radii, slope/category policy and transform cache ordering",
+    "3D1960 mutation contract and relevant higher-level consumers",
+    "Full moving-list decoder/predicate/retirement and asynchronous access closure"
+  ],
+  "novelty": "13 fresh complete captures include2 byte-identical bodies already in actor-query-collision-20261008;18 additional bodies are explicitly reused. Fresh captures are not13 newly discovered functions. Earlier category/quantization/traversal findings are retained; new work closes point-construction and concrete combined/higher caller behavior and adds full-query counterexamples."
+}

@@ -1,0 +1,128 @@
+{
+  "status": "ACCEPTED",
+  "findings": [],
+  "scope": "Source-only actor contact diagnostic slots 493..498, native gate preservation, no new traversal or game calls; no package/release approval.",
+  "baseline": {
+    "path": "artifacts/packages/KH2_Trainer_v0.12.22/Source.zip",
+    "sha256": "788f1d44b495ab507d32d5e2f28b5561f4d5b33a6a69e1bfd1def9f75c588498"
+  },
+  "sourcePins": [
+    {
+      "path": "src/KH2Trainer.Bridge/GameplayStateSupport.inl",
+      "bytes": 47024,
+      "sha256": "57f22229efda62376425053958c7e8545e40733dc19dfbbbac9735b12f5aa7a0"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/CombatFeatures.inl",
+      "bytes": 10193,
+      "sha256": "049b2d2ead335549d63facaf2aca5ebe542845c10a69fa925f2ba71a9f02a127"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/TrainerBridge.cpp",
+      "bytes": 47752,
+      "sha256": "e7ef4f1faf37f56b087aa60768b7ebc62626161ac6e9d812eaf2ec156c2733bd"
+    },
+    {
+      "path": "src/KH2Trainer.Bridge/DamageTuningFeatures.inl",
+      "bytes": 3627,
+      "sha256": "6de4c05f2377875566cbfe7261f81b407fc2448b9589023bb7c26dcda5c8821c"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/ActorContactDiagnosticsTests.cpp",
+      "bytes": 13747,
+      "sha256": "289592152e6e3e2dc0f0b651c3878ffb635cf47ccd0b31f039a1a095d768e34c"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/run-tests.ps1",
+      "bytes": 8439,
+      "sha256": "527b7098cdd250346a35d4e8ad823a9401e407e1bfbfdabe8a26f2f9cc3014a7"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/CombatGuardTests.cpp",
+      "bytes": 41855,
+      "sha256": "83b8c8cac51ff9489da2a12e643d088af5af448e3cab74c32319b2351bd006b6"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/GameplayStateGuardTests.cpp",
+      "bytes": 19022,
+      "sha256": "ec82370655946719f2be7d2111b3f0e5f25e86deb967625ee61c2f79a3e8908d"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/PlayerBridgeTests.cpp",
+      "bytes": 54295,
+      "sha256": "27fc637970bd7667760d86a9fefba26fa459d5b1b9684c676477fe4eb8aa3816"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/GummiRequestBridgeTests.cpp",
+      "bytes": 6328,
+      "sha256": "04ac2a39ff15a64d55e928abd94d4230b08d7c2702de289a0ab1a05b12d65322"
+    },
+    {
+      "path": "tests/KH2Trainer.Bridge.Tests/TrainerPerformanceTests.cpp",
+      "bytes": 10590,
+      "sha256": "79a3de63344f3f49cf37c4c70340396a7b56e7ce97cac7457615cae5122e39ba"
+    },
+    {
+      "path": "src/KH2Trainer/Data/features.json",
+      "bytes": 419876,
+      "sha256": "2d3821d6e2c70642fbd370bc22cc819b23c7c99a9ac60f1f233aa8be08efd723"
+    }
+  ],
+  "unchangedNativeFunctions": [
+    "bool PhaseReady(",
+    "bool HostFresh(",
+    "bool PlayerReady(",
+    "bool Listed(",
+    "bool CombatHandle(",
+    "void CombatTick(",
+    "void CombatReset("
+  ],
+  "existingGameplayInspectionUnchanged": true,
+  "trainerFrameAndDamageTuningUnchanged": true,
+  "catalogOnlySixReadoutsAdded": true,
+  "tests": [
+    {
+      "suite": "ActorContactDiagnosticsTests",
+      "checks": 122,
+      "failures": 0,
+      "path": "logs/native-ActorContactDiagnosticsTests.txt",
+      "sha256": "9f8b6166d5e4b20c9693081793324df681555ea22aec94b71774adc88c821a31"
+    },
+    {
+      "suite": "CombatGuardTests",
+      "checks": 2333,
+      "failures": 0,
+      "path": "logs/native-CombatGuardTests.txt",
+      "sha256": "9c53e32ef380b2cd3d0c656e1ac4de0e2532480036aee051caaeb1edfac52aa0"
+    },
+    {
+      "suite": "GameplayStateGuardTests",
+      "checks": 1066,
+      "failures": 0,
+      "path": "logs/native-GameplayStateGuardTests.txt",
+      "sha256": "1e53b1221761a792726292d2948f0d224923a656c932c70aa7b5b9f079e96b65"
+    },
+    {
+      "suite": "TrainerPerformanceTests",
+      "checks": 29,
+      "failures": 0,
+      "path": "logs/native-TrainerPerformanceTests.txt",
+      "sha256": "20786f71b7007e0f13937dbdc56610a57ad8dd5510048ebd2b1185fcb871d831"
+    }
+  ],
+  "independentlyRunChecks": 3550,
+  "manualConclusions": [
+    "Sora readouts reuse the successful current gameplay identity check and reject loading/transition/no-player; counter and flags are within its validated Actor span.",
+    "Target readouts reuse one complete bounded active-list/lock/status observation. Read-only retirement and zero HP do not admit action paths.",
+    "GetTarget retains the conjunction of the previous validation terms through ObserveTarget plus TargetActionReady; CombatHandle and DamageTuning call sites are unchanged.",
+    "No native counter predicate, VM dispatch, retained Actor, lifetime hook or game-memory store is added; only shared snapshot values/capabilities are written.",
+    "UInt32 values fit exactly in the double snapshot. Absent observations remain invalid after the existing publication clear.",
+    "New tests execute compiled bridge code against synthetic read-only/non-executable memory; they do not execute native game bodies."
+  ],
+  "limits": [
+    "Synthetic tests and source review, no live game/UI/Twitch test.",
+    "Performance suite and tail-query counters prove their bounded fixtures; no user-machine FPS guarantee.",
+    "The new source-only diagnostic work is separate from delivered v0.12.22 packages.",
+    "Independent managed build/UI execution and full next-release build are outside this native review."
+  ]
+}

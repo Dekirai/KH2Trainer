@@ -1,0 +1,188 @@
+"""Independent original-byte review with a limited Python x86 integer interpreter.
+External calls have explicit synthetic results; this never executes native code.
+"""
+import argparse,hashlib,json,struct,subprocess,sys
+from pathlib import Path
+from capstone import Cs,CS_ARCH_X86,CS_MODE_64
+from capstone.x86 import X86_OP_REG,X86_OP_IMM,X86_OP_MEM
+HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[1]
+STUDY=ROOT/'artifacts/audio-request-producers-20261011'
+BASE=0x140000000;PIN='6606e9232c1b7cf221f42ed77256399b713dea2c37628b3f682fb73667e529e0'
+def load(p):return json.loads(p.read_text(encoding='utf-8-sig'))
+def sha(b):return hashlib.sha256(b).hexdigest()
+checks=0
+def check(x,label):
+ global checks
+ checks+=1
+ if not x:raise AssertionError(label)
+def signed(n,bits):return (n+(1<<(bits-1)))%(1<<bits)-(1<<(bits-1))
+raw=Path(r'E:\SteamLibrary\steamapps\common\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-\KINGDOM HEARTS II FINAL MIX.exe').read_bytes()
+check(sha(raw)=='9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed','original SHA')
+pe=struct.unpack_from('<I',raw,60)[0];opt=pe+24
+check(raw[pe:pe+4]==b'PE\0\0' and struct.unpack_from('<Q',raw,opt+24)[0]==BASE,'PE64 base')
+sec=opt+struct.unpack_from('<H',raw,pe+20)[0]
+sections=[struct.unpack_from('<III',raw,sec+40*i+12) for i in range(struct.unpack_from('<H',raw,pe+6)[0])]
+def read(a,n):
+ for va,size,ptr in sections:
+  if va<=a-BASE and a-BASE+n<=va+size:return raw[ptr+a-BASE-va:ptr+a-BASE-va+n]
+ raise AssertionError(('nonfile span',hex(a),n))
+check(sha((STUDY/'manifest.json').read_bytes())==PIN,'study pin')
+pins=load(STUDY/'manifest.json')['files']
+check(set(pins)=={p.name for p in STUDY.iterdir() if p.is_file() and p.name!='manifest.json'},'exact members')
+for name,pin in pins.items():
+ b=(STUDY/name).read_bytes();check(len(b)==pin['bytes'] and sha(b)==pin['sha256'],'member '+name)
+c=load(STUDY/'capture.json');cs=Cs(CS_ARCH_X86,CS_MODE_64);cs.detail=True
+ins={};spans={}
+for region in c['bytes']['result']:
+ a=int(region['addr'],16);b=bytes(int(t,16) for t in region['data'].split());check(read(a,len(b))==b,'original span')
+ spans[a]=len(b);items=list(cs.disasm(b,a));check(sum(i.size for i in items)==len(b),'complete decode')
+ for i in items:
+  if i.address in ins:check(ins[i.address].bytes==i.bytes,'overlap identical')
+  ins[i.address]=i
+for f in c['functions']:
+ a=int(f['addr'],16);expected=list(range(0))
+ chunks=[a]+([BASE+0x1e0880] if a==BASE+0x1dc5b0 else [])
+ expected=[i.address for start in chunks for i in cs.disasm(read(start,spans[start]),start)]
+ rows=f['disassembly']['asm']['lines'];check(expected==[int(r['addr'],16) for r in rows],'IDA full boundary list')
+ check(len(rows)==f['disassembly']['instruction_count']==f['disassembly']['total_instructions'] and f['disassembly']['cursor']=={'done':True},'complete capture')
+ for r in rows:check(int(r['addr'],16) in ins,'row decoded')
+
+class Machine:
+ """Subset needed by captured producers and two selective cancelers only."""
+ def __init__(self,allocator=True,resolver=9,head='request'):
+  self.reg={};self.mem={};self.z=False;self.less=False;self.unsigned_less=False;self.calls=[];self.steps=0
+  self.request=0x300000;self.source=0x400000;self.other=0x500000;self.stack=0x100000
+  self.allocator=allocator;self.resolver=resolver;self.head=head;self.handle=0x87654321
+  for lo,n in [(self.stack-512,1024),(self.request,128),(self.source,16),(self.other,128),(BASE+0xad93b0,8)]:
+   for a in range(lo,lo+n):self.mem[a]=0
+  self.put(self.source,16,int.from_bytes(bytes(range(16)),'little'))
+  self.reg['rsp']=self.stack
+  self.put(BASE+0xad93b0,8,{'request':self.request,'empty':0,'other':self.other}[head])
+ @staticmethod
+ def alias(name):
+  aliases={'al':('rax',8),'ax':('rax',16),'eax':('rax',32),'bl':('rbx',8),'bx':('rbx',16),'ebx':('rbx',32),'cl':('rcx',8),'cx':('rcx',16),'ecx':('rcx',32),'dl':('rdx',8),'dx':('rdx',16),'edx':('rdx',32),'sil':('rsi',8),'si':('rsi',16),'esi':('rsi',32),'dil':('rdi',8),'di':('rdi',16),'edi':('rdi',32),'bpl':('rbp',8),'bp':('rbp',16),'ebp':('rbp',32),'esp':('rsp',32)}
+  if name in aliases:return aliases[name]
+  if name.startswith('r') and name[-1:] in ['d','w','b'] and name[1:-1].isdigit():return name[:-1],{'d':32,'w':16,'b':8}[name[-1]]
+  return name,64
+ def getreg(self,name):
+  root,bits=self.alias(name);return self.reg.get(root,0)&((1<<bits)-1)
+ def setreg(self,name,v):
+  root,bits=self.alias(name);v&=(1<<bits)-1
+  self.reg[root]=v if bits>=32 else (self.reg.get(root,0)&~((1<<bits)-1))|v
+ def get(self,a,n):
+  if any(a+x not in self.mem for x in range(n)):raise AssertionError(('unmodeled memory read',hex(a),n))
+  return sum(self.mem[a+x]<<(8*x) for x in range(n))
+ def put(self,a,n,v):
+  if any(a+x not in self.mem for x in range(n)):raise AssertionError(('unmodeled memory write',hex(a),n))
+  for x in range(n):self.mem[a+x]=(v>>(8*x))&255
+ def address(self,o,i):
+  b=i.address+i.size if o.mem.base and i.reg_name(o.mem.base)=='rip' else self.getreg(i.reg_name(o.mem.base)) if o.mem.base else 0
+  return (b+(self.getreg(i.reg_name(o.mem.index))*o.mem.scale if o.mem.index else 0)+o.mem.disp)&((1<<64)-1)
+ def value(self,o,i):
+  if o.type==X86_OP_REG:return self.getreg(i.reg_name(o.reg))
+  if o.type==X86_OP_IMM:return o.imm
+  if o.type==X86_OP_MEM:return self.get(self.address(o,i),o.size)
+  raise AssertionError('operand')
+ def assign(self,o,v,i):
+  if o.type==X86_OP_REG:self.setreg(i.reg_name(o.reg),v)
+  elif o.type==X86_OP_MEM:self.put(self.address(o,i),o.size,v)
+  else:raise AssertionError('destination')
+ def call(self,target):
+  args=[self.getreg(x) for x in ['rcx','rdx','r8']];self.calls.append((target,args))
+  if target==BASE+0x1dd510:result=self.request if self.allocator else 0
+  elif target==BASE+0x1deb50:
+   check(args[0]==self.request,'initializer receiver');self.put(self.request+20,4,self.handle);self.put(self.request+52,1,1);self.put(self.request+53,1,args[2]);result=0
+  elif target==BASE+0x1dc5b0:result=self.resolver&0xffffffff
+  elif target==BASE+0x1a8e60:
+   check(args[:2]==[self.request,self.source],'copy operands');self.put(args[0],16,self.get(args[1],16));result=0
+  elif target==BASE+0x4ad270:
+   check(args[0]==0,'synthetic other node has null next');result=0
+  elif target==BASE+0x1de320:
+   check(args[:2]==[self.request,1],'selective cancel args');result=0
+  else:raise AssertionError(('unmodeled call',hex(target)))
+  for r in ['rcx','rdx','r8','r9','r10','r11']:self.reg[r]=0x555a1f2345
+  self.reg['rax']=result
+ def run(self,addr):
+  pc=addr
+  for _ in range(300):
+   i=ins[pc];self.steps+=1;m=i.mnemonic;o=i.operands;nxt=pc+i.size
+   if m=='ret':
+    check(self.reg['rsp']==self.stack,'balanced synthetic stack');return self.getreg('rax')
+   elif m=='push':self.reg['rsp']-=8;self.put(self.reg['rsp'],8,self.value(o[0],i))
+   elif m=='pop':self.assign(o[0],self.get(self.reg['rsp'],8),i);self.reg['rsp']+=8
+   elif m in ['mov','movzx']:self.assign(o[0],self.value(o[1],i),i)
+   elif m in ['movsxd','movsx']:self.assign(o[0],signed(self.value(o[1],i),8*o[1].size),i)
+   elif m=='lea':self.assign(o[0],self.address(o[1],i),i)
+   elif m in ['cmp','test']:
+    bits=o[0].size*8;a=self.value(o[0],i)&((1<<bits)-1);b=self.value(o[1],i)&((1<<bits)-1)
+    self.z=(a==b) if m=='cmp' else (a&b)==0
+    self.less=(signed(a,bits)<signed(b,bits)) if m=='cmp' else signed(a&b,bits)<0
+    self.unsigned_less=a<b if m=='cmp' else False
+   elif m in ['add','sub','xor','or','and','sar','shr']:
+    a=self.value(o[0],i);b=self.value(o[1],i);bits=o[0].size*8
+    v={'add':lambda:a+b,'sub':lambda:a-b,'xor':lambda:a^b,'or':lambda:a|b,'and':lambda:a&b,'sar':lambda:signed(a,bits)>>(b&31),'shr':lambda:a>>(b&31)}[m]()
+    self.assign(o[0],v,i)
+    if m in ['xor','or','and']:self.z=(v&((1<<bits)-1))==0;self.less=signed(v,bits)<0;self.unsigned_less=False
+   elif m=='imul':
+    if len(o)==1:
+     v=signed(self.getreg('eax'),32)*signed(self.value(o[0],i),32);self.setreg('eax',v);self.setreg('edx',v>>32)
+    elif len(o)==3:self.assign(o[0],self.value(o[1],i)*self.value(o[2],i),i)
+    else:raise AssertionError('imul form')
+   elif m=='call':self.call(self.value(o[0],i))
+   elif m in ['jmp','je','jne','jl','jg','jb']:
+    take={'jmp':True,'je':self.z,'jne':not self.z,'jl':self.less,'jg':not self.z and not self.less,'jb':self.unsigned_less}[m]
+    if take:nxt=self.value(o[0],i)
+   elif m=='nop':pass
+   else:raise AssertionError(('instruction not modeled',hex(pc),m,i.op_str))
+   pc=nxt
+  raise AssertionError('bounded interpreter step limit')
+
+traces=[];total_steps=0
+for rva,kind,flag in [(0x1ddde0,2,0),(0x1dde80,3,1),(0x1de010,4,0),(0x1de0c0,1,1),(0x1de150,0,1)]:
+ ids=[-2147483648,-1,0,1,999,1000,1001,999999,2147483647]
+ for sound in ids:
+  cases=[(False,9,4,'request')]+[(True,resolver,explicit,head) for resolver,explicit in [(9,4),(-1,4),(9,-1),(-1,-2),(2147483647,-2147483648)] for head in (['request','empty','other'] if kind==0 else ['request'])]
+  for admitted,resolver,explicit,head in cases:
+   m=Machine(admitted,resolver,head);m.setreg('ecx',sound);m.setreg('rdx',m.source if kind==0 else explicit);m.setreg('r8d',0xfedcba98)
+   returned=m.run(BASE+rva);total_steps+=m.steps
+   if sound<=0:check(returned==0 and not m.calls,'nonpositive rejects before allocation')
+   elif not admitted:check(returned==0 and [x[0] for x in m.calls]==[BASE+0x1dd510],'allocation failure has no setup')
+   else:
+    check(returned==m.handle,'handle returned even after mark-state3')
+    init=next(x for x in m.calls if x[0]==BASE+0x1deb50);check(init[1]==[m.request,flag,kind],'type/flag dispatch')
+    lookup=next(x for x in m.calls if x[0]==BASE+0x1dc5b0);check(lookup[1][0]==sound//1000,'resolver quotient')
+    bank=explicit if kind in [2,4] else resolver
+    check(signed(m.get(m.request+24,8),64)==bank,'bank result source and sign extension')
+    check(m.get(m.request+16,4)==sound%1000 and m.get(m.request+46,2)==0,'local ID/reset word')
+    check(m.get(m.request+52,1)==(3 if bank==-1 else 1),'exact -1 sentinel')
+    if kind==4:check(m.get(m.request+50,2)==0xba98,'low16 parameter')
+    if kind==0:check(bytes(m.mem[m.request+i] for i in range(16))==bytes(range(12))+struct.pack('<I',0x3f800000),'copy then overwrite W including list miss')
+   traces.append(dict(group='producer',rva=hex(rva),id=sound,admitted=admitted,resolver=resolver,explicit=explicit,head=head,returned=returned,steps=m.steps))
+for rva in [0x1de550,0x1de4a0]:
+ for typ in range(256):
+  for same in [False,True]:
+   m=Machine();m.setreg('ecx',-2);m.put(m.request+24,8,-2 if same else 2);m.put(m.request+53,1,typ)
+   m.run(BASE+rva);total_steps+=m.steps
+   cancel=[x for x in m.calls if x[0]==BASE+0x1de320]
+   expected=same and (typ<=4 if rva==0x1de550 else typ==5)
+   check(len(cancel)==int(expected),'all-byte selective cancellation predicate')
+   traces.append(dict(group='cancel_filter',rva=hex(rva),type=typ,matchingBank=same,calls=len(cancel),steps=m.steps))
+# Execute the actual four-load/store helper over fixed overlapping witnesses.
+# The producer model above supplies distinct source/destination allocations.
+for delta,expected in [(-16,[55,66,77,88]),(-4,[55,66,77,88]),(0,[55,66,77,88]),(4,[55,55,55,55]),(8,[55,66,55,66]),(12,[55,66,77,55]),(16,[55,66,77,88])]:
+ m=Machine();src=m.request+16;dst=src+delta
+ for n in range(20):m.put(m.request+4*n,4,11*(n+1))
+ m.setreg('rcx',dst);m.setreg('rdx',src);returned=m.run(BASE+0x1a8e60);total_steps+=m.steps
+ actual=[m.get(dst+4*n,4) for n in range(4)]
+ check(returned==dst and actual==expected,'copy helper overlap witness')
+ traces.append(dict(group='copy_overlap',delta=delta,words=actual,steps=m.steps))
+receipt=dict(status='PASS',studyManifestSha256=PIN,originalSha256=sha(raw),checks=checks,uniqueDecodedInstructions=len(ins),capturedSpans=len(spans),syntheticTraces=len(traces),interpretedInstructions=total_steps,productChanged=False,gameExecution=False,claimsReviewed=23,issues=[],limits=['Whole-function producer traces use synthetic allocator/setup/resolver/copy/list-decoder/cancel call contracts. No native code, pool integrity, backend success or lifetime is executed or proven.','Cancellation tests verify selected call predicates under a finite stable synthetic list; actual cancellation mutation and list synchronization are outside these traces.','Manual review covers dispatcher state changes, reset call order, stub bodies, first-match resolver and loader branches against original decoded instructions. Full callee semantics and all writers remain open.'])
+ap=argparse.ArgumentParser();ap.add_argument('--write',action='store_true');args=ap.parse_args()
+result=HERE/'review.json';model_file=HERE/'traces.json'
+if args.write:
+ model_file.write_text(json.dumps(dict(scope=receipt['limits'],traces=traces),indent=2)+'\n',encoding='utf-8')
+ receipt['traceSha256']=sha(model_file.read_bytes());receipt['reviewScriptSha256']=sha(Path(__file__).read_bytes())
+ result.write_text(json.dumps(receipt,indent=2)+'\n',encoding='utf-8')
+else:
+ old=load(result);receipt['traceSha256']=sha(model_file.read_bytes());receipt['reviewScriptSha256']=sha(Path(__file__).read_bytes());check(old==receipt,'repeatable review receipt')
+print(json.dumps(receipt,sort_keys=True))

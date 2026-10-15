@@ -1,0 +1,69 @@
+from pathlib import Path
+import hashlib, json, shutil, subprocess, sys
+
+H=Path(__file__).resolve().parent
+R=next(p for p in H.parents if (p/'Directory.Build.props').exists())
+S=R/'artifacts/stitch-action-initialization-20261011'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def load(p):return json.loads(p.read_bytes())
+pin='c37d474328de592fac178b1ac419ca42906b921f491ed4624efd6e121c19cf6e'
+assert sha(S/'manifest.json')==pin
+manifest=load(S/'manifest.json')
+expected={x['path'] for x in manifest['files']}
+actual={p.relative_to(S).as_posix() for p in S.rglob('*') if p.is_file() and p!=S/'manifest.json' and not any(part in ('bin','obj','__pycache__') for part in p.relative_to(S).parts)}
+assert len(expected)==len(manifest['files'])==31 and expected==actual
+for row in manifest['files']:
+    p=S/row['path'];assert p.stat().st_size==row['length'] and sha(p)==row['sha256']
+author=load(H/'author-verifier.txt');assert author['status']=='PASS' and author['checks']==11300
+checks=load(H/'checks.json');assert checks['status']=='PASS bounded independent checks' and checks['checks']==943
+for path,digest in checks['inputs'].items():assert sha(R/path)==digest
+retail=load(H/'retail-reproduction.json');assert retail['status']=='PASS' and retail['byteEquality'] and retail['decodedLength']==401568
+for p in load(S/'provenance.json')['sourcePins']:assert sha(R/p['path'])==p['sha256']
+# A small independent negative fixture proves nested manifest.json is visible.
+# Only the author's exact freezer is reused; no study/source file is modified.
+F=H/'freeze-negative-fixture';F.mkdir(exist_ok=True)
+# Remove only this test's previously generated probe before rebuilding baseline.
+(F/'nested'/'manifest.json').unlink(missing_ok=True)
+shutil.copyfile(S/'freeze.py',F/'freeze.py')
+(F/'sample.txt').write_text('A bounded integrity fixture.\n',encoding='utf-8')
+baseline=subprocess.run([sys.executable,'-B',str(F/'freeze.py')],capture_output=True,text=True)
+assert baseline.returncode==0
+valid=subprocess.run([sys.executable,'-B',str(F/'freeze.py'),'--check'],capture_output=True,text=True)
+assert valid.returncode==0
+(F/'nested').mkdir(exist_ok=True)
+(F/'nested'/'manifest.json').write_text('{}\n',encoding='utf-8')
+unexpected=subprocess.run([sys.executable,'-B',str(F/'freeze.py'),'--check'],capture_output=True,text=True)
+assert unexpected.returncode!=0
+negative={'status':'PASS','freezerSha256':sha(F/'freeze.py'),'baselineExit':valid.returncode,'unexpectedNestedManifestExit':unexpected.returncode,'stderr':unexpected.stderr,'scope':'Synthetic independent fixture only; unexpected nested manifest must invalidate exact file set.'}
+(H/'freeze-negative-result.json').write_text(json.dumps(negative,indent=2)+'\n',encoding='utf-8')
+pins=[H/'review_checks.py',H/'checks.json',H/'RetailWitness.cs',H/'RetailWitness.csproj',H/'retail-reproduction.json',H/'author-verifier.txt',H/'freeze-negative-result.json',S/'manifest.json',S/'report.json',S/'evidence.json',S/'dependencies.json',S/'script-evidence.json',S/'retail.json',S/'external-contract.json']
+receipt={
+ 'status':'PASS','decision':'Accepted within the explicit static-evidence scope; no unresolved review blocker.',
+ 'reviewedStudy':'artifacts/stitch-action-initialization-20261011','reviewedManifestSha256':pin,'exactManifestMembers':31,
+ 'independentChecks':943,'initializerSpecimens':1,'freshRecordedInstructionsChecked':209,
+ 'freshCompleteFunctions':2,'startupComplete':False,'boundedStartupCodeRangeBytes':136,
+ 'authorVerifier':{'checks':11300,'modelCases':2307,'interpretedInstructions':142573,'references':28,'status':'PASS reproduced once'},
+ 'retailReproduction':{'selectedPayloads':1,'decodedLength':401568,'sha256':retail['sha256'],'byteEquality':True,'codec':'Explicitly reused four current Core decoder sources, source pins verified; independent codec implementation not claimed'},
+ 'resolvedFindings':[
+  'Startup IDA omits original boundary439317 and interprets the second MOV byte as RET at439318. The whole function is complete:false; claims use the correct136-byte prefix, and the noncontiguous exception chunk plus uncovered instruction byte remain explicit.',
+  'The prior freeze.py excluded any basename manifest.json. Final freezer excludes only its own top-level manifest; an independent synthetic negative fixture rejects an unexpected nested manifest.'
+ ],
+ 'semanticReview':[
+  'Original 0096B0 initializes seven72-byte rows: functionQWORD+8 and DWORDs+16/+20/+24 form exact20-byte keys. One independently interpreted nonuniform stack specimen confirms these fields and shows copied stack bytes at+28; +28 is outside the lookup key.',
+  'The actual PE import descriptor identifies _initterm in api-ms-win-crt-runtime-l1-1-0.dll. Original startup prefix passes table57BCA8..584E18 after the state-zero and successful _initterm_e conditions; slot57D230 contains0096B0.',
+  'Twelve earlier native bodies are explicit dependencies. Lookup/constructor/callback claims stay conditional on their existing valid-context premises.',
+  'HED name hash, row coordinates and stored asset identity were checked independently. Fresh isolated Core decoding reproduces the complete selected payload byte-for-byte.',
+  'The exact pinned decoder reproduces all832 script instructions. Raw words independently identify five sites87/121/155/394/1041, selector2 offsets80/20 and action immediates525/526/527. Every reported syntactic event path was checked edge by edge.',
+  'Native trap argument collection decrements from argc-1 while popping, so the address/action pushes map to operands0/1. Selector2 resolves the decoded current-frame slot-zero pointer plus offset; the two wrappers/Actors are not assumed identical.'
+ ],
+ 'externalPremise':{'source':'https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/initterm-initterm-e?view=msvc-170','checked':'2026-10-11','scope':'Microsoft documents pointer-table bounds and skipping null entries. Loaded CRT code was not inspected or executed.'},
+ 'limits':[
+  'No process-entry guarantee, observed startup, live table state or caller/Actor identity.',
+  'Stored CFG paths permit conditional edges, native continuations and unmatched call-continuation possibilities; no feasible dynamic path or actual event invocation claim.',
+  'No game access, IDA worker start, IDB mutation, native game-code execution, allocator/resource lifetime, old-call drain, scale ownership or Tiny/Giant readiness proof.',
+  'No new broad model sweep; one independent initializer specimen plus reproduction of the existing author verifier.'
+ ],
+ 'pins':{str(p.relative_to(R)).replace('\\','/'):sha(p) for p in pins}
+}
+(H/'review.json').write_text(json.dumps(receipt,indent=2)+'\n',encoding='utf-8')
+print(json.dumps({'status':'PASS','manifest':pin,'reviewSha256':sha(H/'review.json'),'independentChecks':943,'authorChecks':11300,'members':31},indent=2))

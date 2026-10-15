@@ -1,0 +1,172 @@
+VOICE / ResourceEntry: lokale Abbaureihenfolge
+Stand: 11. Oktober 2026. Begrenzte statische Studie, unabhängiger Review ausstehend.
+
+Ergebnis
+--------
+Der geprüfte BTLNPC-Destruktor stoppt seinen Voice-Request, bevor er die drei
+lokalen Actor-Ressourcenreferenzen abgibt. Beim Verschieben eines vorhandenen BAR
+gibt es zusätzlich einen Stop-Durchlauf für Typ 34 vor dem Kopieren und einen
+weiteren am Ziel danach. Diese konkreten Reihenfolgen schließen einige zuvor
+offene Aufrufketten. Sie beweisen keine gemeinsame Lebensdauersicherung für
+ResourceEntry-Puffer, EE-Requests und die später freigegebene Audiobank.
+
+Eine weitere konkrete Kette führt vom Actor-Wechsel 3E90E0 über Ressourcenabbau
+39D010 und Battle-Voice-Austausch 3CD980 zur Freigabe eines ResourceEntry, dessen
+Bereich den alten Puffer enthält. Der Mode-0-Zweig wartet vorher auf die Abwesenheit
+des alten Actor-Zeigers in der Actorliste. Andere Modi haben andere Bedingungen.
+Listenabwesenheit allein beweist weder Backend-Ruhe noch Schutz gegen die spätere
+Wiederverwendung derselben Adresse.
+
+Aufnahme und Grenzen
+-------------------
+Original-EXE SHA256:
+9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed
+Imagebase: 0x140000000. Adressen unten sind RVAs.
+
+19 vollständige frische IDA-Aufnahmen, 3.837 Bytes und 1.011 Instruktionen.
+Die frischen Körper enthalten 146 Bytes hinter der letzten Instruktion:
+3A6120: zwei Bytes Alignment-NOP, acht DWORD-Sprungziele, 46 Case-Bytes;
+3A62B0: fünf DWORD-Sprungziele und 46 Case-Bytes. Diese Bytes werden vollständig
+mit der Originaldatei verglichen und die 92 Case-Ziele einzeln überprüft.
+Andere nicht abgedeckte Endbytes müssten explizite INT3-Paddingbytes sein.
+
+Fünf dieser 19 Körper stehen bereits in früheren Evidence-Dateien:
+12E100, 12EF30, 39D400, 39E690, 3A6120. Ihre erneute Aufnahme verknüpft die
+vorhandene Ressourcenanalyse mit den konkreten Voice-Stop-Pfaden. Sie sind keine
+fünf neuen semantischen Funktionen. Weitere 16 Körper werden ausdrücklich aus
+gepinnten früheren Studien übernommen und erneut an Originalbytes geprüft.
+Die Neuheitsprüfung in priorwork-inventory.json betrifft die untersuchten
+docs/research/*/evidence.json-Funktionslisten, keine weltweite Neuheitsbehauptung.
+
+Alle ASM- und Decompilerseiten der frischen Aufnahmen sind vollständig, einschließlich
+Cursor, Offsets und Anzahlen. Capstone prüft die Instruktionsgrenzen und Opcodes;
+140 ausgewählte Anker prüfen zusätzlich konkrete Operanden. Benannte Typen und
+Decompiler-Signaturen allein gelten nicht als ABI-Beleg. Das IDA-Flag für abgeschlossene
+Autoanalyse war false. Es wurde keine neue Autoanalyse oder IDB-Mutation ausgelöst.
+Der rohe Callgraph enthält teilweise als calls bezeichnete interne Sprünge und
+eine begrenzte Wurzel. Er dient nur der Suche; semantische Aufrufbelege stammen aus
+den tatsächlich dekodierten CALL/JMP-Instruktionen.
+
+Konkrete Befunde
+----------------
+1. BTLNPC: Stop vor Ressourcenreferenz-Abgabe
+   4069C0 -> 3CD8E0(Actor+3000) -> 3B3D60 -> 3E61E0(Actor+2320).
+   3CD8E0 stoppt den nichtnull Voice-Handle über 1DE500, löscht diesen Handle und
+   setzt die anstehende ID auf -1. 1DE500 sucht den Request nach Handle. Beim
+   Typ-6-Request setzt 1DE320 nach dem Stop-Aufruf dessen Zustand auf 4.
+   3E61E0 gibt nichtnull Zeiger an +16/+24/+32 über 39DA10 ab und nullt sie danach.
+   Der Stop ist kein synchroner Beleg für die Zerstörung aller Bankobjekte.
+
+2. Drei unterschiedliche Zähler/Felder dürfen nicht gleichgesetzt werden
+   39DA10 sucht den Ressourcenlisten-Eintrag über dessen Payload+88 und reduziert
+   WORD+2 mit einem 16-Bit-ADD von 0xffff. Ein Unterlauf wird lokal nicht geprüft.
+   Ohne Treffer bleibt RAX null; auch dieser Pfad enthält den ADD auf [RAX+2].
+   Die lokale Vorbedingung ist daher ein gültiger passender Ressourceneintrag.
+   Das ist kein beobachteter Absturz und kein Nachweis, dass der Fehlerpfad im
+   normalen Spiel erreicht wird. WORD+2 ist weder AudioBank WORD+52 noch
+   ResourceEntry DWORD+1604.
+
+3. Bereichsfreigabe und Sweep haben verschiedene Bedingungen
+   12EEA0 wählt den ersten ResourceEntry mit start <= Adresse < start+Länge.
+   Ein übergebener Callback läuft vor 12E460(record,0).
+   12EF30 wiederholt Bereichssuche und 12E460, bis keine Überschneidung mehr
+   gefunden wird. Beide Pfade prüfen ResourceEntry+1604 nicht.
+   Der separate Sweep 12EF80 prüft dagegen DWORD+1604 == 0, ruft gegebenenfalls
+   den registrierten Callback, entkoppelt den Eintrag und ruft den virtuellen
+   Destruktor mit Flag 1. Die Bedeutung und alle Schreiber von +1604 bleiben offen.
+   Auch NULL als Callback-Argument von 12EEA0 unterdrückt nicht den möglichen
+   internen Dispatch-Callback von 12E460.
+
+4. Typ-34-Stop vor und nach BAR-Kopie
+   39E690 ruft auf seinem ausgewählten Verschiebepfad 3A62B0 für den alten BAR,
+   korrigiert gegebenenfalls ResourceEntry- und Auxiliary-Zeiger, kopiert Blöcke
+   von 16 Bytes in richtungsabhängiger Reihenfolge und ruft 3A6120 für den neuen
+   BAR. Beide Scanner führen Typ 34 zu 1DE5C0. Die Pointer-Verschiebung passiert
+   im zweiten Scanner vor diesem Aufruf.
+   1DE5C0 stoppt nur Requests mit exakt passendem Wrapper-Zeiger und Typ 6.
+   Es bindet Requests nicht auf den neuen Zeiger um. Ohne passenden Request
+   gelangt der Helper auch nicht zu seiner ORIGIN-Invalidierung. Typ 48 hat in
+   diesen beiden 46-Typ-Tabellen keinen eigenen Stop-Zweig.
+
+5. Actor-Wechsel: Mode bestimmt die Wartebedingung
+   3E90E0 hält den alten Actor+2336-Puffer in einem Register. Mode 0 setzt ein
+   Actor-Flag, wartet per Yield auf Listenabwesenheit und führt ein weiteres
+   Yield aus. Mode 1 ruft Descriptor-Slot +328 auf; andere nichtnull Modi
+   überspringen diese beiden Zweige. Im gemeinsamen Teil folgen dreimal 39D010
+   für code, code+1, code+2 und dann 3CD980 mit dem alten Puffer.
+   39D010 prüft Ressourcen-Code, Flags und Status vor BAR-Abbau und Unlink/Free;
+   eine Prüfung von WORD+2 enthält dieser Körper nicht. Die Zulässigkeit der
+   Aufrufer, unbekannte virtuelle Ziele und sämtliche globalen Schutzbedingungen
+   werden damit nicht bewiesen.
+
+6. Battle-Voice-Austausch und nachfolgende ResourceEntry-Freigabe
+   3CD980 wartet auf einen freien globalen Kontextzeiger, setzt ihn, löscht einen
+   Cache-Used-Bit und ruft 3CDE50. Danach folgt 12EEA0(alterPuffer,NULL), schließlich
+   wird der globale Kontextzeiger gelöscht. Die sichtbaren Zugriffe sind normale
+   Loads/Stores. Ein Mutex oder eine allgemeine Thread-Synchronisation folgt daraus
+   nicht; die Schleifen besitzen in den geprüften Körpern keinen Timeout.
+   3CDE50 sucht drei Cache-Zeilen nach Schlüsseln, verwendet andernfalls eine freie
+   Zeile, erstellt den regionalen Battle-Voice-Pfad und startet einen Request.
+   3CDDF0 reicht einen nichtleeren Laderückruf über 1DF0E0 an den Typ-3-Pfad von
+   1E03E0 weiter. 3CE030 löscht bei nichtnull globalem Kontext dessen Wait-Marker.
+   Das vollständige Request-/Callback-Scheduling von 1E03E0 bleibt offen.
+
+   Kleine konkrete Grenze: Sind alle drei gesuchten Used-Bits gesetzt und ist
+   kein Schlüssel passend, läuft der Auswahlindex auf 3 und wird ohne lokalen
+   Fehlerzweig benutzt. Ob die physische Tabelle eine vorgesehene vierte
+   Ausweichzeile besitzt und ob dieser Zustand erreichbar ist, wurde nicht
+   bewiesen. Deshalb kein Out-of-bounds- oder Live-Crash-Befund.
+
+7. Kopierende Bankpfade und geliehene Voice-Payloads unterscheiden sich
+   1DF3C0 registriert Group 1 mit Mode 0 und führt danach die ResourceEntry-
+   Bereichsfreigabe aus. 1DF7B0 benutzt im ORIGIN- und SeBlock-Zweig Group 2,
+   Mode 0. Im SeBlock-Zweig wird ReplaceEntry+96 nach der Registrierung mit
+   aligned_free freigegeben und genullt, ohne den Rückgabestatus als Bedingung.
+   Der normale Zweig wählt Mode 1 nur für die beiden Schlüssel 20 und 21.
+   Der frühere Voice-Start 1DFD70 verwendet für ORIGIN dagegen Mode 2 mit einer
+   geliehenen Payload. Diese Argumente und Reihenfolgen sind belegt; die Studie
+   führt keinen nativen Worker aus und beweist keine allgemeine Async-Sicherheit.
+
+Offene Lebensdauergrenze
+-----------------------
+Die gepinnte ORIGIN-Studie belegt: 3A6A10 invalidiert passende Group-2-Banken vor
+ResourceEntry-Retirement. Der ResourceEntry-Destruktor zerstört ReplaceEntries;
+deren Destruktor gibt Payload+96 frei. Die BankEntry-Zerstörung wird separat und
+später über 13C470/136060 abgewickelt. Mode 2 besitzt die Payload nicht.
+
+Die vorliegende Studie ergänzt lokale Stop- und Freigabereihenfolgen. Sie findet
+in den ausgewählten Übergaben keinen zusätzlichen ResourceEntry-Retain für den
+EE-Request oder den Mode-2-BankEntry. Das ist ausdrücklich keine globale Suche
+nach sämtlichen Schutzmaßnahmen und kein bewiesener Use-after-free im Spiel.
+Callbacks, Managerreihenfolge, indirekte Methoden, unbekannte Alias-Schreiber und
+der Zeitpunkt tatsächlicher Backend-Zugriffe bleiben Grenzen des Befunds.
+
+Modelle und Reproduktion
+-----------------------
+py -3 -B artifacts/voice-resource-teardown-20261011/verify.py --check
+
+Der Check schreibt nichts. Er prüft Original-PE, vollständige Aufnahmen,
+gepinnten Vorarbeiten, beide Switch-Tabellen, virtuelle Destruktorziele,
+ASM-Anker, abgeleitete JSON-Dateien und den exakten Manifestumfang.
+1.260 begrenzte synthetische Fälle:
+  1.024 führen den Original-Branchblock des Bereichsprädikats aus;
+  8 führen den Original-Branchblock der Cache-Auswahl aus;
+  216 prüfen Pointer-/Typ-/Alias-/Statuskombinationen der Stop-Modellierung;
+  6 prüfen 16-Bit-Zählerarithmetik;
+  6 vergleichen die abstrakten lokalen Sweep-/Direktfreigabe-Bedingungen.
+Die letzten drei Gruppen sind Modelle an überprüften Ankern, keine vollständige
+Instruktionsemulation. Tests beweisen weder Live-Erreichbarkeit noch Fortschritt,
+Speicherlayout, Race-Freiheit oder korrekte Audio-Wiedergabe.
+
+Praktische Verwendung
+--------------------
+Die Ergebnisse liefern konkrete Haltepunkte und Beobachtungsfelder für eine
+spätere, ausdrücklich autorisierte Diagnose. Für einen eigenen Voice-Mod müssten
+besonders die reale Pufferbesitzdauer, ausstehende Requests und Callback-Zuordnung
+nachgewiesen werden. Ein bloßes Überschreiben von Wrapper+32 ist durch diese
+Studie nicht als sicher validiert. Ein Offline-Inspektor kann Dateiformate prüfen;
+er löst die hier noch offenen Laufzeit-Lebensdauerfragen nicht.
+
+Keine Spielausführung, kein Prozess-Attach, keine Injektion, keine IDB-Mutation,
+keine Save-/Mod-Dateiänderung, kein Produktbuild. Nur dieser Artifactordner wurde
+für die vorliegende Studie beschrieben. Alle genannten Grenzen gelten auch bei PASS.

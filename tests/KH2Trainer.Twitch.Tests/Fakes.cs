@@ -90,6 +90,13 @@ internal sealed partial class FakeGame : IGameControl
 
     public async Task ExecuteAsync(int command, IReadOnlyList<double> arguments, string label)
     {
+        if (command == 1488)
+        {
+            var lockArguments = arguments.ToArray();
+            Commands.Add(("drive.revert_lock", lockArguments));
+            await ExecuteRevertLockAsync(lockArguments);
+            return;
+        }
         if (!byCommand.TryGetValue(command, out var feature)) throw new InvalidOperationException($"Unknown command {command}.");
         var args = arguments.ToArray();
         Commands.Add((feature.Id, args));

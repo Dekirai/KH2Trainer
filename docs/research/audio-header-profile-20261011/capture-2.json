@@ -1,0 +1,378 @@
+{
+  "schema": 1,
+  "Domain": "native",
+  "imageBase": "0x140000000",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "database": "2788299e",
+  "capturedUtc": "2026-10-11T08:41:57.985Z",
+  "databaseHealth": {
+    "status": "ok",
+    "uptime_sec": 5368.576,
+    "idb_path": "C:\\Users\\shinz\\source\\repos\\KH2Trainer\\artifacts\\ida\\KH2_round_20261007_lifetime.i64",
+    "module": "kh2_native.exe",
+    "input_path": "C:\\Users\\shinz\\Documents\\Codex\\2026-10-01\\e-steamlibrary-steamapps-common-kingdom-hearts-2\\work\\kh2_native.exe",
+    "imagebase": "0x140000000",
+    "auto_analysis_ready": false,
+    "hexrays_ready": true,
+    "strings_cache_ready": true,
+    "strings_cache_size": 14774
+  },
+  "authority": {
+    "sessions": [
+      {
+        "session_id": "2788299e",
+        "input_path": "C:\\Users\\shinz\\source\\repos\\KH2Trainer\\artifacts\\ida\\KH2_round_20261007_lifetime.i64",
+        "filename": "KH2_round_20261007_lifetime.i64",
+        "created_at": "2026-10-11T09:09:43.821447",
+        "last_accessed": "2026-10-11T09:23:51.335267",
+        "is_analyzing": false,
+        "metadata": {},
+        "is_active": true,
+        "backend": "worker",
+        "owned": true,
+        "adopted": true,
+        "pid": 34084,
+        "worker_pid": 34084,
+        "busy": false
+      }
+    ],
+    "count": 1
+  },
+  "functions": [
+    {
+      "addr": "0x1400a34e0",
+      "name": "sub_1400A34E0",
+      "size": 84,
+      "pages": [
+        {
+          "addr": "0x1400a34e0",
+          "asm": {
+            "name": "sub_1400A34E0",
+            "start_ea": "0x1400a34e0",
+            "segment": ".text",
+            "lines": [
+              {
+                "addr": "1400a34e0",
+                "instruction": "mov [rsp+arg_0], rbx",
+                "label": "sub_1400A34E0"
+              },
+              {
+                "addr": "1400a34e5",
+                "instruction": "mov [rsp+arg_8], rsi"
+              },
+              {
+                "addr": "1400a34ea",
+                "instruction": "push rdi"
+              },
+              {
+                "addr": "1400a34eb",
+                "instruction": "sub rsp, 20h"
+              },
+              {
+                "addr": "1400a34ef",
+                "instruction": "mov rdi, rcx"
+              },
+              {
+                "addr": "1400a34f2",
+                "instruction": "mov byte ptr [rcx+190h], 1"
+              },
+              {
+                "addr": "1400a34f9",
+                "instruction": "add rcx, 168h; lpCriticalSection",
+                "comments": [
+                  "lpCriticalSection"
+                ]
+              },
+              {
+                "addr": "1400a3500",
+                "instruction": "mov esi, edx"
+              },
+              {
+                "addr": "1400a3502",
+                "instruction": "call cs:__imp_EnterCriticalSection",
+                "refs": [
+                  {
+                    "addr": "0x14057b2d8",
+                    "name": "__imp_EnterCriticalSection"
+                  }
+                ]
+              },
+              {
+                "addr": "1400a3508",
+                "instruction": "mov [rdi+0D4h], esi"
+              },
+              {
+                "addr": "1400a350e",
+                "instruction": "cmp byte ptr [rdi+190h], 0"
+              },
+              {
+                "addr": "1400a3515",
+                "instruction": "jz short loc_1400A3524",
+                "refs": [
+                  {
+                    "addr": "0x1400a3524",
+                    "name": "loc_1400A3524"
+                  }
+                ]
+              },
+              {
+                "addr": "1400a3517",
+                "instruction": "lea rcx, [rdi+168h]; lpCriticalSection",
+                "comments": [
+                  "lpCriticalSection"
+                ]
+              },
+              {
+                "addr": "1400a351e",
+                "instruction": "call cs:__imp_LeaveCriticalSection",
+                "refs": [
+                  {
+                    "addr": "0x14057b2d0",
+                    "name": "__imp_LeaveCriticalSection"
+                  }
+                ]
+              },
+              {
+                "addr": "1400a3524",
+                "instruction": "mov rbx, [rsp+28h+arg_0]",
+                "label": "loc_1400A3524"
+              },
+              {
+                "addr": "1400a3529",
+                "instruction": "mov rsi, [rsp+28h+arg_8]"
+              },
+              {
+                "addr": "1400a352e",
+                "instruction": "add rsp, 20h"
+              },
+              {
+                "addr": "1400a3532",
+                "instruction": "pop rdi"
+              },
+              {
+                "addr": "1400a3533",
+                "instruction": "retn"
+              }
+            ],
+            "stack_frame": [
+              {
+                "name": "__return_address",
+                "offset": "0x28",
+                "size": "0x8",
+                "type": "_UNKNOWN *"
+              },
+              {
+                "name": "arg_0",
+                "offset": "0x30",
+                "size": "0x8",
+                "type": "_QWORD"
+              },
+              {
+                "name": "arg_8",
+                "offset": "0x38",
+                "size": "0x8",
+                "type": "_QWORD"
+              }
+            ],
+            "return_type": "void",
+            "arguments": [
+              {
+                "name": "arg0",
+                "type": "__int64"
+              },
+              {
+                "name": "arg1",
+                "type": "int"
+              }
+            ]
+          },
+          "instruction_count": 19,
+          "total_instructions": 19,
+          "cursor": {
+            "done": true
+          },
+          "offset": 0
+        }
+      ],
+      "disassembly": {
+        "addr": "0x1400a34e0",
+        "asm": {
+          "name": "sub_1400A34E0",
+          "start_ea": "0x1400a34e0",
+          "segment": ".text",
+          "lines": [
+            {
+              "addr": "1400a34e0",
+              "instruction": "mov [rsp+arg_0], rbx",
+              "label": "sub_1400A34E0"
+            },
+            {
+              "addr": "1400a34e5",
+              "instruction": "mov [rsp+arg_8], rsi"
+            },
+            {
+              "addr": "1400a34ea",
+              "instruction": "push rdi"
+            },
+            {
+              "addr": "1400a34eb",
+              "instruction": "sub rsp, 20h"
+            },
+            {
+              "addr": "1400a34ef",
+              "instruction": "mov rdi, rcx"
+            },
+            {
+              "addr": "1400a34f2",
+              "instruction": "mov byte ptr [rcx+190h], 1"
+            },
+            {
+              "addr": "1400a34f9",
+              "instruction": "add rcx, 168h; lpCriticalSection",
+              "comments": [
+                "lpCriticalSection"
+              ]
+            },
+            {
+              "addr": "1400a3500",
+              "instruction": "mov esi, edx"
+            },
+            {
+              "addr": "1400a3502",
+              "instruction": "call cs:__imp_EnterCriticalSection",
+              "refs": [
+                {
+                  "addr": "0x14057b2d8",
+                  "name": "__imp_EnterCriticalSection"
+                }
+              ]
+            },
+            {
+              "addr": "1400a3508",
+              "instruction": "mov [rdi+0D4h], esi"
+            },
+            {
+              "addr": "1400a350e",
+              "instruction": "cmp byte ptr [rdi+190h], 0"
+            },
+            {
+              "addr": "1400a3515",
+              "instruction": "jz short loc_1400A3524",
+              "refs": [
+                {
+                  "addr": "0x1400a3524",
+                  "name": "loc_1400A3524"
+                }
+              ]
+            },
+            {
+              "addr": "1400a3517",
+              "instruction": "lea rcx, [rdi+168h]; lpCriticalSection",
+              "comments": [
+                "lpCriticalSection"
+              ]
+            },
+            {
+              "addr": "1400a351e",
+              "instruction": "call cs:__imp_LeaveCriticalSection",
+              "refs": [
+                {
+                  "addr": "0x14057b2d0",
+                  "name": "__imp_LeaveCriticalSection"
+                }
+              ]
+            },
+            {
+              "addr": "1400a3524",
+              "instruction": "mov rbx, [rsp+28h+arg_0]",
+              "label": "loc_1400A3524"
+            },
+            {
+              "addr": "1400a3529",
+              "instruction": "mov rsi, [rsp+28h+arg_8]"
+            },
+            {
+              "addr": "1400a352e",
+              "instruction": "add rsp, 20h"
+            },
+            {
+              "addr": "1400a3532",
+              "instruction": "pop rdi"
+            },
+            {
+              "addr": "1400a3533",
+              "instruction": "retn"
+            }
+          ],
+          "stack_frame": [
+            {
+              "name": "__return_address",
+              "offset": "0x28",
+              "size": "0x8",
+              "type": "_UNKNOWN *"
+            },
+            {
+              "name": "arg_0",
+              "offset": "0x30",
+              "size": "0x8",
+              "type": "_QWORD"
+            },
+            {
+              "name": "arg_8",
+              "offset": "0x38",
+              "size": "0x8",
+              "type": "_QWORD"
+            }
+          ],
+          "return_type": "void",
+          "arguments": [
+            {
+              "name": "arg0",
+              "type": "__int64"
+            },
+            {
+              "name": "arg1",
+              "type": "int"
+            }
+          ]
+        },
+        "instruction_count": 19,
+        "total_instructions": 19,
+        "cursor": {
+          "done": true
+        }
+      },
+      "pseudocode": {
+        "code": "void __fastcall sub_1400A34E0(__int64 a1, int a2)\n{\n  *(_BYTE *)(a1 + 400) = 1; /*0x1400a34f2*/\n  EnterCriticalSection((LPCRITICAL_SECTION)(a1 + 360)); /*0x1400a3502*/\n  *(_DWORD *)(a1 + 212) = a2; /*0x1400a3508*/\n  if ( *(_BYTE *)(a1 + 400) ) /*0x1400a350e*/\n    LeaveCriticalSection((LPCRITICAL_SECTION)(a1 + 360)); /*0x1400a351e*/\n}",
+        "pages": [
+          {
+            "addr": "0x1400a34e0",
+            "code": "void __fastcall sub_1400A34E0(__int64 a1, int a2)\n{\n  *(_BYTE *)(a1 + 400) = 1; /*0x1400a34f2*/\n  EnterCriticalSection((LPCRITICAL_SECTION)(a1 + 360)); /*0x1400a3502*/\n  *(_DWORD *)(a1 + 212) = a2; /*0x1400a3508*/\n  if ( *(_BYTE *)(a1 + 400) ) /*0x1400a350e*/\n    LeaveCriticalSection((LPCRITICAL_SECTION)(a1 + 360)); /*0x1400a351e*/\n}",
+            "line_count": 8,
+            "total_lines": 8,
+            "truncated": false,
+            "cursor": {
+              "done": true
+            },
+            "refs": [
+              {
+                "addr": "0x14057b2d8",
+                "name": "__imp_EnterCriticalSection"
+              },
+              {
+                "addr": "0x14057b2d0",
+                "name": "__imp_LeaveCriticalSection"
+              }
+            ],
+            "offset": 0
+          }
+        ],
+        "cursor": {
+          "done": true
+        },
+        "total_lines": 8
+      },
+      "idaBytes": "0x48 0x89 0x5c 0x24 0x8 0x48 0x89 0x74 0x24 0x10 0x57 0x48 0x83 0xec 0x20 0x48 0x8b 0xf9 0xc6 0x81 0x90 0x1 0x0 0x0 0x1 0x48 0x81 0xc1 0x68 0x1 0x0 0x0 0x8b 0xf2 0xff 0x15 0xd0 0x7d 0x4d 0x0 0x89 0xb7 0xd4 0x0 0x0 0x0 0x80 0xbf 0x90 0x1 0x0 0x0 0x0 0x74 0xd 0x48 0x8d 0x8f 0x68 0x1 0x0 0x0 0xff 0x15 0xac 0x7d 0x4d 0x0 0x48 0x8b 0x5c 0x24 0x30 0x48 0x8b 0x74 0x24 0x38 0x48 0x83 0xc4 0x20 0x5f 0xc3"
+    }
+  ]
+}

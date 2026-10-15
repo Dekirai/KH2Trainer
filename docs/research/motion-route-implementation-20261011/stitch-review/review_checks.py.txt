@@ -1,0 +1,182 @@
+"""Independent bounded byte/operand review; no game or original code execution."""
+from pathlib import Path
+import collections, hashlib, importlib.util, json, struct
+import capstone
+
+H = Path(__file__).resolve().parent
+R = next(p for p in H.parents if (p/'Directory.Build.props').exists())
+S = R/'artifacts/stitch-action-initialization-20261011'
+G = Path(r'E:\SteamLibrary\steamapps\common\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-')
+PE = (G/'KINGDOM HEARTS II FINAL MIX.exe').read_bytes()
+def digest(x): return hashlib.sha256(x).hexdigest()
+def load(p): return json.loads(p.read_bytes())
+checks = 0
+def check(ok, why):
+    global checks
+    checks += 1
+    if not ok: raise AssertionError(why)
+check(digest(PE)=='9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed','Original PE identity')
+pe = struct.unpack_from('<I',PE,60)[0]; opt = pe+24
+base = struct.unpack_from('<Q',PE,opt+24)[0]
+section_start = opt+struct.unpack_from('<H',PE,pe+20)[0]
+sections = [struct.unpack_from('<IIII',PE,section_start+40*k+8) for k in range(struct.unpack_from('<H',PE,pe+6)[0])]
+def raw(rva,n):
+    for vs,start,size,offset in sections:
+        if start<=rva and rva+n<=start+size: return PE[offset+rva-start:offset+rva-start+n]
+    raise AssertionError(('unbacked RVA',hex(rva),n))
+def cstring(rva):
+    out=bytearray()
+    while (b:=raw(rva+len(out),1))!=b'\0': out.extend(b)
+    return out.decode('ascii')
+cs=capstone.Cs(capstone.CS_ARCH_X86,capstone.CS_MODE_64);cs.detail=True
+def ins(rva,n=16): return next(cs.disasm(raw(rva,n),base+rva,count=1))
+def rip(x): return x.address+x.size+x.operands[-1].mem.disp
+e=load(S/'evidence.json')
+captured=0
+for f in e['functions']:
+    a=int(f['addr'],16)
+    check(f['disassembly']['cursor']=={'done':True},('finished IDA page',f['addr']))
+    used=set()
+    for span in f['originalBytes']:
+        at=int(span['addr'],16); b=bytes.fromhex(span['data'])
+        check(raw(at-base,len(b))==b,('full Original span',hex(at)))
+    for row in f['instructions']:
+        at=int(row['addr'],16); x=ins(at-base)
+        check(x.size==row['size'] and x.bytes.hex()==row['bytes'] and x.mnemonic==row['mnemonic'] and x.op_str==row['operands'],('recorded instruction from Original',hex(at)))
+        used.update(range(at,at+x.size));captured+=1
+    missing=set()
+    for span in f['originalBytes']:
+        at=int(span['addr'],16); missing.update(set(range(at,at+len(bytes.fromhex(span['data']))))-used)
+    classified={int(x['addr'],16) for x in f.get('nonInstructionSpans',[])+f.get('uncoveredInstructionBytes',[])}
+    check(missing==classified,('all uncovered bytes classified',f['addr'],missing,classified))
+for file in S.glob('root-ida-*-bytes.json'):
+    for row in load(file)['result']:
+        b=bytes(int(x,16) for x in row['data'].split())
+        check(b==raw(int(row['addr'],16)-base,len(b)),('raw unchanged byte capture',file.name,row['addr']))
+for d in e['data']:
+    b=bytes.fromhex(d['originalBytes']);check(b==raw(int(d['addr'],16)-base,len(b)),('data',d['addr']))
+startup=next(f for f in e['functions'] if f['addr']=='0x1404391d8')
+check(startup['complete'] is False,'known startup decode discrepancy prevents complete-function claim')
+check(ins(0x439317).mnemonic=='mov' and ins(0x439317).op_str=='eax, ebx' and ins(0x439310).operands[0].imm==base+0x439317,'Original branch targets MOV boundary; RET is its second byte')
+prefix=e['code_ranges'][0];check(prefix['addr']=='0x1404391d8' and prefix['size']==136,'bounded initialization prefix classified as code range')
+check(bytes.fromhex(prefix['originalBytes'])==raw(0x4391d8,136),'bounded prefix exact bytes')
+decoded=list(cs.disasm(raw(0x4391d8,136),base+0x4391d8))
+check([x.address for x in decoded]==[int(x['addr'],16) for x in prefix['disassembly']['asm']['lines']],'complete prefix instruction boundaries')
+# Resolve _initterm through the actual import descriptors rather than an IDA label.
+import_rva=struct.unpack_from('<I',PE,opt+112+8)[0]; imports={}
+while True:
+    original,stamp,chain,name,first=struct.unpack('<IIIII',raw(import_rva,20));import_rva+=20
+    if not any((original,stamp,chain,name,first)):break
+    k=0
+    while (thunk:=struct.unpack('<Q',raw((original or first)+8*k,8))[0]):
+        if not thunk>>63: imports[base+first+8*k]=(cstring(name),cstring(thunk+2))
+        k+=1
+check(imports[base+0x57b988][1]=='_initterm','actual imported symbol')
+check(ins(0x471c64,6).mnemonic=='jmp' and rip(ins(0x471c64,6))==base+0x57b988,'thunk uses actual _initterm IAT')
+check(rip(ins(0x439241))==base+0x584e18 and rip(ins(0x439248))==base+0x57bca8 and ins(0x43924f).operands[0].imm==base+0x471c64,'RCX/RDX table boundaries and direct call')
+check(0x57bca8<=0x57d230<0x584e18 and (0x57d230-0x57bca8)%8==0 and struct.unpack('<Q',raw(0x57d230,8))[0]==base+0x96b0,'initializer lies inside supplied CRT pointer table')
+# A single nonuniform stack specimen, interpreting the straight-line initializer.
+# This independently tests the non-key padding without another poison sweep.
+mem={};regs={'rsp':0x10100,'rbp':0x1122334455667788}
+def mapbytes(a,b):mem.update({a+i:v for i,v in enumerate(b)})
+def read(a,n):return bytes(mem[a+i] for i in range(n))
+def write(a,n,v):
+    check(all(a+i in mem for i in range(n)),('bounded initializer store',hex(a),n))
+    mapbytes(a,(v&((1<<(8*n))-1)).to_bytes(n,'little'))
+def regname(name):return {'eax':'rax','ecx':'rcx'}.get(name,name)
+def getreg(name):return regs.get(regname(name),0)&((1<<32)-1 if name in ('eax','ecx') else (1<<128)-1)
+def setreg(name,v):regs[regname(name)]=v&((1<<32)-1 if name in ('eax','ecx') else (1<<128)-1)
+def address(x,o):
+    m=o.mem;return (x.address+x.size if x.reg_name(m.base)=='rip' else getreg(x.reg_name(m.base)))+m.disp
+def val(x,o):
+    if o.type==capstone.CS_OP_REG:return getreg(x.reg_name(o.reg))
+    if o.type==capstone.CS_OP_IMM:return o.imm
+    return int.from_bytes(read(address(x,o),o.size),'little')
+def put(x,o,v):
+    if o.type==capstone.CS_OP_REG:setreg(x.reg_name(o.reg),v)
+    else:write(address(x,o),o.size,v)
+mapbytes(base+0x724340,raw(0x724340,504));mapbytes(0x10000,bytes((i*73+19)&255 for i in range(512)))
+original_padding=read(0x100ec,4)
+for x in cs.disasm(raw(0x96b0,620),base+0x96b0):
+    m=x.mnemonic;o=x.operands
+    if m=='push':regs['rsp']-=8;write(regs['rsp'],8,val(x,o[0]))
+    elif m=='pop':put(x,o[0],int.from_bytes(read(regs['rsp'],8),'little'));regs['rsp']+=8
+    elif m in ('mov','movups','movaps','movsd'):put(x,o[0],val(x,o[1]))
+    elif m=='lea':put(x,o[0],address(x,o[1]))
+    elif m=='xor':put(x,o[0],val(x,o[0])^val(x,o[1]))
+    elif m in ('add','sub'):put(x,o[0],val(x,o[0])+(1 if m=='add' else -1)*val(x,o[1]))
+    elif m=='ret':break
+    else:raise AssertionError(('unexpected initializer instruction',hex(x.address),m))
+targets=[0x1c7f40,0x1c8950,0x1ca6e0,0x1c8100,0x1c8610,0x1c8700,0x1c8440]
+rows=[]
+for n,target in enumerate(targets):
+    a=base+0x724340+72*n;key=read(a+8,20)
+    check(key==struct.pack('<QIII',base+target,0,0,0),('exact compared 20-byte key',n))
+    check(read(a+28,4)==original_padding,('non-key padding retains nonuniform stack bytes',n))
+    rows.append({'index':n,'target':hex(base+target),'key':key.hex(),'padding28':read(a+28,4).hex()})
+check(regs['rsp']==0x10100 and regs['rbp']==0x1122334455667788,'initializer preserves caller stack and RBP')
+# Selected lookup/dispatch instructions were reviewed in full original bodies.
+# The lookup compares exactly QWORD+8 plus DWORD+16/+20/+24; +28 is not a key.
+anchors={
+ 0x1cd155:('mov','r11, qword ptr [rcx + 0x20]'),
+ 0x1cd15e:('movsxd','rax, dword ptr [rcx + 0x18]'),
+ 0x1cd16f:('lea','rax, [r11 + 0x10]'),
+ 0x1cd176:('mov','rcx, qword ptr [rax - 8]'),
+ 0x1cd184:('mov','ecx, dword ptr [rdx + 8]'),
+ 0x1cd187:('cmp','dword ptr [rax], ecx'),
+ 0x1cd18b:('mov','ecx, dword ptr [rdx + 0xc]'),
+ 0x1cd18e:('cmp','dword ptr [rax + 4], ecx'),
+ 0x1cd193:('mov','ecx, dword ptr [rdx + 0x10]'),
+ 0x1cd196:('cmp','dword ptr [rax + 8], ecx'),
+ 0x1cd1a1:('add','rax, 0x48'),
+ 0x41c4cf:('movzx','edx, word ptr [rdi + 8]'),
+ 0x41c4d3:('sub','rdx, 1'),
+ 0x41c4e0:('sub','rcx, 8'),
+ 0x41c4e8:('mov','rax, qword ptr [rcx]'),
+ 0x41c4eb:('mov','qword ptr [rbp + rdx*8 - 0x60], rax'),
+ 0x41c4f0:('sub','rdx, 1'),
+ 0x41c4f6:('lea','rcx, [rbp - 0x60]'),
+ 0x41c4fa:('call','qword ptr [rdi]'),
+}
+for rva,pair in anchors.items():
+    x=ins(rva);check((x.mnemonic,x.op_str)==pair,('original lookup/operand-vector anchor',hex(rva)))
+# Independent raw asset/header/call-word checks; stored decoder is an explicit dependency.
+s=load(S/'script-evidence.json');retail=load(S/'retail.json');hit=retail['hits'][0]
+asset=(G/'Modding/openkh/data/kh2/obj/N_HB040_BTL.mdlx').read_bytes()
+check(digest(asset)==hit['sha256']==s['assetSha256'] and len(asset)==hit['length'],'retail-pinned asset identity')
+hed=(G/'Image/dt'/hit['hed']).read_bytes();row=hed[hit['Ordinal']*32:hit['Ordinal']*32+32]
+check(row[:16]==hashlib.md5(b'obj/N_HB040_BTL.mdlx').digest(),'independent HED name hash')
+check(struct.unpack_from('<qi',row,16)==(hit['Offset'],hit['StoredLength']),'independent HED offset/length')
+typ,link,name,off,size=struct.unpack_from('<HH4sII',asset,16+2*16)
+check(typ==3 and name==b'n_hb' and size==7744 and off+size<=len(asset),'selected BAR script extent')
+data=asset[off:off+size];check(digest(data)==s['document']['sha256'],'stored script identity')
+decoder=R/s['decoder']['path'];check(digest(decoder.read_bytes())==s['decoder']['sha256'],'explicit native-derived decoder identity')
+spec=importlib.util.spec_from_file_location('reused_bdx_decoder',decoder);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+fresh=module.inspect(data);stored=json.loads(json.dumps(s['document']))
+for item in stored['instructions']:
+    item.pop('eventPaths',None);item.pop('precedingBlock',None)
+check(fresh==stored,'full 832-instruction stored decode exactly reproduced through explicit dependency')
+nodes={i['pc']:i for i in s['document']['instructions']};sites={i['pc']:i for i in s['selectedSites']}
+check(set(sites)=={87,121,155,394,1041},'exact five selected native trap sites')
+expected={87:(7,26,80,525),121:(7,26,80,526),155:(7,26,80,527),394:(10,3,20,None),1041:(10,4,20,None)}
+for pc,(bank,index,offset,action) in expected.items():
+    at=16+pc*2;word,operand=struct.unpack_from('<HH',data,at)
+    check((word&15,word>>6,operand)==(10,bank,index),('actual trap bytes',pc))
+    start=pc-(5 if action else 2)
+    check(struct.unpack_from('<HH',data,16+start*2)==(0xa0,offset),('selector2 address push',pc))
+    if action:check(struct.unpack_from('<HI',data,16+(pc-3)*2)==(0x80,action),('tagged integer immediate push',pc))
+    for path in sites[pc]['eventPaths']:
+        event=next(x for x in s['document']['header']['events'] if x['id']==path['event'])
+        cursor=event['pc']
+        for step in path['path']:
+            check(step['fromPc']==cursor and {'kind':step['edge'],'target':step['toPc']} in nodes[cursor]['edges'],('syntactic CFG edge',pc,cursor))
+            cursor=step['toPc']
+        check(cursor==pc,('event path reaches selected instruction',pc))
+check(ins(0x41c993).op_str=='rax, qword ptr [rcx + 0x10]' and ins(0x41c997).op_str=='ecx, dword ptr [rax]' and ins(0x41c999).operands[0].imm==base+0x4ad270 and ins(0x41c9a1).op_str=='rax, rcx','selector2 offsets are relative to decoded context object, not work storage')
+result={'status':'PASS bounded independent checks','checks':checks,'freshRecordedInstructionsChecked':captured,
+ 'initializerSpecimens':1,'initializerRows':rows,'inittermImport':imports[base+0x57b988],
+ 'knownStartupIssue':'Original MOV EAX,EBX starts439317; IDA RET at439318 is its tail byte. Explicit incomplete function and correct prefix range checked.',
+ 'limits':'No new poison sweep, native code execution, feasible-call-stack proof or live Actor identity. Retail decoding reproduction is recorded separately.',
+ 'inputs':{str(p.relative_to(R)).replace('\\','/'):digest(p.read_bytes()) for p in [S/'evidence.json',S/'script-evidence.json',S/'retail.json',decoder]}}
+(H/'checks.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
+print(json.dumps({k:v for k,v in result.items() if k not in ('initializerRows','inputs')},indent=2))

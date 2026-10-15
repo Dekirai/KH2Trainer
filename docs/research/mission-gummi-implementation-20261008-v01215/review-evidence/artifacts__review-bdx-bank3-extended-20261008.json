@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "status": "ACCEPTED_BOUNDED_STATIC_RESEARCH",
+  "reviewedUtcDate": "2026-10-11",
+  "success": true,
+  "blockers": [],
+  "checks": 15184,
+  "fullBodies": 129,
+  "instructions": 4756,
+  "bodyBytes": 20662,
+  "unlistedPrimaryBytes": 27,
+  "descriptors": 17,
+  "annotations": 17,
+  "ownSemanticAnchors": 89,
+  "extentCases": 4096,
+  "selectorCases": 438,
+  "durationBoundaryCases": 7,
+  "thresholdCases": 49,
+  "damagePulseCases": 16,
+  "sourceHashes": {
+    "manifest.json": "f666bd846a916495fed2afd1b23e5d6e9b93d2dda9efa880944718edc4803cb9",
+    "annotations.json": "77a0822efcc2977530d60c4cb062a8e33a0c9b57b3786b643cab6060e49a788d",
+    "report.json": "29594d5f8de84643518df3861375dd2a71c5033628c6e7ea52ebcff85dfd5091",
+    "claims.json": "d5740aed43dc5224b431469f418244960966f05286cb63bae2e93e4bd726e76f",
+    "capture.json": "997e1bcf7d6c9b6e287c7ebdb20f8ab63b1e277baefadcd2159b3d030246bc7d",
+    "evidence.json": "7388412db33d2cabab9a239c18ebb1cecb9259a9e547fe114d3eaa9524851e09",
+    "verify.py": "cb0cd1f12b695cc0c5dae20f9f61401ef4603d00dc69d14e6be7372469616b90",
+    "model.py": "c8f00751addd68e36138edd887038b84176033fe1b898b7dd2cf31ec59234f1f"
+  },
+  "reviewScriptSha256": "99f04aa1806380c9230b160a48d1a9a86bb22a9fab716fd76c0b9a7d19852e40",
+  "reproduction": {
+    "success": true,
+    "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+    "functions": 129,
+    "instructions": 4756,
+    "primaryByteSpanTotal": 20662,
+    "listedInstructionByteTotal": 20635,
+    "unlistedPrimaryBytes": 27,
+    "spans": 95,
+    "descriptors": 17,
+    "annotations": 17,
+    "claims": 23,
+    "semanticAnchors": 113,
+    "rttiTypes": 3,
+    "verifiedXrefs": 36,
+    "referencedImportSites": 3,
+    "pseudocodeSinglePageCorroborations": 6,
+    "models": {
+      "checks": 6364,
+      "failures": 0,
+      "selectorComparisons": 1458,
+      "extentCases": 4096,
+      "counterCases": 14,
+      "factorComparisons": 792,
+      "scope": "Pure bounded models and native selector-branch interpretation; IEEE default rounding/masked exceptions assumed. No timing, scheduling, resource-lifetime or live gameplay test."
+    },
+    "gameExecuted": false
+  },
+  "manualFindings": [
+    "All 17 numeric descriptor contracts match original PE. Wrappers return typed INT/FLOAT/ADR or tail-call through the captured decoded player; no class, generation or lifetime lease is established.",
+    "PLAYER publication before remaining resource/component initialization and global clearing after earlier cleanup calls are present. RTTI and the 5136-byte allocation support the concrete owner only.",
+    "The signed DWORD attenuation counter is consumed by roll, ordinary lateral movement and selected reactions. Ordered factor clamp permits NaN; positive work remains linear. Pure scalar/unrolled comparisons do not demonstrate scheduler safety.",
+    "Ship extents decode signed bytes and packed nibbles; strict selectors fall back to Z on ties. The independently checked finite and unordered branch cases support bounded selector wording.",
+    "Reaction spin takes XMM2, reads player basis +56 and transforms with Scroll when flags +504 mask 0x2 is set. The textual bit 2 is interpreted as mask 0x2, not bit index 2; component entry bit 1 similarly means mask 0x1.",
+    "Initial remaining <=0 or NaN bypasses impulse consumption and clearing. After an initially positive value is consumed, COMISS 0,newRemaining followed by JB also takes the continuing branch on NaN; no general finite-value validation is implied.",
+    "Vibration BAR lookup unconditionally dereferences row+8 after a nullable result; task context mismatch can leave the task pointer NULL. Captured task retirement only clears its callback, with later cleanup latch reset. OS output, resource lifetime and scheduler closure remain unproven.",
+    "Orientation code commit precedes yaw convergence. Mode0 preserves incoming R8 and calls the point helper using cached inverse+64; shared scratch lifetime and distinct-output condition are correctly retained.",
+    "Primary-byte remainder is three NOP bytes plus six image-relative switch entries in PLAYER update, independently checked. It is not counted as additional instructions or semantic closure."
+  ],
+  "reviewerDraftCorrections": [
+    "Corrected unfinished review anchor expectation at 0x1401FFEEB from JA to original JB after examining COMISS operand order.",
+    "Corrected unfinished review resource string read length to len(literal), including the NUL terminator. The original frozen literal and study were already correct."
+  ],
+  "constraints": {
+    "gameExecuted": false,
+    "guiOrAttachOrInjection": false,
+    "gameSaveModOrTwitchWrites": false,
+    "productChanged": false,
+    "frozenStudyChanged": false
+  },
+  "scope": "Independent PE/Capstone/descriptor/ABI and selected semantic anchors plus own bounded extent/selector/COMISS/pulse checks. Manual review covers effects and boundaries. No original execution, general refcount/lifetime safety, retail-call reachability or hardware vibration guarantee."
+}

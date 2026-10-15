@@ -1,0 +1,140 @@
+{
+  "schema": 1,
+  "title": "Attack common cleanup and regular allocator boundary",
+  "date": "2026-10-13",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "scope": "Four fresh complete IDA bodies plus seventeen reused complete bodies and 24 original allocator-table bytes. Static bounded study; no runtime execution or new broad scan.",
+  "claims": [
+    {
+      "addr": "0x1403bf4f0",
+      "Finding": "The iterator starts at QWORD global 0x142A171C8 for a null input, otherwise advances through packed DWORD Actor+2704. It skips candidates for which 3BAA80 returns true; the verified predicate is DWORD Actor+288 & 0x10080000. A candidate with either mask bit set is skipped, and null terminates iteration.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bf4f0]",
+        "evidence.json#functions[addr=0x1403baa80]",
+        "evidence.json#functions[addr=0x1404ad270]",
+        "evidence.json#functions[addr=0x1404ad3f0]"
+      ],
+      "Limitations": "This establishes the selected head/link and predicate, not global membership invariants, all Actor lists, eventual termination for malformed links, or a runtime Actor lifetime."
+    },
+    {
+      "addr": "0x1403d2e50",
+      "Finding": "This wrapper repeatedly invokes 3BF4F0 until null or until DWORD candidate+1736 has mask 0x2 set. Consequently the 3CFB10 cleanup sweep is filtered by both Actor+288 mask 0x10080000 being clear and Actor+1736 mask 0x2 being set, rather than visiting every object.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d2e50]",
+        "evidence.json#functions[addr=0x1403bf4f0]",
+        "evidence.json#functions[addr=0x1403baa80]",
+        "evidence.json#functions[addr=0x1403cfb10]"
+      ],
+      "Limitations": "No semantic name for the two predicates is inferred from IDA labels. The wrapper itself only reads these fields; this is not proof of exhaustive cleanup across all Actor types or lists."
+    },
+    {
+      "addr": "0x1403cf3a0",
+      "Finding": "The leaf clears exactly the selected bit in DWORD [0x142A24AD0 + 4*(uint32(id)>>5)], with mask ~(1u << (id&31)). It is called with contact DWORD+32 by 3CFB10 after the unmasked sweep. It performs no calls and does not load an external owner-cell pointer.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cf3a0]",
+        "evidence.json#functions[addr=0x1403cfb10]"
+      ],
+      "Limitations": "There is no local ID bounds check. This proves the bit-clear arithmetic, not the valid ID range, allocation availability, or safety of arbitrary IDs."
+    },
+    {
+      "addr": "0x1403cf7f0",
+      "Finding": "The helper takes id=DWORD contact+32 and clears bit id&31 at table+4+4*(uint32(id)>>5). Common cleanup supplies Actor+3224 for selected Actors and otherContact+60 for surviving contacts. It does not compare or republish the QWORD external owner cell used by 40F4C0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cf7f0]",
+        "evidence.json#functions[addr=0x1403cfb10]"
+      ],
+      "Limitations": "The arithmetic has no local bounds check. Claims about intended bitmap storage assume valid native IDs and tables; arbitrary IDs can address unrelated storage."
+    },
+    {
+      "addr": "0x1403cfb10",
+      "Finding": "Base cleanup decrements Actor+1464 for the two nonnull decoded fields contact+12 and contact+20, unlinks the contact from head/tail 0x142A24B40/48 using packed next+196, and zeros that next field. If contact+8 mask 0x400 is clear it runs the filtered Actor sweep, clears matching Actor+3320 by pointer identity, clears contact-ID bits in the selected Actor/contact tables, and releases the ID bit. It always tail-calls 3CF190(contact+60). The matching-pointer clear at Actor+3320 is distinct from the earlier unconditional owner-cell clear in 40F4C0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cfb10]",
+        "evidence.json#functions[addr=0x1403d2e50]",
+        "evidence.json#functions[addr=0x1403cf7f0]",
+        "evidence.json#functions[addr=0x1403cf3a0]",
+        "evidence.json#functions[addr=0x1403cf190]",
+        "evidence.json#functions[addr=0x14040f4c0]"
+      ],
+      "Limitations": "Requires valid list membership, links, IDs and referenced Actors. Mask 0x400 skips the sweep and ID release, not the counter decrements or list removals. No idempotence, all-transitive-writer closure or general lifetime safety is proved. Pointer codec initialization may write its own global region table."
+    },
+    {
+      "addr": "0x1403cf190",
+      "Finding": "The tail-called helper removes its input node from the separate head/tail globals 0x142A24AC0/8 through packed next node+80. It updates head or predecessor, adjusts tail if the node was the tail, and encodes null into node+80. With the base-cleanup input contact+60 this last local field is contact+140.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cf190]",
+        "evidence.json#functions[addr=0x1403cfb10]",
+        "evidence.json#functions[addr=0x1404ad240]",
+        "evidence.json#functions[addr=0x1404ad270]"
+      ],
+      "Limitations": "It assumes membership in a well-formed list and does not safely handle an absent or already removed node. The pointer codecs can initialize global codec state; this is not an all-transitive-no-write claim."
+    },
+    {
+      "addr": "0x140031dd0",
+      "Finding": "The entire three-byte original function is C2 00 00 (RET 0). It makes no memory write or call and performs no allocation release. In 40F4C0 it is reached only when flags&1 and flags&4, with this and size 728; flag4 alone does not enter either release branch.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140031dd0]",
+        "evidence.json#functions[addr=0x14040f4c0]"
+      ],
+      "Limitations": "This describes this selected destructor branch only. Caller intent, custom allocation conventions and whole-program leak behavior are not established."
+    },
+    {
+      "addr": "0x140152570",
+      "Finding": "The ordinary free forwarder passes the payload as RDX, loads the allocator currently at global 0x1409BA920, and tail-jumps through vtable slot +16. For the original table 0x1405B2BB0 installed by 19C3A0, slot+16 is 19C470; allocation through 152430 analogously selects slot+8, whose original target is 19C2B0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140152570]",
+        "evidence.json#functions[addr=0x140152430]",
+        "evidence.json#functions[addr=0x14019c3a0]",
+        "evidence.json#functions[addr=0x14019c470]",
+        "evidence.json#functions[addr=0x14019c2b0]",
+        "evidence.json"
+      ],
+      "Limitations": "The free dispatch does not select the allocator from the allocation header. Binding therefore depends on the current global allocator, original table and matching allocation provenance. Other allocators and changed globals/tables are outside this result."
+    },
+    {
+      "addr": "0x14019c2b0",
+      "Finding": "On successful allocation the requested payload size is rounded up to 16 bytes, 48 bytes are added to the stored block size, and the returned payload is header+32. The selected manager 3D25D0 requests 728 bytes: under this allocator the rounded payload is 736 and the block size is 784. That block includes all eight bytes of the stored owner-cell pointer at payload+720.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14019c2b0]",
+        "evidence.json#functions[addr=0x1403d25d0]",
+        "evidence.json#functions[addr=0x140152430]"
+      ],
+      "Limitations": "This arithmetic is conditional on successful valid allocation through this allocator. It does not fix the manager no-empty-slot or allocation-failure paths and is not a claim that the global allocator always has this type."
+    },
+    {
+      "addr": "0x14019c470",
+      "Finding": "For a nonnull valid payload, regular free derives header=payload-32 and the stored block size from payload-16, calls 3A08F0(header,header+size), unlinks the allocation, adjusts used bytes and the last-allocation pointer, fills floor(size/4) DWORDs from the header with 0xEFACCAFE, then zeros header+8. Thus a matching 728-byte request yields a 784-byte fill that overwrites the old object+720 field after the destructor has already zeroed the external cell and run common cleanup. The allocator body has no access through that owner-cell pointer and does not republish a replacement attack into the external cell.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14019c470]",
+        "evidence.json#functions[addr=0x14019c2b0]",
+        "evidence.json#functions[addr=0x1403a08f0]",
+        "evidence.json#functions[addr=0x14040f4c0]",
+        "evidence.json#functions[addr=0x140152570]"
+      ],
+      "Limitations": "Assumes matching allocator, valid header, links and nonoverlapping allocations. Freeing the old allocation is not a repair of the separate manager registration. This does not prove whether or when the manager-owning Actor is freed, all allocator implementations, concurrency safety, or writes inside opaque semaphore/CRT runtime helpers."
+    },
+    {
+      "addr": "0x1403a08f0",
+      "Finding": "The helper called before block unlinking ignores its incoming start/end values. Its body traverses QWORD head 0x142A0D628, repeatedly decoding the DWORD at each node through 4AD270, until null. It does not compare allocation bounds, invoke a per-node callback, write the traversed nodes, or load an attack owner-cell pointer.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403a08f0]",
+        "evidence.json#functions[addr=0x14019c470]",
+        "evidence.json#functions[addr=0x1404ad270]",
+        "evidence.json#functions[addr=0x1404ad3f0]",
+        "evidence.json#functions[addr=0x1404ad2c0]"
+      ],
+      "Limitations": "Assumes a terminating valid list. The decoder can initialize the global pointer-region table through 4AD2C0, whose CRT guard calls remain opaque here; therefore this is a local traversal statement, not proof that every transitive runtime helper is write-free."
+    }
+  ],
+  "Conclusion": "The newly expanded local cleanup chain clears collision references and recycles the ID when contact+8 mask0x400 is clear. With deletion flags&1 and !(flags&4), a matching regular allocator destroys the old allocation. The inspected local bodies contain no manager-cell identity repair or replacement publication. The alternative size-728 leaf is empty. No global Actor-owner lifetime, actual crashing schedule or all-transitive-writer result is claimed.",
+  "OpenBoundaries": [
+    "Whether and when the manager-owning Actor is physically destroyed is handled by the separate Actor-destruction study, not proved here.",
+    "The current global allocator must match the allocation provenance; other virtual implementations are not covered.",
+    "Native valid ID/list/pointer invariants, CRT guard internals and semaphore implementation remain explicit assumptions or boundaries.",
+    "No universal use-after-free, observed game crash, all callers or all writers conclusion."
+  ],
+  "study": "attack-common-cleanup-20261013",
+  "archive": "evidence.zip",
+  "provenance": "provenance.json",
+  "completeSemanticAnalysis": false
+}

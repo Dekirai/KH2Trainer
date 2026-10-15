@@ -184,7 +184,7 @@ public sealed class AboutVm : PageVm
     public string GameHash => TargetGame.Sha256;
     public string ResearchSummary => $"The trainer is tied to one verified game build (Steam 1.0.0.2, x64). Every feature in its catalog links to the code or data structure it uses. " +
         $"The current inventory covers 36,451 recognized native functions, 445 managed entries (439 bodies) and 47 shaders. " +
-        $"This build contains {shell.Catalog.Count} controls and readouts plus the offline Asset Explorer and Game Messages reference. " +
+        $"This build contains {shell.Catalog.Count} controls and readouts plus the Game Messages reference. " +
         "Automatic coverage is tracked separately from confirmed runtime behavior.";
     public AsyncCommand OpenGuideCommand { get; }
     public AsyncCommand OpenAnalysisCommand { get; }

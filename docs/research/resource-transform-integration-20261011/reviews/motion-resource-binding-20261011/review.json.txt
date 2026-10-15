@@ -1,0 +1,68 @@
+{
+  "status": "ACCEPTED_BOUNDED_STATIC_STUDY",
+  "studyManifestSha256": "a08b49891738bf8281a7a0fc1f41dc8cd7e0718d5351cda6a1c4e75a234d668b",
+  "openBlockers": [],
+  "counts": {
+    "bodies": 57,
+    "instructions": 3709,
+    "extentBytes": 15587,
+    "noninstructionBytes": 165,
+    "asmPages": 61,
+    "independentChecks": 29101,
+    "resolvedReferences": 67,
+    "manuallyReviewedClaims": 30,
+    "controlFlowDominancePairs": 14,
+    "originalSwitchCases": 94,
+    "extraOriginalAnchors": 20,
+    "policyDifferentialCases": 12000,
+    "policyAdmittedCases": 15
+  },
+  "sourcePins": {
+    "evidence": "5e13ffdbe28eefccc62a71d43e3d9525589476fd826c488e21fd56062d7f8b39",
+    "report": "e5dc746391a8792864f20ac16ec7b641943901590b7dc4841912def6a0733770",
+    "reportMarkdown": "661a40d4da0a07f22e9cf976deb36d1c22c82ae3fe68b508919ab15ce58c0641",
+    "coverageParser": "546d0defdacd8857d7f2461283516348ca28776d13e253d8d954ad43622cc1b2"
+  },
+  "findings": [
+    "Cache+80 is a native rounded layout/copy extent. Child descriptors can point into parent bytes; current pointer/state equality alone does not establish an owned allocation.",
+    "Outer reservation plus nested BAR and exact type9 entry extent is a coherent bounded-copy proposal only with the stated observed history, checked nesting and pre-change revocation.",
+    "Caller root-context stores precede 3C8A40, and its Motion consumers precede return. Observing only the bind return is too late for the shown paths.",
+    "C+432 is a caller-provided DWORD reference, with distinct source Actor/source-object origins. Release/rebind can restore both pointer and count values; neither is a generation.",
+    "BAR release kind 9 routes to the original switch default, independently decoded from PE cells. This local absence does not establish persistent backing memory.",
+    "The Prototype0 count inputs are zero-extended WORDs; subtraction is 32-bit. The phrase unsigned-short difference describes input fields, not a 16-bit wrapped result."
+  ],
+  "authorReproduction": {
+    "status": "PASS",
+    "originalExeSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+    "workcopyMatchesOriginal": true,
+    "captureTotals": {
+      "functions": 57,
+      "instructions": 3709,
+      "extentBytes": 15587,
+      "instructionBytes": 15422,
+      "dataOrPaddingBytes": 165,
+      "asmPages": 61,
+      "pseudocodeLines": 2768
+    },
+    "claims": 30,
+    "resolvedReferences": 67,
+    "dependencyPins": "PASS",
+    "analysisReadiness": {
+      "autoAnalysisReady": false,
+      "isAnalyzing": false,
+      "analysisForced": false
+    },
+    "models": {
+      "instructionAnchors": 19,
+      "policyCases": 12,
+      "failures": 0
+    },
+    "scope": "Static original-PE/complete-IDA-body checks and explicit policy models. No game execution or installed observer proof."
+  },
+  "limits": [
+    "No installed observer, detour ABI, live allocation, game execution, whole-binary writer coverage, race freedom or Tiny/Giant product approval.",
+    "Control-flow checks summarize returning callees; exceptions, reentrant mutations and scheduler ordering remain outside those graphs.",
+    "The 12000 differential cases test the stated policy model only. They do not execute native code or validate a product implementation.",
+    "Fresh capture is not global novelty. IDA auto_analysis_ready=false remains disclosed; exact original byte and transport checks pass."
+  ]
+}

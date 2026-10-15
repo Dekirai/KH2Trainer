@@ -1,0 +1,15 @@
+KH2 Trainer v0.12.16: Audio-Anfragen und Ressourcenanalyse
+
+Audio > Requests zeigt freie Einträge im Pool mit 80 Plätzen, Reservierungen seit dem letzten Audio-Reset und die beobachteten Annahmesperren. Die regulären Reservierer behalten 16 freie Plätze zurück und lassen höchstens 25 Reservierungen zwischen den Zähler-Resets zu. Das Inhibit-Byte sperrt weitere Anfragen. Die Anzeige liest nur diese drei Skalare, prüft Originalcode und zweimal dieselben Zahlen. Sie verfolgt keine Audiolisten und ruft keine Audiofunktion auf. Die zwei gleichen Kopien sind keine atomare Messung; kurze Lastspitzen können zwischen Anzeigen verschwinden.
+
+Alle acht Kombinationen der Sperren werden ausgeschrieben und bei Bedarf umgebrochen. Fehlende Daten erscheinen als unbekannt. Es gibt keine Aktion zum Umgehen der Sperren. Neue Kommandos für diese Slots werden ausdrücklich abgelehnt; Profile nehmen die Anzeigen nicht auf.
+
+Die ORIGIN-Studie verfolgt ausgeliehene Voice-Payloads vom Replacement-Eintrag bis zur Bankregistrierung und verzögerten Freigabe. Mode 2 überspringt beim BankEntry-Abbau sowohl das Freigeben als auch das Nullsetzen des Payloadfeldes. Ein erfolgreicher Startaufruf belegt keine hörbare Wiedergabe. Diese Befunde helfen bei einem späteren Ressourcenprüfer, reichen aber noch nicht für einen sicheren Audioaustausch während des Spiels.
+
+Der bestehende Zweitwaffen-Fix für Final, Valor und Master bleibt unverändert. Ungültige oder leere Slots erhalten vor der Verwandlung Soras für die Form geprüfte Hauptwaffe. Nach Revert wird erneut geprüft. Die normale Spielspeicherung kann diese Slotbelegung übernehmen. Der Nutzer hat bestätigt, dass der gemeldete Absturz eine ältere EXE betraf.
+
+Native und verwaltete Tests verwenden künstliche Zustände. Der echte TrainerFrame wurde in einer separaten Fixture ohne Testdefines ausgeführt. Acht Audiozustände wurden ohne sichtbares Fenster gerendert; die Oberfläche bleibt dunkel. Keine Spielprozesse, Injection, Spielstände oder Twitch-Verbindungen wurden verwendet. Eine Bestätigung im laufenden Spiel steht aus.
+
+Die Originalstudien und unabhängigen Reviews sind bytegenau erhalten. Manche Rohskripte im Reviewnachweis nennen ihren damaligen artifacts-Arbeitsordner; reviewEvidence in implementation.json ordnet diese Pfade den eingefrorenen Kopien zu. Die Prüfsummenprüfung verify.py arbeitet direkt mit diesem Archiv. Für Produktionskompilierung und Tests ist der beigefügte Source.zip-Quellstand maßgeblich.
+
+Die Gesamtanalyse ist nicht abgeschlossen. Konkrete Aussagen zu ausgewählten Funktionen bedeuten keine vollständige Prüfung aller Zweige, Lebensdauern oder Threads.

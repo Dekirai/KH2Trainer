@@ -1,0 +1,316 @@
+{
+  "title": "Audio request producers, shared resolver and reset/consumer ordering",
+  "Domain": "native",
+  "date": "2026-10-11",
+  "status": "BOUNDED_STATIC_STUDY_PENDING_INDEPENDENT_REVIEW",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "counts": {
+    "capturedFunctions": 23,
+    "contiguousFunctions": 22,
+    "disjointChunkFunctions": 1,
+    "recapturedDependencyFunctions": 1,
+    "newToSelectedDependencySetFunctions": 22,
+    "uniqueInstructions": 863,
+    "uniqueOriginalBytes": 3151,
+    "separateCodeRanges": 2,
+    "claims": 23,
+    "distinctClaimAddresses": 23
+  },
+  "claims": [
+    {
+      "addr": "0x1401ddde0",
+      "Finding": "The positive signed sound-ID path reserves a shared-pool slot, initializes and appends it with flag argument 0/type 2, then calls the bank resolver with ID/1000. The resolver return is discarded. Request+24 receives the sign-extended explicit a2 bank, +16 receives ID%1000, and +46 is zero. Only explicit bank -1 marks state 3; the generated handle at +20 is still returned.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401ddde0]",
+        "verification.json",
+        "docs/research/voice-request-lifecycle-20261008/evidence.json#functions[addr=0x1401deb50]"
+      ],
+      "Limitations": "Other negative explicit bank values are not rejected here. Admission and setup are not resource validation, backend success or audible output. No immediate caller-level slot rollback follows state 3."
+    },
+    {
+      "addr": "0x1401dde80",
+      "Finding": "The positive signed sound-ID path reserves first and initializes/appends with flag 1/type 3. It stores the sign-extended resolver result for ID/1000 at request+24 and ID%1000 at +16. Resolver -1 marks state 3 after reservation; it still returns the initialized handle.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401dde80]",
+        "verification.json",
+        "docs/research/voice-request-lifecycle-20261008/evidence.json#functions[addr=0x1401deb50]",
+        "docs/research/voice-request-lifecycle-20261008/evidence.json#functions[addr=0x1401dd8d0]"
+      ],
+      "Limitations": "This constructor does not refund its slot immediately on the resolver sentinel. Later retirement depends on the previously studied active-list processor and normal execution of cancellation."
+    },
+    {
+      "addr": "0x1401de010",
+      "Finding": "This producer reserves first, initializes/appends with flag 0/type 4, calls but discards the bank resolver result, stores sign-extended explicit a2 at +24 and the low 16 bits of a3 at +50, and writes ID%1000 at +16. Explicit bank -1 marks state 3; it still returns its handle.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401de010]",
+        "verification.json"
+      ],
+      "Limitations": "The later type-4 updater consumes the unsigned WORD at +50. This does not establish a public valid range or ownership for that parameter; do not label it a generic volume or bank selector."
+    },
+    {
+      "addr": "0x1401de0c0",
+      "Finding": "This producer reserves first, initializes/appends with flag 1/type 1 and stores the resolver-derived bank plus ID%1000. It rejects signed IDs below 1 before reservation, and a missing reservation returns zero. Resolver -1 after admission instead marks state 3 and returns the allocated handle.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401de0c0]",
+        "verification.json"
+      ],
+      "Limitations": "A nonzero handle differentiates allocation from the earlier rejection path; it does not prove successful playback."
+    },
+    {
+      "addr": "0x1401de150",
+      "Finding": "This flag-1/type-0 producer appends the request before walking the active list and copying 16 bytes from caller a2 into request+0..15. It then overwrites request+12 with float bits 0x3F800000, resolves ID/1000, stores ID%1000, and marks state 3 only for resolver -1. The list-search exit reaches the copy even when it finds no node.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401de150]",
+        "verification.json",
+        "evidence.json#functions[addr=0x1401a8e60]"
+      ],
+      "Limitations": "No caller-pointer readability/null or overlap check is present in this captured path. The copy helper skips identical pointers and otherwise performs sequential DWORD loads/stores; overlapping input may be changed before later source loads. A trainer must not call this from an unvalidated arbitrary pointer."
+    },
+    {
+      "addr": "0x1401a8e60",
+      "Finding": "The copy helper compares the source and destination pointers and otherwise performs four sequential DWORD load/store pairs. Disjoint source/destination spans copy the original 16 bytes exactly; identical pointers skip copying. The caller then overwrites component +12.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401a8e60]",
+        "verification.json"
+      ],
+      "Limitations": "Partial overlap is not checked and does not have memmove semantics: destination=source+4 propagates the first DWORD into later source reads, while destination=source+8 repeats the first two DWORDs. Exact preservation of the original 16-byte source is claimed only for disjoint or identical spans. This is raw copy behavior, not a pointer validator, allocation or lifetime check."
+    },
+    {
+      "addr": "0x1401dc5b0",
+      "Finding": "The 14-byte primary stub forwards the requested key in EDX and the fixed table address in RCX to shared tail 0x1401E0880. That tail checks at most 27 entries of three DWORDs: first matching +4 key wins, +8 must equal 1, and +0 is returned; absent or first-match-not-ready returns 0xFFFFFFFF. A later ready duplicate is not searched after the first match fails its state check.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401dc5b0]",
+        "verification.json",
+        "evidence.json#code_ranges[addr=0x1401e0880]"
+      ],
+      "Limitations": "The tail is disjoint from the recorded primary extent and is separately captured as a code range, not invented as a function. Table readiness is a local integer predicate, not a resource lifetime or playback guarantee. Indirect writers and mutation concurrency are not closed."
+    },
+    {
+      "addr": "0x1401dd500",
+      "Finding": "This unowned 12-byte code range tests ECX as signed positive, returns zero for nonpositive inputs and tail-jumps to the shared allocator at 0x1401DD510 for positive inputs. The interior 0x1401DD507 is that jump site.",
+      "Evidence": [
+        "evidence.json#code_ranges[addr=0x1401dd500]",
+        "verification.json"
+      ],
+      "Limitations": "IDA reports no function for this range and no direct incoming xref to its start. This is not evidence that it is dead code or an exposed callable API. No function is added and no autoanalysis is forced."
+    },
+    {
+      "addr": "0x1401dda80",
+      "Finding": "The non-5/non-6 dispatcher path starts state-1 requests through 0x1401391D0 and 0x140139E50, then assigns state 2 without checking either return as success. In state 2, flag bit 1 can invoke the existing invalid-context cancellation path; type 2 then returns without the common parameter-update calls, whereas type 4 uses the distinct +50 updater and other types reach common parameter updates. State 3 searches the active list by handle before invoking cancellation.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401dda80]",
+        "verification.json",
+        "docs/research/voice-request-lifecycle-20261008/evidence.json#functions[addr=0x1401dd560]",
+        "docs/research/voice-request-lifecycle-20261008/evidence.json#functions[addr=0x1401de320]"
+      ],
+      "Limitations": "State 2 records normal-return progress through this code, not a playing/audible-success state. Existing request-list, cancellation and backend ownership requirements still apply."
+    },
+    {
+      "addr": "0x1401dd880",
+      "Finding": "The type-4 helper passes the unsigned WORD at request+50 to 0x140189990 with the request and a byte-result pointer. A false result forces WORD+48 to 64 and WORD+44 to zero; a true result with byte-result 1 forces WORD+48 to 64.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401dd880]",
+        "verification.json"
+      ],
+      "Limitations": "The semantics and lifetime of the referenced 0x140189990 domain remain unexpanded. These observed assignments do not define safe user-input ranges."
+    },
+    {
+      "addr": "0x1401de550",
+      "Finding": "This helper walks the active request list and cancels matching sign-extended bank values at +24 only when the type byte at +53 is unsigned <=4.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401de550]",
+        "verification.json",
+        "docs/research/voice-request-lifecycle-20261008/evidence.json#functions[addr=0x1401de320]"
+      ],
+      "Limitations": "It excludes types 5 and 6 in this direct predicate. It traverses native list pointers and calls the existing cancellation path; it is not a safe scalar-only clear operation."
+    },
+    {
+      "addr": "0x1401de4a0",
+      "Finding": "This helper walks the active list and cancels a matching sign-extended bank only when type+53 equals 5.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401de4a0]",
+        "verification.json",
+        "docs/research/voice-request-lifecycle-20261008/evidence.json#functions[addr=0x1401de320]"
+      ],
+      "Limitations": "Type 6 is excluded by this direct predicate. The helper is not a generic stop-all or clear-all operation."
+    },
+    {
+      "addr": "0x1401dc190",
+      "Finding": "This consumer clears the inhibit flag, restores a value from its separate small stack, invokes type<=4 cancellation for banks 2 and 3, performs additional table/backend operations, invokes type-5 cancellation for banks 0, 1 and 2, and finally tail-calls the whole active-list processor 0x1401DD8D0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401dc190]",
+        "verification.json",
+        "evidence.json#functions[addr=0x1401de550]",
+        "evidence.json#functions[addr=0x1401de4a0]",
+        "docs/research/voice-request-lifecycle-20261008/evidence.json#functions[addr=0x1401dd8d0]"
+      ],
+      "Limitations": "The complete effect of all intermediate table/backend callees is not closed here. The final processor can dispatch surviving pending requests as well as retire marked requests; this routine is not justified as a trainer clear-queue primitive."
+    },
+    {
+      "addr": "0x1401dc650",
+      "Finding": "This consumer performs extra fixed-table operations and clears AD8040, then clears the inhibit flag, uses the same selective bank/type cancellation groups and ends in the whole active-list processor 0x1401DD8D0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401dc650]",
+        "verification.json"
+      ],
+      "Limitations": "The front-half resource/table operations distinguish it from 1DC190. Neither the visible cancellation groups nor the final processing call prove that every request/resource has been stopped or released."
+    },
+    {
+      "addr": "0x1401dd120",
+      "Finding": "The runtime reset sequence calls zero-return stub 1DF4B0 with 1, nullsub 1DE650, the previously studied scalar/root reset 1DE7C0, and finally the configuration reset 1DC8D0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401dd120]",
+        "verification.json",
+        "evidence.json#functions[addr=0x1401df4b0]",
+        "evidence.json#functions[addr=0x1401dc8d0]"
+      ],
+      "Limitations": "The known scalar/root reset clears interval/inhibit and list roots but does not directly rebuild FreeCount to 80. Surrounding normal-game preconditions remain necessary; this sequence is not safe to replay against an arbitrary live pool."
+    },
+    {
+      "addr": "0x1401dc8d0",
+      "Finding": "This configuration reset applies fixed backend/table parameters, clears AD8040, invokes 1DF1A0 and zeroes the independent AD8030/AD8038/AD803C stack globals. Its captured direct body does not write the shared pool free counter AD9390.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401dc8d0]",
+        "verification.json"
+      ],
+      "Limitations": "This is a direct-body and ordered-call claim only. Effects of unexpanded callees are not inferred; it is not evidence of complete pool reclamation."
+    },
+    {
+      "addr": "0x1401df1a0",
+      "Finding": "This 15-byte helper writes zero to DWORD AD93D8 and AD93DC and returns zero.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401df1a0]",
+        "verification.json"
+      ],
+      "Limitations": "The two globals are distinct from FreeCount AD9390 and IntervalCount AD93C4; their broader meaning and writers are not established."
+    },
+    {
+      "addr": "0x1401dfff0",
+      "Finding": "The entire recorded function is xor eax,eax followed by ret. It does not inspect arguments or access pool/resource memory in this executable.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401dfff0]",
+        "verification.json"
+      ],
+      "Limitations": "This exact-build no-op observation does not describe other game versions. In particular, a caller passing a flag or polling through a loop does not add behavior to this stub."
+    },
+    {
+      "addr": "0x1401df4b0",
+      "Finding": "The entire recorded function is xor eax,eax followed by ret. It does not inspect arguments or access pool/resource memory in this executable.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401df4b0]",
+        "verification.json"
+      ],
+      "Limitations": "This exact-build no-op observation does not describe other game versions. In particular, a caller passing a flag or polling through a loop does not add behavior to this stub."
+    },
+    {
+      "addr": "0x1401df440",
+      "Finding": "The entire recorded function is xor eax,eax followed by ret. It does not inspect arguments or access pool/resource memory in this executable.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401df440]",
+        "verification.json"
+      ],
+      "Limitations": "This exact-build no-op observation does not describe other game versions. In particular, a caller passing a flag or polling through a loop does not add behavior to this stub."
+    },
+    {
+      "addr": "0x1401df9f0",
+      "Finding": "This five-byte thunk jumps to 0x14013A4A0. Startup uses it for both initial and repeated polls after each of its two base-bank load attempts.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401df9f0]",
+        "verification.json",
+        "evidence.json#functions[addr=0x14013a4a0]"
+      ],
+      "Limitations": "It is not a query scoped to the just-requested bank or a success result from the load call."
+    },
+    {
+      "addr": "0x14013a4a0",
+      "Finding": "When its global service pointer is nonzero, this query follows the list rooted at 713450 and ORs each node DWORD+108; otherwise it returns zero. Startup waits until this aggregate is zero.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14013a4a0]",
+        "verification.json"
+      ],
+      "Limitations": "The query dereferences an object list. Zero can also arise from absent service/empty list, and no exact-bank success or audible-output guarantee follows. List lifetime/thread ownership and the flag writers remain open."
+    },
+    {
+      "addr": "0x1401df7b0",
+      "Finding": "The loader rejects only size zero before reading format tags. ORIGIN with payload+32 delegates using payload+40; the SeBlock branch looks up an imported payload, delegates and then frees/clears its payload pointer; the raw branch delegates then runs 12EF30 over the supplied range. The caller 1DC770 ignores this loader return and subsequently polls an aggregate list status.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401df7b0]",
+        "verification.json",
+        "evidence.json#functions[addr=0x1401dc770]"
+      ],
+      "Limitations": "Signed negative size is not rejected by this entry guard. This captures local branching and ownership-affecting calls; it does not establish minimum format lengths, safe transient lifetimes or backend completion. The loader must not be replayed by the trainer on this evidence alone."
+    }
+  ],
+  "dependencies": [
+    {
+      "study": "docs/research/voice-request-lifecycle-20261008/manifest.json",
+      "sha256": "a2ec21eec1487b2f83d7efd91dfd888406ff77a6c4cd8f3aadd4dba4da9ae5fb"
+    },
+    {
+      "study": "docs/research/voice-request-lifecycle-20261008/evidence.json",
+      "sha256": "d963a6362130791b19d6f50701bf7c4d1c90a9a3beb13e4be26e8f6ad2715b99"
+    },
+    {
+      "study": "docs/research/audio-observation-design-20261011/manifest.json",
+      "sha256": "0fdfdde07ceacb75c6326043959401c5ce4051145d44a2a3355f8d10f88537a6"
+    },
+    {
+      "study": "docs/research/audio-observation-design-20261011/capture.json",
+      "sha256": "ae5c844019706c50736445126a93f3368c75ce4e3612026846b8286d01925455"
+    }
+  ],
+  "dependencyObservations": [
+    {
+      "addr": "0x1401dc770",
+      "observation": "Fresh recapture confirms startup reset prefix, two se000/se999 load attempts for slots 2/3, ignored loader returns, two polling loops and final callback registration. This already existed in the Voice study and is not counted as a newly discovered function."
+    }
+  ],
+  "productImplications": [
+    {
+      "feature": "Offline sound-ID explanation in an inspector",
+      "use": "Explain ID/1000 as the resolver key and ID%1000 as the local index; distinguish explicit-bank types 2/4 from resolver-bank types 0/1/3.",
+      "prerequisites": "A precise source of candidate IDs and a stable format-specific sound-count check remain required before claiming a particular index exists. This study alone does not enable playback."
+    },
+    {
+      "feature": "Observed request diagnostics by producer type and setup outcome",
+      "use": "Show that a request was admitted but later marked for retirement, instead of treating a nonzero handle or state 2 as playback success.",
+      "prerequisites": "Needs bounded pool/list membership, generation consistency, object readability and thread/lifetime validation. Existing v0.12.16 scalar reads stay unchanged. No request-list observer is implemented here."
+    },
+    {
+      "feature": "A bounded read-only bank-key lookup",
+      "use": "Explain missing/not-ready first match and duplicate-key shadowing when debugging a selected sound ID.",
+      "prerequisites": "The 27-entry table has fixed scalar fields, but reset writers and sampling consistency still need review before integrating live observations. A ready integer state must not be presented as resource safety."
+    },
+    {
+      "feature": "No replay/reset/clear-queue action derived from this study",
+      "use": "Avoid exposing startup, consumer or reset functions whose observed effects exceed a single request.",
+      "prerequisites": "Backend ownership, full cancellation scope and normal startup/reset preconditions remain unproven."
+    }
+  ],
+  "nextTargets": [
+    {
+      "addr": "0x140189990",
+      "why": "Resolve the type-4 WORD+50 domain and ownership before labeling or accepting input."
+    },
+    {
+      "addr": "0x1401e11c0 / 0x1401e1140 / 0x1401e1180 / 0x1401e05a0 / 0x1401e11a0 / 0x1401e0620",
+      "why": "Close fixed table state/key writers and reset transitions for a potential scalar-only bank lookup."
+    },
+    {
+      "addr": "0x1401de9a0 / 0x1401dea60 / 0x1401deae0 / 0x1401dec00 / 0x1401ded00 / 0x1401ded70",
+      "why": "Remaining positive resolver callers; may have distinct allocation and failure behavior."
+    },
+    {
+      "addr": "0x140713450 / node+0x6c writers",
+      "why": "Identify poll-status writers and list lifetime/thread contract; aggregate zero alone is ambiguous."
+    }
+  ],
+  "limitations": [
+    "Original instructions decoded and selected resolver instructions interpreted over synthetic integers only; no native code, game or backend executed.",
+    "Recorded positive xrefs are bounded observations; auto_analysis_ready=false and negative xrefs do not exclude indirect callers or aliases.",
+    "One prior Voice function was freshly recaptured for ordering context and is not counted as a new discovery.",
+    "The 1DC5B0 primary extent is disjoint from its shared tail; no contiguous full-function or new tail-function claim.",
+    "The decoded resolver and arithmetic models have explicit limited scope; they are not constructor/backend execution, concurrency, resource lifetime, success or audible-output proofs.",
+    "The candidate product features are analysis proposals only. No src, tests, docs, versions or delivered packages changed; no game/GUI/attach/injection/build actions."
+  ]
+}

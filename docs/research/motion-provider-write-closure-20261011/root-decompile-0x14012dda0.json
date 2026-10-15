@@ -1,0 +1,16 @@
+{
+  "addr": "0x14012dda0",
+  "code": "// Static analysis (SHA256 9002b2de...49ed). Analysis label: kh2_find_resource_by_replacement_buffer. [Static RE, IDA native x64] Finds owner ResourceEntry whose ReplaceEntry buffer range contains supplied pointer.\n__int64 __fastcall kh2_find_resource_by_replacement_buffer(unsigned __int64 a1)\n{\n  __int64 v2; // r11\n  __int64 v3; // r10\n  __int64 v4; // rcx\n  __int64 v5; // rax\n  unsigned __int64 v6; // r8\n\n  v2 = *((_QWORD *)qword_1408AEF30 + 1); /*0x14012ddaa*/\n  if ( !v2 ) /*0x14012ddb1*/\n    goto LABEL_3; /*0x14012ddb1*/\n  v3 = *(_QWORD *)(v2 + 8); /*0x14012ddb3*/\n  while ( 1 )\n  {\n    if ( !v2 ) /*0x14012ddbf*/\n      return 0; /*0x14012de1a*/\n    v4 = *(_QWORD *)(v2 + 1648); /*0x14012ddc1*/\n    v5 = v4 ? *(_QWORD *)(v4 + 8) : 0LL;\n    if ( v4 ) /*0x14012ddd8*/\n      break; /*0x14012ddd8*/\nLABEL_14:\n    v2 = v3; /*0x14012de08*/\n    if ( v3 ) /*0x14012de0e*/\n      v3 = *(_QWORD *)(v3 + 8); /*0x14012de10*/\n    else\nLABEL_3:\n      v3 = 0; /*0x14012ddb9*/\n  }\n  while ( 1 ) /*0x14012dde0*/\n  {\n    v6 = *(_QWORD *)(v4 + 96); /*0x14012dde0*/\n    if ( v6 <= a1 && (__int64)(a1 - v6) < *(unsigned int *)(v4 + 80) ) /*0x14012ddf5*/\n      return v2; /*0x14012de19*/\n    v4 = v5; /*0x14012ddf7*/\n    if ( v5 ) /*0x14012ddfd*/\n      v5 = *(_QWORD *)(v5 + 8); /*0x14012ddff*/\n    if ( !v4 ) /*0x14012de06*/\n      goto LABEL_14; /*0x14012de06*/\n  }\n}",
+  "line_count": 41,
+  "total_lines": 41,
+  "truncated": false,
+  "cursor": {
+    "done": true
+  },
+  "refs": [
+    {
+      "addr": "0x1408aef30",
+      "name": "qword_1408AEF30"
+    }
+  ]
+}

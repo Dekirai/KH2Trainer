@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RepoRoot>$([MSBuild]::GetDirectoryNameOfFileAbove('$(MSBuildThisFileDirectory)', 'Directory.Build.props'))</RepoRoot>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Fuzz.cs" />
+    <Compile Include="$(RepoRoot)/src/KH2Trainer.Core/AssetArchiveReader.cs" Link="Core/AssetArchiveReader.cs" />
+    <Compile Include="$(RepoRoot)/src/KH2Trainer.Core/AssetPackageCodec.cs" Link="Core/AssetPackageCodec.cs" />
+    <Compile Include="$(RepoRoot)/src/KH2Trainer.Core/AssetExplorerModels.cs" Link="Core/AssetExplorerModels.cs" />
+    <Compile Include="$(RepoRoot)/src/KH2Trainer.Core/AssetFileAccess.cs" Link="Core/AssetFileAccess.cs" />
+    <Compile Include="$(RepoRoot)/src/KH2Trainer.Core/AudioBankInspection.cs" Link="Core/AudioBankInspection.cs" />
+  </ItemGroup>
+</Project>

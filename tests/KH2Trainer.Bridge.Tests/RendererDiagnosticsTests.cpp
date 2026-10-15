@@ -28,7 +28,7 @@ constexpr uintptr_t ObjectRva=0x8A0970, AppAddress=0x220000;
 DWORD fakeNow=100000,appId=0,timingId=0,timingProcess=0,fakeTimingExit=STILL_ACTIVE;
 HANDLE appHandle=reinterpret_cast<HANDLE>(uintptr_t(0x1234));
 HANDLE timingHandle=reinterpret_cast<HANDLE>(uintptr_t(0x5678));
-bool throwUnlock=false;
+bool throwUnlock=false,throwTryLock=false;
 bool exitQueryWorks=true,outerHeld=false,innerHeld=false,tryBusy=false,frequencyWorks=true,qpcWorks=true;
 DWORD Now() { return fakeNow; }
 DWORD ThreadId(HANDLE h) { return h==appHandle?appId:(h==timingHandle?timingId:0); }
@@ -36,7 +36,7 @@ DWORD ProcessIdOfThread(HANDLE h) { return h==timingHandle?timingProcess:0; }
 BOOL ExitCodeThread(HANDLE h,DWORD* result) { if(h!=timingHandle||!exitQueryWorks)return FALSE; *result=fakeTimingExit;return TRUE; }
 int64_t fakeFrequency=1000000,fakeQpc=20000000;
 uintptr_t denied=0,deniedWrite=0,throwRead=0; SIZE_T deniedSize=0,deniedWriteSize=0;
-unsigned checks=0,failures=0,locks=0,unlocks=0,tries=0,leaves=0,published=0,qpcCalls=0;
+unsigned checks=0,failures=0,locks=0,unlocks=0,tries=0,leaves=0,published=0,qpcCalls=0,blockingLocks=0,mutexTries=0;
 int fakeLockResult=0,fakeUnlockResult=0;
 using Mutation=void(*)(); Mutation onLock=nullptr,onInner=nullptr,onQpc=nullptr;
 void Check(bool b,const char* label) { ++checks;if(!b){++failures;printf("FAIL %s\n",label);} }
@@ -82,10 +82,16 @@ void SupportCapability(unsigned slot) { shared.supported[slot/64]|=uint64_t(1)<<
 template<class T>T& At(uintptr_t rva) { return *reinterpret_cast<T*>(g_base+rva); }
 template<class T>T& GX(SIZE_T offset) { return At<T>(ObjectRva+offset); }
 template<SIZE_T N>void Seed(uintptr_t rva,const BYTE(&bytes)[N]) { memcpy(reinterpret_cast<void*>(g_base+rva),bytes,N); }
-int __cdecl MockLock(void* p) {
+int Acquire(void* p) {
     ++locks;Check(p==reinterpret_cast<void*>(g_base+ObjectRva+30848),"opaque presentation mutex address");
     if(fakeLockResult)return fakeLockResult;
     Check(!outerHeld&&!innerHeld,"outer mutex acquired exactly once");outerHeld=true;if(onLock)onLock();return 0;
+}
+int __cdecl MockLock(void* p) { ++blockingLocks;return Acquire(p); }
+int __cdecl MockTryLock(void* p) {
+    ++mutexTries;
+    if(throwTryLock)RaiseException(EXCEPTION_ACCESS_VIOLATION,0,0,nullptr);
+    return Acquire(p);
 }
 int __cdecl MockUnlock(void* p) {
     ++unlocks;Check(outerHeld&&!innerHeld&&p==reinterpret_cast<void*>(g_base+ObjectRva+30848),"captured outer unlock called exactly once");outerHeld=false;
@@ -119,15 +125,15 @@ void Reset() {
     g_gameThread=appId=GetCurrentThreadId();timingId=appId+1;timingProcess=GetCurrentProcessId();
     fakeTimingExit=STILL_ACTIVE;exitQueryWorks=true;g_selectedVtable=g_base+0x100000;
     denied=deniedWrite=throwRead=0;deniedSize=deniedWriteSize=0;
-    throwUnlock=outerHeld=innerHeld=tryBusy=false;frequencyWorks=qpcWorks=true;
-    locks=unlocks=tries=leaves=published=qpcCalls=0;fakeLockResult=fakeUnlockResult=0;
+    throwUnlock=throwTryLock=outerHeld=innerHeld=tryBusy=false;frequencyWorks=qpcWorks=true;
+    locks=unlocks=tries=leaves=published=qpcCalls=blockingLocks=mutexTries=0;fakeLockResult=fakeUnlockResult=0;
     onLock=onInner=onQpc=nullptr;
     GX<uintptr_t>(0)=g_base+display_preview::VtableRva;
     GX<uintptr_t>(736)=g_base+0x200000;GX<uintptr_t>(1144)=g_base+0x210000;
     GX<HANDLE>(784)=appHandle;GX<HANDLE>(792)=timingHandle;GX<int>(808)=0;GX<uintptr_t>(1000)=g_base+AppAddress;
     At<uintptr_t>(display_preview::AppRva)=g_base+AppAddress;At<uintptr_t>(AppAddress)=g_selectedVtable;At<int>(AppAddress+4752)=-1;
     At<int>(display_preview::EpochRva)=-100;
-    display_preview::testLock=MockLock;display_preview::testUnlock=MockUnlock;display_preview::testRuntimeAvailable=true;
+    display_preview::testLock=MockLock;display_preview::testUnlock=MockUnlock;display_preview::testTryLock=MockTryLock;display_preview::testRuntimeAvailable=true;
     // Preview setters remain null. Executing any game-code pointer in this
     // PAGE_READWRITE fixture would fault, while legitimate snapshots must pass.
     display_preview::testBrightness=nullptr;display_preview::testColor=nullptr;
@@ -204,6 +210,12 @@ void TestLifetimes() {
     }
 }
 void TestLocksAndFaults() {
+    Reset();Run();Check(mutexTries==1&&!blockingLocks&&published==16,"passive diagnostics never calls waiting lock");
+    Reset();fakeLockResult=3;outerHeld=true;Run();Check(mutexTries==1&&!blockingLocks&&!unlocks&&!tries&&!published&&outerHeld&&!renderer_diagnostics::faulted&&!display_preview::faulted,"busy presentation preserves foreign ownership and skips all diagnostic reads");
+    outerHeld=false;fakeLockResult=0;Run();Check(published==16&&mutexTries==2&&!blockingLocks&&unlocks==1,"diagnostics resume on next uncontended sample");
+    Reset();display_preview::testTryLock=nullptr;Run();Check(!published&&!locks&&!unlocks&&!blockingLocks,"missing try export never falls back to blocking diagnostics");
+    Reset();onLock=[]{display_preview::testTryLock=nullptr;};Run();Check(!published&&unlocks==1&&!blockingLocks,"changed try export discards copied diagnostic sample");
+    Reset();throwTryLock=true;Check(CatchSnapshot()&&display_preview::faulted&&!unlocks&&!published&&!blockingLocks,"diagnostic try exception never unlocks unproven ownership");
     Reset();fakeLockResult=1;Run();Check(!published&&locks==1&&!unlocks&&!tries,"failed outer acquisition is never unlocked");
     Reset();tryBusy=true;Run();Check(published==12&&tries==1&&!leaves&&unlocks==1,"busy history lock skips only four times");
     Reset();fakeUnlockResult=1;Run();Check(!published&&renderer_diagnostics::faulted&&unlocks==1,"unlock failure discards every copied value");

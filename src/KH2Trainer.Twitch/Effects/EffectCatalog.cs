@@ -86,6 +86,16 @@ public static class EffectCatalog
         },
         new()
         {
+            Key = "timer-refill", Category = RewardCategory.Help, Cost = 1000,
+            Title = "Refill Form or Summon Timer", TitleDe = "Form- oder Beschwörungstimer auffüllen",
+            Prompt = "Refills the active form or summon timer once. Adds no experience and leaves Drive bars unchanged.",
+            PromptDe = "Füllt den aktiven Form- oder Beschwörungstimer einmal auf. Vergibt keine Erfahrung und lässt Drive-Balken unverändert.",
+            Features = ["player.gauge.fill", "player.gauge.mode", "player.gauge.remaining", "player.gauge.maximum"],
+            Check = TimerRefillCheck,
+            Start = ctx => ctx.RunAsync("player.gauge.fill"),
+        },
+        new()
+        {
             Key = "care-package", Category = RewardCategory.Help, Cost = 1000, Amount = 2, AmountLabel = "of each", AmountLabelDe = "je Sorte", MaxAmount = 99,
             Title = "Potion Care Package", TitleDe = "Trank-Care-Paket",
             Prompt = "Adds Potions, Hi-Potions and Ethers to Sora's bag.",
@@ -221,6 +231,34 @@ public static class EffectCatalog
             },
             Start = ctx => ctx.RunAsync("damage.target.general", 250),
         },
+        new()
+        {
+            Key = "enemy-hp-cut", Category = RewardCategory.Help, Cost = 3000, MaxWaitSeconds = 120,
+            Amount = 25, MinAmount = 1, MaxAmount = 99, AmountLabel = "% current HP", AmountLabelDe = "% aktuelle HP",
+            Title = "Cut Enemy HP", TitleDe = "Gegner-HP reduzieren",
+            Prompt = "Removes a percentage of the locked enemy's current HP once. Respects its native HP floor and cannot kill it; phase scripts may react.",
+            PromptDe = "Zieht einmal einen Anteil der aktuellen HP des anvisierten Gegners ab. Beachtet seine HP-Untergrenze und tötet ihn nicht; Phasenskripte können reagieren.",
+            Features = ["target_reduce_hp_percent", "target_lock_mode", "target_hp"],
+            Check = ctx =>
+            {
+                var locked = TargetLocked(ctx);
+                if (locked.Kind != ReadinessKind.Ready) return locked;
+                if (ctx.Read("target_hp") is not double hp || hp > 1000000 || hp != Math.Truncate(hp))
+                    return Readiness.Wait("Waiting for valid enemy HP.");
+                return hp <= 1 ? Readiness.Reject("The enemy has no removable HP.") : Readiness.Ready;
+            },
+            Start = ctx => ctx.RunAsync("target_reduce_hp_percent", ctx.Amount),
+        },
+        new()
+        {
+            Key = "calm-enemy", Category = RewardCategory.Help, Cost = 1000, MaxWaitSeconds = 120,
+            Title = "Calm the Enemy", TitleDe = "Gegner beruhigen",
+            Prompt = "Resets the locked enemy's revenge value once. A counterattack that has already started continues.",
+            PromptDe = "Setzt den Revenge-Wert des anvisierten Gegners einmal zurück. Ein bereits gestarteter Konter läuft weiter.",
+            Features = ["target_reset_revenge", "target_lock_mode", "target_hp", "target_revenge", "target_revenge_threshold"],
+            Check = CalmEnemyCheck,
+            Start = ctx => ctx.RunAsync("target_reset_revenge"),
+        },
         Form("valor", 1, RewardCategory.Help, 2000, 45, "Valor Form", "Mut-Form"),
         Form("wisdom", 2, RewardCategory.Help, 2000, 45, "Wisdom Form", "Weisheits-Form"),
         Form("limit", 3, RewardCategory.Help, 2000, 45, "Limit Form", "Limit-Form"),
@@ -252,6 +290,19 @@ public static class EffectCatalog
             Features = ["gummi.projectiles.clear", "gummi.hp"],
             Check = InGummiMission,
             Start = ctx => ctx.RunAsync("gummi.projectiles.clear"),
+        },
+
+        new()
+        {
+            Key = "gummi-special-charge", Category = RewardCategory.Help, Cost = 1000,
+            Amount = 100, MinAmount = 1, MaxAmount = 900, AmountLabel = "base charge points", AmountLabelDe = "Basis-Ladepunkte",
+            RequiresPlayerControl = false,
+            Title = "Gummi Special Ammo", TitleDe = "Gumi-Spezialmunition",
+            Prompt = "Adds charge to the installed Gummi special weapon. Native bonuses affect the gain; every 100 resulting points adds stock, up to 9.",
+            PromptDe = "Lädt die installierte Gumi-Spezialwaffe auf. Native Boni beeinflussen den Zuwachs; je 100 resultierende Punkte ergeben einen Vorrat, bis maximal 9.",
+            Features = ["gummi.add_special_charge", "gummi.hp", "gummi.special_stock", "gummi.special_progress"],
+            Check = GummiChargeCheck,
+            Start = ctx => ctx.RunAsync("gummi.add_special_charge", ctx.Amount),
         },
 
         // ---- Harmful ------------------------------------------------------------------------
@@ -381,6 +432,36 @@ public static class EffectCatalog
             },
             Start = ctx => ctx.RunAsync("target_set_revenge", ctx.Read("target_revenge_threshold") ?? 0),
         },
+        new()
+        {
+            Key = "enemy-armor", Category = RewardCategory.Harm, Cost = 2000, MaxWaitSeconds = 120,
+            Title = "Enemy Armor", TitleDe = "Gegnerrüstung",
+            Prompt = "Sets the locked enemy's general received-hit factor to 50% once. Other modifiers still apply; it stays until the game replaces it.",
+            PromptDe = "Setzt den allgemeinen Trefferfaktor des anvisierten Gegners einmal auf 50 %. Andere Modifikatoren wirken weiter; bleibt bis zur Ersetzung durch das Spiel.",
+            Features = ["damage.target.general", "target_lock_mode", "target_hp"],
+            Check = ctx =>
+            {
+                var locked = TargetLocked(ctx);
+                if (locked.Kind != ReadinessKind.Ready) return locked;
+                if (ctx.Read("damage.target.general") is not double factor || factor < 0 || factor > 255 || factor != Math.Truncate(factor))
+                    return Readiness.Wait("Waiting for the enemy's received-hit factor.");
+                return factor <= 50 ? Readiness.Reject("This enemy already has equal or stronger armor.") : Readiness.Ready;
+            },
+            Start = ctx => ctx.RunAsync("damage.target.general", 50),
+        },
+        new()
+        {
+            Key = "heavy-jumps", Category = RewardCategory.Harm, Cost = 1500, DurationSeconds = 30, Group = "jump",
+            Title = "Heavy Jumps", TitleDe = "Schwere Sprünge",
+            Prompt = "Halves base jump height and raises the falling-speed limit. Gravity is unchanged; High Jump and special actions may use different values.",
+            PromptDe = "Halbiert die Basis-Sprunghöhe und erhöht das Falltempolimit. Die Schwerkraft bleibt gleich; Sportsfreund und Spezialaktionen können andere Werte verwenden.",
+            AllowedRoles = EffectPlayerRoles.FieldPlayers,
+            Features = ["movement.base_jump_height", "movement.fall_speed"],
+            Check = ctx => ctx.MovementStartReadiness(MovementMask.Air),
+            ActiveCheck = ctx => ctx.MovementActiveReadiness,
+            Start = ctx => ctx.StartMovementAsync(MovementMask.Air, v => MovementValues.FromValues(
+                0, 0, Math.Min(100, v.Value(2) * 2), v.Value(3) * .5f)),
+        },
         Values("glass-cannon", RewardCategory.Harm, 3000, 30, "defense", "Glass Cannon", "Glaskanone",
             "Sora takes 2.5x damage for a while.", "Sora nimmt eine Weile lang 2,5-fachen Schaden.",
             ("damage.player.general", 250)),
@@ -419,6 +500,8 @@ public static class EffectCatalog
             PromptDe = "Eine Weile lang eine zufällige Drive-Form. Anti-Form inklusive!",
             Features = FormFeatures,
             Check = FormCheck,
+            CheckAfterRelease = (ctx, releasing) => FormReadiness(ctx, releasing),
+            ActiveCheck = ctx => ctx.DriveRevertActiveReadiness,
             Start = ctx => StartForm(ctx, ctx.Random.Next(1, 7)),
             Monitor = FormMonitor,
             End = EndForm,
@@ -522,8 +605,9 @@ public static class EffectCatalog
         },
         Brightness("lights-out", 1500, 30, -50, "Lights Out", "Licht aus",
             "Turns the brightness all the way down for a while.", "Dreht die Helligkeit eine Weile lang ganz herunter."),
-        Brightness("flashbang", 1000, 8, 50, "Flashbang", "Blendgranate",
-            "Maximum brightness for a few seconds. Sunglasses recommended.", "Ein paar Sekunden maximale Helligkeit. Sonnenbrille empfohlen."),
+        Brightness("flashbang", 1000, 8, 5000, "Flashbang", "Blendgranate",
+            "Strongly overexposes the image for a few seconds, then restores the previous brightness. The result depends on the scene.",
+            "Überbelichtet das Bild für einige Sekunden stark und stellt danach die vorherige Helligkeit wieder her. Das Ergebnis hängt von der Szene ab."),
         new()
         {
             Key = "deja-vu", Category = RewardCategory.Annoying, Cost = 2500, DurationSeconds = 10, Group = "position",
@@ -601,6 +685,8 @@ public static class EffectCatalog
         PromptDe = promptDe ?? $"Sora verwandelt sich eine Weile lang in die {nameDe}.",
         Features = FormFeatures,
         Check = FormCheck,
+        CheckAfterRelease = (ctx, releasing) => FormReadiness(ctx, releasing),
+        ActiveCheck = ctx => ctx.DriveRevertActiveReadiness,
         Start = ctx => StartForm(ctx, form),
         Monitor = FormMonitor,
         End = EndForm,
@@ -612,7 +698,12 @@ public static class EffectCatalog
         ["drive.trigger", "drive.revert", "drive.cancel", "combat.formtimer", "player.form.id", "drive.phase", "drive.result", "drive.requested"];
 
     /// <summary>The bridge takes one Drive switch at a time; a queued form waits until the previous revert or transformation is done.</summary>
-    private static Readiness FormCheck(EffectContext ctx) => NoDriveTransition(ctx);
+    private static Readiness FormCheck(EffectContext ctx) => FormReadiness(ctx, null);
+    private static Readiness FormReadiness(EffectContext ctx, EffectContext? releasing)
+    {
+        var transition = NoDriveTransition(ctx);
+        return transition.Kind == ReadinessKind.Ready ? ctx.DriveRevertStartReadiness(releasing) : transition;
+    }
 
     private static Readiness NoDriveTransition(EffectContext ctx) =>
         ctx.Read("drive.phase") is > 0 ? Readiness.Wait("Waiting for the current Drive transformation to finish.") : Readiness.Ready;
@@ -625,6 +716,7 @@ public static class EffectCatalog
         ctx.State["requestedBefore"] = ctx.Read("drive.requested") ?? -1;
         ctx.Detail = FormNames[form];
         ctx.Established = false; // The timer starts once Sora has actually transformed.
+        await ctx.StartDriveRevertLockAsync();
         // Hold the form timer so the form lasts exactly as long as the reward says. From base form it is set
         // first (a refused transformation then changes nothing); in another form it would refill that form's
         // timer on every refused attempt, so it is set only after the switch was accepted.
@@ -653,7 +745,7 @@ public static class EffectCatalog
             // Evidence that this switch ran: it was seen running, or its result or target changed (a short switch can fall between two polls).
             bool switched = ctx.State.ContainsKey("busy") || (result ?? -1) != ctx.State["resultBefore"] || (requested ?? -1) != ctx.State["requestedBefore"];
             bool onTarget = phase == 0 && form == target && (requested is null || requested == target) && result is null or 2;
-            if (onTarget && (switched || ctx.State["from"] != target))
+            if (onTarget && (switched || ctx.State["from"] != target) && ctx.DriveRevertActiveReadiness.Kind == ReadinessKind.Ready)
             {
                 ctx.Established = true;
                 return EffectProgress.Running;
@@ -675,8 +767,9 @@ public static class EffectCatalog
             return;
         }
         await ctx.RestoreAsync();
+        if (ctx.HasDriveRevertCleanup) throw new EffectDeferredException("Waiting to release the voluntary Revert lock before ending this form.");
         // A replacing form reverts by itself, Kick Out already sent the revert, and a form the game ended needs nothing.
-        if (ctx.EndReason is EndReason.Replaced or EndReason.Interrupted || ctx.Read("player.form.id") != ctx.State["form"]) return;
+        if (ctx.EndReason is EndReason.Replaced or EndReason.Interrupted || ctx.DriveRevertOwnershipLost || ctx.Read("player.form.id") != ctx.State["form"]) return;
         await ctx.RunAsync("drive.revert");
     }
 
@@ -780,6 +873,38 @@ public static class EffectCatalog
 
     private static bool Full(EffectContext ctx, string value, string maximum) =>
         ctx.Read(value) is double current && ctx.Read(maximum) is double max && max > 0 && current >= max;
+
+    private static Readiness TimerRefillCheck(EffectContext ctx)
+    {
+        if (ctx.Read("player.gauge.mode") is not (2 or 3))
+            return Readiness.Wait("Waiting for an active form or summon timer.");
+        if (ctx.Read("player.gauge.remaining") is not double current || ctx.Read("player.gauge.maximum") is not double maximum ||
+            maximum <= 0 || maximum > 1000000 || current < 0 || current > maximum)
+            return Readiness.Wait("Waiting for a valid form or summon timer.");
+        return current == maximum ? Readiness.Reject("The active timer is already full.") : Readiness.Ready;
+    }
+
+    private static Readiness CalmEnemyCheck(EffectContext ctx)
+    {
+        var locked = TargetLocked(ctx);
+        if (locked.Kind != ReadinessKind.Ready) return locked;
+        if (ctx.Read("target_revenge") is not double current || current < 0 || current > 1000000 ||
+            ctx.Read("target_revenge_threshold") is not double threshold || threshold < .000001 || threshold > 1000000)
+            return Readiness.Wait("Waiting for a valid enemy revenge value.");
+        return current == 0 ? Readiness.Reject("The enemy's revenge value is already zero.") : Readiness.Ready;
+    }
+
+    private static Readiness GummiChargeCheck(EffectContext ctx)
+    {
+        var mission = InGummiMission(ctx);
+        if (mission.Kind != ReadinessKind.Ready) return mission;
+        if (ctx.Read("gummi.hp") is not > 0)
+            return Readiness.Wait("Waiting for a living Gummi Ship.");
+        if (ctx.Read("gummi.special_stock") is not double stock || stock < 0 || stock > 9 || stock != Math.Truncate(stock) ||
+            ctx.Read("gummi.special_progress") is not double progress || progress < 0 || progress > 100 || progress != Math.Truncate(progress))
+            return Readiness.Wait("Waiting for an installed special weapon and its charge state.");
+        return stock == 9 && progress == 100 ? Readiness.Reject("The special weapon is already fully charged.") : Readiness.Ready;
+    }
 
     private static bool InForm(EffectContext ctx) => ctx.Read("player.form.id") is double form && form != 0;
 

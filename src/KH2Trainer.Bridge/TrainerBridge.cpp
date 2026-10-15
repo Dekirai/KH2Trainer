@@ -307,6 +307,7 @@ bool PlayerHealthControlReady(const TrainerContext& c);
 #include "WindowDisplayFeatures.inl"
 #include "RendererAaFeatures.inl"
 #include "AudioFeatures.inl"
+#include "AudioRequestFeatures.inl"
 #include "SpatialAudioFeatures.inl"
 #include "MotionFeatures.inl"
 #include "RescueFeatures.inl"
@@ -320,6 +321,25 @@ static_assert(movement_tx::ResponseOffset+sizeof(movement_tx::Response)<=offseto
 bool PlayerHealthControlReady(const TrainerContext& c) { return gameplay_state::Inspect(c).controllable; }
 
 bool g_hostExpired = false;
+// The host reads at 5 Hz. Diagnostic sampling must not run at the game's
+// presentation rate; commands and effect/lifetime maintenance remain per frame.
+constexpr DWORD kSnapshotIntervalMs = 100;
+struct SnapshotSchedule {
+    bool published = false, hostExpired = false;
+    DWORD tick = 0;
+    TrainerContext context{};
+};
+SnapshotSchedule g_snapshotSchedule{};
+bool SnapshotDue(const TrainerContext& c, DWORD now, bool commandHandled) {
+    const auto& previous = g_snapshotSchedule;
+    const bool changed = c.base != previous.context.base || c.player != previous.context.player ||
+        c.status != previous.context.status || c.sceneReady != previous.context.sceneReady ||
+        g_hostExpired != previous.hostExpired;
+    if (previous.published && !commandHandled && !changed &&
+        static_cast<DWORD>(now - previous.tick) < kSnapshotIntervalMs) return false;
+    g_snapshotSchedule = {true, g_hostExpired, now, c};
+    return true;
+}
 bool HostHeartbeatFresh(DWORD now, DWORD heartbeat) {
     // Both processes use the same GetTickCount clock, including 32-bit wrap.
     // A newly observed timestamp may still be old after background suspension.
@@ -372,6 +392,7 @@ void BestEffortTrainerFailureReset() {
 
 void TrainerFrame() {
     TrainerContext c = MakeTrainerContext();
+    bool commandHandled = false;
     const DWORD now = GetTickCount();
     const DWORD heartbeat = g_shared->hostHeartbeat;
     const bool hostFresh = HostHeartbeatFresh(now, heartbeat);
@@ -389,6 +410,7 @@ void TrainerFrame() {
     movement_tx::Tick(c,g_hostExpired);
     const LONG request = InterlockedCompareExchange(&g_shared->requestSequence, 0, 0);
     if (request != InterlockedCompareExchange(&g_shared->responseSequence, 0, 0)) {
+        commandHandled = true;
         MemoryBarrier();
         const LONG commandId = g_shared->commandId;
         double args[8];
@@ -421,7 +443,7 @@ void TrainerFrame() {
             result = {0, commandId == 1112 ? L"Developer menu requested; waiting for a playable scene if needed." : L"Developer menu hidden."};
         } else if (commandId >= 1000 && commandId < 1000 + static_cast<LONG>(kValueCount)) {
             const unsigned slot = static_cast<unsigned>(commandId - 1000);
-            if (!ShortcutHandle(slot, args, result) && !PlayerHandle(c, slot, args, result) && !WorldHandle(c, slot, args, result) && !CombatHandle(c, slot, args, result) && !DamageTuningHandle(c, slot, args, result) && !ActorMovementHandle(c, slot, args, result) && !TargetingHandle(c, slot, args, result) && !CollisionHandle(c, slot, args, result) && !GummiProjectileHandle(c, slot, args, result) && !LootHandle(c, slot, args, result) && !DriveHandle(c, slot, args, result) && !GummiHandle(c, slot, args, result) && !GummiExtraHandle(c, slot, args, result) && !GummiEditorHandle(c, slot, args, result) && !DisplayHandle(c, slot, args, result) && !WindowDisplayHandle(c, slot, args, result) && !RendererAaHandle(c, slot, args, result) && !AudioHandle(c, slot, args, result) && !MotionHandle(c, slot, args, result) && !RescueHandle(c, slot, args, result) && !MissionHandle(c, slot, args, result) && !MissionEventHandle(c, slot, args, result) && !CameraExtraHandle(c, slot, args, result))
+            if (!ShortcutHandle(slot, args, result) && !PlayerHandle(c, slot, args, result) && !WorldHandle(c, slot, args, result) && !CombatHandle(c, slot, args, result) && !DamageTuningHandle(c, slot, args, result) && !ActorMovementHandle(c, slot, args, result) && !TargetingHandle(c, slot, args, result) && !CollisionHandle(c, slot, args, result) && !GummiProjectileHandle(c, slot, args, result) && !LootHandle(c, slot, args, result) && !DriveHandle(c, slot, args, result) && !GummiHandle(c, slot, args, result) && !GummiExtraHandle(c, slot, args, result) && !GummiEditorHandle(c, slot, args, result) && !DisplayHandle(c, slot, args, result) && !WindowDisplayHandle(c, slot, args, result) && !RendererAaHandle(c, slot, args, result) && !AudioRequestHandle(c, slot, args, result) && !AudioHandle(c, slot, args, result) && !MotionHandle(c, slot, args, result) && !RescueHandle(c, slot, args, result) && !MissionHandle(c, slot, args, result) && !MissionEventHandle(c, slot, args, result) && !CameraExtraHandle(c, slot, args, result))
                 ProgressionHandle(c, slot, args, result);
         }
         StringCchCopyW(g_shared->resultText, _countof(g_shared->resultText), result.text);
@@ -437,7 +459,11 @@ void TrainerFrame() {
         ProgressionTick(c);
         CombatTick(c);
         CollisionTick(c);
-        DriveTick(c);
+    }
+    // Owned command-table cleanup must also retry after the host expires.
+    // DriveTick independently gates every new native transition on a fresh host.
+    DriveTick(c);
+    if (!g_hostExpired) {
         // A queued switch may start its second native transition in this tick.
         c = MakeTrainerContext();
         GummiTick(c);
@@ -447,6 +473,9 @@ void TrainerFrame() {
     }
     c=MakeTrainerContext();
     movement_tx::Tick(c,g_hostExpired);
+    // Preserve the entire previous coherent sample, including its publication
+    // time, between refreshes. Never make old values appear newly observed.
+    if (!SnapshotDue(c, GetTickCount(), commandHandled)) return;
     InterlockedIncrement(&g_shared->snapshotSequence);
     g_shared->sceneReady = c.sceneReady ? 1 : 0;
     ZeroMemory(g_shared->validValues, sizeof(g_shared->validValues));
@@ -454,7 +483,7 @@ void TrainerFrame() {
     ZeroMemory(g_shared->values, sizeof(g_shared->values));
     PlayerCapabilities(); WorldCapabilities(); ProgressionCapabilities(); CombatCapabilities();
     DriveCapabilities(); GummiCapabilities(); RenderCapabilities();
-    AudioCapabilities(); MotionCapabilities();
+    AudioCapabilities(); AudioRequestCapabilities(); MotionCapabilities();
     RescueCapabilities();
     MissionCapabilities(); MissionEventCapabilities(); CameraExtraCapabilities();
     DamageTuningCapabilities(); DisplayCapabilities();
@@ -467,7 +496,7 @@ void TrainerFrame() {
     SupportCapability(112); SupportCapability(113); SupportCapability(114); SupportCapability(118);
     PlayerSnapshot(c); WorldSnapshot(c); ProgressionSnapshot(c); CombatSnapshot(c);
     DriveSnapshot(c); GummiSnapshot(c); RenderSnapshot(c);
-    AudioSnapshot(c); MotionSnapshot(c);
+    AudioSnapshot(c); AudioRequestSnapshot(c); MotionSnapshot(c);
     RescueSnapshot(c);
     MissionSnapshot(c); CameraExtraSnapshot(c);
     DamageTuningSnapshot(c); DisplaySnapshot(c);
@@ -601,6 +630,33 @@ bool InstallDebugTaskGuard() {
     return true;
 }
 
+void ExecuteTrainerShortcut(unsigned shortcut) {
+    if (!shortcut) return;
+    TrainerContext c = MakeTrainerContext();
+    TrainerResult shortcutResult{1, L"Unsupported training shortcut."};
+    double args[8]{};
+    if (shortcut == 1114) {
+        ResetTrainerEffects(c);
+        shortcutResult = {0, L"Training effects and shortcuts disabled. Completed progression changes remain."};
+    } else if (shortcut == 1079 || shortcut == 1116) {
+        const unsigned slot = shortcut - 1000;
+        // Input decisions use the current game-thread state, never a diagnostic
+        // sample that may precede an earlier key edge in this 100 ms interval.
+        const bool active = slot == 116 ? world_features::pausePhase != world_features::PausePhase::Off :
+            world_features::actorFreezeOwned && world_features::SameFreezeScene() &&
+            (At<unsigned>(0x2A11400) & 0x20);
+        args[0] = active ? 0 : 1;
+        WorldHandle(c, slot, args, shortcutResult);
+    } else if (shortcut == 1117) {
+        WorldHandle(c, 117, args, shortcutResult);
+    } else PlayerHandle(c, shortcut - 1000, args, shortcutResult);
+    ++shortcuts::eventSequence;
+    shortcuts::lastCommand = shortcut;
+    shortcuts::lastResult = shortcutResult.code;
+    g_snapshotSchedule.published = false; // publish the result on the next update
+    Publish(static_cast<Status>(g_shared->status), static_cast<Error>(g_shared->errorCode), shortcutResult.text);
+}
+
 void OnFrame(void* app, intptr_t result) {
     if (InterlockedCompareExchange(&g_disabled, 0, 0)) return;
     InterlockedIncrement(&g_shared->frameCount);
@@ -632,26 +688,7 @@ void OnFrame(void* app, intptr_t result) {
         (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0 &&
         !(GetAsyncKeyState(VK_MENU) & 0x8000) && !(GetAsyncKeyState(VK_SHIFT) & 0x8000),
         foreground, !g_hostExpired, GetTickCount());
-    if (shortcut) {
-        TrainerContext c = MakeTrainerContext();
-        TrainerResult shortcutResult{1, L"Unsupported training shortcut."};
-        double args[8]{};
-        if (shortcut == 1114) {
-            ResetTrainerEffects(c);
-            shortcutResult = {0, L"Training effects and shortcuts disabled. Completed progression changes remain."};
-        } else if (shortcut == 1079 || shortcut == 1116) {
-            const unsigned slot = shortcut - 1000;
-            const bool wasFrozen = (g_shared->validValues[slot / 64] & (uint64_t(1) << (slot % 64))) && g_shared->values[slot] != 0;
-            args[0] = wasFrozen ? 0 : 1;
-            WorldHandle(c, slot, args, shortcutResult);
-        } else if (shortcut == 1117) {
-            WorldHandle(c, 117, args, shortcutResult);
-        } else PlayerHandle(c, shortcut - 1000, args, shortcutResult);
-        ++shortcuts::eventSequence;
-        shortcuts::lastCommand = shortcut;
-        shortcuts::lastResult = shortcutResult.code;
-        Publish(static_cast<Status>(g_shared->status), static_cast<Error>(g_shared->errorCode), shortcutResult.text);
-    }
+    ExecuteTrainerShortcut(shortcut);
 
     LONG command = InterlockedExchange(&g_shared->command, None);
     if (command == None && keyEdge) command = Toggle;

@@ -1,0 +1,53 @@
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include "fixture.h"
+#include "../../src/KH2Trainer.Bridge/MotionEntryPlan.h"
+// The OS reads original bytes and unwind metadata in private memory. No copied
+// original instruction is executed, and no entry is installed in a game.
+static unsigned checks=0,failures=0;
+static void Check(bool b,const char* what){++checks;if(!b){++failures;printf("FAIL %s\n",what);}}
+constexpr uint64_t RB=0x1234567812345678ULL,RS=0x2345678923456789ULL,RD=0x3456789034567890ULL,Return=0x123456780000ULL;
+static void Put(uintptr_t p,uint64_t v){memcpy(reinterpret_cast<void*>(p),&v,8);}
+static void Simulate(CONTEXT& c,uintptr_t entry,unsigned offset,bool full){
+    if(offset>=5)Put(entry+8,RB);
+    if(!full){if(offset>=5)c.Rbx=0x11;return;}
+    if(offset>=10)Put(entry+16,RS);
+    if(offset>=11){c.Rsp-=8;Put(c.Rsp,RD);c.Rdi=0x22;}
+    if(offset>=15){c.Rsp-=64;c.Rbx=0x33;c.Rsi=0x44;}
+    if(offset>=20){memcpy(reinterpret_cast<void*>(c.Rsp+48),&c.Xmm6,16);c.Xmm6={0x55,0x66};}
+    if(offset>=34){memcpy(reinterpret_cast<void*>(c.Rsp+32),&c.Xmm7,16);c.Xmm7={0x77,0x88};}
+}
+static bool Probe(const unsigned char* code,size_t size,const unsigned char* unwind,size_t uwSize,unsigned offset,bool full,bool wrong=false){
+    auto* p=static_cast<unsigned char*>(VirtualAlloc(nullptr,4096,MEM_COMMIT|MEM_RESERVE,PAGE_READWRITE));
+    Check(p!=nullptr,"private image allocated");if(!p)return false;
+    memcpy(p,code,size);memcpy(p+512,unwind,uwSize);RUNTIME_FUNCTION fn{0,static_cast<DWORD>(size),512};
+    DWORD old=0;Check(VirtualProtect(p,4096,PAGE_READONLY,&old)!=FALSE,"image remains non-executable read-only");
+    alignas(16) unsigned char stack[4096];memset(stack,0xA5,sizeof(stack));const auto entry=reinterpret_cast<uintptr_t>(stack)+2040;
+    CONTEXT c{};c.ContextFlags=CONTEXT_FULL;c.Rsp=entry;c.Rip=reinterpret_cast<uintptr_t>(p)+offset;c.Rbx=RB;c.Rsi=RS;c.Rdi=RD;
+    const M128A x6{0xabcdef0123456789ULL,0x0123456789abcdefLL},x7{0xfedcba9876543210ULL,0x1234567812345678LL};c.Xmm6=x6;c.Xmm7=x7;
+    Put(entry,Return);Simulate(c,entry,offset,full);unsigned char before[sizeof(stack)];memcpy(before,stack,sizeof(stack));
+    PVOID handlerData=nullptr;DWORD64 establisher=0;
+    auto handler=RtlVirtualUnwind(UNW_FLAG_NHANDLER,reinterpret_cast<DWORD64>(p),c.Rip,&fn,&c,&handlerData,&establisher,nullptr);
+    const bool restored=c.Rsp==entry+8&&c.Rip==Return&&c.Rbx==RB&&c.Rsi==RS&&c.Rdi==RD&&!memcmp(&c.Xmm6,&x6,16)&&!memcmp(&c.Xmm7,&x7,16);
+    Check(handler==nullptr,"no exception handler present");Check(!memcmp(before,stack,sizeof(stack)),"unwinding does not modify synthetic stack");
+    Check(wrong?!restored:restored,wrong?"full-frame unwind is unsuitable for copied five bytes":"OS reconstructs original nonvolatiles and caller");
+    printf("case full=%u wrongMetadata=%u offset=%u restored=%u\n",full,wrong,offset,restored);
+    Check(VirtualFree(p,0,MEM_RELEASE)!=FALSE,"private image released");return restored;
+}
+int main(){
+    const unsigned offsets[]={0,5,10,11,15,20,34,39};
+    for(unsigned o:offsets)Probe(EntryBody,sizeof(EntryBody),OriginalUnwind,sizeof(OriginalUnwind),o,true);
+    motion_entry_plan::Plan p{};const auto kind=motion_entry_plan::Kind::NormalBind;
+    Check(motion_entry_plan::BuildBreakpoint(kind,0x140000000,EntryBody,sizeof(EntryBody),0x180000000,p)==motion_entry_plan::Error::None,"current production plan accepts independently extracted original bytes");
+    Check(p.prefixSize==5&&p.codeSize==18&&!memcmp(p.image,EntryBody,5),"current plan retains exact prefix");
+    Check(p.unwindSize==sizeof(PrefixUnwind)&&!memcmp(p.image+motion_entry_plan::UnwindOffset,PrefixUnwind,sizeof(PrefixUnwind)),"plan unwind equals independent standalone derivation");
+    const unsigned prefixOffsets[]={0,5,15};
+    for(unsigned o:prefixOffsets)Probe(p.image,p.codeSize,p.image+motion_entry_plan::UnwindOffset,p.unwindSize,o,false);
+    Probe(p.image,p.codeSize,OriginalUnwind,sizeof(OriginalUnwind),15,false,true);
+    printf("MotionUnwindReviewTests: %u checks, %u failures. OS unwind only; no original-code execution.\n",checks,failures);
+    return failures?1:0;
+}

@@ -1,0 +1,54 @@
+{
+  "version": "0.12.16",
+  "preparedAt": "2026-10-11T07:48:38.964950+00:00",
+  "goalComplete": false,
+  "studies": [
+    {
+      "folder": "docs/research/voice-origin-resources-20261011",
+      "manifestSha256": "694b3f0499140b05e73c07916fa535fc76198e8dfb6e6711a569d1a0c9f7e6de",
+      "verifiedOwnFiles": 19
+    },
+    {
+      "folder": "docs/research/audio-observation-design-20261011",
+      "manifestSha256": "0fdfdde07ceacb75c6326043959401c5ce4051145d44a2a3355f8d10f88537a6",
+      "verifiedOwnFiles": 15
+    },
+    {
+      "folder": "docs/research/audio-request-implementation-20261011",
+      "manifestSha256": "bb7d29b1d871755196f6adcee558f63117db8e3f2b3bf0a13ba51261fe636045",
+      "verifiedOwnFiles": 20
+    },
+    {
+      "folder": "docs/research/audio-request-integration-20261011-v01216",
+      "manifestSha256": "a8e6c8f1045ff2c77e1dad4f97ba73613be13b51e043b4c4b35c3633fad6373d",
+      "verifiedOwnFiles": 47
+    }
+  ],
+  "findings": [
+    "Added three readonly Audio > Requests observations: free pool slots, reservations since the latest processing/reset pass, and the sampled admission gate mask. Invalid or changed samples are omitted; no native audio call or resource traversal is made.",
+    "The captured reservation paths reject native inhibition, free count <=16 and interval count >24. The reset counter is not a rate/history and a clear sampled gate mask does not establish playback.",
+    "Traced ORIGIN replacement wrappers, borrowed payload publication, Voice registration and deferred bank cleanup. Mode2 skips both payload free and pointer clear in the selected BankEntry destructor; serializer preparation requires an existing replacement record.",
+    "Voice registration stores the low32 payload key in ORIGIN+12. Modeled alias/zero cases and conditional hash-bucket offset assumptions remain explicit; no live collision or safe resource replacement is claimed.",
+    "The existing Final/Valor/Master second-weapon fallback remains unchanged. The reported crash was confirmed by the user to involve an older EXE. Current code and packaged v15 source were reviewed and DriveGuardTests passed1599 checks.",
+    "Dark UI renders cover all eight admission-limit combinations, including complete wrapped text. Profile, older-bridge, invalid-sample and disconnect behavior passed isolated tests."
+  ],
+  "nextAnalysis": [
+    "Continue the broad IDA analysis; specific claims do not establish full semantics or complete executable coverage.",
+    "Finish and independently review artifacts/audio-bank-retirement-20261011 before integrating: concrete lower bank deletion, stop/eligibility disagreement, partial cancellation effects, pool admission and signed16 reference counters.",
+    "Close ORIGIN payload alias/writer and Actor/Voice/resource retirement ordering before any resource import or runtime replacement.",
+    "Trace the remaining request allocator callers and processing/reset paths before richer per-state audio diagnostics; preserve the distinction between pool reservation and audible playback.",
+    "Continue remaining Gummi/Mission descriptors and collision resource/transform/lifetime prerequisites before further native commands."
+  ],
+  "validation": {
+    "catalogDescriptors": 1063,
+    "catalogAnnotations": 256,
+    "featureCount": 361,
+    "coreChecks": 3299,
+    "audioUiChecks": 49,
+    "audioUiRenders": 8,
+    "visibleWindows": 0,
+    "liveGame": false,
+    "fullPackageBuild": "Final results are recorded in package Validation and the final checkpoint."
+  },
+  "coverageParserSha256": "546d0defdacd8857d7f2461283516348ca28776d13e253d8d954ad43622cc1b2"
+}

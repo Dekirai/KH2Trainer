@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "date": "2026-10-13",
+  "status": "static_claims_verified",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "claims": [
+    {
+      "addr": "0x1403d25d0",
+      "Finding": "The manager at RCX contains eight 16-byte records starting at+8, each with an external attack-object cell at record+8. The loop remembers the last empty record but stops at the first occupied record matching object DWORD+200 and Decode(object DWORD+20). A selected existing object is reused only when object DWORD+24 and record DWORD+0 match the requested arguments. Otherwise3D0EB0 is called to request marking, a728-byte object is allocated, and40F1C0 receives the exact address of the selected QWORD cell as argument5. Before allocation, DWORD at Decode(manager DWORD+0)+3312 is cleared without a local null check. The constructor result overwrites the cell and its DWORD+36 is copied to manager+4.",
+      "Limitations": "The local body has no recovery when all eight cells are occupied without a matching record: the retained record address remains zero. A failed allocation also reaches a null+36 read. Reachability under normal scripts, all allocation contracts and external ordering remain unproved. The fifth argument is an interior manager cell, not a separately allocated ownership token.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d25d0]",
+        "verification.json"
+      ]
+    },
+    {
+      "addr": "0x1403d29b0",
+      "Finding": "The adapter passes its second argument plus3088 (0xC10) as the manager to3D25D0. On this route the selected constructor cell is therefore secondArg+3104+16*index for index0..7.",
+      "Limitations": "The offset provenance alone does not admit arbitrary second arguments as live Actors, prove every adapter identical, or establish the containing allocation lifetime.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d29b0]",
+        "verification.json"
+      ]
+    },
+    {
+      "addr": "0x1403d0eb0",
+      "Finding": "With global byte2A24B58 nonzero and a nonnull argument, the routine walks the contact list headed by2A24B40 through Decode(DWORD+196). An exact pointer match ORs DWORD(object+8) with0x800 and returns. Disabled, null or unmatched input makes no local store.",
+      "Limitations": "This routine marks an object; it does not directly call a destructor, clear the external cell or decrement Actor counters. The list and pointer-decode contracts remain prerequisites.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d0eb0]",
+        "verification.json"
+      ]
+    },
+    {
+      "addr": "0x1403d24b0",
+      "Finding": "Manager cleanup visits all eight QWORD cells at manager+16+16*index. Every nonnull entry is passed to3D0EB0 and then its cell is zeroed. After the loop the manager DWORD+0 receives EncodeNullable(NULL).",
+      "Limitations": "Clearing the manager cells does not prove that each attack object was destroyed:3D0EB0 can only mark or do nothing. This body does not neutralize the separate retained external-cell pointer inside those objects.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d24b0]",
+        "verification.json"
+      ]
+    },
+    {
+      "addr": "0x1403d2720",
+      "Finding": "For a nonnull second argument, this cleanup wrapper calls3D24B0(secondArg+3088), cleans the embedded node at+3224 and selected other components, calls3B3D60(secondArg), then152570(secondArg). Its local instructions contain no comparison of Actor DWORD+1464 before that call.",
+      "Limitations": "An absence of a local counter test is not an unguarded-free proof. Caller admission, hidden callee behavior, allocator semantics and scheduling of deferred attack destruction remain separate requirements.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d2720]",
+        "verification.json"
+      ]
+    }
+  ],
+  "counts": {
+    "functionCount": 5,
+    "instructions": 186,
+    "originalBodyBytes": 666
+  },
+  "semanticCompleteness": false,
+  "liveGame": false,
+  "productChanges": false,
+  "next": [
+    "Trace0x800 contact retirement and ordering against manager-cell reuse.",
+    "Trace callers of Actor cleanup and counter1464 eligibility before asserting cell lifetime.",
+    "Retain the separately counted original owner versus uncounted global replacement receiver distinction."
+  ]
+}

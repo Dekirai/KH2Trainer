@@ -1,0 +1,92 @@
+{
+  "title": "Audio request scalar admission diagnostics: bounded original writer findings",
+  "Domain": "native",
+  "date": "2026-10-11",
+  "status": "BOUNDED_STATIC_FINDINGS_IMPLEMENTED",
+  "originalSha256": "9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed",
+  "counts": {
+    "functions": 6,
+    "instructions": 165,
+    "primaryBytes": 849,
+    "claims": 6,
+    "distinctClaimAddresses": 6
+  },
+  "claims": [
+    {
+      "addr": "0x14000da30",
+      "Finding": "The captured initializer constructs the fixed 80-entry request pool/free-index arrangement and writes FreeCount at 0x140AD9390 to 80 at 0x14000DBA1. This establishes the diagnostic pool capacity for this executable.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14000da30]",
+        "docs/research/audio-observation-design-20261011/verification.json",
+        "signature-evidence.json"
+      ],
+      "Limitations": "This static initializer is distinct from the later runtime reset. It is not evidence that every runtime reset restores the free count or that unobserved aliases cannot modify it.",
+      "originalBodySha256": "3f77b22e7aaf18b38a47b2932e8064e604a479d968e14fedf02efcce676db870"
+    },
+    {
+      "addr": "0x1401dd4e0",
+      "Finding": "This eight-byte setter writes 1 to the admission inhibit byte at 0x140AD93C0 and returns. The diagnostic mask reports this observed byte as bit 1.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401dd4e0]",
+        "docs/research/audio-observation-design-20261011/verification.json",
+        "signature-evidence.json"
+      ],
+      "Limitations": "No caller timing or playback outcome is inferred from the setter alone.",
+      "originalBodySha256": "884540ee317e3ac2f272279681ef644208130d28a2c49d6a974f48002fe81ecc"
+    },
+    {
+      "addr": "0x1401dd4f0",
+      "Finding": "This eight-byte setter writes 0 to the admission inhibit byte at 0x140AD93C0 and returns.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401dd4f0]",
+        "docs/research/audio-observation-design-20261011/verification.json",
+        "signature-evidence.json"
+      ],
+      "Limitations": "A cleared inhibit byte leaves the two scalar limit checks and downstream resource requirements independent.",
+      "originalBodySha256": "88ce23717ee0e143379dcf93a000bb59252f14ee406f38038c28fb4733a464c7"
+    },
+    {
+      "addr": "0x1401dd510",
+      "Finding": "The request allocator rejects nonzero inhibit, signed FreeCount <=16, or signed IntervalCount >24. On admission it decrements FreeCount, increments IntervalCount and computes the selected request address from a free-index stack with 56-byte record stride. These comparisons define diagnostic mask bits 1, 2 and 4.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401dd510]",
+        "docs/research/audio-observation-design-20261011/verification.json",
+        "signature-evidence.json"
+      ],
+      "Limitations": "These are observed reservation gates. A clear mask does not prove a resource exists, a later reservation succeeds, or playback occurs; the trainer never calls this allocator.",
+      "originalBodySha256": "1da0bc23b91c1612dc1d37098ce060cde1a888ae087b1f9488fbc38ed12210b1"
+    },
+    {
+      "addr": "0x1401ddf10",
+      "Finding": "This IOP request path repeats the inhibit, signed FreeCount <=16 and signed IntervalCount >24 admission checks, then performs the same counter decrement/increment before populating its admitted request. This is a second direct writer supporting the shared admission-counter interpretation.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401ddf10]",
+        "docs/research/audio-observation-design-20261011/verification.json",
+        "signature-evidence.json"
+      ],
+      "Limitations": "The bounded claim covers the captured scalar admission path. Request state transitions and backend playback outcomes are not exposed by the new diagnostic.",
+      "originalBodySha256": "9f158107c9a88d4d6a21d6f31c208ba318cad6c09b23ccd4cdbaa95cf8f051f2"
+    },
+    {
+      "addr": "0x1401de7c0",
+      "Finding": "The captured runtime reset writes IntervalCount at 0x140AD93C4 to zero, clears the admission inhibit byte at 0x140AD93C0 and resets four request-list root globals. Its captured body contains no FreeCount write.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401de7c0]",
+        "docs/research/audio-observation-design-20261011/verification.json",
+        "signature-evidence.json"
+      ],
+      "Limitations": "This is a direct-body observation rather than an exclusion of writes through all callees. The diagnostic does not traverse these roots or infer lifetime safety from this reset.",
+      "originalBodySha256": "ddb1a9e103c07bd81de79195ed4e58f9454ec7c542279ca49c6d51836ffc4a53"
+    }
+  ],
+  "upstream": {
+    "design": "docs/research/audio-observation-design-20261011",
+    "designManifestSha256": "0fdfdde07ceacb75c6326043959401c5ce4051145d44a2a3355f8d10f88537a6",
+    "voice": "docs/research/voice-request-lifecycle-20261008"
+  },
+  "limits": [
+    "Six newly captured function bodies only; prior Voice bodies 0x1401DE230 and 0x1401DD8D0 retain their original study attribution.",
+    "Selected direct writers are not a whole-program alias, thread, concurrency or lifetime proof.",
+    "The production feature samples only three fixed scalars and exact writer code; no native instructions or audio objects are executed or traversed."
+  ]
+}

@@ -34,7 +34,7 @@ HWND windowHandle=reinterpret_cast<HWND>(uintptr_t(0x9876));
 bool outerHeld=false,tryBusy=false,windowValid=true,threadAlive=true,throwUnlock=false,throwLeave=false,throwTry=false,throwLock=false;
 int depth=0,setterFault=0,lockResult=0,fakeUnlockResult=0;
 uintptr_t denied=0,deniedWrite=0;SIZE_T deniedSize=0,deniedWriteSize=0;
-unsigned checks=0,failures=0,locks=0,unlocks=0,tries=0,leaves=0,nativeEnters=0,nativeLeaves=0,setters=0,published=0;
+unsigned checks=0,failures=0,locks=0,unlocks=0,tries=0,leaves=0,nativeEnters=0,nativeLeaves=0,setters=0,published=0,blockingLocks=0,mutexTries=0;
 int lastMode=-1;float lastDimensions[2]{};
 using Mutation=void(*)();Mutation onLock=nullptr,onInner=nullptr;
 void Check(bool b,const char* label) { ++checks;if(!b){++failures;printf("FAIL %s\n",label);} }
@@ -89,12 +89,14 @@ void CodeAccess(DWORD protection) {
     Check(VirtualProtect(reinterpret_cast<void*>(g_base+0x439000),0x1000,protection,&old)!=0,"isolated cookie-check page protection");
 }
 void Corrupt(uintptr_t rva) { CodeAccess(PAGE_READWRITE);At<BYTE>(rva)^=1;CodeAccess(PAGE_EXECUTE_READ); }
-int __cdecl MockLock(void* p) {
+int Acquire(void* p) {
     ++locks;Check(p==reinterpret_cast<void*>(g_base+ObjectRva+30848),"presentation mutex address");
     if(throwLock)RaiseException(EXCEPTION_ACCESS_VIOLATION,0,0,nullptr);
     if(lockResult)return lockResult;
     Check(!outerHeld&&depth==0,"presentation acquired once");outerHeld=true;if(onLock)onLock();return 0;
 }
+int __cdecl MockLock(void* p) { ++blockingLocks;return Acquire(p); }
+int __cdecl MockTryLock(void* p) { ++mutexTries;return Acquire(p); }
 int __cdecl MockUnlock(void* p) {
     ++unlocks;Check(outerHeld&&p==reinterpret_cast<void*>(g_base+ObjectRva+30848),"captured presentation unlock exactly once");outerHeld=false;
     if(throwUnlock)RaiseException(EXCEPTION_ACCESS_VIOLATION,0,0,nullptr);
@@ -127,11 +129,11 @@ void Reset() {
     denied=deniedWrite=0;deniedSize=deniedWriteSize=0;
     outerHeld=tryBusy=throwUnlock=throwLeave=throwTry=throwLock=false;windowValid=threadAlive=true;
     depth=setterFault=lockResult=fakeUnlockResult=0;lastMode=-1;lastDimensions[0]=lastDimensions[1]=-1;
-    locks=unlocks=tries=leaves=nativeEnters=nativeLeaves=setters=published=0;onLock=onInner=nullptr;
+    locks=unlocks=tries=leaves=nativeEnters=nativeLeaves=setters=published=blockingLocks=mutexTries=0;onLock=onInner=nullptr;
     GX<uintptr_t>(0)=g_base+display_preview::VtableRva;GX<uintptr_t>(736)=g_base+0x200000;GX<uintptr_t>(1144)=g_base+0x210000;
     GX<HANDLE>(784)=appHandle;GX<HANDLE>(792)=timingHandle;GX<uintptr_t>(1000)=g_base+AppAddress;GX<HWND>(1008)=windowHandle;
     At<uintptr_t>(display_preview::AppRva)=g_base+AppAddress;At<uintptr_t>(AppAddress)=g_selectedVtable;At<int>(AppAddress+4752)=-1;At<int>(display_preview::EpochRva)=-100;
-    display_preview::testLock=MockLock;display_preview::testUnlock=MockUnlock;display_preview::testRuntimeAvailable=true;
+    display_preview::testLock=MockLock;display_preview::testUnlock=MockUnlock;display_preview::testTryLock=MockTryLock;display_preview::testRuntimeAvailable=true;
     At<uintptr_t>(0x57B458)=reinterpret_cast<uintptr_t>(MockLock);At<uintptr_t>(0x57B450)=reinterpret_cast<uintptr_t>(MockUnlock);
     Seed(0x5061A0,display_preview::BrightnessCode);Seed(0x5061F0,display_preview::ColorCode);Seed(0x1268C0,display_preview::GammaCode);Seed(0x125D00,display_preview::ColorSetterCode);
     Seed(0x11C150,display_preview::GetterCode);Seed(0x43AD04,display_preview::LockCode);Seed(0x43AD0A,display_preview::UnlockCode);
@@ -271,6 +273,12 @@ void TestFaults() {
     Reset();renderer_diagnostics::faulted=true;Check(Apply().code==2&&!locks,"diagnostics fault bars window actions");
 }
 void TestSnapshots() {
+    Reset();lockResult=3;outerHeld=true;WindowDisplaySnapshot(Context());Check(mutexTries==1&&!blockingLocks&&!published&&!tries&&!unlocks&&outerHeld&&!window_display::faulted,"busy window observation skips immediately without releasing foreign mutex");
+    outerHeld=false;lockResult=0;WindowDisplaySnapshot(Context());Check(published==6&&mutexTries==2&&!blockingLocks&&unlocks==1,"window observation resumes when presentation is available");
+    Reset();display_preview::testTryLock=nullptr;WindowDisplaySnapshot(Context());Check(!published&&!locks&&!unlocks&&!blockingLocks,"missing optional try export skips window sample");
+    Check(Apply().code==0&&blockingLocks==1&&!mutexTries&&unlocks==1,"window user command retains validated waiting lock");
+    Reset();onLock=[]{display_preview::testTryLock=nullptr;};WindowDisplaySnapshot(Context());Check(!published&&unlocks==1&&!blockingLocks,"window snapshot releases captured lease after try export changes");
+    Reset();throwLock=true;WindowDisplaySnapshot(Context());Check(mutexTries==1&&!blockingLocks&&!unlocks&&!published&&window_display::faulted,"try-lock SEH latches window fault without unowned release");
     Reset();WindowDisplaySnapshot(Context());Check(published==6&&!setters&&locks==1&&tries==1&&leaves==1&&unlocks==1,"six copied readouts without native setter");
     const double expected[]={1920,1080,0,0,1280,720};
     for(unsigned i=0;i<6;++i)Check(Has(433+i)&&shared.values[433+i]==expected[i],"actual versus requested dimensions and native mode units");

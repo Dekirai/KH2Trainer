@@ -1,0 +1,188 @@
+Audio-Anfragen im Trainer: Vorschlag mit belegten Grenzen
+========================================================
+
+Ergebnis
+--------
+Eine kleine Diagnose der drei nativen Zugangsschranken ist jetzt ausreichend
+belegt, um einen getrennten, rein lesenden Snapshot zu implementieren. Er liest
+nur neun Bytes aus drei festen Stellen im Hauptmodul. Audio-, Bank-, Actor-,
+Kamera- und Request-Zeiger werden nicht verfolgt. Der Vorschlag verändert noch
+keine Produktdatei und ist noch keine getestete Produktionsimplementierung.
+
+Konkreter Nutzen: Wenn Sprache oder Effekte ausbleiben, kann der Nutzer sehen,
+ob das Spiel neue Poolreservierungen gerade sperrt, die Reservegrenze erreicht
+ist oder das Limit zwischen zwei Audio-Verarbeitungsdurchläufen greift. Die
+bestehenden Mixeranzeigen zeigen dagegen nur Pegel und Buszustände.
+
+Das ist keine Anzeige hörbarer Stimmen. Auch ein erfolgreich angenommener
+Request kann später wegen Ressourcen oder Backend-Fehlern ohne Ton bleiben.
+
+Vorgeschlagene Oberfläche
+-----------------------
+Audio > Requests, drei reine Anzeigen; alternativ bestehende Audio Diagnostics
+nutzen und deren Navigationsnamen Mixer zu Diagnostics erweitern.
+
+Slot 482, audio.requests.free, Free request slots
+  DWORD RVA AD9390, gelesen als signed int32, Anzeige 0..80 von 80.
+  Beschreibung: Freie Einträge im gemeinsamen nativen Audio-Anfragepool.
+  Die untersuchten Reservierer lassen 16 Einträge unbenutzt. Ein kleiner Wert
+  erklärt Pooldruck; er zählt weder wartende noch hörbare Stimmen.
+
+Slot 483, audio.requests.interval, Reservations since audio pass
+  DWORD RVA AD93C4, signed int32, Anzeige 0..25.
+  Beschreibung: Poolreservierungen seit dem letzten nativen Reset dieses
+  Zählers. Der reguläre Verarbeitungsdurchlauf und die Initialisierung setzen
+  ihn zurück. Es ist weder ein Sekundenwert noch eine Ereignishistorie.
+  Ein Post-Update-Snapshot kann unmittelbar nach dem Reset oft 0 sehen und
+  kurze Lastspitzen vollständig verpassen. 0 heißt nicht, dass seit dem
+  vorherigen UI-Update keine Audioanfragen stattgefunden haben.
+
+Slot 484, audio.requests.gates, New request limits
+  Abgeleitete Bitmaske aus demselben akzeptierten Sample:
+    1 = native Sperre AD93C0 != 0
+    2 = FreeCount <= 16
+    4 = IntervalCount > 24
+  0 als No sampled admission limit, die anderen Werte als alle gesetzten
+  Ursachen anzeigen. Kein Ready to play oder Audio works: Das Modell bildet
+  nur diese drei Zugangsschranken nach, keine Ressourcen-/Backendprüfung.
+
+Alle Definitionen: Kind ReadOnly, CommandId 0, ValueSlot == CapabilitySlot,
+RequiresScene false, ChangesProgression false, CanSaveInProfile false.
+Die Slots 482..511 sind im gelesenen Katalog frei. 482..484 wurden hier nicht
+reserviert; vor Implementierung erneut prüfen. Der bestehende Protocol-v4-
+Snapshot hat 512 Doublewerte und acht Maskenwörter; keine Protokollerweiterung.
+Die vorhandenen FeatureVm-Readouts stellen ungültige Samples als — dar.
+Für die Reason-Maske braucht es eine konkrete FeatureFormatting-Zuordnung,
+da der generische Formatter ReadOnly-Choices nicht automatisch interpretiert.
+Keine neuen Kommandos: 1482..1484 bei versehentlichem/externem Versand
+ausdrücklich als read-only ablehnen, bevor die generische Fallbackroute greift.
+
+Tatsächliche Zustandswriter
+--------------------------
+Frische vollständige IDA-Aufnahmen und Originalbytevergleich:
+
+00DA30 (statischer Initialisierer)
+  Initialisiert 80 Poolrecords mit Stride 56, kopiert die freie Indexliste und
+  schreibt an 00DBA1 FreeCount=80. Ein Daten-Xref liegt in der CRT-Tabelle bei
+  57D4F0. Der Funktionsrumpf ist nicht eine Aussage über laufende Audiogeräte.
+
+1DD510 (gemeinsamer Poolreservierer)
+  AD93C0 != 0 -> Rückgabe NULL. signed FreeCount <= 16 -> NULL.
+  signed IntervalCount > 24 -> NULL. Sonst FreeCount-- und IntervalCount++,
+  erst danach Indexzugriff und Bildung der Pooladresse. Die Grenzwerte sind
+  in ASM JLE bei 1DD522 und JG bei 1DD52D verifiziert.
+
+1DDF10 (IOP-Voice-Pfad)
+  Wiederholt die identischen drei Schranken und Counterupdates inline.
+  Danach erfolgt Requestsetup mit Typ 5. Die Pseudocode-Signatur verschweigt
+  Teile der Setupargumente; ASM zeigt R8D=5. Ein Sonderpfad setzt State 3.
+
+1DE230 (EE-Pfad, vorhandene verifizierte Voice-Studie)
+  Wiederholt die Schranken und Counterupdates inline, dann Typ-6-Setup.
+  Auch Gummi-Wrapper 212420 ruft diesen Pfad auf. Der gemeinsame Zähler ist
+  somit kein ausschließliches BTLNPC-/Dialogmaß.
+
+1DE7C0 (Audio-Initialisierung/Reset)
+  Setzt AD93C4=0 und AD93C0=0 und leert Listenwurzeln. Schreibt FreeCount
+  selbst NICHT erneut auf 80. Daher keine erfundene Annahme, dass jeder
+  erneute Audio-Reset gleichzeitig die gesamte Poolbelegung zurücksetzt.
+
+1DD4E0 / 1DD4F0
+  Schreiben das Sperrbyte ausdrücklich auf 1 bzw. 0. Viele Aufrufer aus
+  Szenen-/Eventpfaden sind vorhanden. Deshalb keine Umbenennung zu Mute:
+  Die Sperre betrifft neue Poolreservierungen, nicht nachweislich den Pegel
+  oder das Stoppen aller bestehenden Backendstimmen.
+
+1DD8D0 (vorhandene verifizierte Voice-Studie)
+  Verarbeitet die aktive Liste; State-4-Einträge werden später entkettet,
+  ihr Index in die freie Liste geschrieben und FreeCount erhöht. Anschließend
+  werden Retirement-Wurzeln und IntervalCount=0 gesetzt. Stoppen eines
+  Requests gibt seinen Poolplatz nicht sofort zurück.
+
+Die positive direkte Xref-Liste ist vollständig für die konkrete IDA-Antwort
+ohne Trunkierung. Das schließt weitere indirekte/aliassierte Writer nicht aus.
+IDA war idle, aber auto_analysis_ready=false; keine neue Analyse angefordert.
+
+Snapshot-Pfad und notwendige Guards
+----------------------------------
+1. Eigener Helper AudioRequestSnapshot, aufgerufen im vorhandenen
+   TrainerFrame nach erfolgreichem MyApp Update. OnFrame prüft result==0,
+   App-Identität und denselben Game-Thread. Keine neue native Audiofunktion,
+   kein Hook, kein Schedulerjob und keine Nebenläufigkeit hinzufügen.
+2. Für den Helper explizit g_base != 0, c.base == g_base, passender Game-Thread,
+   !g_disabled, vorhandenes g_shared und frischer Host-Heartbeat prüfen.
+   Keine Abhängigkeit von SceneReady: Der Pool ist modulweite statische
+   Speicherung und Audio existiert auch außerhalb einer spielbaren Szene.
+3. Readable für genau die drei festen Spans prüfen: AD9390/4, AD93C0/1,
+   AD93C4/4. Diese Werte sind keine Pointer. Poolrecords/Listenwurzeln,
+   freie Indexliste und DecodePacked sind für diese Funktion unnötig.
+4. Die relevanten nativen Layout-/Schrankenwriter per Originalbytesignatur
+   prüfen: 00DA30, 1DD510, 1DDF10, 1DE230, 1DE7C0, 1DD4E0, 1DD4F0,
+   1DD8D0. Aus dem Originalbytebeleg generieren, nicht Hex-Rays-Code parsen.
+   Änderungen -> keine gültigen Werte. Ein unveränderter Mixer-Setter allein
+   belegt diese anderen Felder nicht; Audio FunctionsReady genügt nicht.
+5. Tuple zweimal in derselben festen Reihenfolge lesen. Jede Teilmessung
+   benötigt FreeCount 0..80, IntervalCount 0..25, Inhibit exakt 0 oder 1.
+   Ungleiche Samples verwerfen. Nur lokale kopierte Zahlen publizieren.
+   Die normale untersuchte Initialisierungs-/Reservierungsfolge sinkt nur
+   bis FreeCount 16. Der breitere Diagnosebereich 0..80 bleibt bewusst eine
+   Speicherbereichsprüfung; ein Wert unter 16 bestätigt keine normale
+   Poolkonsistenz und darf nur die beobachtete Zugangsschranke erklären.
+6. Alle drei Valid-Bits gemeinsam setzen oder keines. TrainerFrame leert
+   vorher Valid/Values, weshalb ein fehlerhafter Snapshot nicht den alten
+   Status halten darf. Keine gemessene Null für eine fehlende Beobachtung.
+7. Den globalen Sound-CS nicht als Schutz dieses Pools ausgeben. In den
+   erfassten Reservierer-/Counterwritern wird er nicht erworben. Die beiden
+   übereinstimmenden Kopien sind keine Synchronisations-/ABA-Garantie.
+   Die Anzeige beschreibt ein beobachtetes Sample, keinen Zusagezustand für
+   den nächsten Request. Damit ist kein Resource-Lifetime-Lease erforderlich.
+
+Wichtige Abgrenzung der Machbarkeit
+---------------------------------
+Die schmale Diagnose oben ist als read-only Produktfunktion begründbar.
+Ein atomar kohärenter Requestpool-Snapshot ist noch nicht belegt. Wenn das
+Produkt dafür eine solche Garantie verlangen soll, muss zuerst die
+Writer-/Thread-/Schedulerordnung geschlossen werden; zwei gleiche Reads
+dürfen diese offene Frage nicht verdecken.
+
+Nicht jetzt implementieren:
+- Count of playing voices: State 2 wird auch nach Backendfehler gesetzt.
+- Count of queued requests aus 80-FreeCount: Belegung enthält mehrere
+  Zustände, Retirement und reservierte, noch nicht fertig eingerichtete Slots.
+- Stimmen/IDs/Ressourcennamen oder Request-Listen traversieren.
+- Drop counter oder Requests per second: es existiert hierfür kein
+  belegter kumulativer Zähler; der Intervallwert wird resetet.
+- Audio fix/unblock/reset-Schalter: Auftrag und Beleg sind rein diagnostisch.
+
+Tests für eine spätere Implementierung
+-------------------------------------
+- Alle 8 Reason-Kombinationen, FreeCount 16/17 und IntervalCount 24/25.
+- Ganze Wertebereiche und signed negative/out-of-range Angaben verwerfen.
+- Fehlende Spans, Signaturabweichungen, falscher Thread/Base, Disable,
+  abgelaufener Heartbeat und zwischen den Reads geänderte Werte.
+- Testfixture nur mit den neun skalaren Bytes, sämtliche Audio-/Bank-/Actor-
+  und Request-Objekte unlesbar: Snapshot muss trotzdem ohne Dereferenz laufen.
+- Kein nativer Call, Write, Sound-CS-Aufruf oder DecodePacked im Helper.
+- Alle drei Slots ungültig bei fehlendem Sample; ReadOnly-Commandablehnung.
+- UI zeigt Grundkombinationen, fehlenden Wert und ältere Bridge korrekt;
+  keine Profileinträge und keine Fortschritts-/Replaywirkung.
+
+Gezielte nächste Analyse für größere Aussagen
+--------------------------------------------
+- Aufrufpfade von 1DD510: 1DDDE0, 1DDE80, 1DE010, 1DE0C0, 1DE150 sowie
+  der nicht als Funktion erkannte direkte Verweis 1DD507.
+- Andere Consumer-Einstiege 1DC190 und 1DC650 und ihre Caller, um Reset-/
+  Reservefreigabeordnung außerhalb des regulären 1DC370 zu verstehen.
+- 1DD120 -> 1DE7C0 sowie 1DC770-Initialisierung und deren App-/Schedulerpfade.
+- Vollständige Writer-/Aliasprüfung für AD9390, AD93C0, AD93C4 und relative
+  Stores um AD80D0; direkte Xrefs genügen nicht als negativer Gesamtbeweis.
+- 1DD560-Statewriter und andere Typzweige erst bei einer tatsächlichen
+  per-state Requestzählung. Lower-Backend- und Resourceanalyse bleibt getrennt.
+
+Artefakte
+---------
+capture.json: sechs frische vollständige IDA-Rümpfe, 165 Instruktionen,
+849 Originalbytes plus direkte skalare und Aufrufer-Xrefs.
+verification.json / verify_design.py: 16.908 Prüfungen einschließlich
+16.853 Fällen des isolierten Sample-/Schrankenmodells. Das Modell führt
+keinen Originalcode aus und ist noch kein Produktionstest.

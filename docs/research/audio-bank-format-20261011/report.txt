@@ -1,0 +1,167 @@
+SCD-Dateien: Tabellen, Sound-IDs und native Zeitberechnung
+=======================================================
+
+Stand: 11.10.2026. Begrenzte statische Teilstudie. Der unabhängige Review ist
+noch nicht abgeschlossen. Produktcode und fertiges Paket v0.12.16 bleiben
+unverändert. Die Untersuchung verwendet IDA und die Originalbytes der EXE;
+das Spiel wird nicht gestartet oder angesprochen.
+
+Ergebnis
+--------
+Eine nützliche Erweiterung des Asset Explorers wäre eine lesende Ansicht für
+ORIGIN-Verweise und SCD-Metadaten: Bank-ID, Version, Tabellenanzahl, Sound-IDs
+und auffällige Dateibereiche. Die untersuchten nativen Leser sind dafür keine
+geeigneten Validierungsfunktionen. Viele rechnen direkt mit Zeigern, fallen
+bei zu großen Indizes auf Eintrag null zurück und prüfen keine Dateilängen.
+
+Die Datei-ID eines Sounds wird beim Suchen modulo 1000 reduziert. Der erste
+passende Eintrag gewinnt. Die Dateien enthalten also eine andere Identität
+als einen global eindeutigen Soundnamen. Eine Vorschau sollte doppelte IDs
+zeigen und keinen automatisch ausführbaren Replay-Befehl daraus ableiten.
+
+1. Gesicherte Grundstruktur und wiederverwendete Befunde
+------------------------------------------------------
+Die sechs abhängigen Funktionskörper sind in dependencies.json mit Ursprung
+und SHA256 ausgewiesen. Sie zählen nicht zu den 20 frischen Aufnahmen:
+09FBD0/09FD20, 1E0D70, 36D8B0, 3A64F0 und 089390. Deren bereits dokumentierte
+Grenzen bleiben bestehen. Die neue Untersuchung erweitert Tabellenzugriffe,
+Sequenzabschnitte, ID-Suche und den Schätzer für die Dauer.
+
+Der akzeptierte Initialisierer 09FBD0 liest:
+
+  Datei +14 WORD       Beginn h des SCD-Tabellenheaders
+  Datei +16 DWORD      Wert, den die Bank als Größenfeld übernimmt
+  h +0 WORD            Anzahl Sequenzen
+  h +2 WORD            Anzahl Tabelle B
+  h +4 WORD            Anzahl Tabelle C
+  h +6 WORD            Physische Bank-ID
+  h +8 DWORD           Beginn Tabelle B
+  h +12 DWORD          Beginn Tabelle C
+  h +16 DWORD          Beginn der Aux-Offsettabelle
+
+Die Sequenz-Offsettabelle beginnt bei h+16 in Version 1, sonst h+32 für
+Versionen 2..4. Die separate SoundBasicDesc-Größe beträgt dagegen 8,16,16,32
+für Versionen 1,2,3,4. Diese zwei Headergrößen dürfen nicht verwechselt werden.
+Version 1 liest trotzdem h+16 für die Aux-Tabelle; ein konsistentes vollständiges
+V1-Dateilayout wird durch diese Leser allein nicht nachgewiesen.
+
+Die Offsettabellen enthalten vorzeichenbehaftete DWORD-Dateioffsets. Die
+Tabellenbasis ist ein vorzeichenloses DWORD. Native Zeigeraddition ist keine
+Schrankenprüfung. Datei +16 darf außerdem erst nach dem Vergleich mit realen
+Dateien als Validierungsgrenze festgelegt werden; es ersetzt nicht die
+tatsächlich verfügbare Länge des geöffneten Datenbereichs.
+
+2. Indizes, Delegation und ID-Suche
+---------------------------------
+09FDB0 liest Tabelle B. Der erfasste Aufrufer 09FEE0 behandelt deren Inhalte
+als Steuerbefehle für B78F0. Deshalb ist die Bezeichnung Track-Tabelle für
+diesen Pfad begründet. Eine vollständige Beschreibung aller Tabellennutzer
+ist damit nicht erreicht. Tabelle C bleibt bewusst ohne geratenen Datentyp.
+
+09FDE0 kann bei Indexbit 0x8000 eine andere Bank aufrufen. Der konkrete
+SoundDriver sucht dazu die erste Bank mit Flagbit 0. Erst bei erfolgreichem
+Bankfund wird 0x8000 entfernt. Ohne Fund folgt der lokale Pfad mit dem alten
+Index. Bit 0x4000 wird nur im anderen Zweig lokal entfernt.
+
+Die einfachen Getter vergleichen den übergebenen Index vorzeichenbehaftet mit
+einer WORD-Anzahl. Ein negativer Index besteht diesen Vergleich. Ein Index
+größer oder gleich der Anzahl wird auf null gesetzt; auch Anzahl null führt
+nicht automatisch zu einem Fehler. Eine Dateivorschau muss diese Fälle selbst
+ablehnen, statt das native Verhalten nachzubauen.
+
+0A0010/0A0110/0A0230 reduzieren den vorzeichenlosen Suchwert modulo 1000 und
+vergleichen WORD(sequence+12). Bei mehrfach vorkommender ID liefern sie den
+ersten Treffer. Die Rohdatenvariante kann vor der Suche einen Backend-Zeiger
+holen und vor Rückgabe einen weiteren virtuellen Backend-Aufruf ausführen.
+Das begründet keinen Besitz des zurückgegebenen Zeigers und keinen Schutz
+gegen alle späteren Änderungen. Die Viewer-Umsetzung soll Datei-Streams nutzen.
+
+3. Optionale Sequenzabschnitte
+-----------------------------
+Auf den versionsabhängigen Basisheader folgen aktivierte Abschnitte. Die
+Flags stehen in DWORD(sequence+4). In dieser Reihenfolge werden addiert:
+
+  Flag 0x0100    Länge aus DWORD(section+0)
+  Flag 0x0400    Länge aus BYTE(section+0)
+  Flag 0x0800    Länge aus BYTE(section+1)
+  Flag 0x8000    Länge aus WORD(section+2)
+  Flag 0x2000    Länge aus WORD(section+2)
+  V4 erweitert  Falls BYTE(sequence+16)&1: Länge aus DWORD(section+4)
+
+Die Helfer geben den jeweiligen Beginn zurück; der Eintragsleser summiert
+zusätzlich die letzte Länge. Der Abschnitt 0x2000 enthält den direkt benutzten
+Zeitwert bei +4. Nur einer der kleinen Helfer hat einen anfänglichen Nulltest;
+Dateigrenzen prüfen diese Körper nicht. Ihre Offsetakkumulatoren können mit
+32 Bit umlaufen. Die endliche Modellprüfung behandelt sämtliche 64 Flagkombinationen
+für vier Basisversionen und trennt diese native Arithmetik von Viewer-Prüfungen.
+
+Sequenzeinträge haben im Getter 8 Byte Abstand für Typbyte +3 gleich 2,4,12,
+sonst 4 Byte. Alle 256 Bytewerte wurden gegen die native Maskenbedingung
+modelliert. Das ist keine belegte Auflistung aller gültigen Sequenztypen.
+
+4. Drei unterschiedliche Wege zum Zeitwert
+----------------------------------------
+09FEE0 liest zuerst den kompakten Cache. Ohne Cache sucht es einen Abschnitt
+0x2000. In beiden Fällen wird ein DWORD ohne Vorzeichenerweiterung in RAX
+geladen und anschließend in Float umgewandelt. Die Multiplikation verwendet
+die Float-Konstante 0.001. Hex-Rays stellt das irreführend teilweise als
+vorzeichenbehafteten Wert oder double dar; maßgeblich ist die Instruktionsfolge.
+
+Ohne direkten Zeitwert iteriert die Routine Track-Verweise und nimmt das
+Maximum aus null und den B78F0-Ergebnissen. Negative Scannerwerte ergeben damit
+keinen negativen zurückgegebenen Fallbackwert. Dieser Scanner summiert nur bestimmte Steuerbefehle in einem
+32-Bit-Register. Die Float-Konvertierung dieses Akkumulators ist vorzeichenbehaftet.
+Überlauf und große Werte verhalten sich damit anders als direkte Metadaten.
+
+B78F0 kennt eine Tabelle mit 64 Opcodes und 13 Sprungzielen. Opcode 3 addiert
+einen DWORD-Wert. Die Opcodes 0,14,16,53 beenden die Berechnung mit dem Skalenwert;
+unbekannte bzw. Default-Opcodes ergeben null. Neben festen Längen existieren
+variable Längen und vorzeichenbehaftete Felder. Ein synthetischer Fall für
+Opcode 61 führt zum gleichen Cursor zurück. Der native Körper besitzt weder
+eine Bytebereichsgrenze noch eine Iterationsgrenze. Es wird kein Auftreten
+dieses Falls in den vorhandenen Spieldateien behauptet.
+
+Die berechnete Zahl darf im Produkt höchstens als Metadaten-/Steuerbefehlswert
+erscheinen. Sie bestätigt keine hörbare Dauer, keinen Dekoderfolg und keine
+vollständig aufgelöste Schleifen- oder Mischungssemantik.
+
+5. Kompakter Cache und Rebind
+----------------------------
+0A0390 erstellt pro Sequenz 164 Byte: 32 Byte Sequenzkopie, 128 Byte Aux-Daten
+und 4 Byte optionaler Zeitwert. Es setzt das kopierte Byte15 auf 0xff. Fehlt
+der direkte Zeitabschnitt, wird null gespeichert; der Track-Scanner wird hier
+nicht aufgerufen. Anschließend wird der Cache veröffentlicht und der rohe
+Payload-Zeiger genullt. Auch die Schleife mit null Einträgen publiziert den Cache.
+
+0A04B0 entfernt zunächst die Hash-Verknüpfung, setzt den neuen Payload und ruft
+den Initialisierer auf. Der Körper prüft keine Dateigröße und gibt die alte
+Datei nicht frei. Die Initialisierung kann Cachebytes in der Datei verändern.
+Daraus folgt keine freigegebene Runtime-Importfunktion.
+
+6. ORIGIN und Umsetzungsvorschlag
+-------------------------------
+Der bereits dokumentierte Serializer kopiert 48 Bytes des Inputs und setzt
+unter bestimmten Bedingungen die ersten sieben Bytes auf ORIGIN\0. Die neue
+Analyse des verwendeten Formatierungswrappers bestätigt den Nullabschluss
+und die fehlende Ausgabegrenze. Bytes7..11 bleiben aus der Eingabekopie erhalten.
+
+Die gespeicherte Namensregion beginnt bei +16. Beim Laden nutzt das Spiel
+dieselbe Region später auch für einen Zeiger bei +32 und eine Größe bei +40.
+Eine Datei darf diese Werte nicht als Speicherzeiger dereferenzieren. Der
+Viewer muss den Dateikontext erhalten und den Namen begrenzt anzeigen. Bei
+fehlendem Nullabschluss ist keine spekulative Suche über die Datei erlaubt.
+
+Der geplante erste Viewer-Schritt ist eine lesende Metadatenansicht für die
+nachgewiesenen PC-Dateien. Abhängigkeiten, konkrete Quelldatei und Tabellen-
+schranken müssen sichtbar bleiben. Import, Rebind, Replay und Audioausgabe
+werden durch diese Studie nicht implementierbar erklärt. Einzelheiten stehen
+im separaten offline-inspector-design.txt; es ist ein Entwurf, kein fertiges Feature.
+
+Prüfung und Grenzen
+-------------------
+verify.py --check rekonstruiert die Evidenz aus der Original-EXE, prüft alle
+Seiten der 20 Aufnahmen, 989 Instruktionen/3297 Bytes, die wiederverwendeten
+Körper, 111 ausgewählte ASM-Stellen, 31 VTable-Einträge und alle 64 Scannerziele.
+670 endliche Modellfälle behandeln die ausgewählten Rechenregeln. Die
+vollständige Bedeutung des Audiosystems oder dieser Funktionen ist damit
+nicht bewiesen. Positive Befunde sind in report.json einzeln begrenzt.

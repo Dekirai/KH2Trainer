@@ -137,7 +137,7 @@ void RendererDiagnosticsSnapshot(const TrainerContext& c) {
     display_preview::Lease before{};
     if(!display_preview::Ready(c,before))return;
     void* const mutex=reinterpret_cast<void*>(before.object+display_preview::MutexOffset);
-    if(before.lock(mutex)!=0)return;
+    if(display_preview::TryLock(before)!=0)return;
     Values copied{};
     int unlockResult=0;
     bool completed=false;

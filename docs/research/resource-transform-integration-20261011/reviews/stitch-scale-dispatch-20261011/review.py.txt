@@ -1,0 +1,89 @@
+"""Independent source/PE/dispatch-chain review; writes only this review folder."""
+import hashlib, importlib.util, json, struct, sys
+from pathlib import Path
+from capstone import Cs,CS_ARCH_X86,CS_MODE_64
+from capstone.x86_const import X86_OP_IMM
+sys.dont_write_bytecode=True
+H=Path(__file__).resolve().parent; R=H.parents[1]
+S=R/'artifacts/stitch-scale-dispatch-20261011'
+load=lambda p:json.loads(p.read_text(encoding='utf-8-sig'))
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+checks=0
+def need(v,msg):
+    global checks
+    checks+=1
+    if not v:raise AssertionError(msg)
+manifest=load(S/'manifest.json')
+pins=manifest['files']
+if isinstance(pins,list):pins={x['path']:x for x in pins}
+for name,pin in pins.items():need(sha(S/name)==(pin if isinstance(pin,str) else pin['sha256']),('author pin',name))
+exe=Path(r'E:\SteamLibrary\steamapps\common\KINGDOM HEARTS -HD 1.5+2.5 ReMIX-\KINGDOM HEARTS II FINAL MIX.exe')
+b=exe.read_bytes(); need(hashlib.sha256(b).hexdigest()=='9002b2de6a1f91a790bd0673de125d1cf833f7942bfec827cdcf6ba64d5849ed','original PE')
+pe=struct.unpack_from('<I',b,60)[0]; ns=struct.unpack_from('<H',b,pe+6)[0]; opt=struct.unpack_from('<H',b,pe+20)[0]
+base=struct.unpack_from('<Q',b,pe+48)[0]
+sections=[struct.unpack_from('<8sIIII',b,pe+24+opt+i*40) for i in range(ns)]
+def original(a,n):
+    r=a-base
+    for _,_,start,size,off in sections:
+        if start<=r and r+n<=start+size:return b[off+r-start:off+r-start+n]
+    raise AssertionError(('original range',hex(a),n))
+cs=Cs(CS_ARCH_X86,CS_MODE_64);cs.detail=True
+e=load(S/'evidence.json');d=load(S/'dependencies.json'); allf=e['functions']+d['functions']; index={}
+p=R/'scripts/update-analysis-coverage.py';sp=importlib.util.spec_from_file_location('coverage_reader',p);cov=importlib.util.module_from_spec(sp);sp.loader.exec_module(cov)
+for f in allf:
+    a=int(f['addr'],16);raw=bytes.fromhex(f['originalBytes'])
+    need(raw==original(a,f['size']) and len(raw)==f['size'],('original function',f['addr']))
+    ok,rows,reason=cov.body_assembly(f); need(ok,('complete body metadata',f['addr'],reason))
+    expected=f['instructions']; need(len(rows)==len(expected),'instruction row count')
+    for r in expected:
+        pc=int(r['addr'],16); ins=list(cs.disasm(raw[pc-a:pc-a+r['size']],pc))
+        need(len(ins)==1 and ins[0].size==r['size'] and ins[0].mnemonic==r['mnemonic'] and ins[0].op_str==r['operands'],'independent original decode')
+        index[pc-base]=ins[0]
+    occupied=set()
+    for r in expected:
+        occupied.update(range(int(r['addr'],16)-a,int(r['addr'],16)-a+r['size']))
+    gaps=set()
+    for g in f.get('nonInstructionSpans',[]):
+        at=int(g['addr'],16); data=bytes.fromhex(g['bytes']); need(data==original(at,len(data)),'inline gap bytes')
+        gaps.update(range(at-a,at-a+len(data)))
+    need(not occupied.intersection(gaps) and occupied|gaps==set(range(len(raw))),'complete body accounting')
+for region in e['data']:
+    raw=bytes.fromhex(region['originalBytes']); need(raw==original(int(region['addr'],16),len(raw)),'original table bytes')
+for pin in load(S/'provenance.json')['sourcePins']:need(sha(R/pin['path'])==pin['sha256'],('inherited evidence pin',pin['path']))
+def text(rva,m,op):need((index[rva].mnemonic,index[rva].op_str)==(m,op),('dispatch instruction',hex(rva)))
+def call(rva,target):
+    ins=index[rva];need(ins.mnemonic=='call' and ins.operands[0].type==X86_OP_IMM and ins.operands[0].imm==base+target,('direct call',hex(rva)))
+for rva in (0x536486,0x53648e,0x5364b6,0x5364be):call(rva,0x4ad270)
+for rva in (0x536496,0x5364c6):call(rva,0x1b4b80)
+text(0x5364a5,'jmp','qword ptr [rdx + 0x48]')
+text(0x5364d5,'jmp','qword ptr [rdx + 0x50]')
+text(0x1b4b80,'mov','rax, qword ptr [rcx + 0xdf8]')
+text(0x1b7d20,'mov','qword ptr [rcx + 0xfa0], rdx')
+text(0x1b2870,'jmp','qword ptr [rcx + 0xfa0]')
+call(0x1b0c99,0x1c6d00)
+text(0x1b0e1d,'mov','qword ptr [rdi + 0xdf8], rsi')
+text(0x1b0c6a,'mov','dword ptr [rdi + 0xe08], 0xe')
+text(0x1b0caf,'mov','qword ptr [rdi + 0xe00], rax')
+text(0x1c7e49,'mov','dword ptr [rax + 0x3c], 0x3f800000')
+def q(rva):return struct.unpack('<Q',original(base+rva,8))[0]
+def u(rva):return struct.unpack('<I',original(base+rva,4))[0]
+bank10=q(0x753490+10*8);bank7=q(0x753490+7*8)
+need(bank10==base+0x787070,'bank10 root')
+for idx,target in ((3,0x536480),(4,0x5364b0)):
+    raw=original(bank10+16*idx,16);fn,flags,pad=struct.unpack('<QII',raw)
+    need(fn==base+target and flags==1 and pad==0,('argc1 no-return descriptor',idx))
+need(struct.unpack('<QI',original(bank7+26*16,12))==(base+0x53fa00,0x40000002),'bank7 index26 descriptor')
+need(q(0x5b3fc8+72)==base+0x1c9d60 and q(0x5b3fc8+80)==base+0x1c7e00,'Stitch slots72/80')
+need(b'Stitch@kn@@' in original(base+0x791e70,40),'original Stitch RTTI name')
+kind=200; table_index=original(base+0x1b0ea0+kind-1,1)[0]
+need(u(0x1b0e54+table_index*4)==0x1b0c65,'exact factory case200 mapping')
+need(all(q(0x724340+72*i+8)==0 for i in range(7)),'file action-record function fields are zero')
+out={'status':'accepted_bounded_static_review','openBlockers':[],'checks':checks,'freshBodies':len(e['functions']),
+     'reusedBodies':len(d['functions']),'authorManifestSha256':sha(S/'manifest.json'),
+     'manualReview':['Double pointer decode and unchecked virtual dispatch in536480/5364B0','Factory200 -> Stitch constructor and published personality','BDX7:26 argument forwarding, Actor+4000 callback, action lookup prerequisites','Original unit write targets cached Actor, not necessarily operand Actor','Inline switch data preserved separately from instructions'],
+     'limits':['Read-only PE and saved IDA inspection. No game or native code execution in this reviewer.',
+               'Trap availability and conditional dispatch do not prove a shipped script calls it in a specific scene/thread.',
+               'The supplemental callback requires runtime action-table initialization that remains unresolved.',
+               'Author instruction-model cases are a separate limited model; they are not memory-safety or full-runtime proof.']}
+(H/'review.json').write_text(json.dumps(out,indent=2)+'\n',encoding='utf-8')
+print(json.dumps(out,indent=2))

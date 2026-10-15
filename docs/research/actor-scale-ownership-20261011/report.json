@@ -1,0 +1,168 @@
+{
+  "schema": 1,
+  "Domain": "native",
+  "title": "Actor uniform scale: later native reset and attachment context boundaries",
+  "status": "BOUNDED_STATIC_STUDY_PENDING_INDEPENDENT_REVIEW",
+  "date": "2026-10-11",
+  "scope": "16 complete fresh captures, including the explicitly repeated 3DA520 predicate; 15 other addresses absent only from the exact prior evidence function arrays inventoried here. Two previously captured attach/detach bodies are explicitly reused. No product change.",
+  "claims": [
+    {
+      "addr": "0x1401c7e00",
+      "Finding": "After its two observer-related calls return, the body calls 1B4B70(0), clears DWORD(cachedActor+2008), then directly stores 0x3F800000 to DWORD(cachedActor+60) at 1C7E49. There is no local test of the old scalar, parent field, current-player global, generation or trainer ownership before this store. Thus an already-unit scalar is also written. The context Actor at QWORD(this+8) need not be the same address as the cached Actor.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401c7e00]",
+        "evidence.json#functions[addr=0x1401b4b70]",
+        "model-results.json"
+      ],
+      "Limitations": "Valid this/cached Actor and returning callees are premises. This establishes one later native scalar writer, not all writers or a retail execution trace. The actual caller of the virtual +80 slot is still open; a trainer gate excluding all executions of this body has not been proved."
+    },
+    {
+      "addr": "0x1401b4b70",
+      "Finding": "The cache accessor sign-extends its 32-bit index and returns QWORD(AD6A18+8*index), with no local range or null check. 1B7F70 first snapshots the three cache QWORDs, updates slot0 from CurrentPlayer global 2A105D0, clears slots1/2, and fills those slots from 3C3270(0/1) when nonnull. It writes each populated companion's slot number to Actor+3596 and calls 1CD1D0(personality+3576,Actor). It then calls 1CD6E0(old,new) only for changed pointer pairs and 1CD730 once.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401b4b70]",
+        "evidence.json#functions[addr=0x1401b7f70]",
+        "model-results.json"
+      ],
+      "Limitations": "The CurrentPlayer label is inherited from prior research. Called helper internals, cache freshness at a later consumer, synchronization, pointer lifetime and allocation identity are not established. Equal pointer values do not prove an unchanged allocation or context."
+    },
+    {
+      "addr": "0x1401b5e30",
+      "Finding": "The longer cache updater also reads 2A105D0 and stores it into AD6A18 at 1B5E9D; it subsequently obtains the two companion slots and notifies changed old/new entries. Separately, 1B1240 passes 1B5E30 to 14F770 with manager global 2A17180 and arguments (0,4), passes 1B5D60 with (0,6), and clears three AD6A18 QWORDs in its initialization loop.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401b5e30]",
+        "evidence.json#functions[addr=0x1401b1240]"
+      ],
+      "Limitations": "These are concrete direct stores and registration arguments. The complete scheduler's threading, priority interpretation, dispatch timing and total cache writers remain outside scope. The longer updater has other camera/observer behavior that is captured but not exhaustively modeled."
+    },
+    {
+      "addr": "0x1401c6d00",
+      "Finding": "The constructor-like body writes vtable address 5B3FC8 to its object. The original COL at table[-8] resolves to the original type name .?AVStitch@kn@@. This vtable's +72 cell is 1C9D60 and +80 cell is 1C7E00; its first cell is the separate 1C7440 destructor-like body.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401c6d00]",
+        "evidence.json#functions[addr=0x1401c7440]",
+        "data-capture.json"
+      ],
+      "Limitations": "This proves the concrete table/type/body association. It does not identify a runtime virtual invocation, prove every Stitch layout, or establish when +80 is called."
+    },
+    {
+      "addr": "0x1401c9d60",
+      "Finding": "The selected Stitch +72 body takes its player context through 1B4B70(0). It saves whether player DWORD+292 bit0x200 was clear, sets that bit, and visits QWORD children at player+3424 and +3432. Each nonnull child is detached if 3DA520(child) is true, then attached to the cached player with joint0x4000 and flags0; child saved flags and +2008 are updated. The body sets cached-player action0x3C and installs 1C7BF0 through 1B7D20 on the context Actor from this+8.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401c9d60]",
+        "evidence.json#functions[addr=0x1403da520]",
+        "dependencies.json#functions[addr=0x1403d9fe0]",
+        "dependencies.json#functions[addr=0x1403da250]"
+      ],
+      "Limitations": "No claim is made that all children, all attachment kinds or every setup path are enumerated. No direct +60 store occurs in this selected body; called helpers and script effects are not covered by that absence. The runtime entry to this virtual slot remains open."
+    },
+    {
+      "addr": "0x1401c7e00",
+      "Finding": "After the scalar reset, the Stitch +80 body conditionally calls 3CD820 for the cached player according to byte(this+1928). For each nonnull child in the two slots, it calls 3CC3B0, 3DA250, 3D7620(cachedPlayer,index), then 3D9FE0(child,cachedPlayer,returnedJoint,0), clears child+2008 and conditionally calls 3CD820 using bytes(this+1929/+1930). Finally it sets cached-player action0, calls 3DB100 on this+8, and tailcalls 1B7D20(this+8,0).",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401c7e00]",
+        "dependencies.json#functions[addr=0x1403d9fe0]",
+        "dependencies.json#functions[addr=0x1403da250]",
+        "model-results.json"
+      ],
+      "Limitations": "This is the body-local call order and argument contract. Native helper side effects, reentrancy, callbacks and progress are not simulated by the inert helper fixtures. No all-path restoration, thread ownership, race freedom or same-child-set guarantee follows."
+    },
+    {
+      "addr": "0x1401c7440",
+      "Finding": "The destructor-like body is distinct from the +80 scalar-reset routine. Its local body clears 24 entries spaced64 bytes apart, calls 2BE8A0 for their nonnull pointers, optionally calls 3D0EB0 for this+1584, then calls base helper1CC140 and conditionally a deallocation helper. There is no direct call to 1C7E00 in this body.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401c7440]",
+        "data-capture.json"
+      ],
+      "Limitations": "Callee internals and virtual or indirect cleanup outside this body remain unproved. Absence of a direct call is not proof that the scalar reset can never occur during a broader destruction path."
+    },
+    {
+      "addr": "0x14042c550",
+      "Finding": "The BDX attachment adapter reads the low DWORD of six 8-byte operand cells. It unwraps operand1 and operand0 through DecodeNullable(wrapper)+4 followed by a second decode, then calls 3D9FE0(child,parent,operand2,operand3). If operand4's low DWORD is nonzero, it writes global 2A25048 to returnedRecord+16, operand4 to +24 and decoded operand5 to +32. A zero operand4 skips these adapter stores and the operand5 decode.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14042c550]",
+        "dependencies.json#functions[addr=0x1403d9fe0]",
+        "model-results.json"
+      ],
+      "Limitations": "The adapter has no local operand-count, tag, wrapper, parent or returned-record validity check. The native helper truncates joint/flags to WORD and returns child+1696, so these adapter fields correspond to child+1712/+1720/+1728. Model helper stubs isolate the adapter; skipped stores do not imply preservation across the real 3D9FE0 call, which clears +1712."
+    },
+    {
+      "addr": "0x14042c5f0",
+      "Finding": "The BDX detach adapter unwraps the low DWORD operand0 twice in the same wrapper scheme and tailcalls 3DA250(child). In the explicitly reused detach body, a nonnull decoded child+1696 controls entry; the body unlinks the child, clears its encoded parent, and later, if QWORD(child+1712) is nonzero, calls 3E2000 with that context, DWORD(child+1720) and one tagged encoded argument derived from child+1728, before rebuilding via3CCB90.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14042c5f0]",
+        "dependencies.json#functions[addr=0x1403da250]",
+        "evidence.json#functions[addr=0x14042c550]",
+        "model-results.json"
+      ],
+      "Limitations": "The fresh adapter plus reused native helper connects attachment metadata to a possible interpreter callback. Callback effects and validity/lifetime of the stored VM context are not proved. No guarantee that attachment transitions are scalar-neutral across callbacks follows from absence of a direct +60 store in the attach/detach bodies."
+    },
+    {
+      "addr": "0x14042c550",
+      "Finding": "Original table data at 753490 selects bank1 base755370. Its descriptor index18 at755490 contains function42C550, argc6 and flags0; descriptor index102 at7559D0 contains42C5F0, argc1 and flags0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14042c550]",
+        "evidence.json#functions[addr=0x14042c5f0]",
+        "data-capture.json"
+      ],
+      "Limitations": "This establishes the physical descriptors and arithmetic indices. The complete BDX opcode dispatcher is an earlier study; script reachability in a particular retail scene and argument correctness are not established here."
+    },
+    {
+      "addr": "0x1403da210",
+      "Finding": "The local reparent wrapper decodes current child+1696 but does not consume the result. It zero-extends the child's stored WORDs+1700/+1702 and tailcalls3D9FE0(child,newParent,storedJoint,storedFlags). The separately recaptured3DA520 predicate only returns whether DecodeNullable(DWORD(actor+1696)) is nonnull.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403da210]",
+        "evidence.json#functions[addr=0x1403da520]",
+        "dependencies.json#functions[addr=0x1403d9fe0]",
+        "model-results.json"
+      ],
+      "Limitations": "The predicate does not check child lists, scalar writers, context generations or resource ownership. 3DA520 is an explicit repeat of prior evidence. The reparent wrapper inherits helper callbacks and side effects; no unchanged-context guarantee is made."
+    },
+    {
+      "addr": "0x140405a00",
+      "Finding": "This transition calls3DA520(actor), calls3DA250 only on a true result, then calls3C86A0(actor+344,54,zero,zero) and tailcalls3B4DA0(actor,0x29).",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140405a00]",
+        "evidence.json#functions[addr=0x1403da520]",
+        "dependencies.json#functions[addr=0x1403da250]",
+        "model-results.json"
+      ],
+      "Limitations": "This is one native detach transition and its visible call ordering. Runtime action names, caller reachability, callback completion and post-detach numerical validity remain outside scope."
+    },
+    {
+      "addr": "0x140402fe0",
+      "Finding": "The two selected native paths402FE0 and403CC0 take their actor from RDX and RCX respectively, call3A8E70, look up ID1620 through3B4110, and store the result in parentActor+3600. A nonnull result is attached as a child to that Actor with joint0x4002 and flags0, followed by motion-link calls; both finish with action0x17 and3DB140(actor,9). Neither body locally tests parentActor+1696 before this child attach.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140402fe0]",
+        "evidence.json#functions[addr=0x140403cc0]",
+        "dependencies.json#functions[addr=0x1403d9fe0]",
+        "model-results.json"
+      ],
+      "Limitations": "These paths show that an Actor lacking a parent can still acquire a child. They do not prove a globally unparented state remains unchanged through callees, resource validity, collision/weapon behavior or suitability for Tiny/Giant. Models use explicit inert native helper stubs."
+    },
+    {
+      "addr": "0x1404025c0",
+      "Finding": "When BYTE(firstActor+3064) is nonzero, this body configures two motion objects, attaches secondActor as a child of firstActor using joint0x4002 and flags1, then calls3DB2F0(firstActor,5C9F1C,firstActor). The zero-byte branch performs its alternate motion setup without this direct attachment call.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1404025c0]",
+        "dependencies.json#functions[addr=0x1403d9fe0]"
+      ],
+      "Limitations": "This is the selected local condition and child/parent argument ordering. The byte is not assigned a broader gameplay meaning here. Callee behavior and later context branches are captured but no lifecycle or complete scalar-preservation conclusion is made."
+    }
+  ],
+  "limitations": [
+    "Actual virtual dispatch callsite invoking Stitch table+80 is unresolved.",
+    "No all-writers, all-threads, callback-closure, lease, resource-lifetime, same-value-write-detection or live gameplay guarantee.",
+    "The narrow unparented Actor subset remains a candidate policy boundary, not an approved implementation contract.",
+    "Existing offline MotionPayloadReader/RootEvaluator work is not redone. Runtime effective payload/length, binding/context revision and safe source handoff remain separate requirements.",
+    "Native takeover must end a future scale journal's ownership; importing the movement journal's external-value recapture policy would not satisfy this scale policy."
+  ],
+  "verification": "verification.json",
+  "nextTargets": [
+    "Locate the actual caller of the Stitch virtual slot+80 and its caller/worker context before relying on a Summon exclusion gate.",
+    "Connect scale admission to a complete runtime resource snapshot/binding revision and tested takeover semantics.",
+    "Define attachment/child context revisions or explicit exclusions, including optional stored BDX callbacks; current parent==null is insufficient by itself.",
+    "Prove the chosen write boundary excludes constructor/rebind/cleanup aliases and that same-value native writes are handled by a context rule, not scalar equality alone."
+  ]
+}
+

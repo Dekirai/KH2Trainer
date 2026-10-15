@@ -54,7 +54,6 @@ public sealed class MainViewModel : Observable, IFeatureHost, ITwitchHost, ITwit
     public HomeVm Home { get; }
     public ProfilesVm Profiles { get; }
     public AboutVm About { get; }
-    public AssetExplorerViewModel Assets { get; }
     public RuntimeDiagnosticsViewModel Diagnostics { get; }
     public TwitchVm Twitch { get; }
     public PageVm SelectedPage
@@ -205,7 +204,6 @@ public sealed class MainViewModel : Observable, IFeatureHost, ITwitchHost, ITwit
         Home = new HomeVm(this);
         Profiles = new ProfilesVm(this);
         About = new AboutVm(this);
-        Assets = new AssetExplorerViewModel(Log);
         Diagnostics = new RuntimeDiagnosticsViewModel();
         Twitch = new TwitchVm(this);
         Pages.Add(Home);
@@ -217,7 +215,6 @@ public sealed class MainViewModel : Observable, IFeatureHost, ITwitchHost, ITwit
                     categoryLocations[group.Title] = section.Title + " › " + tab.Title + (tab.Groups.Count > 1 ? " · " + group.Title : "");
         }
         Pages.Add(Twitch);
-        Pages.Add(new ToolPageVm("Asset Explorer", "", "Browse game archives and extract selected assets. Works without a game connection.", Assets));
         Pages.Add(new ToolPageVm("Game Messages", "", "Look up the game's original messages and what their buttons do.", Diagnostics));
         Pages.Add(Profiles);
         Pages.Add(About);
@@ -397,7 +394,7 @@ public sealed class MainViewModel : Observable, IFeatureHost, ITwitchHost, ITwit
         await Twitch.ShutdownAsync();
     }
 
-    public void Dispose() { timer.Stop(); notificationTimer.Stop(); Assets.Dispose(); _ = Twitch.DisposeAsync(); session.Dispose(); }
+    public void Dispose() { timer.Stop(); notificationTimer.Stop(); _ = Twitch.DisposeAsync(); session.Dispose(); }
 }
 
 /// <summary>Search across every feature, grouped by category.</summary>

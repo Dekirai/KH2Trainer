@@ -1,0 +1,379 @@
+{
+  "schema": 1,
+  "study": "actor-contact-retirement-20261013",
+  "status": "bounded-static-study-complete",
+  "claims": [
+    {
+      "addr": "0x1401506b0",
+      "aggregateClaimId": "registered-priorities-and-two-pass-drain",
+      "Finding": "Ordnet Flags, Priorität und Callback um und leitet sie mit dem globalen Feld-Taskmanager aus 0x140716868 per Tailcall an 0x14014F770 weiter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1401506b0]",
+        "evidence.json#functions[addr=0x14014f770]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Der Forwarder beweist allein weder Ausführung noch Fortschritt eines registrierten Tasks."
+      ]
+    },
+    {
+      "addr": "0x1403b2e90",
+      "aggregateClaimId": "counter-predicate-side-effects",
+      "Finding": "Nimmt den Actor im zweiten Argument. Bei Actor+1456 führt es zunächst VM-Arbeit und gegebenenfalls 0x1403CA550 aus; erst danach liefert es den Test DWORD Actor+1464 == 0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b2e90]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Kein passiver Getter; die transitiven Effekte der aufgerufenen Helfer sind hier nicht vollständig untersucht."
+      ]
+    },
+    {
+      "addr": "0x1403b2ed0",
+      "aggregateClaimId": "counter-admission-before-dead-list",
+      "Finding": "Nimmt den Actor im zweiten Argument, ruft bei noch nicht gesetztem Bit 0x10000000 Descriptor-Slot+56 auf und setzt nach Bereinigungen Bit 0x80000 bei gelöschtem Bit 0x10000000 in DWORD Actor+288.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b2ed0]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Der Körper enthält keinen eigenen Test von Actor+1464. Direkte Aufrufe beweisen daher keine vorherige Counterzulassung."
+      ]
+    },
+    {
+      "addr": "0x1403b45c0",
+      "aggregateClaimId": "counter-admission-before-dead-list",
+      "Finding": "Führt mit Actor im ersten Argument den Death-Commit aus: bei noch nicht gesetztem Bit 0x10000000 ruft es Descriptor-Slot+56 auf, bereinigt Bindungen und setzt anschließend Bit 0x80000 bei gelöschtem Bit 0x10000000 in Actor+288.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b45c0]",
+        "evidence.json#functions[addr=0x1403bfd30]",
+        "evidence.json#functions[addr=0x1403d28c0]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Kein lokaler Countertest; Counterzulassung ist nur über den separat belegten Descriptor-Updatepfad verbunden."
+      ]
+    },
+    {
+      "addr": "0x1403b4700",
+      "aggregateClaimId": "mark-consume-and-reference-decrement",
+      "Finding": "Führt bei noch nicht gesetztem Bit 0x10000000 vorbereitende VM-/Motionarbeit aus und setzt dieses Bit in DWORD Actor+288; auch der bereits gesetzte Pfad endet mit dem OR.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b4700]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Die aufgerufenen Helfer sind nicht vollständig semantisch geschlossen; das Flag allein beweist keine tatsächliche Attack-Markierung."
+      ]
+    },
+    {
+      "addr": "0x1403bf4c0",
+      "aggregateClaimId": "registered-priorities-and-two-pass-drain",
+      "Finding": "Ruft 0x1403BF300 per Call und anschließendem Tailcall zweimal unmittelbar hintereinander auf.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bf4c0]",
+        "evidence.json#functions[addr=0x1403bf300]",
+        "evidence.json#functions[addr=0x1403bf810]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Kein Frameübergang zwischen diesen beiden Aufrufen ist belegt; die genaue Auslösebedingung dieses Cleanupcallbacks bleibt offen."
+      ]
+    },
+    {
+      "addr": "0x1403bf810",
+      "aggregateClaimId": "registered-priorities-and-two-pass-drain",
+      "Finding": "Registriert im Feld-Taskmanager 0x1403BF550 mit Priorität 20000 und 0x1403BF300 mit Priorität 91000, jeweils Flags 1, und trägt 0x1403BF4C0 in Task+104 des zweiten Tasks ein. Im separat angelegten Actor-Taskmanager registriert es 0x1403BF5E0 mit Priorität 5 und Flags 0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bf810]",
+        "evidence.json#functions[addr=0x1401506b0]",
+        "evidence.json#functions[addr=0x14014f770]",
+        "evidence.json#functions[addr=0x1403bf4c0]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Die Brücke vom Feldcallback in den separaten Actor-Taskmanager und der konkrete Cleanupauslöser sind nicht vollständig geschlossen."
+      ]
+    },
+    {
+      "addr": "0x1403cfed0",
+      "aggregateClaimId": "full-contact-drain",
+      "Finding": "Durchläuft die globale Kontaktliste, speichert vor jedem virtuellen Slot0-Aufruf mit Löschflag 1 den dekodierten nächsten Link aus DWORD Objekt+196 und setzt anschließend das Aktivbyte 0x142A24B58 auf null. Ein Test auf 0x800 ist nicht erforderlich.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cfed0]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Die vollständig transitiven Abfolgen der aufgezeichneten Caller 0x14039C830 und 0x1403BF8F0 sind nicht untersucht; kein Verzeichnis aller Eintrittsmöglichkeiten."
+      ]
+    },
+    {
+      "addr": "0x1403cff40",
+      "aggregateClaimId": "mark-consume-and-reference-decrement",
+      "Finding": "Speichert im ersten Kontaktlistenlauf den nächsten Packed-Link+196. Bei DWORD Objekt+8 & 0x800 ruft es virtual0(Objekt,1), sonst virtual+24(Objekt,scratch). Für die ursprüngliche ATTACK_OBJ-Tabelle 0x1405CE6C0 führt Slot0 zu 0x14040F4C0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cff40]",
+        "evidence.json#functions[addr=0x14040f4c0]",
+        "evidence.json#functions[addr=0x1403cfb10]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json",
+        "../attack-object-ownership-20261011/evidence.json"
+      ],
+      "Limitations": [
+        "Der Befund betrifft diesen ersten Listenlauf und die genannte ursprüngliche Tabelle; er beweist keine universelle Callbackausführung oder vollständige Semantik des übrigen Kollisionsupdates."
+      ]
+    },
+    {
+      "addr": "0x1403d0110",
+      "aggregateClaimId": "registered-priorities-and-two-pass-drain",
+      "Finding": "Setzt die globale Kontaktlistenverwaltung zurück, registriert 0x1403CFF40 über 0x1401506B0 mit Flags 1 und Priorität 21000 und aktiviert das Kontaktlisten-Byte.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d0110]",
+        "evidence.json#functions[addr=0x1401506b0]",
+        "evidence.json#functions[addr=0x14014f770]",
+        "evidence.json#functions[addr=0x14014fd60]",
+        "evidence.json#functions[addr=0x1403bf810]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Priorität 21000 liegt vor 91000 bei gemeinsam vorhandenen unveränderten Tasks im passenden Scheduler-Durchlauf; keine feste Frame- oder Threadgarantie."
+      ]
+    },
+    {
+      "addr": "0x1403d06e0",
+      "aggregateClaimId": "drive-callback-rebinding",
+      "Finding": "Durchläuft die Kontaktliste und ersetzt das gepackte Feld Objekt+16 genau dann durch den neuen zweiten Argumentzeiger, wenn dessen dekodierter Wert dem alten ersten Argument entspricht. Der vollständige lokale Körper schreibt weder +12/+20 noch Actor+1464.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d06e0]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Ein konkreter späterer Writer ist belegt, keine vollständige Writerabdeckung oder allgemeine Gültigkeitsgarantie des neuen Empfängers."
+      ]
+    },
+    {
+      "addr": "0x1403d2850",
+      "aggregateClaimId": "mark-consume-and-reference-decrement",
+      "Finding": "Nimmt den Actor im zweiten Argument. Bei noch nicht gesetztem Actor+288-Bit 0x10000000 ruft es 0x1403D24B0 für den Manager Actor+3088 auf und bereinigt gegebenenfalls den gepackten Verweis Actor+3380. Danach folgt der Tailcall an 0x1403B4700.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d2850]",
+        "evidence.json#functions[addr=0x1403d24b0]",
+        "evidence.json#functions[addr=0x1403d0eb0]",
+        "evidence.json#functions[addr=0x1403b4700]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Der Manager-Cleanup kann belegte Zellen leeren, ohne dass seine bedingte Markierungsfunktion in jedem Fall tatsächlich 0x800 setzt."
+      ]
+    },
+    {
+      "addr": "0x1403d28b0",
+      "aggregateClaimId": "counter-admission-before-dead-list",
+      "Finding": "Der Zwei-Instruktionsadapter verschiebt das zweite Argument in das erste und springt zu 0x1403DAC30. Originaltabelle 0x1405C6250 verweist aus Slot+64 auf diesen Adapter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d28b0]",
+        "evidence.json#functions[addr=0x1403dac30]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Die Tabellenbindung gilt bei aktuellem ursprünglichem Descriptor; abgeleitete oder veränderte Descriptoren werden nicht gleichgesetzt."
+      ]
+    },
+    {
+      "addr": "0x1403d28c0",
+      "aggregateClaimId": "counter-admission-before-dead-list",
+      "Finding": "Der Zwei-Instruktionsadapter verschiebt das zweite Argument in das erste und springt zu 0x1403B45C0. Originaltabelle 0x1405C6250 verweist aus Slot+72 auf diesen Adapter.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d28c0]",
+        "evidence.json#functions[addr=0x1403b45c0]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Der Adapter fügt keinen Countertest hinzu; direkte Aufrufe umgehen möglicherweise die separat belegte Updatezulassung."
+      ]
+    },
+    {
+      "addr": "0x1403bf300",
+      "aggregateClaimId": "counter-admission-before-dead-list",
+      "Finding": "Leert zuerst die bisherige Dead-List über 0x1403B4E80 und den aktuellen Descriptor-Slot0. Erst danach verschiebt es aktive Actors mit Bit 0x80000 auf die neue Dead-List. Der Körper prüft Actor+1464 nicht erneut.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bf300]",
+        "evidence.json#functions[addr=0x1403b4e80]",
+        "evidence.json#functions[addr=0x1403bf4c0]",
+        "evidence.json#functions[addr=0x1403d2720]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Ein gerade verschobener Actor wird nicht durch die frühere Schleife desselben Aufrufs zerstört; der Doppelaufruf 0x1403BF4C0 verbietet daraus eine garantierte zusätzliche Framewartezeit abzuleiten."
+      ]
+    },
+    {
+      "addr": "0x1403d2da0",
+      "aggregateClaimId": "counter-admission-before-dead-list",
+      "Finding": "Initialisiert den eingebetteten Manager bei Actor+3088 und speichert danach den kodierten Descriptor 0x14074C380 in Actor-DWORD0. Die Originalzelle verweist auf Tabelle 0x1405C6250, deren Slot0 auf 0x1403D2720 zeigt.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403d2da0]",
+        "evidence.json#functions[addr=0x1403d2720]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Abgeleitete Konstruktoren können den Descriptor anschließend ersetzen; die konkrete Basisbindung ist keine allgemeine Instanztypgarantie."
+      ]
+    },
+    {
+      "addr": "0x14040d000",
+      "aggregateClaimId": "drive-callback-rebinding",
+      "Finding": "Konstruiert einen neuen Actor und ruft bei 0x14040D448 0x1403D06E0 mit altem und neuem Actor auf, bevor es auf die Entfernung des alten Actors aus der aktiven Liste wartet.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040d000]",
+        "evidence.json#functions[addr=0x1403d06e0]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Belegt den konkreten Call und dessen lokale Reihenfolge. Weitere Übergaben durch opaque Helfer und die vollständige Semantik des Drive-Wechsels sind nicht mitbewiesen."
+      ]
+    },
+    {
+      "addr": "0x1403dac30",
+      "aggregateClaimId": "counter-admission-before-dead-list",
+      "Finding": "Verlangt zuerst Erfolg von 0x1403B4420 und damit Counter0. Sind sowohl Actor+128 als auch Actor+152 nicht null, verweigert es die Zulassung ebenfalls; die Voice-Prüfungen des gepackten Actorfelds+2996 können sie zusätzlich verzögern.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403dac30]",
+        "evidence.json#functions[addr=0x1403b4420]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Counter0 ist auf diesem Pfad notwendig, reicht allein aber nicht aus. Kein universelles Freigabeprädikat sämtlicher Klassen oder direkter Caller."
+      ]
+    },
+    {
+      "addr": "0x1403bfd30",
+      "aggregateClaimId": "counter-admission-before-dead-list",
+      "Finding": "Bei Actor+288-Bit 0x10000000 ruft der Updatepfad den aktuellen Descriptor-Slot+64 auf. Nur bei wahrer Rückgabe folgt ein Aufruf des dann aktuellen Descriptor-Slots+72. Für 0x14074C380 → 0x1405C6250 verbinden die Adapter diesen Pfad mit Counterzulassung und Death-Commit.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bfd30]",
+        "evidence.json#functions[addr=0x1403d28b0]",
+        "evidence.json#functions[addr=0x1403d28c0]",
+        "evidence.json#functions[addr=0x1403d2da0]",
+        "evidence.json#functions[addr=0x1403dac30]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Andere Descriptoren, direkte Death-Commits und Bulkfreigaben werden nicht eingeschlossen; der übrige Updatekörper ist nicht vollständig semantisch beschrieben."
+      ]
+    },
+    {
+      "addr": "0x1403b4420",
+      "aggregateClaimId": "counter-predicate-side-effects",
+      "Finding": "Führt bei vorhandenem Actor+1456 zunächst VM-Arbeit und gegebenenfalls 0x1403CA550 aus und liefert erst danach den Vergleich DWORD Actor+1464 == 0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b4420]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Kein passiver Getter; die Validierung beliebiger Actorzeiger und die vollständigen transitiven Effekte sind hier nicht implementiert oder bewiesen."
+      ]
+    },
+    {
+      "addr": "0x14014f770",
+      "aggregateClaimId": "registered-priorities-and-two-pass-drain",
+      "Finding": "Legt einen 0x98-Byte-Task an, speichert Callback+0, Manager+88, Flags+96 und Priorität+100, initialisiert unter anderem Kontext+112 auf null und fügt nach aufsteigender vorzeichenbehafteter Priorität ein.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14014f770]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Taskkonstruktion und Listeneinordnung beweisen keine spätere Ausführung oder globalen Schedulerfortschritt."
+      ]
+    },
+    {
+      "addr": "0x14014fd60",
+      "aggregateClaimId": "registered-priorities-and-two-pass-drain",
+      "Finding": "Filtert Tasks mit (Flags & Maske) == Sollwert und ruft passende Tasks bei null Kontext+112 direkt auf; nichtnull Kontext folgt einem getrennten Fiberpfad.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14014fd60]",
+        "evidence.json#functions[addr=0x14014f770]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Keine Garantie, dass jeder registrierte Task diesen Pfad erreicht; Taskabbrüche und sämtliche Fiberlebenszyklen sind nicht mitbewiesen."
+      ]
+    },
+    {
+      "addr": "0x1403cfb10",
+      "aggregateClaimId": "mark-consume-and-reference-decrement",
+      "Finding": "Dekrementiert Actor-DWORD+1464 über die nichtnull dekodierten Objektfelder+12 und+20 und entfernt das Objekt aus der Kontaktliste mit Packed-Link+196. +16 ist kein hier gezählter Actorverweis.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cfb10]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Bei Alias in +12/+20 erfolgen zwei lokale Dekremente mit ungesättigter DWORD-Arithmetik; kein Nachweis sämtlicher Writer oder universeller Referenzsicherheit."
+      ]
+    },
+    {
+      "addr": "0x14040f4c0",
+      "aggregateClaimId": "mark-consume-and-reference-decrement",
+      "Finding": "Leert die äußere QWORD-Zelle durch den gespeicherten Zeiger Objekt+720 und ruft 0x1403CFB10 auf. Nur bei flags & 1 folgt ein weiterer Aufruf: bei !(flags & 4) an 0x140152570, andernfalls an nullsub_1(Objekt,728). Flag 4 allein löst keinen dieser Aufrufe aus; eine tatsächliche Freigabe durch nullsub_1 ist nicht belegt.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040f4c0]",
+        "evidence.json#functions[addr=0x1403cfb10]",
+        "evidence.zip",
+        "verification.json",
+        "provenance.json"
+      ],
+      "Limitations": [
+        "Die unbedingte spätere Zellenleerung prüft keine Wiederverwendungsidentität. Kein normaler Spielabsturz, Use-after-free oder sicherer Trainer-Delete-Einstieg ist damit bewiesen."
+      ]
+    }
+  ],
+  "scope": "24 bounded function findings normalized from six frozen aggregate claims; 30 body records support this study. Fresh capture provenance does not mean a new unique finding.",
+  "fullSemanticReview": "not_established",
+  "nativeExecution": false,
+  "gameOrTwitchTesting": false
+}

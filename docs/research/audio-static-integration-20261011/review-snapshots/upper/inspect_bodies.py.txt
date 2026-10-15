@@ -1,0 +1,10 @@
+from pathlib import Path
+import json,sys
+H=Path(__file__).resolve().parent;R=H.parents[1];S=R/'artifacts/voice-resource-teardown-20261011'
+e=json.loads((S/'evidence.json').read_text(encoding='utf-8-sig'))
+selected={int(x,16) for x in sys.argv[1:]}
+for group in ('functions','dependencies'):
+ for f in e[group]:
+  if not selected or int(f['addr'],16)-0x140000000 in selected:
+   print('\n'+f['addr']+' '+group+' '+str(f['size']))
+   for i in f['instructions']:print(i['addr']+' '+i['mnemonic']+' '+i['operands'])

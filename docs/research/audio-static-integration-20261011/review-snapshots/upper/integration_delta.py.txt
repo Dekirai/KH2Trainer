@@ -1,0 +1,81 @@
+"""Independent transport delta audit. Writes only this reviewer artifact directory."""
+from pathlib import Path
+import json, hashlib, copy, importlib.util, sys
+sys.dont_write_bytecode=True
+H=Path(__file__).resolve().parent;R=H.parents[1];S=R/'artifacts/voice-resource-teardown-20261011'
+def load(p):return json.loads(p.read_text(encoding='utf-8-sig'))
+def sha(b):return hashlib.sha256(b).hexdigest()
+def serial(x):return (json.dumps(x,indent=2,ensure_ascii=False)+'\n').replace('\n','\r\n').encode()
+checks=0
+def ck(value,label):
+ global checks
+ checks+=1
+ if not value:raise AssertionError(label)
+before=load(S/'integration-before.json');e=load(S/'evidence.json');deps=load(S/'dependencies.json');report=load(S/'report.json')
+oldManifest='fe618ca60ada66f158521423c2d75f0ed334225d97819a2363dfb10d51bbf526'
+oldEvidence='1258bfbeed7ebab90b51845605390e3bbdad114afb258e9a82e916d80c45af78'
+ck(sha(serial(before['manifest']))==oldManifest,'entire historical manifest exact')
+oldreport=json.loads(before['reportJson']);ck(sha(serial(oldreport))==before['manifest']['files']['report.json']['sha256'],'historical report exact')
+ck(len(oldreport['claims'])==len(report['claims'])==16,'claim count unchanged')
+changed=[]
+for a,b in zip(oldreport['claims'],report['claims']):
+ ck({k:v for k,v in a.items() if k!='evidence'}=={k:v for k,v in b.items() if k!='evidence'},'claim semantics and limits unchanged')
+ ck(len(a['evidence'])==len(b['evidence']),'reference count stable')
+ for x,y in zip(a['evidence'],b['evidence']):
+  if x!=y:
+   ck(x.startswith('evidence.json#dependencies[addr='),'only dependency selector was unsupported')
+   ck(y==x.replace('evidence.json#dependencies[','dependencies.json#functions['),'exact target retained')
+   changed.append([x,y])
+recoveredReport=copy.deepcopy(report)
+for a,b in zip(oldreport['claims'],recoveredReport['claims']):b['evidence']=a['evidence']
+ck(recoveredReport==oldreport and len(changed)==18,'entire report equals old except 18 selectors')
+recovered=copy.deepcopy(e);recoveredDeps=copy.deepcopy(deps)
+for f in recovered['functions']+recovered['dependencies']+recoveredDeps['functions']:
+ for k in ('disassembly','pages','pseudocode','sourceMetadata'):del f[k]
+ f['originalBytes']=bytes.fromhex(f['originalBytes']).hex()
+ck(sha(serial(recovered))==oldEvidence,'entire old evidence byte exact reconstruction')
+ck(sha(serial(recoveredDeps))==before['manifest']['files']['dependencies.json']['sha256'],'entire old dependencies byte exact reconstruction')
+changedfiles=[];unchanged=[]
+for name,pin in before['manifest']['files'].items():
+ (unchanged if sha((S/name).read_bytes())==pin['sha256'] else changedfiles).append(name)
+ck(set(changedfiles)=={'author.py','dependencies.json','evidence.json','prepare.py','provenance.json','report.json','verify.py'},'bounded old file delta')
+for f in e['functions']:
+ meta=f['sourceMetadata'];cap=load(S/meta['captureFile']);orig=next(x for x in cap['functions'] if x['addr']==f['addr'])
+ ck(sha((S/meta['captureFile']).read_bytes())==meta['captureSha256'],'fresh source pin')
+ ck(all(f[k]==orig[k] for k in ('disassembly','pages','pseudocode')),'fresh added capture objects exact')
+ ck(meta['document']=={k:v for k,v in cap.items() if k!='functions'},'fresh added source document exact')
+for f in deps['functions']:
+ meta=f['sourceMetadata'];source=R/meta['evidenceFile'];origdoc=load(source);orig=next(x for x in origdoc['functions'] if x['addr']==f['addr'])
+ ck(sha(source.read_bytes())==meta['evidenceSha256'],'reused source pin')
+ assembly=orig.get('disassembly') or {k:orig[k] for k in ('addr','asm','instruction_count','total_instructions','cursor')}
+ ck(f['disassembly']==assembly and f['pages']==orig['pages'] and f['pseudocode']==orig['pseudocode'],'reused capture objects exact')
+ ck(meta['document']=={k:origdoc[k] for k in ('Domain','domain','imageBase','originalSha256') if k in origdoc},'reused source metadata exact')
+ ef=next(x for x in e['dependencies'] if x['addr']==f['addr'])
+ ck(all(ef[k]==f[k] for k in ('disassembly','pages','pseudocode','sourceMetadata')),'evidence reused transport same as dependency')
+provenance=load(S/'provenance.json');oldProv=before['provenance'];newDeps=provenance['dependencies']
+ck({k:v for k,v in provenance.items() if k!='dependencies'}=={k:v for k,v in oldProv.items() if k!='dependencies'},'provenance claims unchanged')
+ck(len(newDeps)==len(oldProv['dependencies']),'dependency count unchanged')
+updates=[]
+for old,new in zip(oldProv['dependencies'],newDeps):
+ ck(sha((R/new['path']).read_bytes())==new['sha256'],'explicit current dependency pin')
+ if old!=new:
+  ck('audio-bank-retirement-20261011/' in old['path'],'only lower dependencies renewed')
+  ck((R/new['path']).read_bytes()==(R/'artifacts/audio-bank-retirement-20261011'/Path(new['path']).name).read_bytes(),'renewed lower docs bytes match reviewed artifact')
+  updates.append({'old':old,'new':new})
+ck(len(updates)==2,'exactly two lower pins renewed')
+parserpath=R/'scripts/update-analysis-coverage.py'
+ck(sha(parserpath.read_bytes())=='546d0defdacd8857d7f2461283516348ca28776d13e253d8d954ad43622cc1b2','existing coverage parser unchanged')
+spec=importlib.util.spec_from_file_location('upper_review_coverage',parserpath);p=importlib.util.module_from_spec(spec);spec.loader.exec_module(p)
+refs=[r for c in report['claims'] for r in c['evidence']]
+for ref in refs:ck(p.resolve_reference(S/'report.json',ref)['status']=='exists','actual parser resolves claim reference')
+total=0;compare=p.pe_comparer(p.DEFAULT_BINARY)
+for f in e['functions']+deps['functions']:
+ ok,addrs,why=p.body_assembly(f);spans=p.original_spans(f);ck(ok and bool(addrs),'existing parser complete ASM body')
+ for a,b in spans:ck(compare(a,b),'existing parser original bytes');total+=len(b)
+ck(total==8163,'all 35 complete byte spans visible')
+ns={'__file__':str(R/'docs/research/voice-resource-teardown-20261011/verify.py'),'__name__':'portable_independent_review'}
+exec(compile((S/'verify.py').read_text(encoding='utf-8'),'portable-independent-review','exec'),ns)
+ck(ns['ROOT']==R,'portable docs root without filesystem changes')
+out={'status':'ACCEPTED_TRANSPORT_DELTA','checks':checks,'oldManifestSha256':oldManifest,'newManifestSha256':sha((S/'manifest.json').read_bytes()),'oldEvidenceByteExactReconstruction':True,'oldDependenciesByteExactReconstruction':True,'semanticFieldsUnchanged':True,'changedOldFiles':changedfiles,'unchangedOldFiles':unchanged,'changedReferences':len(changed),'resolvedReferences':len(refs),'completeParserBodies':35,'parserOriginalBytes':total,'dependencyUpdates':updates,'portableDocsRoot':True,'limits':'Transport and reference resolution only; no coverage regeneration, product changes or original execution.'}
+(H/'integration-delta.json').write_text(json.dumps(out,indent=2)+'\n')
+print(json.dumps(out))

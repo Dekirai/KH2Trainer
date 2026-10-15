@@ -1,0 +1,48 @@
+Begrenzte Integrationskorrektur, 11.10.2026
+
+Ausgangsmanifest:
+23ab6085e22e788ba2c317dc9710350d9801e29fd3318e8dae1de409713f8379
+Ausgangsevidence:
+8c60ec1f40c76832769a8f2e20e8c311ea525c3e7946ecae14ecba2096becc6d
+Unveränderter Coverageparser scripts/update-analysis-coverage.py:
+546d0defdacd8857d7f2461283516348ca28776d13e253d8d954ad43622cc1b2
+
+1. Nur die 34 nicht unterstützten Reportfragmente wurden entfernt:
+   evidence.json#anchors -> evidence.json;
+   model-results.json#... -> model-results.json.
+   Die Funktionsselektoren und alle 22 Findings/Limitationen bleiben unverändert.
+   resolve_reference: vorher87 exists /34 unsupported_fragment, nachher121 exists.
+
+2. Die 40 normalisierten Funktionsbelege enthalten nun zusätzlich die unveränderten
+   vollständigen disassembly/pages/pseudocode-Objekte ihrer Originalcaptures und
+   eigenständige Quellenmetadaten samt Capture-Datei und SHA256. originalBytes nutzt
+   Leerzeichen zwischen den Bytes. Alle bisherigen Datenfelder bleiben erhalten;
+   für den Vorhervergleich wird nur diese Hexformatierung zurücknormalisiert.
+   body_assembly und original_spans des unveränderten Coverageparsers akzeptieren
+   alle40 Körper und sämtliche13.520 Originalbytes. Derselbe Parser vergleicht sie
+   positiv mit der vollständigen gepinnten Original-EXE.
+
+3. ROOT wird jetzt über den vorhandenen src/KH2Trainer.Core-Vorfahren ermittelt.
+   Ein Probeimport mit __file__ unter docs/research bestätigt denselben Root;
+   dabei werden weder docs-Dateien angelegt noch der Verifier-Hauptlauf ausgeführt.
+
+4. Drei ORIGIN-Abhängigkeiten (manifest/evidence/claims) zeigen nun auf die jeweils
+   byteidentischen docs/research-Dateien mit denselben SHA256. Der damalige
+   unabhängige ORIGIN-Receipt wurde bytegenau als prior-origin-review.json kopiert.
+   Seine Provenance benutzt ausdrücklich base=study und kopierte Herkunft; es gibt
+   keinen Suchpfad oder stillen Fallback auf einen anderen Receipt.
+
+Capturedateien, Originalbytes, Modelle, semantische Anker, report.txt, alle Findings
+und Limitationen sowie die Verifikationsstatistiken wurden nicht geändert.
+integration-before.json hält ursprüngliche Pins, Reportinhalt als JSON-String und
+Hashes aller alten Evidence-Funktionsobjekte fest. Die Zeichenkette verhindert,
+dass historische Claims erneut als aktuelle Claims eingelesen werden.
+integration-check.py prüft den Vergleich und schreibt im Standardmodus nichts.
+
+Reproduktion:
+py -3 -B artifacts/audio-bank-retirement-20261011/verify.py --check
+py -3 -B artifacts/audio-bank-retirement-20261011/integration-check.py
+
+Kein Coverageparser verändert, keine Coverage erzeugt, keine src/docs/build-Datei
+geschrieben und kein Spiel/Prozess gestartet. Die Änderung benötigt einen begrenzten
+Peer-Delta-Review auf dem neuen Manifest. Vorherige Akzeptanz ist kein neuer Receipt.

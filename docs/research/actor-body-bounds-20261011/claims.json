@@ -1,0 +1,125 @@
+{
+  "schema": 1,
+  "Domain": "native",
+  "claims": [
+    {
+      "addr": "0x14040ac20",
+      "Finding": "For count0 the function zeroes the six-float output. Otherwise it initializes lower=(x-radius,y-height,z-radius) and upper=(x+radius,y+height,z+radius) from the first40-byte record after a24-byte header. For every later record, it uses MINSS at40ACF0/40AD01/40AD14 for lower coordinates and also MINSS at40AD27/40AD39/40AD50 for upper coordinates. It does not compute an enclosing union of arbitrary multiple finite records. The original three-body native probe reproduces this for12 synthetic cases, including separated centers0 and100 with radius1 producing x[-1,1] rather than[-1,101].",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040ac20]",
+        "evidence.json#functions[addr=0x140184270]",
+        "evidence.json#functions[addr=0x140184940]"
+      ],
+      "Limitations": "Native probe inputs are finite, dimensions nonnegative and counts0..3. This is not a claim of malformed retail data, current player reachability, all-input floating-point behavior, or a proven gameplay defect. The intended wider engine contract is not fully established."
+    },
+    {
+      "addr": "0x140184270",
+      "Finding": "Writes zero to the24-byte output through three QWORD stores. The bounds helper tailcalls this path when its countDWORD is exactly zero.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140184270]",
+        "evidence.json#functions[addr=0x14040ac20]"
+      ],
+      "Limitations": "Zero coordinates are the native representation here; no generic empty-box sentinel or validity interpretation is inferred."
+    },
+    {
+      "addr": "0x140184940",
+      "Finding": "Stores the first three scalar arguments from XMM1/XMM2/XMM3 at output+0/+4/+8 and the next three stack Float32 arguments at+12/+16/+20. The body is a plain six-coordinate initializer.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140184940]",
+        "evidence.json#functions[addr=0x14040ac20]"
+      ],
+      "Limitations": "Hex-Rays omits/mistypes floating-point arguments in the caller. ABI and stores are established from complete original ASM."
+    },
+    {
+      "addr": "0x1403cbfe0",
+      "Finding": "When Actor+2696 is null and Actor+2560 is nonnull, calls40AC20 with output Actor+2200. Its nonnull+2696 branch instead derives a local box, transforms eight corners through Actor+64, and updates separate lower/upper coordinates using comparisons. The fallback MINSS behavior therefore does not describe every model-bound Actor path.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403cbfe0]",
+        "evidence.json#functions[addr=0x14040ac20]"
+      ],
+      "Limitations": "The8-corner branch is inspected statically, not executed by the native probe. Downstream consumers of Actor+2200 and real model/resource reachability are not fully traced."
+    },
+    {
+      "addr": "0x14055baf0",
+      "Finding": "For nonnull Actor+1600, obtains six coordinates through40AC20, sums matching lower/upper pairs and scales by0.5 before copying to the output; it then zeroes output+8. With null+1600 it uses3B5B40 instead.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14055baf0]",
+        "evidence.json#functions[addr=0x14040ac20]"
+      ],
+      "Limitations": "The caller uses the bounds result as part of a center calculation. The complete gameplay meaning, all callers and final use of the resulting vector remain outside this study."
+    },
+    {
+      "addr": "0x140562c50",
+      "Finding": "On its Actor+1600 branch computes a midpoint from40AC20 output before the later loop calling428710, then writes the prepared vector to each successful result+264. The null+1600 branch uses3B5B40. Thus this path also consumes the body-bound calculation outside3CBFE0.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x140562c50]",
+        "evidence.json#functions[addr=0x14040ac20]"
+      ],
+      "Limitations": "Only the selected preparation/copy relationship is claimed; the full spawning system, scene reachability and visible effect are not established."
+    },
+    {
+      "addr": "0x1403c9b30",
+      "Finding": "Reads a signed-positive resource count at+0 and counts20-byte records starting at+64 whose byte+4 equals the requested kind. It returns that count; it does not apply the per-Actor enable-state filter here.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c9b30]"
+      ],
+      "Limitations": "There is no payload-size input in this body. Valid resource count/span and ordinary caller lifetime are prerequisites."
+    },
+    {
+      "addr": "0x14040a9e0",
+      "Finding": "Counts the requested resource kind through3C9B30, returns null for zero count, otherwise allocates24+40*count bytes, stores kind at+16, initializes current record count+0 to0 and stores Actor at+8. It stores no explicit allocation capacity in those initialized header fields.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040a9e0]",
+        "evidence.json#functions[addr=0x1403c9b30]"
+      ],
+      "Limitations": "This is local construction, not a full ownership/lifetime proof. Allocation failure and hostile counts are not exercised."
+    },
+    {
+      "addr": "0x1403b6310",
+      "Finding": "Binds Actor+2744 to the supplied resource and builds two new buffers through40A9E0: kind1 published to Actor+2560 and kind2 to Actor+1600. Earlier selected kind17 records also supply native collision radius/height values.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403b6310]",
+        "evidence.json#functions[addr=0x14040a9e0]"
+      ],
+      "Limitations": "The claim covers local binding/publication. Prior-buffer retirement, every caller and resource lifetime remain unresolved."
+    },
+    {
+      "addr": "0x14040b140",
+      "Finding": "Clears the current buffer count first. It rebuilds only when the owning Actor flags+2488 contain0x400, enumerating the stored kind via3B4F10 and producing40-byte output records through3C9C00. The local loop checks no stored allocation capacity.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x14040b140]",
+        "evidence.json#functions[addr=0x1403c9c00]",
+        "evidence.json#functions[addr=0x14040a9e0]"
+      ],
+      "Limitations": "The enable-state enumerator and resource ownership are native prerequisites. No claim is made that ordinary retail execution overruns this allocation."
+    },
+    {
+      "addr": "0x1403c9c00",
+      "Finding": "The selected active branch copies signed WORD radius and height from resource+16/+18 into output+4/+8, resolves the joint/Actor matrix through3B50F0, transforms the local signed-WORD center, then subtracts signed resource+14 from resulting centerY. Radius/height are not multiplied by Actor scale here.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403c9c00]"
+      ],
+      "Limitations": "This body is a bounded conversion from valid native resource records. Complete joint lookup, every coordinate source and all physical consequences remain outside the probe."
+    },
+    {
+      "addr": "0x1403ccb90",
+      "Finding": "Publishes the initial Actor+64 matrix through1A94C0 at3CCFE9; after optional floor branches it conditionally rebuilds Actor+2560 via40B140 at3CD0E3, then evaluates motion root and publishes Actor+2056 through1A94C0 at3CD1B5. A hook only after this complete function returns occurs after the body-cache rebuild already ran.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403ccb90]",
+        "evidence.json#functions[addr=0x14040b140]"
+      ],
+      "Limitations": "This is ordinary-return instruction ordering. It does not prove all threads, resource validity or which joint selectors appear in shipped records."
+    },
+    {
+      "addr": "0x1403bfab0",
+      "Finding": "On the active branch calls3CCB90, then3C6AA0 using Actor+2056, then optional related native work, and finally rebuilds nonnull Actor+1600 through40B140. Actor+2488 is ORed with0x500 at the end. The two body buffers thus have distinct rebuild positions in this captured path.",
+      "Evidence": [
+        "evidence.json#functions[addr=0x1403bfab0]",
+        "evidence.json#functions[addr=0x1403ccb90]",
+        "evidence.json#functions[addr=0x14040b140]"
+      ],
+      "Limitations": "Called model helpers are not executed in this study. No guarantee is made that all other callsites share this ordering."
+    }
+  ],
+  "completeSemanticReview": false
+}
